@@ -273,8 +273,7 @@ def get_predict_time(report: EstimatorReport | CrossValidationReport) -> float:
         return float(
             report.metrics.timings(aggregate="mean").loc["Predict time test (s)"]
         )
-    predict_time = cast(float, report.metrics.predict_time(data_source="test"))
-    return predict_time
+    return cast(float, report.metrics.predict_time(data_source="test"))
 
 
 def get_preprocessed_X(
