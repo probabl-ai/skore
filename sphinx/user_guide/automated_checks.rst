@@ -578,8 +578,8 @@ How to reduce the risk
 - for :class:`~sklearn.model_selection.RandomizedSearchCV`, increase ``n_iter``
   and sample from a wider range,
 - if :ref:`SKD015 <skd015-hyperparameters-worth-tuning>` also fires, address
-  both together: the search space is too narrow on at least one axis and is
-  also missing recommended axes entirely.
+  both together: the search space is too narrow on at least one hyperparameter
+  and is also missing recommended hyperparameters entirely.
 
 Check out the :ref:`example for this check <example_skd014_hyperparams_at_search_edge_skd015_hyperparameters_worth_tuning>`.
 
@@ -597,9 +597,9 @@ the tuning literature (Probst, Boulesteix & Bischl 2019; van Rijn & Hutter 2018)
 
 When the search wraps a :class:`~sklearn.pipeline.Pipeline`, every step whose
 class is in the table is checked independently, regardless of whether the search
-currently tunes any of its parameters. Recommended axes that play the same role
-(e.g. ``max_depth`` and ``min_samples_leaf`` for tree complexity) are collapsed
-to a single suggestion.
+currently tunes any of its parameters. Recommended hyperparameters that play
+the same role (e.g. ``max_depth`` and ``min_samples_leaf`` for tree complexity)
+are collapsed to a single suggestion.
 
 Why it matters
 ^^^^^^^^^^^^^^
