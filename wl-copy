@@ -1,0 +1,35 @@
+Show commit description and changes in a revision
+
+Usage: jj show [OPTIONS] [REVSET]
+
+Arguments:
+  [REVSET]  Show changes in this revision, compared to its parent(s) [default: @] [aliases: -r]
+
+Options:
+  -T, --template <TEMPLATE>  Render a revision using the given template
+  -h, --help                 Print help (see more with '--help')
+
+Diff Formatting Options:
+  -s, --summary              For each path, show only whether it was modified, added, or deleted
+      --stat                 Show a histogram of the changes
+      --types                For each path, show only its type before and after
+      --name-only            For each path, show only its path
+      --git                  Show a Git-format diff
+      --color-words          Show a word-level diff with changes indicated only by color
+      --tool <TOOL>          Generate diff by external command
+      --context <CONTEXT>    Number of lines of context to show
+  -w, --ignore-all-space     Ignore whitespace when comparing lines
+  -b, --ignore-space-change  Ignore changes in amount of whitespace when comparing lines
+      --no-patch             Do not show the patch
+
+Global Options:
+  -R, --repository <REPOSITORY>      Path to repository to operate on
+      --ignore-working-copy          Don't snapshot the working copy, and don't update it
+      --ignore-immutable             Allow rewriting immutable commits
+      --at-operation <AT_OPERATION>  Operation to load the repo at [aliases: --at-op]
+      --debug                        Enable debug logging
+      --color <WHEN>                 When to colorize output [possible values: always, never, debug, auto]
+      --quiet                        Silence non-primary command output
+      --no-pager                     Disable the pager
+      --config <NAME=VALUE>          Additional configuration options (can be repeated)
+      --config-file <PATH>           Additional configuration files (can be repeated)
