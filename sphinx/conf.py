@@ -110,6 +110,7 @@ sphinx_gallery_conf = {
         "../examples/getting_started",
         "../examples/use_cases",
         "../examples/model_evaluation",
+        "../examples/pitfalls_and_solutions",
         "../examples/integrations",
         "../examples/technical_details",
     ],

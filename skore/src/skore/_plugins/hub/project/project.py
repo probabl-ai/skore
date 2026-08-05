@@ -27,6 +27,7 @@ if TYPE_CHECKING:
 
     class Metadata(TypedDict):  # noqa: D101
         id: str
+        report_id: str | None
         key: str
         date: str
         learner: str
@@ -366,6 +367,7 @@ class Project:
 
             return {
                 "id": summary["urn"],
+                "report_id": summary.get("canonical_report_id"),
                 "key": summary["key"],
                 "date": summary["created_at"],
                 "learner": summary["estimator_class_name"],

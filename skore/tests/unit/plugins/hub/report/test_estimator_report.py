@@ -364,7 +364,7 @@ class TestEstimatorReportPayload:
             key="<key>",
         )
 
-        for metric_name in ("precision", "recall", "roc_auc"):
+        for metric_name in ("precision_macro", "recall_macro", "roc_auc_macro"):
             macro_metrics = [
                 m
                 for m in payload.metrics
@@ -466,6 +466,7 @@ class TestEstimatorReportPayload:
 
         assert payload_dict == {
             "key": "<key>",
+            "canonical_report_id": str(binary_classification.id),
             "estimator_class_name": "RandomForestClassifier",
             "dataset_fingerprint": hash(binary_classification.y_test),
             "ml_task": "binary-classification",

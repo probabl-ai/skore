@@ -14,11 +14,29 @@
                         <span class="name">.{{ accessor.name }}</span>
                     </label>
                     <div class="branch-content" id="{{ accessor.branch_id }}">
-                        {% for method in accessor.methods %}
-                            <div class="node method">
-                                <span class="method-name">{{ method_label(method) }}</span>
+                        {% if accessor.groups %}
+                            {% for group in accessor.groups %}
+                                <div class="node branch">
+                                    <label class="branch-label">
+                                        <input type="checkbox" class="toggle" checked>
+                                        <span class="section-name">{{ group.name }}</span>
+                                    </label>
+                                    <div class="branch-content" id="{{ group.branch_id }}">
+                                        {% for method in group.methods %}
+                                            <div class="node method">
+                                                <span class="method-name">{{ method_label(method) }}</span>
+                                            </div>
+                                        {% endfor %}
+                                    </div>
                                 </div>
-                        {% endfor %}
+                            {% endfor %}
+                        {% else %}
+                            {% for method in accessor.methods %}
+                                <div class="node method">
+                                    <span class="method-name">{{ method_label(method) }}</span>
+                                </div>
+                            {% endfor %}
+                        {% endif %}
                     </div>
                 </div>
             {% endfor %}
@@ -69,11 +87,29 @@
                         <span class="name">.{{ accessor_name }}</span>
                     </label>
                     <div class="branch-content" id="{{ accessor_branch_id }}">
-                        {% for method in methods %}
-                            <div class="node method">
-                                <span class="method-name">{{ method_label(method) }}</span>
+                        {% if groups %}
+                            {% for group in groups %}
+                                <div class="node branch">
+                                    <label class="branch-label">
+                                        <input type="checkbox" class="toggle" checked>
+                                        <span class="section-name">{{ group.name }}</span>
+                                    </label>
+                                    <div class="branch-content" id="{{ group.branch_id }}">
+                                        {% for method in group.methods %}
+                                            <div class="node method">
+                                                <span class="method-name">{{ method_label(method) }}</span>
+                                            </div>
+                                        {% endfor %}
+                                    </div>
                                 </div>
-                        {% endfor %}
+                            {% endfor %}
+                        {% else %}
+                            {% for method in methods %}
+                                <div class="node method">
+                                    <span class="method-name">{{ method_label(method) }}</span>
+                                </div>
+                            {% endfor %}
+                        {% endif %}
                     </div>
                 </div>
             </div>

@@ -82,7 +82,7 @@ class SKLearnCrossValidator(Protocol):
 ReportMetadata = TypedDict(
     "ReportMetadata",
     {
-        "id": int,
+        "id": str,
         "skore-version": str,
         "creation-date": str,
         "report_type": str,

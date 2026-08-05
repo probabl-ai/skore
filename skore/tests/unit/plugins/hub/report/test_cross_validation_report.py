@@ -1098,9 +1098,9 @@ class TestCrossValidationReportPayload:
         )
 
         for metric_name in (
-            "precision_mean",
-            "recall_mean",
-            "roc_auc_mean",
+            "precision_macro_mean",
+            "recall_macro_mean",
+            "roc_auc_macro_mean",
         ):
             macro_metrics = [
                 m
@@ -1244,6 +1244,7 @@ class TestCrossValidationReportPayload:
 
         assert payload_dict == {
             "key": "<key>",
+            "canonical_report_id": str(small_cv_binary_classification.id),
             "estimator_class_name": "RandomForestClassifier",
             "dataset_fingerprint": hash(small_cv_binary_classification.y),
             "ml_task": "binary-classification",
