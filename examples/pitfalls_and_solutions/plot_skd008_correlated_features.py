@@ -1,7 +1,7 @@
 """
 .. _example_skd008_correlated_features:
 
-SKD008 — Highly correlated input features
+SKD008 - Highly correlated input features
 =========================================
 
 This example walks through mitigations when check
@@ -17,51 +17,51 @@ Mitigations from the :ref:`automated_checks` user guide:
 
 We use the breast cancer Wisconsin dataset, where radius, perimeter, and area
 measurements are almost linearly related. The goal is to simplify the feature
-table without losing discriminative signal.
+table without losing signal.
 """
 
 # %%
 # Load the breast cancer Wisconsin dataset
 # ========================================
 #
-# Thirty numeric nucleus measurements describe cell size, shape, and texture.
-# Many pairs exceed the 0.9 Spearman threshold. Scores are already high on this
-# table; the point is to surface collinearity, not to chase marginal accuracy
-# gains.
+# The dataset describes cell nuclei with 30 numeric features pertaining to
+# cell size, shape, and texture. Many of these features are correlated;
+# the check should help detect this.
 
 from sklearn.datasets import load_breast_cancer
 
-cancer = load_breast_cancer(as_frame=True)
-X = cancer.frame.drop(columns=["target"])
-y = cancer.target
+X, y = load_breast_cancer(as_frame=True, return_X_y=True)
 
 # %%
-# :class:`~skrub.TableReport` shows the dense numeric design matrix.
+# Thanks to the :class:`~skrub.TableReport` "Associations" tab we can already
+# see many correlated feature pairs.
 
 from skrub import TableReport
 
 TableReport(X)
 
 # %%
-# The binary target is moderately imbalanced but easy to separate — collinearity
-# is the focus, not class balance.
+# The target is moderately imbalanced but easy to separate; anyway, our concern
+# in this example is collinearity of features.
 
 TableReport(y)
 
 # %%
-# Stratified :class:`~skore.TrainTestSplit` keeps both classes in train and
-# test. Named column groups below support the grouping mitigation later.
+# Let us use a stratified :class:`~skore.TrainTestSplit` so both classes appear
+# in train and test. Named column groups below support the combine mitigation
+# later.
 
 from skore import TrainTestSplit
 
 splitter = TrainTestSplit(random_state=42, stratify=y)
 
 # %%
-# Trigger SKD008 — full feature set
-# =================================
+# Trigger SKD008: full feature set
+# ================================
 #
-# A gradient boosting classifier tolerates correlated inputs but SKD008 still
-# inspects the training matrix. Fit on the full table, then summarize checks.
+# A gradient boosting classifier tolerates correlated inputs, but SKD008 still
+# inspects the training matrix. Let us fit on the full table, then summarize
+# checks.
 
 from sklearn.ensemble import HistGradientBoostingClassifier
 from skore import evaluate
@@ -74,7 +74,8 @@ report = evaluate(
 )
 
 # %%
-# SKD008 gives the number of highly correlated feature pairs on the training fold.
+# SKD008 gives the number of highly correlated feature pairs on the training
+# fold.
 
 report.checks.summarize(fast_mode=True)
 
@@ -82,8 +83,8 @@ report.checks.summarize(fast_mode=True)
 # Investigate correlated pairs on train data
 # ==========================================
 #
-# SKD008 runs on **train** inputs. Let's check the correlated pairs on the train data.
-# manually to see how many there are.
+# SKD008 runs on **train** inputs. Let us check the correlated pairs on the
+# train data manually to see how many there are.
 
 import numpy as np
 import pandas as pd
@@ -97,23 +98,31 @@ pairs = (
     .sort_values(ascending=False)
     .rename("abs_spearman")
 )
+# The first 27 pairs sit above the 0.9 threshold; after that, |ρ| drops below
+# it. We show a few extra rows for context.
 pairs.head(28)
 
 # %%
 # Remove redundant features
 # =========================
 #
-# Drop perimeter and area within each size block, remove entire error and worst
-# blocks, and discard columns highly correlated with ``mean concavity``. Refit
-# on the reduced table and re-run checks.
+# One way to satisfy the check is to drop some of the correlated features.
+# Let us drop:
+#
+# - perimeter and area within each size block since they are correlated with
+#   radius,
+# - the "error" and "worst" features,
+# - the features highly correlated with ``mean concavity``.
 
-redundant = [
-    "mean perimeter",
-    "mean area",
-    "mean concave points",
-    "mean compactness",
-] + [c for c in X.columns if c.startswith("worst") or c.endswith("error")]
-X_dropped = X.drop(columns=redundant)
+X_dropped = X.drop(
+    columns=[
+        "mean perimeter",
+        "mean area",
+        "mean concave points",
+        "mean compactness",
+    ]
+    + [c for c in X.columns if "worst" in c or "error" in c]
+)
 
 report_dropped = evaluate(
     HistGradientBoostingClassifier(random_state=42),
@@ -123,52 +132,20 @@ report_dropped = evaluate(
 )
 
 # %%
-# SKD008 should be absent once redundant pairs are removed from training inputs.
+# SKD008 no longer fires.
 
 report_dropped.checks.summarize(fast_mode=True)
 
 # %%
-# Use regularization (L1 logistic regression)
-# ===========================================
+# Combine correlated features
+# ===========================
 #
-# L1 penalty can shrink one member of a correlated pair toward zero, which
-# helps interpretation at fit time. SKD008 inspects **inputs**, though — the
-# check still fires on the original ``X`` because column redundancy remains.
+# Another way to keep the check from firing is to combine redundant features
+# together, e.g. by taking their mean. This is similar to removing correlated
+# features, but without completely removing the information available in the
+# removed features.
 
-from sklearn.linear_model import LogisticRegression
-
-report_lasso = evaluate(
-    LogisticRegression(
-        l1_ratio=1.0,
-        solver="liblinear",
-        C=0.1,
-        max_iter=10_000,
-        random_state=42,
-    ),
-    X=X,
-    y=y,
-    splitter=splitter,
-)
-
-# %%
-# SKD008 still fires — the feature table is unchanged.
-
-report_lasso.checks.summarize(fast_mode=True)
-
-# %%
-# Here we see the coefficients of the logistic regression model and all but 6 of them
-# have been reduced to 0.
-report_lasso.inspection.coefficients().frame()
-
-# %%
-# Group correlated features
-# =========================
-#
-# Collapse each redundant block into one summary column — mean tumor size,
-# texture, smoothness, and so on — before fitting. Fewer, uncorrelated
-# summaries often clear SKD008 while preserving domain structure.
-
-SIZE_ALL = [
+SIZE = [
     "mean radius",
     "mean perimeter",
     "mean area",
@@ -201,10 +178,10 @@ SHAPE_IRREGULARITY = [
 
 X_grouped = pd.DataFrame(
     {
-        "tumor_size": X[SIZE_ALL].mean(axis=1),
-        "tumor_texture": X[TEXTURE].mean(axis=1),
-        "tumor_smoothness": X[SMOOTHNESS].mean(axis=1),
-        "tumor_symmetry": X[SYMMETRY].mean(axis=1),
+        "size": X[SIZE].mean(axis=1),
+        "texture": X[TEXTURE].mean(axis=1),
+        "smoothness": X[SMOOTHNESS].mean(axis=1),
+        "symmetry": X[SYMMETRY].mean(axis=1),
         "fractal_dimension": X[FRACTAL].mean(axis=1),
         "shape_irregularity": X[SHAPE_IRREGULARITY].mean(axis=1),
     }
@@ -219,7 +196,7 @@ report_grouped = evaluate(
 )
 
 # %%
-# SKD008 should be absent on the six summary columns.
+# SKD008 no longer fires.
 
 report_grouped.checks.summarize(fast_mode=True)
 
@@ -228,9 +205,9 @@ report_grouped.checks.summarize(fast_mode=True)
 # ==================
 #
 # :func:`~skore.compare` contrasts test metrics for the full, dropped, and
-# grouped feature tables on the same stratified split. This dataset is
-# really simple so the metrics are not that different between the three strategies
-# uncommonly high.
+# combined feature tables on the same stratified split. This dataset is
+# really simple so the metrics are not that different between the three
+# strategies.
 
 from skore import compare
 
@@ -244,13 +221,33 @@ comparison = compare(
 comparison.metrics.summarize(data_source="both").frame(favorability=True)
 
 # %%
+# Note: regularization does not clear SKD008
+# ==========================================
+#
+# The L1 regularization can shrink one member of a correlated pair toward zero.
+# However, SKD008 only inspects the input data, so changing the estimator does
+# not impact the check result.
+
+from sklearn.linear_model import LogisticRegression
+
+report_lasso = evaluate(
+    LogisticRegression(penalty="l1", solver="liblinear", random_state=42),
+    X=X,
+    y=y,
+    splitter=splitter,
+)
+
+# %%
+# SKD008 still fires.
+
+report_lasso.checks.summarize(fast_mode=True)
+
+# %%
 # Conclusion
 # ==========
 #
-# SKD008 highlights redundant numeric features that complicate interpretation.
-# Here, checking the correlation on training data manually guided both aggressive dropping
-# and structured grouping; L1 regularization helped coefficients but did not
-# clear the check. Choose dropping or aggregation based on how you want to
-# modify the feature table.
-
-# %%
+# SKD008 highlights redundant numeric features that may cause the fitting to
+# fail or complicate interpretation. Here, checking the correlation on training
+# data manually guided both aggressive dropping and structured combining; L1
+# regularization can help coefficients but does not clear the check. Choose
+# dropping or aggregation based on how you want to modify the feature table.
