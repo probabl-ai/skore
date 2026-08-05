@@ -126,3 +126,30 @@ def test_available_with_unknown_report_name_raises(report):
     comparison_report = ComparisonReport(reports)
     with pytest.raises(ValueError, match="Unknown report name"):
         comparison_report.metrics.available(report_name="unknown")
+
+
+def test_non_default_n_jobs():
+    """summarize() must work when ComparisonReport uses process-based parallelism.
+
+    Joblib must not pickle a bound metrics-accessor method; that used to recurse
+    while unpickling ``__getattr__`` / ``available()`` in worker processes.
+    """
+    X, y = make_classification(random_state=0)
+    reports = {
+        "LinearSVC": EstimatorReport(
+            LinearSVC(), X_train=X, X_test=X, y_train=y, y_test=y, pos_label=1
+        ),
+        "LogisticRegression": EstimatorReport(
+            LogisticRegression(),
+            X_train=X,
+            X_test=X,
+            y_train=y,
+            y_test=y,
+            pos_label=1,
+        ),
+    }
+    comparison_report = ComparisonReport(reports, n_jobs=2)
+    display = comparison_report.metrics.summarize()
+
+    assert isinstance(display, MetricsSummaryDisplay)
+    assert set(display.summary["estimator"]) == {"LinearSVC", "LogisticRegression"}

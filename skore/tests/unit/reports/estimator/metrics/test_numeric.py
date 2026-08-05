@@ -292,6 +292,15 @@ def test_custom_metric_as_method(binary_classification_report):
         report.metrics.hello()
 
 
+def test_builtin_metric_as_method(binary_classification_report):
+    """Built-in registry metrics are accessible as methods without static defs."""
+    report = binary_classification_report
+
+    assert "accuracy" in dir(report.metrics)
+    assert report.metrics.accuracy() == report.metrics.get("accuracy")
+    assert report.metrics.precision() == report.metrics.get("precision")
+
+
 def test_custom_metric_as_method_neg(binary_classification_report):
     """Custom metrics which are `neg_` sklearn methods are accessible as methods."""
     report = binary_classification_report

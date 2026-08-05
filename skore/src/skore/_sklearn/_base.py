@@ -1,31 +1,46 @@
 from __future__ import annotations
 
+import inspect
+from abc import abstractmethod
 from datetime import UTC, datetime
 from functools import partial
 from importlib.metadata import version
 from keyword import iskeyword
-from typing import TYPE_CHECKING, Generic, Literal, TypeVar
-from uuid import uuid4
+from typing import TYPE_CHECKING, Any, Generic, Literal, TypeVar, cast
 
 import pandas as pd
 
+from skore._externals._docscrape import Parameter
 from skore._project.git import git_commit
 from skore._sklearn._checks._utils import CheckNotApplicable
 from skore._sklearn._checks.base import Check, CheckCode, CheckResult, CheckSection
 from skore._sklearn._checks.model_checks import _BUILTIN_CHECKS
+from skore._sklearn.metrics import Metric
 from skore._sklearn.types import DataSource, ReportMetadata
 from skore._utils._progress_bar import track
+from skore._utils._uuid import normalize_report_id, uuid7
+from skore._utils.docscrape import (
+    build_numpy_docstring,
+    callable_docstring,
+    docstring_summary,
+    parameters_by_name,
+    parse_numpy_doc,
+    replace_default,
+)
 from skore._utils.repr.base import (
     AccessorHelpMixin,
     ReportHelpMixin,
     render_panel_to_plain_text,
 )
-from skore._utils.repr.data import MethodHelp, get_documentation_url
+from skore._utils.repr.data import MethodHelp
 
 if TYPE_CHECKING:
     import pandas as pd
 
     from skore._sklearn._checks.accessor import _ChecksAccessor
+    from skore._sklearn._cross_validation.report import CrossValidationReport
+    from skore._sklearn._estimator.report import EstimatorReport
+    from skore._sklearn._plot import MetricsSummaryDisplay
     from skore._utils.repr.data import AccessorHelpData
 
 
@@ -139,10 +154,16 @@ class _BaseReport(ReportHelpMixin):
         """HTML snippet for the checks summary tab in report reprs."""
         return self.checks.summarize(fast_mode=True)._embedded_repr_html()
 
+    @staticmethod
+    def _normalize_metadata(metadata: dict[str, Any]) -> ReportMetadata:
+        normalized = metadata.copy()
+        normalized["id"] = normalize_report_id(metadata["id"])
+        return cast(ReportMetadata, normalized)
+
     def __init__(self) -> None:
         self._checks_registry: list[Check] = list(_BUILTIN_CHECKS)
         self._metadata: ReportMetadata = {
-            "id": uuid4().int,
+            "id": str(uuid7()),
             "skore-version": version("skore"),
             "creation-date": datetime.now(UTC).isoformat(),
             # comparison reports don't have a _report_type yet at init time
@@ -152,8 +173,21 @@ class _BaseReport(ReportHelpMixin):
         }
 
     @property
-    def id(self) -> int:
+    def id(self) -> str:
         return self._metadata["id"]
+
+    def __setstate__(self, state: dict[str, Any]) -> None:
+        self.__dict__.update(state)
+        if "_metadata" in state:
+            self._metadata = self._normalize_metadata(state["_metadata"])
+        elif "id" in state:
+            self._metadata = {
+                "id": normalize_report_id(state["id"]),
+                "skore-version": "legacy",
+                "creation-date": "",
+                "report_type": getattr(self, "_report_type", "comparison"),
+                "git_commit": None,
+            }
 
 
 ParentT = TypeVar("ParentT", bound="_BaseReport")
@@ -179,47 +213,158 @@ class _BaseAccessor(AccessorHelpMixin, Generic[ParentT]):
         return {"text/plain": repr(self), "text/html": self._repr_html_()}
 
 
+def _summarize_report_metrics(
+    report: EstimatorReport | CrossValidationReport,
+    *,
+    data_source: DataSource | Literal["both"],
+    metric: str | list[str] | None = None,
+) -> MetricsSummaryDisplay:
+    """Compute a metrics summary for ``report``.
+
+    Pure Python function to avoid pickling a metrics accessor as a bound method's
+    ``__self__``.
+    """
+    return report.metrics._summarize_display(data_source=data_source, metric=metric)
+
+
 class BaseMetricsAccessor(_BaseAccessor, Generic[ParentT]):
     """Base class for metrics accessor."""
 
+    def _callable_metric_names(self) -> list[str]:
+        """Registry metric names that can be exposed as ``metrics.<name>()``."""
+        return [
+            name
+            for name in self.available()
+            if name.isidentifier()
+            and not iskeyword(name)
+            and not hasattr(type(self), name)
+        ]
+
+    @abstractmethod
+    def _resolve_metric(self, name: str) -> Metric | None:
+        """Return the :class:`~skore._sklearn.metrics.Metric` for ``name``, or None."""
+
+    def _metric_summary(self, metric: Metric) -> str:
+        """Summarize ``metric`` in a single sentence."""
+        summary = docstring_summary(callable_docstring(metric.function))
+        if not summary:
+            # Prefer a class docstring the metric owns. Plain ``Metric`` instances
+            # (from ``Metric.new``) inherit the base class docstring, which
+            # describes the machinery rather than the metric itself.
+            class_doc = type(metric).__doc__
+            if class_doc is not None and class_doc is not Metric.__doc__:
+                summary = docstring_summary(class_doc)
+        return summary or metric.verbose_name or "Registered metric."
+
+    def _build_metric_method_docstring(self, name: str) -> str:
+        """Build a numpydoc string for a dynamically exposed registry metric."""
+        metric = self._resolve_metric(name)
+
+        get_doc = getattr(self.get, "__doc__", None)
+        get_parsed = parse_numpy_doc(get_doc)
+        get_params = parameters_by_name(get_parsed)
+
+        parameters: list[Parameter] = []
+        shared_names: set[str] = set()
+        for param in inspect.signature(self.get).parameters.values():
+            if param.name in {"self", "name"} or param.kind is param.VAR_KEYWORD:
+                continue
+            shared_names.add(param.name)
+            if param.name in get_params:
+                parameters.append(get_params[param.name])
+            else:
+                parameters.append(
+                    Parameter(
+                        param.name,
+                        f"default={param.default!r}",
+                        ["Shared metric accessor parameter."],
+                    )
+                )
+
+        if metric is None:
+            summary = "Registered metric."
+        else:
+            summary = self._metric_summary(metric)
+            score_params = parameters_by_name(callable_docstring(metric.function))
+            for key, default in metric.kwargs.items():
+                if key in shared_names:
+                    continue
+                score_param = score_params.get(key)
+                if score_param is not None and score_param.type:
+                    type_spec = replace_default(score_param.type, default)
+                else:
+                    type_spec = f"default={default!r}"
+                description = (
+                    list(score_param.desc)
+                    if score_param is not None and score_param.desc
+                    else ["Forwarded to the underlying score function."]
+                )
+                parameters.append(Parameter(key, type_spec, description))
+
+        parameters.append(
+            Parameter(
+                "**kwargs",
+                "",
+                [
+                    "Additional keyword arguments forwarded to the underlying "
+                    "score function."
+                ],
+            )
+        )
+
+        returns = (
+            get_parsed["Returns"]
+            if get_parsed is not None and get_parsed["Returns"]
+            else None
+        )
+        return build_numpy_docstring(summary, parameters, returns=returns)
+
+    def _metric_help_description(self, name: str) -> str:
+        """Build a help description for a registry metric method."""
+        metric = self._resolve_metric(name)
+        if metric is None:
+            return "Registered metric."
+        return self._metric_summary(metric)
+
     def __getattr__(self, name):
-        """Define custom metric methods dynamically.
+        """Expose registry metrics as methods when not defined statically.
 
         If attribute ``name`` is defined statically, this method will not be called.
         """
-        if name in self.available():
-            return partial(lambda *args, **kwargs: self.get(name, *args, **kwargs))
+        if name in self._callable_metric_names():
+            method = partial(self.get, name)
+            method.__doc__ = self._build_metric_method_docstring(name)
+            method.__name__ = name
+            method.__qualname__ = f"{type(self).__qualname__}.{name}"
+            return method
 
         raise AttributeError(
             f"'{self.__class__.__name__}' object has no attribute '{name}'"
         )
 
     def __dir__(self) -> list[str]:
-        """Add custom metrics to __dir__ for tab-completion."""
-        return list(set(super().__dir__()).union(self.available()))
+        """Add registry metrics to ``__dir__`` for tab-completion."""
+        return list(set(super().__dir__()).union(self._callable_metric_names()))
 
     def _build_help_data(self) -> AccessorHelpData:
-        """Include custom metrics in the help data.
+        """Include registry metrics in the help data.
 
-        Custom metrics are only reachable through ``__getattr__``, so they are not
+        Registry metrics are only reachable through ``__getattr__``, so they are not
         picked up by the default method-discovery logic used to build help data.
         Names that are not valid identifiers (e.g. containing spaces) are excluded,
         since they cannot be called as ``report.metrics.<name>(...)``.
         """
         help_data = super()._build_help_data()
         known_names = {method.name for method in help_data.methods}
-        doc_url = get_documentation_url(
-            obj=self._parent, accessor_name=self.__class__._accessor_name
-        )
+        # Registry metrics have no Sphinx API page; show the summary tooltip only.
         help_data.methods.extend(
             MethodHelp(
                 name=name,
                 parameters="(...)",
-                description="Custom metric.",
-                doc_url=doc_url,
+                description=self._metric_help_description(name),
             )
-            for name in self.available()
-            if name not in known_names and name.isidentifier() and not iskeyword(name)
+            for name in self._callable_metric_names()
+            if name not in known_names
         )
         help_data.methods.sort(key=lambda method: method.name)
         return help_data

@@ -4,7 +4,6 @@ from collections.abc import Iterable
 from typing import Any, Literal, cast
 
 import pandas as pd
-from numpy.typing import ArrayLike
 from sklearn.base import ClassifierMixin, RegressorMixin
 from sklearn.pipeline import Pipeline
 from sklearn.utils.metaestimators import available_if
@@ -21,25 +20,15 @@ from skore._sklearn._plot import (
 )
 from skore._sklearn._plot.metrics.metrics_summary_display import MetricsSummaryRow
 from skore._sklearn.metrics import (
-    R2,
-    Accuracy,
-    Brier,
     FitTime,
-    LogLoss,
-    Mae,
-    Mape,
     Metric,
     MetricLike,
     MetricRow,
     MissingKwargsError,
-    Precision,
     PredictTime,
-    Recall,
-    Rmse,
-    RocAuc,
     Score,
 )
-from skore._sklearn.types import DataSource, PositiveLabel
+from skore._sklearn.types import DataSource
 from skore._utils._accessor import _check_supported_ml_task
 from skore._utils._cache_key import make_cache_key
 
@@ -256,6 +245,10 @@ class _MetricsAccessor(BaseMetricsAccessor[EstimatorReport], DirNamesMixin):
         """
         return list(self._parent._metric_registry)
 
+    def _resolve_metric(self, name: str) -> Metric | None:
+        """Return the :class:`~skore._sklearn.metrics.Metric` for ``name``, or None."""
+        return self._parent._metric_registry.get(name)
+
     def add(
         self,
         metric: MetricLike,
@@ -266,8 +259,7 @@ class _MetricsAccessor(BaseMetricsAccessor[EstimatorReport], DirNamesMixin):
         position: Literal["first", "last"] = "first",
         **kwargs: Any,
     ) -> None:
-        """
-        Add a custom metric to :meth:`~skore.EstimatorReport.metrics.summarize`.
+        """Add a custom metric to :meth:`summarize`.
 
         Parameters
         ----------
@@ -371,6 +363,8 @@ class _MetricsAccessor(BaseMetricsAccessor[EstimatorReport], DirNamesMixin):
             :meth:`~EstimatorReport.metrics.available()`.
             Metrics added with a ``neg_`` prefix can also be retrieved
             without it; the alias is resolved automatically.
+            When ``name`` is a valid Python identifier, the same value is also
+            available as ``report.metrics.<name>(...)``.
 
         data_source : {"test", "train"}, default="test"
             The data source to use.
@@ -394,6 +388,8 @@ class _MetricsAccessor(BaseMetricsAccessor[EstimatorReport], DirNamesMixin):
         >>> classifier = LogisticRegression(max_iter=10_000)
         >>> report = evaluate(classifier, X, y, splitter=0.2)
         >>> report.metrics.get("precision")
+        {0: 0.90..., 1: 0.98...}
+        >>> report.metrics.precision()
         {0: 0.90..., 1: 0.98...}
         """
         metric = self._parent._metric_registry[name]
@@ -513,504 +509,6 @@ class _MetricsAccessor(BaseMetricsAccessor[EstimatorReport], DirNamesMixin):
         0.94...
         """
         return Score().pretty(report=self._parent, data_source=data_source)
-
-    @available_if(lambda self: Accuracy.available(self._parent))
-    def accuracy(
-        self,
-        *,
-        data_source: DataSource = "test",
-    ) -> float:
-        """Compute the accuracy score.
-
-        Parameters
-        ----------
-        data_source : {"test", "train", "both"}, default="test"
-            The data source to use.
-
-            - "test" : use the test set provided when creating the report.
-            - "train" : use the train set provided when creating the report.
-
-        Returns
-        -------
-        float
-            The accuracy score.
-
-        Examples
-        --------
-        >>> from sklearn.datasets import load_breast_cancer
-        >>> from sklearn.linear_model import LogisticRegression
-        >>> from skore import evaluate
-        >>> X, y = load_breast_cancer(return_X_y=True)
-        >>> classifier = LogisticRegression(max_iter=10_000)
-        >>> report = evaluate(classifier, X, y, splitter=0.2)
-        >>> report.metrics.accuracy()
-        0.94...
-        """
-        return Accuracy().pretty(report=self._parent, data_source=data_source)
-
-    @available_if(lambda self: Precision.available(self._parent))
-    def precision(
-        self,
-        *,
-        data_source: DataSource = "test",
-        average: (
-            Literal["binary", "macro", "micro", "weighted", "samples"] | None
-        ) = None,
-    ) -> float | dict[PositiveLabel, float]:
-        """Compute the precision score.
-
-        Parameters
-        ----------
-        data_source : {"test", "train"}, default="test"
-            The data source to use.
-
-            - "test" : use the test set provided when creating the report.
-            - "train" : use the train set provided when creating the report.
-
-        average : {"binary","macro", "micro", "weighted", "samples"} or None, \
-                default=None
-            Used with multiclass problems.
-            If `None`, the metrics for each class are returned. Otherwise, this
-            determines the type of averaging performed on the data:
-
-            - "binary": Only report results for the class specified by the report's
-              `pos_label`. This is applicable only if targets (`y_{true,pred}`) are
-              binary.
-            - "micro": Calculate metrics globally by counting the total true positives,
-              false negatives and false positives.
-            - "macro": Calculate metrics for each label, and find their unweighted
-              mean.  This does not take label imbalance into account.
-            - "weighted": Calculate metrics for each label, and find their average
-              weighted by support (the number of true instances for each label). This
-              alters 'macro' to account for label imbalance; it can result in an F-score
-              that is not between precision and recall.
-            - "samples": Calculate metrics for each instance, and find their average
-              (only meaningful for multilabel classification where this differs from
-              :func:`accuracy_score`).
-
-        Returns
-        -------
-        float or dict
-            The precision score.
-
-        Examples
-        --------
-        >>> from sklearn.datasets import load_breast_cancer
-        >>> from sklearn.linear_model import LogisticRegression
-        >>> from skore import evaluate
-        >>> X, y = load_breast_cancer(return_X_y=True)
-        >>> classifier = LogisticRegression(max_iter=10_000)
-        >>> report = evaluate(classifier, X, y, splitter=0.2, pos_label=1)
-        >>> report.metrics.precision()
-        0.98...
-        """
-        return Precision().pretty(
-            report=self._parent, data_source=data_source, average=average
-        )
-
-    @available_if(lambda self: Recall.available(self._parent))
-    def recall(
-        self,
-        *,
-        data_source: DataSource = "test",
-        average: (
-            Literal["binary", "macro", "micro", "weighted", "samples"] | None
-        ) = None,
-    ) -> float | dict[PositiveLabel, float]:
-        """Compute the recall score.
-
-        Parameters
-        ----------
-        data_source : {"test", "train"}, default="test"
-            The data source to use.
-
-            - "test" : use the test set provided when creating the report.
-            - "train" : use the train set provided when creating the report.
-
-        average : {"binary","macro", "micro", "weighted", "samples"} or None, \
-                default=None
-            Used with multiclass problems.
-            If `None`, the metrics for each class are returned. Otherwise, this
-            determines the type of averaging performed on the data:
-
-            - "binary": Only report results for the class specified by the
-              report's `pos_label`. This is applicable only if targets
-              (`y_{true,pred}`) are binary.
-            - "micro": Calculate metrics globally by counting the total true positives,
-              false negatives and false positives.
-            - "macro": Calculate metrics for each label, and find their unweighted
-              mean.  This does not take label imbalance into account.
-            - "weighted": Calculate metrics for each label, and find their average
-              weighted by support (the number of true instances for each label). This
-              alters 'macro' to account for label imbalance; it can result in an F-score
-              that is not between precision and recall. Weighted recall is equal to
-              accuracy.
-            - "samples": Calculate metrics for each instance, and find their average
-              (only meaningful for multilabel classification where this differs from
-              :func:`accuracy_score`).
-
-            .. note::
-                If `pos_label` is specified and `average` is None, then we report
-                only the statistics of the positive class (i.e. equivalent to
-                `average="binary"`).
-
-        Returns
-        -------
-        float or dict
-            The recall score.
-
-        Examples
-        --------
-        >>> from sklearn.datasets import load_breast_cancer
-        >>> from sklearn.linear_model import LogisticRegression
-        >>> from skore import evaluate
-        >>> X, y = load_breast_cancer(return_X_y=True)
-        >>> classifier = LogisticRegression(max_iter=10_000)
-        >>> report = evaluate(classifier, X, y, splitter=0.2, pos_label=1)
-        >>> report.metrics.recall()
-        0.92...
-        """
-        return Recall().pretty(
-            report=self._parent, data_source=data_source, average=average
-        )
-
-    @available_if(lambda self: Brier.available(self._parent))
-    def brier_score(
-        self,
-        *,
-        data_source: DataSource = "test",
-    ) -> float:
-        """Compute the Brier score.
-
-        Parameters
-        ----------
-        data_source : {"test", "train"}, default="test"
-            The data source to use.
-
-            - "test" : use the test set provided when creating the report.
-            - "train" : use the train set provided when creating the report.
-
-        Returns
-        -------
-        float
-            The Brier score.
-
-        Examples
-        --------
-        >>> from sklearn.datasets import load_breast_cancer
-        >>> from sklearn.linear_model import LogisticRegression
-        >>> from skore import evaluate
-        >>> X, y = load_breast_cancer(return_X_y=True)
-        >>> classifier = LogisticRegression(max_iter=10_000)
-        >>> report = evaluate(classifier, X, y, splitter=0.2)
-        >>> report.metrics.brier_score()
-        0.03...
-        """
-        return Brier().pretty(report=self._parent, data_source=data_source)
-
-    @available_if(lambda self: RocAuc.available(self._parent))
-    def roc_auc(
-        self,
-        *,
-        data_source: DataSource = "test",
-        average: Literal["macro", "micro", "weighted", "samples"] | None = None,
-        multi_class: Literal["raise", "ovr", "ovo"] = "ovr",
-    ) -> float | dict[PositiveLabel, float]:
-        """Compute the ROC AUC score.
-
-        Parameters
-        ----------
-        data_source : {"test", "train"}, default="test"
-            The data source to use.
-
-            - "test" : use the test set provided when creating the report.
-            - "train" : use the train set provided when creating the report.
-
-        average : {"macro", "micro", "weighted", "samples"}, default=None
-            Average to compute the ROC AUC score in a multiclass setting. By default,
-            no average is computed. Otherwise, this determines the type of averaging
-            performed on the data.
-
-            - "micro": Calculate metrics globally by considering each element of
-              the label indicator matrix as a label.
-            - "macro": Calculate metrics for each label, and find their unweighted
-              mean. This does not take label imbalance into account.
-            - "weighted": Calculate metrics for each label, and find their average,
-              weighted by support (the number of true instances for each label).
-            - "samples": Calculate metrics for each instance, and find their
-              average.
-
-            .. note::
-                Multiclass ROC AUC currently only handles the "macro" and
-                "weighted" averages. For multiclass targets, `average=None` is only
-                implemented for `multi_class="ovr"` and `average="micro"` is only
-                implemented for `multi_class="ovr"`.
-
-        multi_class : {"raise", "ovr", "ovo"}, default="ovr"
-            The multi-class strategy to use.
-
-            - "raise": Raise an error if the data is multiclass.
-            - "ovr": Stands for One-vs-rest. Computes the AUC of each class against the
-              rest. This treats the multiclass case in the same way as the multilabel
-              case. Sensitive to class imbalance even when `average == "macro"`,
-              because class imbalance affects the composition of each of the "rest"
-              groupings.
-            - "ovo": Stands for One-vs-one. Computes the average AUC of all possible
-              pairwise combinations of classes. Insensitive to class imbalance when
-              `average == "macro"`.
-
-        Returns
-        -------
-        float or dict
-            The ROC AUC score.
-
-        Examples
-        --------
-        >>> from sklearn.datasets import load_breast_cancer
-        >>> from sklearn.linear_model import LogisticRegression
-        >>> from skore import evaluate
-        >>> X, y = load_breast_cancer(return_X_y=True)
-        >>> classifier = LogisticRegression(max_iter=10_000)
-        >>> report = evaluate(classifier, X, y, splitter=0.2)
-        >>> report.metrics.roc_auc()
-        0.99...
-        """
-        return RocAuc().pretty(
-            report=self._parent,
-            data_source=data_source,
-            average=average,
-            multi_class=multi_class,
-        )
-
-    @available_if(lambda self: LogLoss.available(self._parent))
-    def log_loss(
-        self,
-        *,
-        data_source: DataSource = "test",
-    ) -> float:
-        """Compute the log loss.
-
-        Parameters
-        ----------
-        data_source : {"test", "train"}, default="test"
-            The data source to use.
-
-            - "test" : use the test set provided when creating the report.
-            - "train" : use the train set provided when creating the report.
-
-        Returns
-        -------
-        float
-            The log-loss.
-
-        Examples
-        --------
-        >>> from sklearn.datasets import load_breast_cancer
-        >>> from sklearn.linear_model import LogisticRegression
-        >>> from skore import evaluate
-        >>> X, y = load_breast_cancer(return_X_y=True)
-        >>> classifier = LogisticRegression(max_iter=10_000)
-        >>> report = evaluate(classifier, X, y, splitter=0.2)
-        >>> report.metrics.log_loss()
-        0.11...
-        """
-        return LogLoss().pretty(report=self._parent, data_source=data_source)
-
-    @available_if(lambda self: R2.available(self._parent))
-    def r2(
-        self,
-        *,
-        data_source: DataSource = "test",
-        multioutput: (
-            Literal["raw_values", "uniform_average"] | ArrayLike
-        ) = "raw_values",
-    ) -> float | list:
-        """Compute the R² score.
-
-        Parameters
-        ----------
-        data_source : {"test", "train"}, default="test"
-            The data source to use.
-
-            - "test" : use the test set provided when creating the report.
-            - "train" : use the train set provided when creating the report.
-
-        multioutput : {"raw_values", "uniform_average"} or array-like of shape \
-                (n_outputs,), default="raw_values"
-            Defines aggregating of multiple output values. Array-like value defines
-            weights used to average errors. The other possible values are:
-
-            - "raw_values": Returns a full set of errors in case of multioutput input.
-            - "uniform_average": Errors of all outputs are averaged with uniform weight.
-
-            By default, no averaging is done.
-
-        Returns
-        -------
-        float or list of ``n_outputs``
-            The R² score.
-
-        Examples
-        --------
-        >>> from sklearn.datasets import load_diabetes
-        >>> from sklearn.linear_model import Ridge
-        >>> from skore import evaluate
-        >>> X, y = load_diabetes(return_X_y=True)
-        >>> regressor = Ridge()
-        >>> report = evaluate(regressor, X, y, splitter=0.2)
-        >>> report.metrics.r2()
-        0.34...
-        """
-        return R2().pretty(
-            report=self._parent, data_source=data_source, multioutput=multioutput
-        )
-
-    @available_if(lambda self: Rmse.available(self._parent))
-    def rmse(
-        self,
-        *,
-        data_source: DataSource = "test",
-        multioutput: (
-            Literal["raw_values", "uniform_average"] | ArrayLike
-        ) = "raw_values",
-    ) -> float | list:
-        """Compute the root mean squared error.
-
-        Parameters
-        ----------
-        data_source : {"test", "train"}, default="test"
-            The data source to use.
-
-            - "test" : use the test set provided when creating the report.
-            - "train" : use the train set provided when creating the report.
-
-        multioutput : {"raw_values", "uniform_average"} or array-like of shape \
-                (n_outputs,), default="raw_values"
-            Defines aggregating of multiple output values. Array-like value defines
-            weights used to average errors. The other possible values are:
-
-            - "raw_values": Returns a full set of errors in case of multioutput input.
-            - "uniform_average": Errors of all outputs are averaged with uniform weight.
-
-            By default, no averaging is done.
-
-        Returns
-        -------
-        float or list of ``n_outputs``
-            The root mean squared error.
-
-        Examples
-        --------
-        >>> from sklearn.datasets import load_diabetes
-        >>> from sklearn.linear_model import Ridge
-        >>> from skore import evaluate
-        >>> X, y = load_diabetes(return_X_y=True)
-        >>> regressor = Ridge()
-        >>> report = evaluate(regressor, X, y, splitter=0.2)
-        >>> report.metrics.rmse()
-        58.1...
-        """
-        return Rmse().pretty(
-            report=self._parent, data_source=data_source, multioutput=multioutput
-        )
-
-    @available_if(lambda self: Mae.available(self._parent))
-    def mae(
-        self,
-        *,
-        data_source: DataSource = "test",
-        multioutput: (
-            Literal["raw_values", "uniform_average"] | ArrayLike
-        ) = "raw_values",
-    ) -> float | list:
-        """Compute the mean absolute error.
-
-        Parameters
-        ----------
-        data_source : {"test", "train"}, default="test"
-            The data source to use.
-
-            - "test" : use the test set provided when creating the report.
-            - "train" : use the train set provided when creating the report.
-
-        multioutput : {"raw_values", "uniform_average"} or array-like of shape \
-                (n_outputs,), default="raw_values"
-            Defines aggregating of multiple output values. Array-like value defines
-            weights used to average errors. The other possible values are:
-
-            - "raw_values": Returns a full set of errors in case of multioutput input.
-            - "uniform_average": Errors of all outputs are averaged with uniform weight.
-
-            By default, no averaging is done.
-
-        Returns
-        -------
-        float or list of ``n_outputs``
-            The mean absolute error.
-
-        Examples
-        --------
-        >>> from sklearn.datasets import load_diabetes
-        >>> from sklearn.linear_model import Ridge
-        >>> from skore import evaluate
-        >>> X, y = load_diabetes(return_X_y=True)
-        >>> regressor = Ridge()
-        >>> report = evaluate(regressor, X, y, splitter=0.2)
-        >>> report.metrics.mae()
-        46.5...
-        """
-        return Mae().pretty(
-            report=self._parent, data_source=data_source, multioutput=multioutput
-        )
-
-    @available_if(lambda self: Mape.available(self._parent))
-    def mape(
-        self,
-        *,
-        data_source: DataSource = "test",
-        multioutput: (
-            Literal["raw_values", "uniform_average"] | ArrayLike
-        ) = "raw_values",
-    ) -> float | list:
-        """Compute the mean absolute percentage error.
-
-        Parameters
-        ----------
-        data_source : {"test", "train"}, default="test"
-            The data source to use.
-
-            - "test" : use the test set provided when creating the report.
-            - "train" : use the train set provided when creating the report.
-
-        multioutput : {"raw_values", "uniform_average"} or array-like of shape \
-                (n_outputs,), default="raw_values"
-            Defines aggregating of multiple output values. Array-like value defines
-            weights used to average errors. The other possible values are:
-
-            - "raw_values": Returns a full set of errors in case of multioutput input.
-            - "uniform_average": Errors of all outputs are averaged with uniform weight.
-
-            By default, no averaging is done.
-
-        Returns
-        -------
-        float or list of ``n_outputs``
-            The mean absolute percentage error.
-
-        Examples
-        --------
-        >>> from sklearn.datasets import load_diabetes
-        >>> from sklearn.linear_model import Ridge
-        >>> from skore import evaluate
-        >>> X, y = load_diabetes(return_X_y=True)
-        >>> regressor = Ridge()
-        >>> report = evaluate(regressor, X, y, splitter=0.2)
-        >>> report.metrics.mape()
-        0.3...
-        """
-        return Mape().pretty(
-            report=self._parent, data_source=data_source, multioutput=multioutput
-        )
 
     ####################################################################################
     # Methods related to displays

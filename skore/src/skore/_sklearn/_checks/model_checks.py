@@ -234,6 +234,7 @@ class CheckUnderfitting(Check):
                 & baseline_test.keys()
             )
         ]
+
         majority, n_positive, total = majority_vote(votes)
         if majority:
             return (
@@ -484,11 +485,14 @@ class CheckCorrelatedFeatures(Check):
                 f"got {X.shape[1]}."
             )
 
-        corr = np.abs(spearmanr(X.to_numpy()).statistic)
-        if corr.ndim < 2:
-            raise CheckNotApplicable("Less than 2 numeric features are present.")
-        np.fill_diagonal(corr, 0)
-        n_pairs = int(np.count_nonzero(corr >= 0.9) // 2)
+        corr_statistic = spearmanr(X.to_numpy()).statistic
+        if X.shape[1] == 2:
+            # With exactly 2 features, spearmanr returns a scalar, not a matrix.
+            n_pairs = int(float(np.abs(corr_statistic)) >= 0.9)
+        else:
+            corr = np.abs(corr_statistic)
+            np.fill_diagonal(corr, 0)
+            n_pairs = int(np.count_nonzero(corr >= 0.9) // 2)
 
         if n_pairs:
             return (

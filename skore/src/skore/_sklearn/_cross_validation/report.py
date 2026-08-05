@@ -153,6 +153,9 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
 
     See Also
     --------
+    skore.evaluate
+        Evaluate one or more estimators and return a report.
+
     skore.EstimatorReport
         Report for a fitted estimator.
 
@@ -326,7 +329,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
 
         return {
             "version": _STATE_VERSION,
-            "metadata": self._metadata,
+            "metadata": self._metadata.copy(),
             "initialized_with_data_op": self._initialized_with_data_op,
             "estimator": self.estimator,
             "ml_task": self.ml_task,
@@ -351,7 +354,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
 
         report = cls.__new__(cls)
 
-        report._metadata = state["metadata"]
+        report._metadata = report._normalize_metadata(state["metadata"])
         report._initialized_with_data_op = state["initialized_with_data_op"]
         report._ml_task = state["ml_task"]
         report._pos_label = state["pos_label"]
