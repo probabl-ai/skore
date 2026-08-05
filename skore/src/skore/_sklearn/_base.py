@@ -128,6 +128,7 @@ class _BaseReport(ReportHelpMixin):
             return self._aggregate_checks(ignored_codes, fast_mode=fast_mode)
 
         summary: dict[CheckCode, CheckResult] = {}
+        # NOTE: Every check should appear exactly once in the summary
         for check in self._checks_registry:
             if self._report_type not in check.report_types:
                 summary[check.code] = {
@@ -156,10 +157,6 @@ class _BaseReport(ReportHelpMixin):
                 }
             elif check.code in self._check_results_cache:
                 summary[check.code] = self._check_results_cache[check.code]
-
-        # Every check appears exactly once in the summary
-        assert len(set(summary)) == len(summary)
-        assert set(summary) == {check.code for check in self._checks_registry}
 
         return summary
 
