@@ -385,9 +385,7 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
         dimension so the UI can expose a toggle. Metrics aggregated across labels
         or outputs are aggregated independently for each ``average`` mode and sent
         with their ``average`` dimension so the UI can show them as the aggregate
-        variant, except for binary classification where only per-label rows are
-        sent (``average`` is always ``None``). Only non-scalar values (``NaN``)
-        are ignored.
+        variant. Only non-scalar values (``NaN``) are ignored.
         """
         metrics = select_exportable_metrics(self.report)
 

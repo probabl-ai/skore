@@ -180,14 +180,6 @@ class Metric:
         self.function = function
         self.function_kind = function_kind
 
-    @property
-    def summary_name(self) -> str:
-        """Name used in summarize output rows (may differ from registry ``name``)."""
-        cls_value = type(self).__dict__.get("summary_name")
-        if isinstance(cls_value, str):
-            return cls_value
-        return self.name
-
     @staticmethod
     def new(
         metric: MetricLike | Metric,
@@ -564,6 +556,8 @@ class Metric:
 
 
 class FitTime(Metric):
+    """The time taken to fit the estimator."""
+
     name = "fit_time"
     verbose_name = "Fit time (s)"
     greater_is_better = False
@@ -582,6 +576,8 @@ class FitTime(Metric):
 
 
 class PredictTime(Metric):
+    """The time taken to compute model predictions."""
+
     name = "predict_time"
     verbose_name = "Predict time (s)"
     greater_is_better = False
@@ -638,7 +634,6 @@ class Precision(Metric):
 
 class PrecisionMacro(Precision):
     name = "precision_macro"
-    summary_name = "precision"
     kwargs = {"average": "macro"}
 
     @staticmethod
@@ -671,7 +666,6 @@ class Recall(Metric):
 
 class RecallMacro(Recall):
     name = "recall_macro"
-    summary_name = "recall"
     kwargs = {"average": "macro"}
 
     @staticmethod
@@ -706,6 +700,8 @@ class Brier(Metric):
 
 
 class RocAuc(Metric):
+    """The area under the Receiver Operating Characteristic curve (ROC AUC)."""
+
     name = "roc_auc"
     verbose_name = "ROC AUC"
     response_method = ("predict_proba", "decision_function")
@@ -732,7 +728,6 @@ class RocAuc(Metric):
 
 class RocAucMacro(RocAuc):
     name = "roc_auc_macro"
-    summary_name = "roc_auc"
     kwargs = {"average": "macro", "multi_class": "ovr"}
 
     @staticmethod

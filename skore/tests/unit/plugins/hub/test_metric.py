@@ -40,7 +40,7 @@ def test_drops_rows_with_missing_scores() -> None:
     assert selected["name"].tolist() == ["accuracy"]
 
 
-def test_binary_classification_drops_averaged_rows() -> None:
+def test_binary_keeps_averaged_rows() -> None:
     report = _report(
         "binary-classification",
         [
@@ -52,8 +52,8 @@ def test_binary_classification_drops_averaged_rows() -> None:
 
     selected = select_exportable_metrics(report)
 
-    assert len(selected) == 2
-    assert selected["average"].isna().all()
+    assert len(selected) == 3
+    assert selected["average"].tolist() == [None, None, "macro"]
 
 
 def test_multiclass_keeps_averaged_rows() -> None:
