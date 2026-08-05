@@ -443,13 +443,18 @@ def test_valid_subplot_by(fixture_name, metric, subplot_by_tuples, request):
             assert len(axes) == expected_len
 
 
-def test_plot_rejects_mixed_averaged_and_per_class(
+def test_plot_averaged_and_per_class_are_distinct_metrics(
     estimator_reports_multiclass_classification,
 ):
+    """Per-class and averaged scores are distinct registry keys, so distinct plots."""
     report = estimator_reports_multiclass_classification[0]
     display = report.metrics.summarize()
-    with pytest.raises(ValueError, match="both per-class/per-output and averaged"):
-        display.plot(metric="precision")
+
+    per_class = display.plot(metric="precision")
+    assert len(per_class.axes[0].containers) == 3
+
+    averaged = display.plot(metric="precision_macro")
+    assert len(averaged.axes[0].containers) == 1
 
 
 def test_plot_subplot_by_label_keeps_data_source_hue():

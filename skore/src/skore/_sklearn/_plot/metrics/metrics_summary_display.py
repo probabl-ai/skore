@@ -665,17 +665,6 @@ class MetricsSummaryDisplay(DisplayMixin):
 
         frame = self.summary.query("name == @metric").copy()
 
-        if "average" in frame.columns:
-            averaged = frame["average"].notna()
-            if averaged.any() and (~averaged).any():
-                raise ValueError(
-                    f"Metric {metric!r} contains both per-class/per-output and "
-                    f"averaged scores (they share the same summary name). Call "
-                    f"summarize(metric=...) with a specific metric before "
-                    f"plotting, e.g. summarize(metric={metric!r}) or "
-                    f"summarize(metric='{metric}_macro')."
-                )
-
         for col in ["label", "output", "average"]:
             if col in frame.columns and frame[col].isna().all():
                 frame = frame.drop(columns=col)
