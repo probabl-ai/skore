@@ -12,7 +12,7 @@ particular beta, etc.
 
 This example walks through how to register such metrics with
 :meth:`~skore.EstimatorReport.metrics.add` so they are computed and displayed
-alongside the built-in ones.
+alongside the default ones.
 """
 
 # %%
@@ -69,7 +69,7 @@ report.metrics.add(make_scorer(specificity))
 report.metrics.summarize().frame()
 
 # %%
-# ``specificity`` now appears alongside the built-in metrics. It can also be computed
+# ``specificity`` now appears alongside the default metrics. It can also be computed
 # individually using the :meth:`~skore.EstimatorReport.metrics.get` method:
 report.metrics.get("specificity")
 

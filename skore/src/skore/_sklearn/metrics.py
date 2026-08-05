@@ -14,8 +14,9 @@ import numpy as np
 import sklearn
 import sklearn.metrics
 from numpy.typing import ArrayLike
-from sklearn.base import BaseEstimator
+from sklearn.base import BaseEstimator, ClassifierMixin, RegressorMixin
 from sklearn.metrics._scorer import _BaseScorer
+from sklearn.pipeline import Pipeline
 
 from skore._sklearn.types import DataSource, PositiveLabel
 from skore._utils._cache_key import make_cache_key
@@ -338,13 +339,23 @@ class Metric:
         return state
 
     @staticmethod
-    def available(report: EstimatorReport) -> bool:
-        """Whether this metric is applicable to the given report.
+    def is_computable(report: EstimatorReport) -> bool:
+        """Whether this metric can technically be computed on ``report``.
 
         Override this when the metric is not defined for every ML task or estimator
         (e.g. accuracy is not a regression metric).
         """
         return True
+
+    @staticmethod
+    def discouraged(report: EstimatorReport) -> str | None:
+        """Why registering this metric is not advisable for ``report``, or ``None``.
+
+        Where :meth:`is_computable` answers whether the metric *can* be computed,
+        this answers whether it is worth registering. Override to return a short
+        reason; :meth:`MetricRegistry.add` raises unless ``force=True``.
+        """
+        return None
 
     def _raw(
         self,
@@ -565,10 +576,6 @@ class FitTime(Metric):
     function_kind = None
     kwargs = {"cast": True}
 
-    @staticmethod
-    def available(report: EstimatorReport) -> bool:
-        return True
-
     def _raw(self, *, report: EstimatorReport, data_source="test", **kwargs):
         if kwargs["cast"] and report._fit_time is None:
             return float("nan")
@@ -584,10 +591,6 @@ class PredictTime(Metric):
     function = None
     function_kind = None
     kwargs = {"cast": True}
-
-    @staticmethod
-    def available(report: EstimatorReport) -> bool:
-        return True
 
     def _raw(self, *, report: EstimatorReport, data_source="test", **kwargs):
         predict_time = report._predict_time.get(data_source)
@@ -605,7 +608,7 @@ class Accuracy(Metric):
     function_kind = FunctionKind.METRIC
 
     @staticmethod
-    def available(report: EstimatorReport) -> bool:
+    def is_computable(report: EstimatorReport) -> bool:
         return report._ml_task in ("binary-classification", "multiclass-classification")
 
 
@@ -619,7 +622,7 @@ class Precision(Metric):
     kwargs = {"average": None}
 
     @staticmethod
-    def available(report: EstimatorReport) -> bool:
+    def is_computable(report: EstimatorReport) -> bool:
         return report._ml_task in ("binary-classification", "multiclass-classification")
 
     def _raw(self, *, report: EstimatorReport, data_source="test", **kwargs):
@@ -637,7 +640,7 @@ class PrecisionMacro(Precision):
     kwargs = {"average": "macro"}
 
     @staticmethod
-    def available(report: EstimatorReport) -> bool:
+    def is_computable(report: EstimatorReport) -> bool:
         return report._ml_task == "multiclass-classification"
 
 
@@ -651,7 +654,7 @@ class Recall(Metric):
     kwargs = {"average": None}
 
     @staticmethod
-    def available(report: EstimatorReport) -> bool:
+    def is_computable(report: EstimatorReport) -> bool:
         return report._ml_task in ("binary-classification", "multiclass-classification")
 
     def _raw(self, *, report: EstimatorReport, data_source="test", **kwargs):
@@ -669,7 +672,7 @@ class RecallMacro(Recall):
     kwargs = {"average": "macro"}
 
     @staticmethod
-    def available(report: EstimatorReport) -> bool:
+    def is_computable(report: EstimatorReport) -> bool:
         return report._ml_task == "multiclass-classification"
 
 
@@ -682,7 +685,7 @@ class Brier(Metric):
     function_kind = FunctionKind.METRIC
 
     @staticmethod
-    def available(report: EstimatorReport) -> bool:
+    def is_computable(report: EstimatorReport) -> bool:
         return report._ml_task == "binary-classification" and hasattr(
             report.learner_, "predict_proba"
         )
@@ -710,7 +713,7 @@ class RocAuc(Metric):
     kwargs = {"average": None, "multi_class": "ovr"}
 
     @staticmethod
-    def available(report: EstimatorReport) -> bool:
+    def is_computable(report: EstimatorReport) -> bool:
         has_predict_proba = hasattr(report.learner_, "predict_proba")
         has_decision_function = hasattr(report.learner_, "decision_function")
         if report._ml_task == "binary-classification":
@@ -731,8 +734,8 @@ class RocAucMacro(RocAuc):
     kwargs = {"average": "macro", "multi_class": "ovr"}
 
     @staticmethod
-    def available(report: EstimatorReport) -> bool:
-        return report._ml_task == "multiclass-classification" and RocAuc.available(
+    def is_computable(report: EstimatorReport) -> bool:
+        return report._ml_task == "multiclass-classification" and RocAuc.is_computable(
             report
         )
 
@@ -746,7 +749,7 @@ class LogLoss(Metric):
     function_kind = FunctionKind.METRIC
 
     @staticmethod
-    def available(report: EstimatorReport) -> bool:
+    def is_computable(report: EstimatorReport) -> bool:
         return report._ml_task in (
             "binary-classification",
             "multiclass-classification",
@@ -763,7 +766,7 @@ class R2(Metric):
     kwargs = {"multioutput": "raw_values"}
 
     @staticmethod
-    def available(report: EstimatorReport) -> bool:
+    def is_computable(report: EstimatorReport) -> bool:
         return report._ml_task in ("regression", "multioutput-regression")
 
 
@@ -777,7 +780,7 @@ class Rmse(Metric):
     kwargs = {"multioutput": "raw_values"}
 
     @staticmethod
-    def available(report: EstimatorReport) -> bool:
+    def is_computable(report: EstimatorReport) -> bool:
         return report._ml_task in ("regression", "multioutput-regression")
 
 
@@ -791,7 +794,7 @@ class Mae(Metric):
     kwargs = {"multioutput": "raw_values"}
 
     @staticmethod
-    def available(report: EstimatorReport) -> bool:
+    def is_computable(report: EstimatorReport) -> bool:
         return report._ml_task in ("regression", "multioutput-regression")
 
 
@@ -805,7 +808,7 @@ class Mape(Metric):
     kwargs = {"multioutput": "raw_values"}
 
     @staticmethod
-    def available(report: EstimatorReport) -> bool:
+    def is_computable(report: EstimatorReport) -> bool:
         return report._ml_task in ("regression", "multioutput-regression")
 
 
@@ -817,8 +820,23 @@ class Score(Metric):
     function_kind = None
 
     @staticmethod
-    def available(report: EstimatorReport) -> bool:
+    def is_computable(report: EstimatorReport) -> bool:
         return hasattr(report.estimator_, "score")
+
+    @staticmethod
+    def discouraged(report: EstimatorReport) -> str | None:
+        predictor = report.estimator_
+        if isinstance(predictor, Pipeline):
+            predictor = predictor.steps[-1][1]
+        if getattr(type(predictor), "score", None) in (
+            ClassifierMixin.score,
+            RegressorMixin.score,
+        ):
+            return (
+                "the estimator uses scikit-learn's default score, which duplicates "
+                "an already reported metric"
+            )
+        return None
 
     def _raw(
         self,
@@ -846,8 +864,11 @@ class Score(Metric):
         )
 
 
-# Order matters for default display
-BUILTIN_METRICS: list[Metric] = [
+# The metrics a report may register by default. Order matters for default display.
+# Which ones land in a given registry is decided by :meth:`Metric.is_computable`
+# and :meth:`Metric.discouraged`.
+DEFAULT_METRICS: list[Metric] = [
+    Score(),
     Accuracy(),
     Precision(),
     PrecisionMacro(),
@@ -886,15 +907,13 @@ class MetricRegistry(UserDict[str, Metric]):
         super().__init__()
 
         # Needs to be called ``data`` since we inherit from :class:`UserDict`
-        self.data = OrderedDict(
-            (metric.name, metric)
-            for metric in BUILTIN_METRICS
-            if metric.available(report)
-        )
-
-        if Score.available(report):
-            self.data["score"] = Score()
-            self.data.move_to_end("score", last=False)
+        self.data = OrderedDict()
+        for metric in DEFAULT_METRICS:
+            if not metric.is_computable(report):
+                continue
+            if metric.discouraged(report) is not None:
+                continue
+            self.data[metric.name] = metric
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}({list(self.data.keys())})"
@@ -903,7 +922,9 @@ class MetricRegistry(UserDict[str, Metric]):
         self,
         metric: Metric,
         *,
+        report: EstimatorReport,
         position: Literal["first", "last"] = "first",
+        force: bool = False,
     ) -> None:
         """Add a custom metric to the registry.
 
@@ -912,18 +933,31 @@ class MetricRegistry(UserDict[str, Metric]):
         metric : Metric
             The metric instance to add.
 
+        report : EstimatorReport
+            The parent report, used to evaluate :meth:`Metric.discouraged`.
+
         position : {"first", "last"}, default="first"
             Where to place the metric in iteration order (e.g. default
             :meth:`~skore.EstimatorReport.metrics.summarize` row order).
             ``"first"`` inserts at the front; ``"last"`` at the end.
+
+        force : bool, default=False
+            If ``False`` and :meth:`Metric.discouraged` returns a reason, raise
+            instead of registering. Pass ``True`` to register anyway.
         """
         if position not in ("first", "last"):
             raise ValueError(f"position must be 'first' or 'last', got {position!r}.")
 
-        if metric.name in {m.name for m in BUILTIN_METRICS}:
+        if (reason := metric.discouraged(report)) is not None and not force:
             raise ValueError(
-                f"Cannot add {metric.name!r}: it is a built-in metric name."
+                f"Cannot add {metric.name!r}: {reason}. "
+                "Pass force=True to register it anyway."
             )
+
+        # Reserve the name for :class:`Score` itself; allow force-adding Score
+        # when it was skipped as discouraged.
+        if metric.name == Score.name and not isinstance(metric, Score):
+            raise ValueError(f"Cannot add {metric.name!r}: it is a reserved name.")
 
         if metric.name in self.data:
             raise ValueError(
@@ -939,7 +973,7 @@ class MetricRegistry(UserDict[str, Metric]):
     def remove(self, *, report: EstimatorReport, name: str) -> None:
         """Remove a metric from the registry.
 
-        Built-in metrics may be removed; they stay absent for the lifetime of this
+        Default metrics may be removed; they stay absent for the lifetime of this
         registry (the same instance is kept for the parent report).
 
         Parameters

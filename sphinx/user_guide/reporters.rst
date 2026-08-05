@@ -82,7 +82,7 @@ addition, set `data_source` to `X_y` to pass a new dataset using the parameters 
 
 There are individual methods to compute each metric specific to the problem at hand.
 They return usual python objects such as floats, integers, or dictionaries.
-Any metric registered in the report (built-in or custom) whose name is a valid
+Any metric registered in the report (default or custom) whose name is a valid
 Python identifier is also available as ``report.metrics.<name>(...)``. Use
 :meth:`~skore.EstimatorReport.metrics.available` to list names,
 :meth:`~skore.EstimatorReport.metrics.get` when you prefer an explicit lookup,
@@ -108,14 +108,15 @@ is returned by :meth:`~skore.MetricsSummaryDisplay.frame` as a
 :class:`pandas.DataFrame`, or as a :class:`pandas.Series` when the wide layout
 has only one value column (for example a single-estimator report). In the
 Series case, metrics are indexed by name, e.g. ``result.loc["accuracy"]``. By
-default, skore computes some built-in metrics based on the ML task
-(classification or regression).
+default, skore registers the metrics that can be computed for the ML task
+(classification or regression) and that are worth reporting for the estimator
+at hand.
 
 Users can register their own metrics with :meth:`~skore.EstimatorReport.metrics.add`
 followed by :meth:`~skore.EstimatorReport.metrics.summarize`. We accept different
 types of metric:
 
-1. A string that corresponds to a scikit-learn scorer name or a built-in `skore`
+1. A string that corresponds to a scikit-learn scorer name or a default `skore`
    metric name. Scikit-learn metrics that require a ``neg_`` prefix (e.g.
    ``neg_mean_squared_error``) can also be passed without it (e.g.
    ``mean_squared_error``); the alias is resolved automatically.
