@@ -79,6 +79,8 @@ Reports are matched using the ``report_id`` column returned by
 ``Project.summarize().frame()`` and copied with their keys. Existing IDs are skipped;
 contents and metadata are not compared. Reports without a ``report_id`` are ignored.
 Set ``dry_run=True`` to return the transfer plan without loading or storing reports.
+Two MLflow projects must use the same tracking URI because MLflow uses process-global
+tracking state. Synchronization does not provide concurrency control.
 
 The returned :class:`pandas.DataFrame` is indexed by ``report_id``. Its ``direction``
 column is ``"outbound"`` from the caller to the other project, ``"inbound"`` from the

@@ -213,7 +213,7 @@ class Project:
         """
         plugin, parameters = Project.__setup_plugin(mode, name, **kwargs)
 
-        self.__mode = mode
+        self.__mode: ProjectMode = mode
         self.__project = plugin(**parameters)
 
         ml_tasks = {report["ml_task"] for report in self.__project.summarize()}
@@ -408,6 +408,16 @@ class Project:
         """
         if not isinstance(other, Project):
             raise TypeError(f"`other` must be a Project (found {type(other)!r}).")
+        if (
+            self.mode == other.mode == "mlflow"
+            and self.tracking_uri != other.tracking_uri
+        ):
+            # MLflow uses process-global tracking state. Crossing stores could
+            # therefore read from or write to the wrong backend.
+            raise ValueError(
+                "Synchronization between MLflow projects requires the same "
+                "tracking URI."
+            )
 
         return synchronize(
             self,

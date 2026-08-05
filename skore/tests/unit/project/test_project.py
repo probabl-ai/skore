@@ -451,6 +451,21 @@ class TestProject:
 
         assert result.empty
 
+    def test_sync_rejects_mlflow_projects_with_different_tracking_uris(self):
+        project = Project(name="<name>", mode="mlflow", tracking_uri="<left>")
+        other = Project(name="<name>", mode="mlflow", tracking_uri="<right>")
+
+        with raises(ValueError, match="requires the same tracking URI"):
+            project.sync(other, dry_run=True)
+
+    def test_sync_allows_mlflow_projects_with_same_tracking_uri(self):
+        project = Project(name="<name>", mode="mlflow", tracking_uri="<uri>")
+        other = Project(name="<other>", mode="mlflow", tracking_uri="<uri>")
+
+        result = project.sync(other, dry_run=True)
+
+        assert result.empty
+
     def test_repr(self):
         project = Project(name="<name>", mode="local")
         assert repr(project) == repr(project._Project__project)

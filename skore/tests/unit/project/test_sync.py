@@ -1,15 +1,25 @@
 from itertools import permutations
 from types import SimpleNamespace
+from typing import cast
 from unittest.mock import Mock
 
 import mlflow
 import pytest
-from pandas import DataFrame, Index, MultiIndex, RangeIndex, isna
+from pandas import NA, DataFrame, Index, MultiIndex, RangeIndex, isna
+from pandas.testing import assert_frame_equal
 from sklearn.datasets import make_regression
 from sklearn.linear_model import LinearRegression, Ridge
 
-from skore import Project, evaluate
+from skore import EstimatorReport, Project, evaluate
 from skore._project._sync import synchronize
+
+
+class FakeSummary:
+    def __init__(self, frame: DataFrame):
+        self._frame = frame
+
+    def frame(self) -> DataFrame:
+        return self._frame
 
 
 class FakeProject:
@@ -36,7 +46,7 @@ class FakeProject:
         )
         self.reports[backend_id] = report
 
-    def summarize(self):
+    def summarize(self) -> FakeSummary:
         frame = DataFrame(sorted(self.records, key=lambda row: row["date"]))
         if not frame.empty:
             frame.index = MultiIndex.from_arrays(
@@ -45,7 +55,7 @@ class FakeProject:
                     Index(frame.pop("id"), name="id", dtype=str),
                 ]
             )
-        return SimpleNamespace(frame=lambda: frame)
+        return FakeSummary(frame)
 
 
 def record(backend_id, report_id, key, date="2026-01-01"):
@@ -79,14 +89,16 @@ def test_synchronize_supports_all_mode_pairs(source_mode, destination_mode):
 
     result = synchronize(source, destination, bidirectional=False, dry_run=False)
 
-    assert result.index.tolist() == ["report-1"]
-    assert result.to_dict("records") == [
+    expected = DataFrame(
         {
-            "key": "model",
-            "direction": "outbound",
-            "status": "transferred",
-        }
-    ]
+            "key": ["model"],
+            "direction": ["outbound"],
+            "status": ["transferred"],
+        },
+        index=Index(["report-1"], name="report_id"),
+        dtype="string",
+    )
+    assert_frame_equal(result, expected)
     source.get.assert_called_once_with("source-1")
     destination.put.assert_called_once_with("model", source_report)
 
@@ -117,25 +129,16 @@ def test_synchronize_bidirectionally_uses_initial_snapshots():
 
     result = synchronize(left, right, bidirectional=True, dry_run=False)
 
-    records = result.reset_index().to_dict("records")
-    assert records[:2] == [
+    expected = DataFrame(
         {
-            "report_id": "report-1",
-            "key": "left-only",
-            "direction": "outbound",
-            "status": "transferred",
+            "key": ["left-only", "right-only", "shared"],
+            "direction": ["outbound", "inbound", NA],
+            "status": ["transferred", "transferred", "skipped"],
         },
-        {
-            "report_id": "report-3",
-            "key": "right-only",
-            "direction": "inbound",
-            "status": "transferred",
-        },
-    ]
-    assert records[2]["report_id"] == "report-2"
-    assert records[2]["key"] == "shared"
-    assert isna(records[2]["direction"])
-    assert records[2]["status"] == "skipped"
+        index=Index(["report-1", "report-3", "report-2"], name="report_id"),
+        dtype="string",
+    )
+    assert_frame_equal(result, expected)
     assert report_ids(left) == {"report-1", "report-2", "report-3"}
     assert report_ids(right) == {"report-1", "report-2", "report-3"}
 
@@ -221,6 +224,25 @@ def test_synchronize_ignores_missing_report_ids():
     destination.put.assert_called_once_with("model", identified_report)
 
 
+def test_synchronize_ignores_missing_report_id_column():
+    source = FakeProject(
+        "local",
+        [{"id": "legacy", "key": "legacy", "date": "2026-01-01"}],
+        {"legacy": report("legacy-report")},
+    )
+    destination = FakeProject("hub")
+
+    result = synchronize(source, destination, bidirectional=False, dry_run=False)
+
+    expected = DataFrame(
+        index=Index([], name="report_id", dtype=object),
+        columns=Index(["key", "direction", "status"]),
+    ).astype("string")
+    assert_frame_equal(result, expected)
+    source.get.assert_not_called()
+    destination.put.assert_not_called()
+
+
 def test_synchronize_dry_run_does_not_load_or_store_reports():
     source = FakeProject(
         "local",
@@ -304,9 +326,10 @@ def mlflow_tracking_uri(tmp_path, monkeypatch):
     "ignore:The filesystem tracking backend .* is deprecated:FutureWarning"
 )
 def test_sync_local_and_mlflow_bidirectionally(tmp_path, mlflow_tracking_uri):
-    X, y = make_regression(random_state=42)
-    local_report = evaluate(LinearRegression(), X, y)
-    mlflow_report = evaluate(Ridge(), X, y)
+    regression_data = make_regression(random_state=42, coef=False)
+    X, y = regression_data[0], regression_data[1]
+    local_report = cast(EstimatorReport, evaluate(LinearRegression(), X, y))
+    mlflow_report = cast(EstimatorReport, evaluate(Ridge(), X, y))
     local = Project(
         name="sync-project",
         mode="local",
@@ -347,5 +370,5 @@ def test_sync_local_and_mlflow_bidirectionally(tmp_path, mlflow_tracking_uri):
     )
 
     assert set(repeated.index) == expected_ids
-    assert repeated["direction"].isna().all()
+    assert bool(repeated["direction"].isna().all())
     assert set(repeated["status"]) == {"skipped"}

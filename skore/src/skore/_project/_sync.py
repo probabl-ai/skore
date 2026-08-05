@@ -2,21 +2,37 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal, cast
 
-from pandas import NA, DataFrame, concat
+from pandas import NA, DataFrame, Index, concat
 
 if TYPE_CHECKING:
-    from skore._project.project import Project
+    from typing import Any, Protocol
+
+    class _Summary(Protocol):
+        def frame(self) -> DataFrame: ...
+
+    class _Project(Protocol):
+        def summarize(self) -> _Summary: ...
+
+        def get(self, id: str) -> Any: ...
+
+        def put(self, key: str, report: Any) -> Any: ...
 
 
-_RESULT_COLUMNS = ["key", "direction", "status"]
+_Direction = Literal["outbound", "inbound"]
+_Status = Literal["planned", "transferred", "skipped"]
+_RESULT_COLUMNS = ("key", "direction", "status")
 
 
-def _snapshot(project: Project) -> DataFrame:
+def _snapshot(project: _Project) -> DataFrame:
     frame = project.summarize().frame()
-    if frame.empty:
-        return DataFrame(columns=["backend_id", "key"]).rename_axis("report_id")
+    if frame.empty or "report_id" not in frame:
+        # Treat legacy summaries from before `report_id` was stored as empty snapshots.
+        return DataFrame(
+            index=Index([], name="report_id", dtype=object),
+            columns=Index(["backend_id", "key"]),
+        )
 
     return (
         frame.reset_index("id")
@@ -29,20 +45,25 @@ def _snapshot(project: Project) -> DataFrame:
 
 def _transfer(
     reports: DataFrame,
-    source: Project,
-    destination: Project,
-    direction: str,
+    source: _Project,
+    destination: _Project,
+    direction: _Direction,
 ) -> None:
     for report_id, row in reports.iterrows():
         try:
-            report = source.get(row["backend_id"])
-            destination.put(row["key"], report)
+            report = source.get(cast(str, row["backend_id"]))
+            destination.put(cast(str, row["key"]), report)
         except Exception as exc:
             exc.add_note(f"Failed to synchronize report {report_id!r} {direction}.")
             raise
 
 
-def _result(reports: DataFrame, *, direction: str | None, status: str) -> DataFrame:
+def _result(
+    reports: DataFrame,
+    *,
+    direction: _Direction | None,
+    status: _Status,
+) -> DataFrame:
     result = reports.loc[:, ["key"]].copy()
     result["direction"] = NA if direction is None else direction
     result["status"] = status
@@ -50,8 +71,8 @@ def _result(reports: DataFrame, *, direction: str | None, status: str) -> DataFr
 
 
 def synchronize(
-    source: Project,
-    destination: Project,
+    source: _Project,
+    destination: _Project,
     *,
     bidirectional: bool,
     dry_run: bool,
@@ -75,7 +96,7 @@ def synchronize(
         if bidirectional:
             _transfer(inbound, destination, source, "inbound")
 
-    transfer_status = "planned" if dry_run else "transferred"
+    transfer_status: _Status = "planned" if dry_run else "transferred"
     frames = [
         _result(outbound, direction="outbound", status=transfer_status),
     ]
@@ -83,4 +104,5 @@ def synchronize(
         frames.append(_result(inbound, direction="inbound", status=transfer_status))
     frames.append(_result(skipped, direction=None, status="skipped"))
 
-    return concat(frames)[_RESULT_COLUMNS].rename_axis("report_id")
+    result = concat(frames).reindex(columns=_RESULT_COLUMNS).rename_axis("report_id")
+    return cast(DataFrame, result.astype("string"))
