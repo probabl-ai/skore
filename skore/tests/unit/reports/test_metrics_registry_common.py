@@ -163,15 +163,17 @@ def test_add_multiple_metrics(binary_classification_report):
     assert "precision_macro_custom" in report._metric_registry
 
 
-def test_add_cannot_override_default_registry_name(binary_classification_report):
-    def accuracy(y_true, y_pred):
-        return 0.0
+def test_readd_default_metric(binary_classification_report):
+    """A default metric can be removed and added back under the same name."""
+    report = binary_classification_report
 
-    with pytest.raises(
-        ValueError,
-        match="Cannot add 'accuracy': it is a built-in metric name.",
-    ):
-        binary_classification_report.metrics.add(make_scorer(accuracy))
+    def accuracy(y_true, y_pred):
+        return 1.0
+
+    report.metrics.remove("accuracy")
+    report.metrics.add(make_scorer(accuracy))
+
+    assert report.metrics.get("accuracy") == 1.0
 
 
 def test_add_duplicate_raises(binary_classification_report):

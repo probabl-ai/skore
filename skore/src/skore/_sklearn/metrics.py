@@ -180,14 +180,6 @@ class Metric:
         self.function = function
         self.function_kind = function_kind
 
-    @property
-    def summary_name(self) -> str:
-        """Name used in summarize output rows (may differ from registry ``name``)."""
-        cls_value = type(self).__dict__.get("summary_name")
-        if isinstance(cls_value, str):
-            return cls_value
-        return self.name
-
     @staticmethod
     def new(
         metric: MetricLike | Metric,
@@ -642,7 +634,6 @@ class Precision(Metric):
 
 class PrecisionMacro(Precision):
     name = "precision_macro"
-    summary_name = "precision"
     kwargs = {"average": "macro"}
 
     @staticmethod
@@ -675,7 +666,6 @@ class Recall(Metric):
 
 class RecallMacro(Recall):
     name = "recall_macro"
-    summary_name = "recall"
     kwargs = {"average": "macro"}
 
     @staticmethod
@@ -738,7 +728,6 @@ class RocAuc(Metric):
 
 class RocAucMacro(RocAuc):
     name = "roc_auc_macro"
-    summary_name = "roc_auc"
     kwargs = {"average": "macro", "multi_class": "ovr"}
 
     @staticmethod
@@ -876,12 +865,11 @@ BUILTIN_METRICS: list[Metric] = [
     PredictTime(),
 ]
 
-# Names a user cannot reuse when adding a metric, even after removing them.
 # ``Score`` is seeded separately from ``BUILTIN_METRICS`` since it is only
-# available when the estimator exposes a ``score`` method.
-RESERVED_METRIC_NAMES: frozenset[str] = frozenset(
-    {metric.name for metric in BUILTIN_METRICS} | {Score.name}
-)
+# available when the estimator exposes a ``score`` method. Its name stays
+# reserved even after removal; other default metrics may be removed and
+# re-added under the same name.
+RESERVED_METRIC_NAMES: frozenset[str] = frozenset({Score.name})
 
 
 class MetricRegistry(UserDict[str, Metric]):
@@ -939,9 +927,7 @@ class MetricRegistry(UserDict[str, Metric]):
             raise ValueError(f"position must be 'first' or 'last', got {position!r}.")
 
         if metric.name in RESERVED_METRIC_NAMES:
-            raise ValueError(
-                f"Cannot add {metric.name!r}: it is a built-in metric name."
-            )
+            raise ValueError(f"Cannot add {metric.name!r}: it is a reserved name.")
 
         if metric.name in self.data:
             raise ValueError(

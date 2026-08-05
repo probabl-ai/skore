@@ -128,6 +128,30 @@ def test_duplicate_add_keeps_existing_cache(binary_classification_report):
     assert result2.summary["score"].iloc[0] == 0.2
 
 
+def test_cannot_use_reserved_name(binary_classification_report):
+    """Adding a metric named ``score`` raises an error."""
+    report = binary_classification_report
+
+    def score(y_true, y_pred):
+        return 1.0
+
+    with pytest.raises(ValueError, match="Cannot add 'score': it is a reserved name."):
+        report.metrics.add(make_scorer(score))
+
+
+def test_readd_default_metric(binary_classification_report):
+    """A default metric can be removed and added back."""
+    report = binary_classification_report
+
+    def accuracy(y_true, y_pred):
+        return 1.0
+
+    report.metrics.remove("accuracy")
+    report.metrics.add(make_scorer(accuracy))
+
+    assert report.metrics.get("accuracy") == 1.0
+
+
 def test_different_metrics_have_separate_cache(binary_classification_report):
     """Test that different metrics don't share cache entries."""
     report = binary_classification_report

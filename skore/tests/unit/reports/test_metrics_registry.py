@@ -524,31 +524,34 @@ def test_metric_registry_add_invalid_position(binary_classification_report):
         registry.add(m, position="middle")  # type: ignore[arg-type]
 
 
-def test_metric_registry_add_reserved_name_conflict(binary_classification_report):
+def test_metric_registry_readd_default_metric(binary_classification_report):
+    """Default metrics may be removed and re-added under the same name."""
     registry = MetricRegistry(binary_classification_report)
-    m = Metric(
-        name="accuracy",
-        function=accuracy_score,
-        response_method="predict",
-        greater_is_better=True,
-        function_kind=FunctionKind.METRIC,
+    assert "accuracy" in registry
+    registry.remove(report=binary_classification_report, name="accuracy")
+
+    registry.add(
+        Metric(
+            name="accuracy",
+            function=accuracy_score,
+            response_method="predict",
+            greater_is_better=True,
+            function_kind=FunctionKind.METRIC,
+        )
     )
-    with pytest.raises(
-        ValueError, match="Cannot add 'accuracy': it is a built-in metric name."
-    ):
-        registry.add(m)
+    assert "accuracy" in registry
 
 
 def test_metric_registry_add_score_name_reserved(binary_classification_report):
     """``"score"`` stays reserved even once removed from the registry."""
-    assert Score.name in RESERVED_METRIC_NAMES
+    assert RESERVED_METRIC_NAMES == frozenset({Score.name})
 
     report = binary_classification_report
     report.metrics.remove("score")
     assert "score" not in report._metric_registry
 
     with pytest.raises(
-        ValueError, match="Cannot add 'score': it is a built-in metric name."
+        ValueError, match="Cannot add 'score': it is a reserved name."
     ):
         report.metrics.add(
             make_scorer(accuracy_score, response_method="predict"), name="score"
