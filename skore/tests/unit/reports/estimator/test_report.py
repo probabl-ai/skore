@@ -6,6 +6,7 @@ import joblib
 import numpy as np
 import pytest
 import skrub
+from sklearn.base import clone
 from sklearn.cluster import KMeans
 from sklearn.datasets import make_classification, make_regression
 from sklearn.dummy import DummyClassifier, DummyRegressor
@@ -76,6 +77,36 @@ def test_from_fitted_estimator(forest_binary_classification_with_test):
         report.X_train = X
     with pytest.raises(AttributeError):
         report.y_train = y
+
+
+def test_fitted_estimator_with_training_data_raises(
+    forest_binary_classification_with_train_test,
+):
+    """Passing training data with an already-fitted estimator is rejected."""
+    estimator, X_train, X_test, y_train, y_test = (
+        forest_binary_classification_with_train_test
+    )
+    estimator = estimator.fit(X_train, y_train)
+    err_msg = "Training data must not be provided when the estimator is already fitted"
+    with pytest.raises(ValueError, match=err_msg):
+        EstimatorReport(
+            estimator,
+            X_train=X_train,
+            y_train=y_train,
+            X_test=X_test,
+            y_test=y_test,
+        )
+
+
+def test_fitted_skrub_learner_with_train_data_raises():
+    """Passing train_data with an already-fitted SkrubLearner is rejected."""
+    X, y = make_classification(n_samples=40, random_state=0)
+    data_op = skrub.X(X).skb.apply(LogisticRegression(), y=skrub.y(y))
+    split = data_op.skb.train_test_split(random_state=0)
+    learner = data_op.skb.make_learner().fit(split["train"])
+    err_msg = "Training data must not be provided when the estimator is already fitted"
+    with pytest.raises(ValueError, match=err_msg):
+        EstimatorReport(learner, train_data=split["train"], test_data=split["test"])
 
 
 def test_from_fitted_pipeline(pipeline_binary_classification_with_test):
@@ -152,7 +183,11 @@ def test_cache_predictions(request, fixture_name, pass_train_data, expected_n_ke
     estimator, X_test, y_test = request.getfixturevalue(fixture_name)
     if pass_train_data:
         report = EstimatorReport(
-            estimator, X_train=X_test, y_train=y_test, X_test=X_test, y_test=y_test
+            clone(estimator),
+            X_train=X_test,
+            y_train=y_test,
+            X_test=X_test,
+            y_test=y_test,
         )
     else:
         report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
@@ -304,8 +339,7 @@ def test_get_predictions_with_multiclass_ovo_decision_function():
     )
 
     with pytest.raises(
-        ValueError,
-        match=r"Decision function output.*classes; expected 4 but got 6\.",
+        ValueError, match=r"Decision function output.*classes; expected 4 but got 6\."
     ):
         report.get_predictions(data_source="test", response_method="decision_function")
 
@@ -351,16 +385,24 @@ def _assert_estimator_report_repr_html(
 @pytest.mark.parametrize("with_train", [False, True])
 def test_report_repr_html(request, fixture, with_train):
     X_train, X_test, y_train, y_test = request.getfixturevalue(fixture)
-    kwargs = {"X_test": X_test, "y_test": y_test} | (
-        {"X_train": X_train, "y_train": y_train} if with_train else {}
-    )
 
     if "classification" in fixture:
         estimator = DummyClassifier(strategy="uniform", random_state=0)
     else:
         estimator = DummyRegressor()
 
-    report = EstimatorReport(estimator.fit(X_train, y_train), **kwargs)
+    if with_train:
+        report = EstimatorReport(
+            estimator,
+            X_train=X_train,
+            y_train=y_train,
+            X_test=X_test,
+            y_test=y_test,
+        )
+    else:
+        report = EstimatorReport(
+            estimator.fit(X_train, y_train), X_test=X_test, y_test=y_test
+        )
     estimator_name = estimator.__class__.__name__
     _assert_estimator_report_repr_html(report._repr_html_(), estimator_name)
 
@@ -371,13 +413,19 @@ def test_report_repr_html_sklearn_estimator_bad_html_repr(with_train):
     ``_repr_html_``."""
     X, y = make_classification(n_classes=2, random_state=42)
     X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
-    estimator = _DummyClassifierBadRepr(strategy="uniform", random_state=0).fit(
-        X_train, y_train
-    )
-    kwargs = {"X_test": X_test, "y_test": y_test} | (
-        {"X_train": X_train, "y_train": y_train} if with_train else {}
-    )
-    report = EstimatorReport(estimator, **kwargs)
+    estimator = _DummyClassifierBadRepr(strategy="uniform", random_state=0)
+    if with_train:
+        report = EstimatorReport(
+            estimator,
+            X_train=X_train,
+            y_train=y_train,
+            X_test=X_test,
+            y_test=y_test,
+        )
+    else:
+        report = EstimatorReport(
+            estimator.fit(X_train, y_train), X_test=X_test, y_test=y_test
+        )
     _assert_estimator_report_repr_html(report._repr_html_(), "DummyClassifier")
 
 
@@ -450,9 +498,12 @@ def test_report_get_data_and_y_true(data_source):
     X, y = make_classification(n_samples=10, n_classes=2, random_state=42)
     X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
 
-    estimator = LogisticRegression().fit(X_train, y_train)
     report = EstimatorReport(
-        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+        LogisticRegression(),
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
     )
     data, y_result = report._get_data_and_y_true(data_source=data_source)
 
@@ -495,12 +546,7 @@ def test_from_dict_bypasses_init_and_restores_state(
     monkeypatch, logistic_binary_classification_with_test
 ):
     estimator, X_test, y_test = logistic_binary_classification_with_test
-    report = EstimatorReport(
-        estimator,
-        X_test=X_test,
-        y_test=y_test,
-        pos_label=1,
-    )
+    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test, pos_label=1)
     expected_accuracy = report.metrics.accuracy()
     report._cache_predictions()
     report.metrics.add("f1", name="F1")
@@ -524,8 +570,8 @@ def test_from_dict_bypasses_init_and_restores_state(
 
     # check new metrics can be computed, including custom metrics:
     restored.metrics.roc_auc()
-    df = restored.metrics.summarize().frame()
-    assert "F1" in df.index
+    df = restored.metrics.summarize().frame(flat_index=False, verbose_name=True)
+    assert "F1" in df.index.get_level_values("Metric").to_numpy()
 
 
 def test_from_dict_rejects_unknown_version(logistic_binary_classification_with_test):
