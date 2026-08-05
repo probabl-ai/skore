@@ -931,10 +931,8 @@ class MetricRegistry(UserDict[str, Metric]):
         if position not in ("first", "last"):
             raise ValueError(f"position must be 'first' or 'last', got {position!r}.")
 
-        if metric.name in {m.name for m in BUILTIN_METRICS}:
-            raise ValueError(
-                f"Cannot add {metric.name!r}: it is a built-in metric name."
-            )
+        if metric.name == "score":
+            raise ValueError(f"Cannot add {metric.name!r}: it is a reserved name.")
 
         if metric.name in self.data:
             raise ValueError(
