@@ -6,9 +6,9 @@ import pandas as pd
 import pytest
 
 from skore._plugins.hub.metric import (
+    cast_to_str_or_none,
     find_multimetric_scalar_names,
     get_hub_metric_name,
-    hub_metric_label,
     select_exportable_metrics,
 )
 
@@ -27,8 +27,8 @@ from skore._plugins.hub.metric import (
         ("1", "1"),
     ],
 )
-def test_hub_metric_label(label, expected) -> None:
-    assert hub_metric_label(label) == expected
+def test_cast_to_str_or_none(label, expected) -> None:
+    assert cast_to_str_or_none(label) == expected
 
 
 def _metrics_summary(rows: list[dict]) -> pd.DataFrame:

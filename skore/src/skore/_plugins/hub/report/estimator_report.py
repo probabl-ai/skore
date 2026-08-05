@@ -29,9 +29,9 @@ from skore._plugins.hub.artifact.media import (
 from skore._plugins.hub.artifact.media.media import Media
 from skore._plugins.hub.metric import (
     Metric,
+    cast_to_str_or_none,
     find_multimetric_scalar_names,
     get_hub_metric_name,
-    hub_metric_label,
     select_exportable_metrics,
 )
 from skore._plugins.hub.report.report import ReportPayload
@@ -97,7 +97,7 @@ class EstimatorReportPayload(ReportPayload[EstimatorReport]):
                 data_source=row["data_source"],
                 greater_is_better=row["greater_is_better"],
                 value=row["score"],
-                label=hub_metric_label(row["label"]),
+                label=cast_to_str_or_none(row["label"]),
                 output=None if pd.isna(row["output"]) else int(row["output"]),
                 average=None if pd.isna(row["average"]) else row["average"],
             )

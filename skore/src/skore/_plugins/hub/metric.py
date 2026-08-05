@@ -52,7 +52,7 @@ class Metric(BaseModel, Generic[Report]):
     position: None = Field(default=None)
 
 
-def hub_metric_label(label: object) -> str | None:
+def cast_to_str_or_none(label: object) -> str | None:
     r"""Normalize a summarize class label for the hub metric payload.
 
     Missing values become ``None``. All other values are cast with ``str(...)``
