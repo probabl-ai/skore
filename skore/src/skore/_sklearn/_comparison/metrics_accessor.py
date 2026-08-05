@@ -18,7 +18,7 @@ from skore._sklearn._plot.metrics import (
     PredictionErrorDisplay,
     RocCurveDisplay,
 )
-from skore._sklearn.metrics import Metric, MetricLike
+from skore._sklearn.metrics import Metric, MetricLike, Score
 from skore._sklearn.types import Aggregate
 from skore._utils._accessor import (
     _check_any_sub_report_has_metric,
@@ -154,11 +154,11 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
         )
 
     def _metric(
-        self, metric_name: str, *, data_source: DataSource, **kwargs: Any
+        self, metric: str | Metric, *, data_source: DataSource, **kwargs: Any
     ) -> MetricsSummaryDisplay:
         """Compute a single metric across compared reports, forwarding *kwargs*."""
         summaries = [
-            report.metrics._metric(metric_name, data_source=data_source, **kwargs)
+            report.metrics._metric(metric, data_source=data_source, **kwargs)
             for report in self._parent.reports_.values()
         ]
 
@@ -212,19 +212,20 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
 
     def add(
         self,
-        metric: MetricLike,
+        metric: MetricLike | Metric,
         *,
         name: str | None = None,
         verbose_name: str | None = None,
         greater_is_better: bool = True,
         position: Literal["first", "last"] = "first",
+        force: bool = False,
         **kwargs: Any,
     ) -> None:
         """Add a custom metric to :meth:`summarize`.
 
         Parameters
         ----------
-        metric : str, sklearn scorer, or callable
+        metric : str, sklearn scorer, callable, or Metric
             The metric to add.
 
             - If a string, it will be run through :func:`sklearn.metrics.get_scorer`.
@@ -237,6 +238,8 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
               :meth:`summarize` will show one row per class label under the metric name.
               If your metric has the form ``(y_true, y_pred, **kw) -> float``, see
               :func:`sklearn.metrics.make_scorer` to convert it to a scorer.
+            - If a :class:`~skore._sklearn.metrics.Metric`, it is registered as-is
+              (or as a copy when ``name`` / ``verbose_name`` are set).
 
         name : str or None, default=None
             Custom name for the metric. If ``None``, the name is inferred
@@ -253,6 +256,12 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
         position : {"first", "last"}, default="first"
             Where to place the metric in default :meth:`summarize` ordering
             for each compared report. See :meth:`EstimatorReport.metrics.add`.
+
+        force : bool, default=False
+            If ``False`` and the metric's
+            :meth:`~skore._sklearn.metrics.Metric.discouraged` returns a
+            reason, raise instead of registering. Pass ``True`` to register it
+            anyway. See :meth:`EstimatorReport.metrics.add`.
 
         **kwargs : Any
             Default keyword arguments passed to the score function at call
@@ -289,6 +298,7 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
                 verbose_name=verbose_name,
                 greater_is_better=greater_is_better,
                 position=position,
+                force=force,
                 **kwargs,
             )
 
@@ -352,7 +362,7 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
         Precision 0                  0.901961              0.901961
                   1                  0.984127              0.984127
         """
-        return self._metric(metric_name=name, data_source=data_source, **kwargs).frame(
+        return self._metric(name, data_source=data_source, **kwargs).frame(
             aggregate=aggregate,
             verbose_name=True,
             flat_index=False,
@@ -481,7 +491,7 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
         Metric
         Score                       0.94...               0.94...
         """
-        return self._metric("score", data_source=data_source).frame(
+        return self._metric(Score(), data_source=data_source).frame(
             aggregate=aggregate,
             verbose_name=True,
             flat_index=False,

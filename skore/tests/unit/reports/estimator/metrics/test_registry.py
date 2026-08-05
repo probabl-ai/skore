@@ -17,7 +17,7 @@ from sklearn.metrics import (
 )
 
 from skore import EstimatorReport
-from skore._sklearn.metrics import FunctionKind, Metric, MissingKwargsError
+from skore._sklearn.metrics import FunctionKind, Metric, MissingKwargsError, Score
 from skore._utils._testing import check_cache_changed, check_cache_unchanged
 
 
@@ -178,6 +178,60 @@ class TestBasicAdd:
         assert report.metrics.get("accuracy") == 1.0
 
 
+class TestDiscouraged:
+    """Test the methodological gate applied on top of technical computability."""
+
+    def test_default_score_is_not_registered(self, binary_classification_report):
+        """A default scikit-learn `score` is computable but not registered."""
+        report = binary_classification_report
+
+        assert Score.is_computable(report)
+        assert Score.discouraged(report) is not None
+        assert "score" not in report.metrics.available()
+
+        with pytest.raises(KeyError, match="score"):
+            report.metrics.get("score")
+
+        # It stays reachable through its dedicated method.
+        assert report.metrics.score() == pytest.approx(report.metrics.accuracy())
+
+    def test_add_score_raises_unless_forced(self, binary_classification_report):
+        """Adding a discouraged Score raises unless force=True."""
+        report = binary_classification_report
+
+        err_msg = re.escape(
+            "Cannot add 'score': the estimator uses scikit-learn's default score"
+        )
+        with pytest.raises(ValueError, match=err_msg):
+            report.metrics.add(Score())
+
+        report.metrics.add(Score(), force=True)
+        assert report.metrics.get("score") == pytest.approx(report.metrics.accuracy())
+
+    def test_custom_score_is_registered(
+        self, logistic_binary_classification_with_train_test
+    ):
+        """An estimator defining its own `score` keeps the metric registered."""
+
+        class MyEstimator(LogisticRegression):
+            def score(self, X, y, sample_weight=None):
+                return 1.0
+
+        _, X_train, X_test, y_train, y_test = (
+            logistic_binary_classification_with_train_test
+        )
+        report = EstimatorReport(
+            MyEstimator(),
+            X_train=X_train,
+            y_train=y_train,
+            X_test=X_test,
+            y_test=y_test,
+        )
+
+        assert Score.discouraged(report) is None
+        assert report.metrics.get("score") == 1.0
+
+
 class TestRemove:
     """Test metric remove functionality."""
 
@@ -296,7 +350,7 @@ class TestAddPosition:
         keys = list(report._metric_registry.keys())
         assert keys[0] == "metric_b"
         assert keys[1] == "metric_a"
-        assert keys[2] == "score"
+        assert keys[2] == "accuracy"
 
         display = report.metrics.summarize()
         assert display.summary.iloc[0]["verbose_name"] == "Metric B"
@@ -347,7 +401,7 @@ class TestAddPosition:
 
         keys = list(report._metric_registry.keys())
         assert keys[0] == "m_first"
-        assert keys[1] == "score"
+        assert keys[1] == "accuracy"
         assert keys[-1] == "m_last"
 
     def test_readd_raises_without_remove(self, binary_classification_report):
@@ -388,7 +442,7 @@ class TestAddPosition:
             function_kind=FunctionKind.METRIC,
         )
         with pytest.raises(ValueError, match="position must be 'first' or 'last'"):
-            report._metric_registry.add(m, position="middle")  # type: ignore[arg-type]
+            report._metric_registry.add(m, report=report, position="middle")  # type: ignore[arg-type]
 
 
 class TestCacheBehavior:
@@ -977,10 +1031,16 @@ class TestMetricNew:
         assert metric.name == "MyScorer"
 
 
-def test_available_default(binary_classification_report):
-    """Test that the default available() returns True."""
+def test_is_computable_default(binary_classification_report):
+    """Test that the default is_computable() returns True."""
     m = Metric(name="test")
-    assert m.available(binary_classification_report) is True
+    assert m.is_computable(binary_classification_report) is True
+
+
+def test_discouraged_default(binary_classification_report):
+    """Test that the default discouraged() returns None."""
+    m = Metric(name="test")
+    assert m.discouraged(binary_classification_report) is None
 
 
 def test_no_function(binary_classification_report):

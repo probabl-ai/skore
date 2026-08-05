@@ -4,8 +4,6 @@ from collections.abc import Iterable
 from typing import Any, Literal, cast
 
 import pandas as pd
-from sklearn.base import ClassifierMixin, RegressorMixin
-from sklearn.pipeline import Pipeline
 from sklearn.utils.metaestimators import available_if
 
 from skore._externals._pandas_accessors import DirNamesMixin
@@ -150,17 +148,7 @@ class _MetricsAccessor(BaseMetricsAccessor[EstimatorReport], DirNamesMixin):
         elif isinstance(metric, Iterable) and metric:
             parsed_metrics = [registry[m] for m in metric]
         else:
-            predictor = self._parent.estimator_
-            if isinstance(predictor, Pipeline):
-                predictor = predictor.steps[-1][1]
-            has_default_score = getattr(type(predictor), "score", None) in (
-                ClassifierMixin.score,
-                RegressorMixin.score,
-            )
-            if has_default_score:
-                parsed_metrics = [s for s in registry.values() if s.name != "score"]
-            else:
-                parsed_metrics = list(registry.values())
+            parsed_metrics = list(registry.values())
 
         rows: list[MetricsSummaryRow] = []
         errors = []
@@ -205,18 +193,24 @@ class _MetricsAccessor(BaseMetricsAccessor[EstimatorReport], DirNamesMixin):
 
     def _metric(
         self,
-        metric_name: str,
+        metric: str | Metric,
         *,
         data_source: DataSource,
         **kwargs: Any,
     ) -> MetricsSummaryDisplay:
-        """Compute a single metric, forwarding ``kwargs`` to the score function."""
-        metric = self._parent._metric_registry[metric_name]
+        """Compute a single metric, forwarding ``kwargs`` to the score function.
+
+        A :class:`Metric` instance may be passed directly to compute a metric that
+        is not registered, as :meth:`score` does for a discouraged default score.
+        """
+        resolved = (
+            self._parent._metric_registry[metric] if isinstance(metric, str) else metric
+        )
         rows = [
             cast(
                 MetricsSummaryRow,
                 {
-                    "name": metric.summary_name,
+                    "name": resolved.summary_name,
                     "verbose_name": row["metric_verbose_name"],
                     "estimator": self._parent.estimator_name_,
                     "data_source": data_source,
@@ -227,7 +221,7 @@ class _MetricsAccessor(BaseMetricsAccessor[EstimatorReport], DirNamesMixin):
                     "output": row["output"],
                 },
             )
-            for row in metric.rows(
+            for row in resolved.rows(
                 report=self._parent, data_source=data_source, **kwargs
             )
         ]
@@ -251,19 +245,20 @@ class _MetricsAccessor(BaseMetricsAccessor[EstimatorReport], DirNamesMixin):
 
     def add(
         self,
-        metric: MetricLike,
+        metric: MetricLike | Metric,
         *,
         name: str | None = None,
         verbose_name: str | None = None,
         greater_is_better: bool = True,
         position: Literal["first", "last"] = "first",
+        force: bool = False,
         **kwargs: Any,
     ) -> None:
         """Add a custom metric to :meth:`summarize`.
 
         Parameters
         ----------
-        metric : str, sklearn scorer, or callable
+        metric : str, sklearn scorer, callable, or Metric
             The metric to add.
 
             - If a string, it will be run through :func:`sklearn.metrics.get_scorer`.
@@ -276,6 +271,8 @@ class _MetricsAccessor(BaseMetricsAccessor[EstimatorReport], DirNamesMixin):
               :meth:`summarize` will show one row per class label under the metric name.
               If your metric has the form ``(y_true, y_pred, **kw) -> float``, see
               :func:`sklearn.metrics.make_scorer` to convert it to a scorer.
+            - If a :class:`~skore._sklearn.metrics.Metric`, it is registered as-is
+              (or as a copy when ``name`` / ``verbose_name`` are set).
 
         name : str or None, default=None
             Custom name for the metric. If ``None``, the name is inferred
@@ -293,6 +290,12 @@ class _MetricsAccessor(BaseMetricsAccessor[EstimatorReport], DirNamesMixin):
             Where to place the metric in default :meth:`summarize` ordering.
             ``"first"`` inserts at the front; repeated ``"first"`` adds stack
             newest-first. ``"last"`` appends at the end.
+
+        force : bool, default=False
+            If ``False`` and the metric's
+            :meth:`~skore._sklearn.metrics.Metric.discouraged` returns a reason, raise
+            instead of registering. Pass ``True`` to register it anyway (e.g. to put a
+            discouraged default ``Score`` back into :meth:`summarize`).
 
         **kwargs : Any
             Default keyword arguments passed to the score function at call
@@ -328,7 +331,9 @@ class _MetricsAccessor(BaseMetricsAccessor[EstimatorReport], DirNamesMixin):
                     greater_is_better=greater_is_better,
                     kwargs=kwargs,
                 ),
+                report=self._parent,
                 position=position,
+                force=force,
             )
         except MissingKwargsError as error:
             args_msg = ", ".join(f"{kwarg}=..." for kwarg in error.missing_kwargs)
@@ -473,7 +478,7 @@ class _MetricsAccessor(BaseMetricsAccessor[EstimatorReport], DirNamesMixin):
         }
         return {k: v for k, v in times.items() if v is not None}
 
-    @available_if(lambda self: Score.available(self._parent))
+    @available_if(lambda self: Score.is_computable(self._parent))
     def score(
         self,
         *,

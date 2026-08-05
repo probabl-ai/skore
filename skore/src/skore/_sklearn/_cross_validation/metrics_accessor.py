@@ -18,7 +18,7 @@ from skore._sklearn._plot import (
     RocCurveDisplay,
 )
 from skore._sklearn._plot.metrics.metrics_summary_display import MetricsSummaryRow
-from skore._sklearn.metrics import Metric, MetricLike
+from skore._sklearn.metrics import Metric, MetricLike, Score
 from skore._sklearn.types import Aggregate
 from skore._utils._accessor import _check_estimator_report_has_method
 from skore._utils._fixes import _validate_joblib_parallel_params
@@ -166,19 +166,20 @@ class _MetricsAccessor(BaseMetricsAccessor[CrossValidationReport], DirNamesMixin
 
     def add(
         self,
-        metric: MetricLike,
+        metric: MetricLike | Metric,
         *,
         name: str | None = None,
         verbose_name: str | None = None,
         greater_is_better: bool = True,
         position: Literal["first", "last"] = "first",
+        force: bool = False,
         **kwargs: Any,
     ) -> None:
         """Add a custom metric to :meth:`summarize`.
 
         Parameters
         ----------
-        metric : str, sklearn scorer, or callable
+        metric : str, sklearn scorer, callable, or Metric
             The metric to add.
 
             - If a string, it will be run through :func:`sklearn.metrics.get_scorer`.
@@ -191,6 +192,8 @@ class _MetricsAccessor(BaseMetricsAccessor[CrossValidationReport], DirNamesMixin
               :meth:`summarize` will show one row per class label under the metric name.
               If your metric has the form ``(y_true, y_pred, **kw) -> float``, see
               :func:`sklearn.metrics.make_scorer` to convert it to a scorer.
+            - If a :class:`~skore._sklearn.metrics.Metric`, it is registered as-is
+              (or as a copy when ``name`` / ``verbose_name`` are set).
 
         name : str or None, default=None
             Custom name for the metric. If ``None``, the name is inferred
@@ -207,6 +210,12 @@ class _MetricsAccessor(BaseMetricsAccessor[CrossValidationReport], DirNamesMixin
         position : {"first", "last"}, default="first"
             Where to place the metric in default :meth:`summarize` ordering
             for each split report. See :meth:`EstimatorReport.metrics.add`.
+
+        force : bool, default=False
+            If ``False`` and the metric's
+            :meth:`~skore._sklearn.metrics.Metric.discouraged` returns a
+            reason, raise instead of registering. Pass ``True`` to register it
+            anyway. See :meth:`EstimatorReport.metrics.add`.
 
         **kwargs : Any
             Default keyword arguments passed to the score function at call
@@ -244,6 +253,7 @@ class _MetricsAccessor(BaseMetricsAccessor[CrossValidationReport], DirNamesMixin
                 verbose_name=verbose_name,
                 greater_is_better=greater_is_better,
                 position=position,
+                force=force,
                 **kwargs,
             )
 
@@ -303,7 +313,7 @@ class _MetricsAccessor(BaseMetricsAccessor[CrossValidationReport], DirNamesMixin
         Precision 0               0.93...  0.04...
                   1               0.94...  0.02...
         """
-        return self._metric(metric_name=name, data_source=data_source, **kwargs).frame(
+        return self._metric(name, data_source=data_source, **kwargs).frame(
             aggregate=aggregate,
             verbose_name=True,
             flat_index=False,
@@ -360,7 +370,7 @@ class _MetricsAccessor(BaseMetricsAccessor[CrossValidationReport], DirNamesMixin
 
     def _metric(
         self,
-        metric_name: str,
+        metric: str | Metric,
         *,
         data_source: DataSource,
         **kwargs: Any,
@@ -368,16 +378,22 @@ class _MetricsAccessor(BaseMetricsAccessor[CrossValidationReport], DirNamesMixin
         """Compute a single metric across cross-validation splits.
 
         This helper allows passing kwargs to the sub-reports, unlike :meth:`summarize`.
+        A :class:`Metric` instance may be passed directly to compute a metric that is
+        not registered, as :meth:`score` does for a discouraged default score.
         """
         rows: list[MetricsSummaryRow] = []
         for split_idx, report in enumerate(self._parent.reports_):
-            metric = report._metric_registry[metric_name]
-            metric_rows = metric.rows(report=report, data_source=data_source, **kwargs)
+            resolved = (
+                report._metric_registry[metric] if isinstance(metric, str) else metric
+            )
+            metric_rows = resolved.rows(
+                report=report, data_source=data_source, **kwargs
+            )
             rows.extend(
                 cast(
                     MetricsSummaryRow,
                     {
-                        "name": metric.summary_name,
+                        "name": resolved.summary_name,
                         "verbose_name": row["metric_verbose_name"],
                         "estimator": report.estimator_name_,
                         "data_source": data_source,
@@ -440,7 +456,7 @@ class _MetricsAccessor(BaseMetricsAccessor[CrossValidationReport], DirNamesMixin
         Metric
         Score               0.94...  0.00...
         """
-        return self._metric("score", data_source=data_source).frame(
+        return self._metric(Score(), data_source=data_source).frame(
             aggregate=aggregate,
             verbose_name=True,
             flat_index=False,
