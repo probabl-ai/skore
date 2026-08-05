@@ -31,6 +31,7 @@ from skore._plugins.hub.metric import (
     Metric,
     find_multimetric_scalar_names,
     get_hub_metric_name,
+    hub_metric_label,
     select_exportable_metrics,
 )
 from skore._plugins.hub.report.report import ReportPayload
@@ -96,7 +97,7 @@ class EstimatorReportPayload(ReportPayload[EstimatorReport]):
                 data_source=row["data_source"],
                 greater_is_better=row["greater_is_better"],
                 value=row["score"],
-                label=None if pd.isna(row["label"]) else row["label"],
+                label=hub_metric_label(row["label"]),
                 output=None if pd.isna(row["output"]) else int(row["output"]),
                 average=None if pd.isna(row["average"]) else row["average"],
             )
