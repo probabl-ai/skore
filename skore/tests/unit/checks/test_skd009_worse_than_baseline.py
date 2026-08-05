@@ -1,7 +1,9 @@
 import pytest
 from sklearn.datasets import make_regression
 from sklearn.dummy import DummyRegressor
+from sklearn.ensemble import HistGradientBoostingRegressor
 from sklearn.linear_model import RidgeCV
+from skrub import tabular_pipeline
 
 from skore import evaluate
 from skore._sklearn._checks.model_checks import CheckWorseThanBaseline
@@ -19,10 +21,26 @@ def test_detects_worse_than_baseline(report_type, regression_data):
     )
     explanation = CheckWorseThanBaseline().check_function(report)
     assert explanation is not None
-    assert (
-        "not significantly better than a HistGradientBoosting baseline" in explanation
-    )
+    assert "significantly worse than a HistGradientBoosting baseline" in explanation
     assert "Baseline performance on the test set" in explanation
+
+
+@pytest.mark.parametrize("report_type", ["estimator", "cross-validation"])
+@pytest.mark.filterwarnings(
+    "ignore:Only pandas and polars DataFrames are supported:UserWarning:skrub"
+)
+def test_tolerates_same_model_as_baseline(report_type, regression_data):
+    """SKD009 does not flag the model as worse when it is the baseline itself."""
+    X, y = regression_data
+    report = evaluate(
+        tabular_pipeline(HistGradientBoostingRegressor()),
+        X,
+        y,
+        splitter=0.2 if report_type == "estimator" else 3,
+    )
+    explanation = CheckWorseThanBaseline().check_function(report)
+    assert explanation is not None
+    assert "significantly worse" not in explanation
 
 
 @pytest.mark.parametrize("report_type", ["estimator", "cross-validation"])

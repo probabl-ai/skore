@@ -34,6 +34,9 @@ def test_detects_slower_than_baseline(report_type, regression_data):
 
 
 @pytest.mark.parametrize("report_type", ["estimator", "cross-validation"])
+@pytest.mark.filterwarnings(
+    "ignore:Only pandas and polars DataFrames are supported:UserWarning:skrub"
+)
 def test_not_detected_for_fast_model(report_type, regression_data):
     """Check that SKD010 does not fire when the model is not slower than baseline."""
     X, y = regression_data
@@ -44,6 +47,9 @@ def test_not_detected_for_fast_model(report_type, regression_data):
 
 
 @pytest.mark.parametrize("report_type", ["estimator", "cross-validation"])
+@pytest.mark.filterwarnings(
+    "ignore:Only pandas and polars DataFrames are supported:UserWarning:skrub"
+)
 def test_not_detected_when_slower_model_scores_better(report_type):
     """SKD010 does not fire when a slower model has significantly better scores."""
     rng = np.random.RandomState(0)

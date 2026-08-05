@@ -376,14 +376,18 @@ is trained on the same train data as the report's estimator and is evaluated on 
 test set.
 
 For each of the report's default predictive metrics (timing metrics are excluded), a
-metric votes when the report is **not significantly better** than the baseline. A score
-is considered significantly better only when its gap to the baseline exceeds
-``max(0.01, 0.05 * |baseline|)``.
+metric votes when the baseline is **significantly better** than the report. A baseline
+score is considered significantly better only when its gap to the report exceeds an
+adaptive threshold, ``max(0.01, 0.05 * |report score|)``, scaled up by a tolerance factor
+(up to ``2x``) when the report's fit and predict times are close to the baseline's — a
+sign that it wraps a similar (or identical) underlying algorithm, for which a slightly
+lower test score is expected noise rather than a real regression.
 
 This check always reports the baseline's performance on the test set. When a **strict
-majority** of comparable metrics vote, the tip warns that the model is not significantly
-better than the baseline; otherwise it reports the baseline's scores for reference, so
-you can see how much better the model performs.
+majority** of comparable metrics vote, the tip warns that the model is significantly
+worse than the baseline; otherwise it reports the baseline's scores for reference, along
+with the number of metrics on which the model is significantly better, so you can see
+how much better the model performs.
 
 Why it matters
 ^^^^^^^^^^^^^^
@@ -420,9 +424,11 @@ around :class:`~sklearn.linear_model.LogisticRegression` for classification task
 :class:`~sklearn.linear_model.RidgeCV` for regression tasks. The baseline is trained on
 the same train data as the report's estimator and is evaluated on the same test set.
 
-The check first compares fit times: it triggers only when the report's ``fit_time_`` is
-at least **2x** the baseline's fit time and the absolute gap is at least 0.05 seconds
-(the floor avoids spurious results on very fast fits).
+The check first compares timings: it computes the report-to-baseline ratio for both fit
+time and predict time on the test set, and keeps the larger of the two. The slowness
+gate triggers only when that ratio is at least **2x** and the absolute gap on the
+winning dimension is at least **0.1 seconds** (the floor avoids spurious results from
+timing noise on very fast fits or predictions, e.g. on small datasets).
 
 Then, like :ref:`SKD009 <skd009-worse-than-baseline>`, each default predictive metric
 votes for the issue when the report is **not significantly better** than the baseline on

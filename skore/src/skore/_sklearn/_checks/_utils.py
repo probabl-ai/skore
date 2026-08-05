@@ -268,6 +268,29 @@ def get_fit_time(report: EstimatorReport | CrossValidationReport) -> float:
     return report._fit_time
 
 
+def get_predict_time(
+    report: EstimatorReport | CrossValidationReport,
+    *,
+    data_source: Literal["train", "test"] = "test",
+) -> float:
+    """Return the prediction time on ``data_source``.
+
+    Mean-aggregated across splits for cross-validation reports. Predictions
+    for ``data_source`` must already have been computed (e.g. via
+    :func:`collect_scores`) so the timing is cached.
+    """
+    if report._report_type == "cross-validation":
+        row = f"Predict time {data_source} (s)"
+        timings = report.metrics.timings(aggregate="mean")
+        if row not in timings.index:
+            raise CheckNotApplicable("Predict time is unavailable.")
+        return float(timings.loc[row])
+    predict_time = report.metrics.predict_time(data_source=data_source, cast=False)
+    if predict_time is None:
+        raise CheckNotApplicable("Predict time is unavailable.")
+    return predict_time
+
+
 def get_preprocessed_X(
     report: EstimatorReport | CrossValidationReport,
     *,
