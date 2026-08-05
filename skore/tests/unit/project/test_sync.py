@@ -4,19 +4,18 @@ from unittest.mock import Mock
 
 import mlflow
 import pytest
-from pandas import DataFrame, Index, MultiIndex, RangeIndex
+from pandas import DataFrame, Index, MultiIndex, RangeIndex, isna
 from sklearn.datasets import make_regression
 from sklearn.linear_model import LinearRegression, Ridge
 
-from skore import Project, SyncOperation, evaluate
+from skore import Project, evaluate
 from skore._project._sync import synchronize
 
 
 class FakeProject:
-    def __init__(self, mode, records=(), reports=None, ml_task="regression"):
+    def __init__(self, mode, records=(), reports=None):
         self.mode = mode
         self.name = "project"
-        self.ml_task = ml_task
         self.records = list(records)
         self.reports = {} if reports is None else dict(reports)
         self.get = Mock(side_effect=self._get)
@@ -80,16 +79,14 @@ def test_synchronize_supports_all_mode_pairs(source_mode, destination_mode):
 
     result = synchronize(source, destination, bidirectional=False, dry_run=False)
 
-    assert result.operations == (
-        SyncOperation(
-            report_id="report-1",
-            key="model",
-            source_mode=source_mode,
-            destination_mode=destination_mode,
-        ),
-    )
-    assert result.skipped == ()
-    assert result.dry_run is False
+    assert result.index.tolist() == ["report-1"]
+    assert result.to_dict("records") == [
+        {
+            "key": "model",
+            "direction": "outbound",
+            "status": "transferred",
+        }
+    ]
     source.get.assert_called_once_with("source-1")
     destination.put.assert_called_once_with("model", source_report)
 
@@ -120,14 +117,25 @@ def test_synchronize_bidirectionally_uses_initial_snapshots():
 
     result = synchronize(left, right, bidirectional=True, dry_run=False)
 
-    assert [
-        (operation.report_id, operation.source_mode, operation.destination_mode)
-        for operation in result.operations
-    ] == [
-        ("report-1", "local", "hub"),
-        ("report-3", "hub", "local"),
+    records = result.reset_index().to_dict("records")
+    assert records[:2] == [
+        {
+            "report_id": "report-1",
+            "key": "left-only",
+            "direction": "outbound",
+            "status": "transferred",
+        },
+        {
+            "report_id": "report-3",
+            "key": "right-only",
+            "direction": "inbound",
+            "status": "transferred",
+        },
     ]
-    assert result.skipped == ("report-2",)
+    assert records[2]["report_id"] == "report-2"
+    assert records[2]["key"] == "shared"
+    assert isna(records[2]["direction"])
+    assert records[2]["status"] == "skipped"
     assert report_ids(left) == {"report-1", "report-2", "report-3"}
     assert report_ids(right) == {"report-1", "report-2", "report-3"}
 
@@ -146,8 +154,10 @@ def test_synchronize_skips_same_id_without_loading_reports():
 
     result = synchronize(left, right, bidirectional=True, dry_run=False)
 
-    assert result.operations == ()
-    assert result.skipped == ("report-1",)
+    assert result.index.tolist() == ["report-1"]
+    assert result.loc["report-1", "key"] == "left-key"
+    assert isna(result.loc["report-1", "direction"])
+    assert result.loc["report-1", "status"] == "skipped"
     left.get.assert_not_called()
     right.get.assert_not_called()
 
@@ -184,34 +194,31 @@ def test_synchronize_uses_latest_source_duplicate():
 
     result = synchronize(source, destination, bidirectional=False, dry_run=False)
 
-    assert result.operations[0].key == "latest-key"
+    assert result.loc["report-1", "key"] == "latest-key"
     source.get.assert_called_once_with("latest")
     destination.put.assert_called_once_with("latest-key", latest)
 
 
-@pytest.mark.parametrize("missing_side", ["source", "destination"])
-def test_synchronize_rejects_missing_canonical_id_before_transfer(missing_side):
-    identified = FakeProject(
+def test_synchronize_ignores_missing_report_ids():
+    identified_report = report("report-1")
+    source = FakeProject(
         "local",
-        [record("identified", "report-1", "model")],
-        {"identified": report("report-1")},
+        [
+            record("unidentified", None, "legacy", "2026-01-01"),
+            record("identified", "report-1", "model", "2026-01-02"),
+        ],
+        {
+            "unidentified": report("legacy-report"),
+            "identified": identified_report,
+        },
     )
-    unidentified = FakeProject(
-        "hub",
-        [record("unidentified", None, "legacy")],
-        {"unidentified": report("legacy-report")},
-    )
-    source, destination = (
-        (unidentified, identified)
-        if missing_side == "source"
-        else (identified, unidentified)
-    )
+    destination = FakeProject("hub")
 
-    with pytest.raises(ValueError, match="no canonical `report_id`"):
-        synchronize(source, destination, bidirectional=False, dry_run=False)
+    result = synchronize(source, destination, bidirectional=False, dry_run=False)
 
-    source.get.assert_not_called()
-    destination.put.assert_not_called()
+    assert result.index.tolist() == ["report-1"]
+    source.get.assert_called_once_with("identified")
+    destination.put.assert_called_once_with("model", identified_report)
 
 
 def test_synchronize_dry_run_does_not_load_or_store_reports():
@@ -224,38 +231,9 @@ def test_synchronize_dry_run_does_not_load_or_store_reports():
 
     result = synchronize(source, destination, bidirectional=False, dry_run=True)
 
-    assert result.dry_run is True
-    assert [operation.report_id for operation in result.operations] == ["report-1"]
-    source.get.assert_not_called()
-    destination.put.assert_not_called()
-
-
-def test_synchronize_rejects_loaded_report_id_mismatch():
-    source = FakeProject(
-        "local",
-        [record("source", "expected", "model")],
-        {"source": report("actual")},
-    )
-    destination = FakeProject("hub")
-
-    with pytest.raises(RuntimeError, match="does not match its project summary"):
-        synchronize(source, destination, bidirectional=False, dry_run=False)
-
-    destination.put.assert_not_called()
-
-
-def test_synchronize_rejects_different_ml_tasks_before_transfer():
-    source = FakeProject(
-        "local",
-        [record("source", "report-1", "model")],
-        {"source": report("report-1")},
-        ml_task="regression",
-    )
-    destination = FakeProject("hub", ml_task="binary-classification")
-
-    with pytest.raises(ValueError, match="different ML tasks"):
-        synchronize(source, destination, bidirectional=False, dry_run=False)
-
+    assert result.index.tolist() == ["report-1"]
+    assert result.loc["report-1", "direction"] == "outbound"
+    assert result.loc["report-1", "status"] == "planned"
     source.get.assert_not_called()
     destination.put.assert_not_called()
 
@@ -297,7 +275,9 @@ def test_synchronize_stops_on_first_transfer_error():
 
     result = synchronize(source, destination, bidirectional=False, dry_run=False)
 
-    assert [operation.report_id for operation in result.operations] == ["report-2"]
+    assert result.index.tolist() == ["report-2", "report-1"]
+    assert result.loc["report-2", "status"] == "transferred"
+    assert result.loc["report-1", "status"] == "skipped"
     source.get.assert_called_once_with("source-2")
 
 
@@ -305,7 +285,9 @@ def test_synchronize_stops_on_first_transfer_error():
 def mlflow_tracking_uri(tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)
     previous_tracking_uri = mlflow.get_tracking_uri()
-    tracking_uri = f"sqlite:///{tmp_path / 'mlflow.db'}"
+    tracking_path = tmp_path / "mlruns"
+    tracking_path.mkdir()
+    tracking_uri = tracking_path.as_uri()
     mlflow.set_tracking_uri(tracking_uri)
     try:
         yield tracking_uri
@@ -317,6 +299,9 @@ def mlflow_tracking_uri(tmp_path, monkeypatch):
 
 @pytest.mark.filterwarnings(
     r"ignore:codecs\.open\(\) is deprecated:DeprecationWarning:mlflow"
+)
+@pytest.mark.filterwarnings(
+    "ignore:The filesystem tracking backend .* is deprecated:FutureWarning"
 )
 def test_sync_local_and_mlflow_bidirectionally(tmp_path, mlflow_tracking_uri):
     X, y = make_regression(random_state=42)
@@ -341,10 +326,8 @@ def test_sync_local_and_mlflow_bidirectionally(tmp_path, mlflow_tracking_uri):
         dry_run=True,
     )
 
-    assert {
-        (operation.source_mode, operation.destination_mode)
-        for operation in dry_run.operations
-    } == {("local", "mlflow"), ("mlflow", "local")}
+    assert set(dry_run["direction"]) == {"outbound", "inbound"}
+    assert set(dry_run["status"]) == {"planned"}
     assert len(local.summarize().frame()) == 1
     assert len(mlflow_project.summarize().frame()) == 1
 
@@ -353,7 +336,7 @@ def test_sync_local_and_mlflow_bidirectionally(tmp_path, mlflow_tracking_uri):
         bidirectional=True,
     )
 
-    assert result.dry_run is False
+    assert set(result["status"]) == {"transferred"}
     expected_ids = {str(local_report.id), str(mlflow_report.id)}
     assert set(local.summarize().frame()["report_id"]) == expected_ids
     assert set(mlflow_project.summarize().frame()["report_id"]) == expected_ids
@@ -363,5 +346,6 @@ def test_sync_local_and_mlflow_bidirectionally(tmp_path, mlflow_tracking_uri):
         bidirectional=True,
     )
 
-    assert repeated.operations == ()
-    assert set(repeated.skipped) == expected_ids
+    assert set(repeated.index) == expected_ids
+    assert repeated["direction"].isna().all()
+    assert set(repeated["status"]) == {"skipped"}

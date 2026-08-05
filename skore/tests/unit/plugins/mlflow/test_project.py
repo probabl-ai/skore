@@ -144,8 +144,11 @@ class TestProject:
             == second._Project__storage_experiment_id
         )
 
-    def test_init_existing_project_with_sql_tracking_uri(self, tmp_path):
-        tracking_uri = f"sqlite:///{tmp_path}/existing-mlflow.db"
+    @pytest.mark.filterwarnings(
+        "ignore:The filesystem tracking backend .* is deprecated:FutureWarning"
+    )
+    def test_init_existing_project_with_file_tracking_uri(self, tmp_path):
+        tracking_uri = (tmp_path / "existing-mlflow").as_uri()
 
         first = Project("<project>", tracking_uri=tracking_uri)
         second = Project("<project>", tracking_uri=tracking_uri)

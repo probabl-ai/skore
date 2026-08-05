@@ -9,7 +9,7 @@ from pandas import DataFrame, Index, MultiIndex, RangeIndex
 
 from skore._project import plugin
 from skore._project._summary import Summary
-from skore._project._sync import SyncResult, synchronize
+from skore._project._sync import synchronize
 from skore._project.dependencies import assert_optional_dependencies_installed
 from skore._project.types import ProjectMode
 
@@ -31,7 +31,7 @@ class Project:
     :func:`~skore.Project.summarize`, :func:`~skore.Project.get`, and
     :func:`~skore.Project.sync`, respectively to insert a key-report pair into the
     project, obtain the metadata/metrics of the inserted reports, get a specific report
-    by its id, and synchronize reports across storage modes.
+    by its id, and synchronize reports between projects.
 
     Three mutually exclusive modes are available and can be configured using the
     ``mode`` parameter of the constructor:
@@ -381,42 +381,33 @@ class Project:
         *,
         bidirectional: bool = False,
         dry_run: bool = False,
-    ) -> SyncResult:
+    ) -> DataFrame:
         """Copy missing reports to another project.
 
-        Reports are matched by canonical ID. Set ``bidirectional=True`` to copy missing
+        Reports are matched using the ``report_id`` column returned by
+        ``Project.summarize().frame()``. Set ``bidirectional=True`` to copy missing
         reports in both directions.
 
         Parameters
         ----------
         other : Project
-            Destination project. It must have the same name as this project and use a
-            different storage mode.
+            Destination project.
         bidirectional : bool, default=False
             If ``False``, transfer reports from this project to ``other``. If ``True``,
-            also transfer reports missing from this project. Both differences are
-            computed before any transfer.
+            also transfer reports missing from this project.
         dry_run : bool, default=False
             Return the planned operations without loading or storing reports.
 
         Returns
         -------
-        result : SyncResult
-            Planned operations when ``dry_run=True``, otherwise completed operations,
-            together with canonical IDs already present in both projects.
+        result : pandas.DataFrame
+            Synchronization status indexed by ``report_id``. The ``direction`` column
+            is ``"outbound"`` from this project to ``other``, ``"inbound"`` from
+            ``other`` to this project, or missing for skipped reports. The ``status``
+            column is ``"planned"``, ``"transferred"``, or ``"skipped"``.
         """
         if not isinstance(other, Project):
             raise TypeError(f"`other` must be a Project (found {type(other)!r}).")
-        if other.name != self.name:
-            raise ValueError(
-                "Synchronization requires projects with the same name "
-                f"(found {self.name!r} and {other.name!r})."
-            )
-        if other.mode == self.mode:
-            raise ValueError(
-                "Synchronization requires two different project modes "
-                f"(both were {self.mode!r})."
-            )
 
         return synchronize(
             self,

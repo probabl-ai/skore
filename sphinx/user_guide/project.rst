@@ -60,8 +60,8 @@ To retrieve a specific report for which you have its ``id`` (as returned by
 Synchronizing projects
 ----------------------
 
-Use :meth:`Project.sync` to transfer reports between projects with the same name and
-different storage modes. The project on which the method is called is the source.
+Use :meth:`Project.sync` to transfer reports between projects. The project on which the
+method is called is the source.
 
 .. code-block:: python
 
@@ -72,13 +72,15 @@ different storage modes. The project on which the method is called is the source
    )
    result = project_local.sync(project_hub)
 
-The caller is the source; reverse the call for the opposite direction. With
-``bidirectional=True``, both differences are computed before transfers start.
+The caller is the source; reverse the call for the opposite direction. Set
+``bidirectional=True`` to transfer missing reports in both directions.
 
-Reports are matched by canonical ID and copied with their keys. Existing IDs are skipped;
-contents and metadata are not compared. ``dry_run=True`` returns the transfer plan
-without calling ``get`` or ``put``.
+Reports are matched using the ``report_id`` column returned by
+``Project.summarize().frame()`` and copied with their keys. Existing IDs are skipped;
+contents and metadata are not compared. Reports without a ``report_id`` are ignored.
+Set ``dry_run=True`` to return the transfer plan without loading or storing reports.
 
-:class:`SyncResult` contains transfer operations and IDs already present in both
-projects. Synchronization requires canonical IDs, does not compare revisions, and
-provides no concurrency control.
+The returned :class:`pandas.DataFrame` is indexed by ``report_id``. Its ``direction``
+column is ``"outbound"`` from the caller to the other project, ``"inbound"`` from the
+other project to the caller, or missing when a report is skipped. Its ``status`` column
+is ``"planned"``, ``"transferred"``, or ``"skipped"``.

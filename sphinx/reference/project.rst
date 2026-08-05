@@ -32,13 +32,6 @@ These functions and classes are meant for managing a `Project` and its reports.
    Project.sync
    Project.delete
 
-.. autosummary::
-   :toctree: api/
-   :template: base.rst
-
-   SyncOperation
-   SyncResult
-
 Skore project's summary
 ^^^^^^^^^^^^^^^^^^^^^^^
 

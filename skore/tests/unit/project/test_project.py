@@ -3,13 +3,13 @@ from re import escape
 from unittest.mock import Mock
 from uuid import uuid4
 
-from pandas import Timestamp
+from pandas import DataFrame, Timestamp
 from pytest import fixture, mark, param, raises
 from sklearn.datasets import make_classification, make_regression
 from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.model_selection import train_test_split
 
-from skore import CrossValidationReport, EstimatorReport, Project, SyncResult
+from skore import CrossValidationReport, EstimatorReport, Project
 from skore._project._summary import Summary
 
 
@@ -424,8 +424,9 @@ class TestProject:
 
         result = project.sync(other, dry_run=True)
 
-        assert isinstance(result, SyncResult)
-        assert result.dry_run is True
+        assert isinstance(result, DataFrame)
+        assert result.columns.tolist() == ["key", "direction", "status"]
+        assert result.empty
         assert FakeHubProject.call_count == calls_before_sync
 
     def test_sync_rejects_non_project(self):
@@ -434,19 +435,21 @@ class TestProject:
         with raises(TypeError, match="`other` must be a Project"):
             project.sync("hub", dry_run=True)
 
-    def test_sync_rejects_different_name(self):
+    def test_sync_allows_different_names(self):
         project = Project(name="<name>", mode="local", workspace="<local>")
         other = Project(name="<other>", mode="hub", workspace="<hub>")
 
-        with raises(ValueError, match="projects with the same name"):
-            project.sync(other, dry_run=True)
+        result = project.sync(other, dry_run=True)
 
-    def test_sync_rejects_same_mode(self):
+        assert result.empty
+
+    def test_sync_allows_same_mode(self):
         project = Project(name="<name>", mode="local", workspace="<left>")
         other = Project(name="<name>", mode="local", workspace="<right>")
 
-        with raises(ValueError, match="two different project modes"):
-            project.sync(other, dry_run=True)
+        result = project.sync(other, dry_run=True)
+
+        assert result.empty
 
     def test_repr(self):
         project = Project(name="<name>", mode="local")
