@@ -6,7 +6,7 @@ from collections.abc import Mapping
 from typing import Any, Generic, Literal, TypeVar, cast
 
 import pandas as pd
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict
 
 from skore import CrossValidationReport, EstimatorReport
 
@@ -47,8 +47,6 @@ class Metric(BaseModel, Generic[Report]):
     label: bool | int | float | str | None = None
     output: int | None = None
     average: str | None = None
-    # See https://github.com/probabl-ai/skore/issues/3025
-    position: None = Field(default=None)
 
 
 def select_exportable_metrics(
