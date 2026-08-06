@@ -418,7 +418,7 @@ def test_metric_registry_binary_classification_filters(binary_classification_rep
     assert "score" in names
     assert "r2" not in names
     assert "rmse" not in names
-    assert "precision_macro" not in names
+    assert "precision_avg" not in names
 
 
 def test_metric_registry_regression_filters(regression_report):
