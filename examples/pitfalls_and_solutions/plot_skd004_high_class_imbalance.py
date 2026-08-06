@@ -35,19 +35,18 @@ trade-off you care about.
 # Load Covertype (types 2 vs 5)
 # =============================
 #
-# Types 2 vs 5 give a natural imbalance (type 2 is the majority class). We keep minority
-# type 5 as the positive class and draw an 8,000-row stratified subsample so
-# the gallery stays fast while absolute minority counts remain large enough to
-# learn from.
+# Types 2 vs 5 give a natural imbalance (type 2 is the majority class). We keep
+# minority type 5 as the positive class and draw an 8,000-row stratified
+# subsample so the gallery stays fast while absolute minority counts remain
+# large enough to learn from.
 
 import numpy as np
-import pandas as pd
 from sklearn.datasets import fetch_covtype
 from sklearn.model_selection import train_test_split
 
 df = fetch_covtype(as_frame=True).frame
-pair = df[df["Cover_Type"].isin([2, 5])].copy()
-y_full = (pair["Cover_Type"] == 5).astype(int)
+pair = df.query("Cover_Type.isin([2, 5])")
+y_full = (pair["Cover_Type"] == 5).astype(int).rename("is_type_5")
 X_full = pair.drop(columns=["Cover_Type"])
 
 X, _, y, _ = train_test_split(
@@ -57,12 +56,12 @@ X, _, y, _ = train_test_split(
     stratify=y_full,
     random_state=42,
 )
-y = pd.Series(y, name="is_type_5")
 
-print("Relative frequencies:")
-print(y.value_counts(normalize=True).round(4))
-print("\nAbsolute counts:")
-print(y.value_counts())
+# %%
+y.value_counts(normalize=True).round(4)
+
+# %%
+y.value_counts()
 
 # %%
 # Inspect the feature matrix with :class:`~skrub.TableReport`.
@@ -98,6 +97,7 @@ report = evaluate(
     pos_label=1,
     splitter=splitter,
 )
+report
 
 # %%
 # SKD004 should fire: the majority class exceeds 80 % of rows. Ignore SKD008 to
@@ -109,11 +109,11 @@ report.checks.summarize(fast_mode=True, ignore=["SKD008"])
 # Accuracy and F1 are poor defaults under imbalance
 # =================================================
 #
-# Accuracy can be inflated by nearly always predicting the majority class. F1 averages precision and recall
-# into one number and hides which side of the trade-off you care about, so we
-# do not use it here. At the default probability cut-off of 0.5, minority
-# recall is often weak because rare events receive small predicted
-# probabilities.
+# Accuracy can be inflated by nearly always predicting the majority class. F1
+# averages precision and recall into one number and hides which side of the
+# trade-off you care about, so we do not use it here. At the default
+# probability cut-off of 0.5, minority recall is often weak because rare
+# events receive small predicted probabilities.
 
 report.metrics.summarize(
     metric=["accuracy", "precision", "recall", "roc_auc", "log_loss"],
@@ -152,8 +152,10 @@ report.metrics.confusion_matrix().plot()
 # The next section shows how ``class_weight="balanced"`` can push the curve
 # below the diagonal by inflating minority probabilities.
 
-print("ROC AUC (test):", report.metrics.roc_auc(data_source="test"))
-print("Log-loss (test):", report.metrics.log_loss(data_source="test"))
+report.metrics.summarize(
+    metric=["roc_auc", "log_loss"],
+    data_source="test",
+).frame()
 
 # %%
 report.inspection.calibration_curve(data_source="test", n_bins=10).plot()
@@ -162,10 +164,13 @@ report.inspection.calibration_curve(data_source="test", n_bins=10).plot()
 # Class weights as a cautionary comparison
 # ========================================
 #
-# A common reflex is ``class_weight="balanced"``. That often improves precision
-# / recall at 0.5 because it inflates minority probabilities, but it typically
-# breaks calibration: predicted probabilities run ahead of observed rates, so
-# the curve drifts below the diagonal (over-confidence on the originally rare
+# A common reflex is ``class_weight="balanced"``. Rebalancing with weights is
+# equivalent in spirit to resampling methods such as SMOTE or random
+# oversampling / undersampling: they change the effective class mix and will
+# suffer from the same issues. That often improves precision / recall at 0.5
+# because it inflates minority probabilities, but it typically breaks
+# calibration: predicted probabilities run ahead of observed rates, so the
+# curve drifts below the diagonal (over-confidence on the originally rare
 # class). If you later recalibrate, the thresholded gains often disappear. We
 # show the comparison, then leave weights behind when calibrated probabilities
 # matter.
@@ -180,9 +185,10 @@ report_weighted = evaluate(
     splitter=splitter,
 )
 
-compare(
+comparison_weights = compare(
     {"default": report, "class_weight_balanced": report_weighted}
-).metrics.summarize(
+)
+comparison_weights.metrics.summarize(
     metric=["precision", "recall", "roc_auc", "log_loss"],
     data_source="test",
 ).frame()
@@ -267,12 +273,13 @@ report_tuned.metrics.confusion_matrix().plot()
 # a false alarm is costly: auto-blocking users, expensive tests, or limited
 # outreach budgets.
 
-compare(
+comparison_thresholds = compare(
     {
         "default_threshold_0.5": report,
         "tuned_threshold": report_tuned,
     }
-).metrics.summarize(
+)
+comparison_thresholds.metrics.summarize(
     metric=["precision", "recall", "roc_auc", "log_loss"],
     data_source="test",
 ).frame()
@@ -284,27 +291,21 @@ compare(
 # The dashed line is our precision floor (0.3). The tuned threshold should land
 # near the highest-recall point that still respects that floor.
 
-from sklearn.metrics import PrecisionRecallDisplay
-
-X_train, y_train = report.X_train, report.y_train
-X_test, y_test = report.X_test, report.y_test
-proba_test = (
-    HistGradientBoostingClassifier(random_state=42)
-    .fit(X_train, y_train)
-    .predict_proba(X_test)[:, 1]
-)
 threshold = float(report_tuned.estimator_.best_threshold_)
 
-display = PrecisionRecallDisplay.from_predictions(y_test, proba_test, pos_label=1)
-display.ax_.axhline(0.3, linestyle="--", color="gray", label="precision floor 0.3")
-display.ax_.axvline(
-    recall_score(y_test, proba_test >= threshold),
+display = report.metrics.precision_recall()
+fig = display.plot()
+ax = fig.axes[0]
+ax.axhline(0.3, linestyle="--", color="gray", label="precision floor 0.3")
+ax.axvline(
+    report_tuned.metrics.recall(),
     linestyle=":",
     color="C1",
     label=f"recall at threshold={threshold:.3f}",
 )
-display.ax_.legend(loc="best")
-display.ax_.set_title("Precision-recall curve (test fold)")
+ax.legend(loc="best")
+ax.set_title("Precision-recall curve (test fold)")
+fig
 
 # %%
 # Collecting more minority data
