@@ -20,7 +20,7 @@ The default format of `report.metrics.summarize().frame()` is now long-format ra
 --------------------------------------------------
 
 `report.metrics.summarize()` no longer aborts the whole computation if one of the
-metric raised (e.g. if a custom scorer encounters an edge case). Instead, exceptions are
+metrics raised (e.g. if a custom scorer encounters an edge case). Instead, exceptions are
 caught and shown as warnings, and the output DataFrame has `NaN` for failed metrics. See
 :pr:`3124` by :user:`auguste-probabl`.
 
