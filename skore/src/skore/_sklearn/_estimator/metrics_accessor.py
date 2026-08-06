@@ -60,9 +60,8 @@ class _MetricsAccessor(BaseMetricsAccessor[EstimatorReport], DirNamesMixin):
         metric : str or list of str or None, default=None
             The metrics to report, from the list of registered metrics. None means show
             all registered metrics. To add a custom metric, see :meth:`add`.
-            Metrics added with a ``neg_`` prefix can also be retrieved without it
-            (e.g. ``"neg_mean_absolute_percentage_error"`` instead of
-            ``"mean_absolute_percentage_error"``).
+            Metrics are looked up under the name they were registered with, as
+            listed by :meth:`available`.
 
         Returns
         -------
@@ -360,9 +359,9 @@ class _MetricsAccessor(BaseMetricsAccessor[EstimatorReport], DirNamesMixin):
         ----------
         name : str
             Name of the metric to compute. Get all available metrics with
-            :meth:`~EstimatorReport.metrics.available()`.
-            Metrics added with a ``neg_`` prefix can also be retrieved
-            without it; the alias is resolved automatically.
+            :meth:`~EstimatorReport.metrics.available()`. The metric is looked up
+            under the name it was registered with, so a metric added as
+            ``"neg_mean_squared_error"`` must be requested with that exact name.
             When ``name`` is a valid Python identifier, the same value is also
             available as ``report.metrics.<name>(...)``.
 

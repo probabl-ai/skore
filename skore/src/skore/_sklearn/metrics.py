@@ -865,6 +865,12 @@ BUILTIN_METRICS: list[Metric] = [
     PredictTime(),
 ]
 
+# ``Score`` is seeded separately from ``BUILTIN_METRICS`` since it is only
+# available when the estimator exposes a ``score`` method. Its name stays
+# reserved even after removal; other default metrics may be removed and
+# re-added under the same name.
+RESERVED_METRIC_NAMES: frozenset[str] = frozenset({Score.name})
+
 
 class MetricRegistry(UserDict[str, Metric]):
     """Registry of metric instances for a report.
@@ -920,7 +926,7 @@ class MetricRegistry(UserDict[str, Metric]):
         if position not in ("first", "last"):
             raise ValueError(f"position must be 'first' or 'last', got {position!r}.")
 
-        if metric.name == "score":
+        if metric.name in RESERVED_METRIC_NAMES:
             raise ValueError(f"Cannot add {metric.name!r}: it is a reserved name.")
 
         if metric.name in self.data:
