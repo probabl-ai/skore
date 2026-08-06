@@ -1,9 +1,10 @@
 import pytest
+import skrub
 from sklearn.linear_model import LinearRegression
-from sklearn.pipeline import Pipeline
+from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
 from sklearn.tree import DecisionTreeRegressor
-from skrub import tabular_pipeline
+from skrub import SkrubLearner, tabular_pipeline
 
 from skore import evaluate
 from skore._sklearn._checks._utils import CheckNotApplicable
@@ -36,18 +37,33 @@ def test_detects_standardized_coefficients(report_type, regression_data):
 
 
 @pytest.mark.parametrize("report_type", ["estimator", "cross-validation"])
+@pytest.mark.parametrize(
+    "estimator",
+    [
+        tabular_pipeline(LinearRegression()),
+        skrub.X().skb.apply(LinearRegression(), y=skrub.y()).skb.make_learner(),
+    ],
+)
 @pytest.mark.filterwarnings(
     "ignore:Only pandas and polars DataFrames are supported:UserWarning:skrub"
 )
-def test_tabular_pipeline_with_numpy_X(report_type, regression_data):
+def test_tabular_pipeline_with_numpy_X(report_type, estimator, regression_data):
     """SKD006 runs when tabular_pipeline is evaluated on raw numpy features."""
     X, y = regression_data
-    report = evaluate(
-        tabular_pipeline(LinearRegression()),
-        X,
-        y,
-        splitter=0.2 if report_type == "estimator" else 3,
-    )
+
+    if isinstance(estimator, SkrubLearner):
+        report = evaluate(
+            estimator,
+            data={"X": X, "y": y},
+            splitter=0.2 if report_type == "estimator" else 3,
+        )
+    else:
+        report = evaluate(
+            estimator,
+            X,
+            y,
+            splitter=0.2 if report_type == "estimator" else 3,
+        )
     assert CheckCoefficientsInterpretation().check_function(report) is not None
 
 
@@ -66,24 +82,37 @@ def test_not_applicable_for_non_linear_model(report_type, regression_data):
 
 
 @pytest.mark.parametrize(
-    "pipeline, expected_message",
+    "estimator, expected_message",
     [
         (
-            Pipeline([("model", LinearRegression())]),
+            make_pipeline(LinearRegression()),
             "Features are not on the same scale",
         ),
         (
-            Pipeline([("scaler", StandardScaler()), ("model", LinearRegression())]),
+            make_pipeline(StandardScaler(), LinearRegression()),
+            "Features appear to be standardized",
+        ),
+        (
+            (
+                skrub.X()
+                .skb.apply(StandardScaler())
+                .skb.apply(LinearRegression(), y=skrub.y())
+                .skb.make_learner()
+            ),
             "Features appear to be standardized",
         ),
     ],
 )
 def test_pipeline_coefficient_interpretation(
-    regression_data, pipeline, expected_message
+    regression_data, estimator, expected_message
 ):
     """SKD006 tip reflects preprocessed feature scale in a pipeline."""
     X, y = regression_data
-    report = evaluate(pipeline, X, y)
+    if isinstance(estimator, SkrubLearner):
+        report = evaluate(estimator, data={"X": X, "y": y})
+    else:
+        report = evaluate(estimator, X, y)
+
     explanation = CheckCoefficientsInterpretation().check_function(report)
     assert explanation is not None
     assert expected_message in explanation
