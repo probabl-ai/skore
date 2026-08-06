@@ -30,17 +30,12 @@ to move off factory defaults either through search or hand-picked values.
 # :class:`~sklearn.ensemble.HistGradientBoostingClassifier` at sklearn
 # defaults — the setup SKD016 is designed to flag.
 
-import pandas as pd
 from skrub.datasets import fetch_employee_salaries
 
 dataset = fetch_employee_salaries()
 X = dataset.X
 y_salary = dataset.y.squeeze()
-y = pd.Series(
-    (y_salary > y_salary.median()).astype(int),
-    name="high_earner",
-    index=X.index,
-)
+y = (y_salary > y_salary.median()).astype(int).rename("high_earner")
 
 # %%
 # Inspect inputs and the binary target with :class:`~skrub.TableReport`.
@@ -77,6 +72,7 @@ report = skore.evaluate(
     pos_label=1,
     splitter=splitter,
 )
+report
 
 # %%
 # SKD016 should tip that HistGradientBoostingClassifier remains at defaults.
@@ -116,8 +112,8 @@ tuned_search = RandomizedSearchCV(
     param_distributions=param_distributions,
     n_iter=8,
     cv=3,
+    scoring="neg_log_loss",
     random_state=42,
-    n_jobs=4,
     refit=True,
 )
 
@@ -128,6 +124,7 @@ report_tuned = skore.evaluate(
     pos_label=1,
     splitter=splitter,
 )
+report_tuned
 
 # %%
 # SKD016 should be absent; the report wraps a fitted search object.
@@ -163,6 +160,7 @@ report_manual = skore.evaluate(
     pos_label=1,
     splitter=splitter,
 )
+report_manual
 
 # %%
 # SKD016 should be absent once hyperparameters differ from defaults.
@@ -180,12 +178,13 @@ report_manual.metrics.summarize(data_source="both").frame()
 # RandomizedSearchCV report wraps a search estimator, so its metric table can
 # look different in :func:`~skore.compare`; we show it in its own cell below.
 
-skore.compare(
+comparison = skore.compare(
     {
         "default_pipeline": report,
         "hand_tuned_hgb": report_manual,
     }
-).metrics.summarize(data_source="both").frame()
+)
+comparison.metrics.summarize(data_source="both").frame()
 
 # %%
 report_tuned.metrics.summarize(data_source="both").frame()
