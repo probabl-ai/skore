@@ -9,7 +9,8 @@ This example walks through mitigations when check
 nearly redundant. The check computes pairwise Spearman correlation on training
 inputs and flags pairs with :math:`|ρ| > 0.9`.
 
-Mitigations from the :ref:`automated_checks` user guide:
+We showcase the following mitigations from the :ref:`automated_checks` user
+guide:
 
 - remove or combine redundant features,
 - use regularization (Lasso, ElasticNet),
@@ -33,23 +34,16 @@ from sklearn.datasets import load_breast_cancer
 X, y = load_breast_cancer(as_frame=True, return_X_y=True)
 
 # %%
-# Thanks to the :class:`~skrub.TableReport` "Associations" tab we can already
-# see many correlated feature pairs.
-
-from skrub import TableReport
-
-TableReport(X)
-
-# %%
 # The target is moderately imbalanced but easy to separate; anyway, our concern
 # in this example is collinearity of features.
+
+from skrub import TableReport
 
 TableReport(y)
 
 # %%
 # Let us use a stratified :class:`~skore.TrainTestSplit` so both classes appear
-# in train and test. Named column groups below support the combine mitigation
-# later.
+# in train and test.
 
 from skore import TrainTestSplit
 
@@ -80,27 +74,15 @@ report = evaluate(
 report.checks.summarize(fast_mode=True)
 
 # %%
-# Investigate correlated pairs on train data
-# ==========================================
+# Investigate correlated pairs
+# ============================
 #
-# SKD008 runs on **train** inputs. Let us check the correlated pairs on the
-# train data manually to see how many there are.
+# The check prompts us to look more closely at the data. The
+# :class:`~skrub.TableReport` "Associations" tab already shows many highly
+# correlated feature pairs (for instance radius, perimeter, and area within
+# each size block).
 
-import numpy as np
-import pandas as pd
-
-X_train = pd.DataFrame(report.X_train, columns=X.columns)
-
-corr = X_train.corr(method="spearman").abs()
-pairs = (
-    corr.where(np.triu(np.ones(corr.shape), k=1).astype(bool))
-    .stack()
-    .sort_values(ascending=False)
-    .rename("abs_spearman")
-)
-# The first 27 pairs sit above the 0.9 threshold; after that, |ρ| drops below
-# it. We show a few extra rows for context.
-pairs.head(28)
+TableReport(X)
 
 # %%
 # Remove redundant features
@@ -144,6 +126,8 @@ report_dropped.checks.summarize(fast_mode=True)
 # together, e.g. by taking their mean. This is similar to removing correlated
 # features, but without completely removing the information available in the
 # removed features.
+
+import pandas as pd
 
 SIZE = [
     "mean radius",
@@ -231,7 +215,7 @@ comparison.metrics.summarize(data_source="both").frame(favorability=True)
 from sklearn.linear_model import LogisticRegression
 
 report_lasso = evaluate(
-    LogisticRegression(penalty="l1", solver="liblinear", random_state=42),
+    LogisticRegression(l1_ratio=1.0, solver="saga", random_state=42, max_iter=5000),
     X=X,
     y=y,
     splitter=splitter,
@@ -247,7 +231,7 @@ report_lasso.checks.summarize(fast_mode=True)
 # ==========
 #
 # SKD008 highlights redundant numeric features that may cause the fitting to
-# fail or complicate interpretation. Here, checking the correlation on training
-# data manually guided both aggressive dropping and structured combining; L1
-# regularization can help coefficients but does not clear the check. Choose
-# dropping or aggregation based on how you want to modify the feature table.
+# fail or complicate interpretation. Here, the Associations view guided both
+# aggressive dropping and structured combining; L1 regularization can help
+# coefficients but does not clear the check. Choose dropping or aggregation
+# based on how you want to modify the feature table.
