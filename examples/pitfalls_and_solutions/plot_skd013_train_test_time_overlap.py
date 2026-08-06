@@ -35,14 +35,13 @@ import pandas as pd
 from skrub.datasets import fetch_employee_salaries
 
 dataset = fetch_employee_salaries()
-X = dataset.X.copy()
-y_salary = dataset.y.squeeze()
-y = (y_salary > y_salary.median()).astype(int)
+df = dataset.X.copy()
+df["current_annual_salary"] = dataset.y
+df["timestamp"] = pd.to_datetime(df["date_first_hired"])
+df = df.sort_values("timestamp").reset_index(drop=True)
 
-X["timestamp"] = pd.to_datetime(X["date_first_hired"])
-order = X["timestamp"].argsort()
-X = X.iloc[order].reset_index(drop=True)
-y = y.iloc[order].reset_index(drop=True)
+y = (df["current_annual_salary"] > df["current_annual_salary"].median()).astype(int)
+X = df.drop(columns=["current_annual_salary"])
 
 # %%
 # :class:`~skrub.TableReport` confirms chronological ordering and mixed HR
@@ -78,6 +77,7 @@ report = evaluate(
     pos_label=1,
     splitter=splitter_shuffled,
 )
+report
 
 # %%
 # SKD013 should list ``timestamp`` as overlapping between train and test.
@@ -107,6 +107,7 @@ report_chrono = evaluate(
     pos_label=1,
     splitter=splitter_chrono,
 )
+report_chrono
 
 # %%
 # SKD013 should be absent; test rows are strictly after train rows.
@@ -143,6 +144,7 @@ report_tscv = evaluate(
     pos_label=1,
     splitter=splitter_tscv,
 )
+report_tscv
 
 # %%
 # SKD013 should be absent; no fold trains on timestamps on or after its test
