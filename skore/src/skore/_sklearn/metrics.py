@@ -632,8 +632,8 @@ class Precision(Metric):
         return super()._raw(report=report, data_source=data_source, **kwargs)
 
 
-class PrecisionMacro(Precision):
-    name = "precision_macro"
+class PrecisionAvg(Precision):
+    name = "precision_avg"
     kwargs = {"average": "macro"}
 
     @staticmethod
@@ -664,8 +664,8 @@ class Recall(Metric):
         return super()._raw(report=report, data_source=data_source, **kwargs)
 
 
-class RecallMacro(Recall):
-    name = "recall_macro"
+class RecallAvg(Recall):
+    name = "recall_avg"
     kwargs = {"average": "macro"}
 
     @staticmethod
@@ -726,8 +726,8 @@ class RocAuc(Metric):
         return sklearn.metrics.roc_auc_score(y_true, y_score, **kwargs)
 
 
-class RocAucMacro(RocAuc):
-    name = "roc_auc_macro"
+class RocAucAvg(RocAuc):
+    name = "roc_auc_avg"
     kwargs = {"average": "macro", "multi_class": "ovr"}
 
     @staticmethod
@@ -850,11 +850,11 @@ class Score(Metric):
 BUILTIN_METRICS: list[Metric] = [
     Accuracy(),
     Precision(),
-    PrecisionMacro(),
+    PrecisionAvg(),
     Recall(),
-    RecallMacro(),
+    RecallAvg(),
     RocAuc(),
-    RocAucMacro(),
+    RocAucAvg(),
     LogLoss(),
     Brier(),
     R2(),

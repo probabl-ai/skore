@@ -132,7 +132,7 @@ def test_default_multiclass_classification_forest(
         expected_average={"macro"},
     )
 
-    assert "precision_macro" in report.metrics.available()
+    assert "precision_avg" in report.metrics.available()
 
     assert display.summary["output"].isna().all()
     data = display.summary.set_index("verbose_name")
@@ -155,7 +155,7 @@ def test_name_is_registry_key(forest_multiclass_classification_with_test):
     # `score` is the only registered metric that `summarize` skips here, because
     # RandomForestClassifier uses the default `ClassifierMixin.score`.
     assert names == set(report.metrics.available()) - {"score"}
-    assert {"precision", "precision_macro", "precision_weighted"} <= names
+    assert {"precision", "precision_avg", "precision_weighted"} <= names
 
 
 def test_default_multiclass_classification_svc(svc_multiclass_classification_with_test):
