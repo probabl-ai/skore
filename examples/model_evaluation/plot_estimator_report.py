@@ -57,15 +57,6 @@ df = (
 y = df.pop("fraud_flag")
 
 # %%
-# The full training split is large for a gallery example, so we keep an
-# 8,000-row stratified subsample that preserves the natural fraud rate.
-
-# %%
-from sklearn.model_selection import train_test_split
-
-df, _, y, _ = train_test_split(df, y, train_size=8_000, stratify=y, random_state=0)
-
-# %%
 from skrub import TableReport
 
 TableReport(df)
@@ -202,7 +193,7 @@ def operational_decision_cost(y_true, y_pred, *, amount):
 # Let's test adding this metric to our report.
 from sklearn.metrics import make_scorer
 
-amount = report.X_test["basket_amount"].to_numpy()
+amount = report.X_test["basket_amount"]
 
 # We use `make_scorer` to convert the metric to the right format (a function
 # that takes `estimator`, `X`, `y`)
