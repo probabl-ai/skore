@@ -14,4 +14,4 @@
    auto_examples/index
    reference/index
    contributing
-   Project history <whatsnew/index>
+   whatsnew/index
