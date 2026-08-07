@@ -370,6 +370,9 @@ How to reduce the risk
   correlated features,
 - group correlated features together before inspecting feature importance.
 
+Check out the :ref:`example for this check <example_skd008_correlated_features>`.
+
+
 .. _skd009-worse-than-baseline:
 
 SKD009 - Model worse than baseline
