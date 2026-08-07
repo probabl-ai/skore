@@ -17,7 +17,11 @@ Mitigations from the :ref:`automated_checks` user guide:
 - cross-check MDI with permutation importance or drop-column importance.
 
 We will compare MDI to permutation importance to show that it gives a more
-reliable estimate of feature importance.
+reliable estimate of feature importance. The same contrast is illustrated in
+scikit-learn's
+`Permutation Importance vs Random Forest Feature Importance (MDI)
+<https://scikit-learn.org/stable/auto_examples/inspection/plot_permutation_importance.html>`_
+example.
 
 We fit a :class:`~sklearn.ensemble.RandomForestRegressor` on a 1,500-row
 subsample of California housing. The goal is to show the limitations of
@@ -31,8 +35,7 @@ on a test set.
 #
 # Continuous columns such as ``AveRooms`` and ``AveOccup`` take many distinct
 # values: above the 50 % of samples threshold SKD007 uses for high-cardinality
-# features. We load the table via skrub so Sphinx CI does not depend on
-# scikit-learn's ``cal_housing.tgz`` download cache.
+# features.
 
 import numpy as np
 from sklearn.model_selection import train_test_split
@@ -57,7 +60,6 @@ X, _, y, _ = train_test_split(
 # test set should stay near zero for both.
 
 rng = np.random.default_rng(42)
-X = X.copy()
 X["noise_cont"] = rng.normal(size=len(X))
 X["noise_cat"] = rng.integers(0, 20, size=len(X))
 
@@ -94,6 +96,7 @@ report = evaluate(
     y=y,
     splitter=splitter,
 )
+report
 
 # %%
 # SKD007 warns about high-cardinality columns such as ``MedInc`` and
@@ -108,8 +111,12 @@ report.checks.summarize(fast_mode=True)
 import matplotlib.pyplot as plt
 
 mdi_display = report.inspection.impurity_decrease()
-fig = mdi_display.plot(sorting_order="descending")
-plt.show()
+_ = mdi_display.plot(sorting_order="descending")
+
+# %%
+# The two synthetic noise columns are not near zero under MDI: impurity still
+# assigns them mass. ``noise_cont`` in particular is high-cardinality, so the
+# forest can keep finding splits on it even though it carries no target signal.
 
 # %%
 # Use permutation importance instead of MDI
@@ -123,8 +130,12 @@ perm_display = report.inspection.permutation_importance(
     seed=42,
     n_repeats=5,
 )
-fig = perm_display.plot(sorting_order="descending")
-plt.show()
+_ = perm_display.plot(sorting_order="descending")
+
+# %%
+# Under permutation importance the noisy features sit at (or very near) zero:
+# shuffling them does not change the test score, so they are not contributing
+# to predicting the target.
 
 # %%
 # Cross-check MDI with permutation importance
@@ -175,7 +186,7 @@ axes[1].set_title("Permutation importance (test)")
 axes[1].set_xlabel("Mean score drop")
 
 fig.tight_layout()
-plt.show()
+_ = fig
 
 # %%
 # Conclusion
