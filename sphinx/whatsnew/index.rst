@@ -1,7 +1,7 @@
-.. title:: Project history
+.. title:: What's new
 
-Project history
-===============
+What's new
+==========
 
 .. toctree::
    :maxdepth: 1
