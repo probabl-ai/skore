@@ -661,3 +661,5 @@ How to reduce the risk
   :class:`~sklearn.model_selection.RandomizedSearchCV` over the suggested
   parameters,
 - or set sensible non-default values manually.
+
+Check out the :ref:`example for this check <example_skd016_estimator_not_tuned>`.
