@@ -21,7 +21,7 @@ quickly get insights from any scikit-learn estimator.
 # information (including the cash amount of the basket) into one feature matrix
 # with pandas. Using a skrub DataOp to keep those joins inside the estimator
 # (and replay them on unseen data) is shown in
-# :ref:`example_tracking_all_the_data_processing`.
+# :ref:`example_data_processing`.
 
 # %%
 from skrub.datasets import fetch_credit_fraud
@@ -176,9 +176,13 @@ def operational_decision_cost(y_true, y_pred, *, amount):
     mask_true_negative = (y_true == neg_label) & (y_pred == neg_label)
     mask_false_positive = (y_true == neg_label) & (y_pred == pos_label)
     mask_false_negative = (y_true == pos_label) & (y_pred == neg_label)
+    # TP: recover basket amount, pay review cost (20)
     fraudulent_refuse = (amount[mask_true_positive] - 20).sum()
+    # FN: miss fraud, lose full basket amount
     fraudulent_accept = -amount[mask_false_negative].sum()
-    legitimate_refuse = mask_false_positive.sum() * -70
+    # FP: wrongly flag legitimate basket, pay review cost (20)
+    legitimate_refuse = mask_false_positive.sum() * -20
+    # TN: correctly accept, small margin on basket amount
     legitimate_accept = (amount[mask_true_negative] * 0.02).sum()
     return fraudulent_refuse + fraudulent_accept + legitimate_refuse + legitimate_accept
 

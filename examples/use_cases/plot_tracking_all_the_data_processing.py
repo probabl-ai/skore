@@ -1,5 +1,5 @@
 """
-.. _example_tracking_all_the_data_processing:
+.. _example_data_processing:
 
 Tracking all the data processing
 ================================
