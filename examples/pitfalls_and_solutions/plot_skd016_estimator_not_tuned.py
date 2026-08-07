@@ -95,16 +95,17 @@ report.metrics.summarize(data_source="both").frame()
 # or :ref:`SKD015 <skd015-hyperparameters-worth-tuning>` if the box is too narrow
 # or incomplete — see that combined example.
 
+from scipy.stats import loguniform, randint
 from sklearn.ensemble import HistGradientBoostingClassifier
 from sklearn.model_selection import RandomizedSearchCV
 
 base_pipeline = tabular_pipeline(HistGradientBoostingClassifier(random_state=42))
 
 param_distributions = {
-    "histgradientboostingclassifier__learning_rate": [0.01, 0.05, 0.1, 0.2],
-    "histgradientboostingclassifier__max_iter": [100, 200, 300, 400],
+    "histgradientboostingclassifier__learning_rate": loguniform(1e-2, 2e-1),
+    "histgradientboostingclassifier__max_iter": randint(100, 401),
     "histgradientboostingclassifier__max_depth": [3, 5, 8, None],
-    "histgradientboostingclassifier__min_samples_leaf": [10, 20, 50],
+    "histgradientboostingclassifier__min_samples_leaf": randint(10, 51),
 }
 
 tuned_search = RandomizedSearchCV(
