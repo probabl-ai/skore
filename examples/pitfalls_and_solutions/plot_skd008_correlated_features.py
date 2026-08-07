@@ -78,7 +78,7 @@ report.checks.summarize(fast_mode=True)
 # ============================
 #
 # The check prompts us to look more closely at the data. The
-# :class:`~skrub.TableReport` "Associations" tab already shows many highly
+# :class:`~skrub.TableReport` "Associations" tab indeed shows many highly
 # correlated feature pairs (for instance radius, perimeter, and area within
 # each size block).
 
@@ -208,14 +208,14 @@ comparison.metrics.summarize(data_source="both").frame(favorability=True)
 # Note: regularization does not clear SKD008
 # ==========================================
 #
-# The L1 regularization can shrink one member of a correlated pair toward zero.
-# However, SKD008 only inspects the input data, so changing the estimator does
-# not impact the check result.
+# :class:`~sklearn.linear_model.Lasso` applies L1 regularization and can shrink
+# one member of a correlated pair toward zero. However, SKD008 only inspects the
+# input data, so changing the estimator does not impact the check result.
 
-from sklearn.linear_model import LogisticRegression
+from sklearn.linear_model import Lasso
 
 report_lasso = evaluate(
-    LogisticRegression(l1_ratio=1.0, solver="saga", random_state=42, max_iter=5000),
+    Lasso(random_state=42),
     X=X,
     y=y,
     splitter=splitter,
