@@ -188,15 +188,24 @@ Why it matters
 
 When one class dominates the dataset, a model can achieve high accuracy simply by
 constantly predicting the majority class. Accuracy alone becomes a misleading performance
-indicator, and the model may fail to detect the minority class entirely.
+indicator, and the model may fail to detect the minority class entirely. The check
+flags that situation so you handle imbalance deliberately; clearing SKD004 by
+changing the class mix is not the main goal when natural prevalence matters.
 
 How to reduce the risk
 ^^^^^^^^^^^^^^^^^^^^^^
 
-- use metrics that account for imbalance (precision, recall, F1, ROC AUC),
-- resample the dataset (oversampling the minority or undersampling the majority),
-- use class weights in the estimator,
-- collect more data for the minority class if possible.
+- report absolute class counts as well as percentages,
+- evaluate ranking and calibration (ROC AUC, log-loss, calibration curves)
+  before trusting thresholded precision / recall,
+- tune the decision threshold under an explicit precision / recall or cost
+  constraint (for example with
+  :class:`~sklearn.model_selection.TunedThresholdClassifierCV`),
+- avoid ``class_weight`` and resampling when you need calibrated probabilities,
+- if you collect extra minority data, correct for prevalence shift relative to
+  production.
+
+Check out the :ref:`example for this check <example_skd004_high_class_imbalance>`.
 
 
 .. _skd005-underrepresented-classes:
