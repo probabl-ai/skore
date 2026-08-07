@@ -110,13 +110,13 @@ report_with_leakage = evaluate(
 report_with_leakage.checks.summarize()
 
 # %%
-report_with_leakage.metrics.summarize(data_source="both").frame(favorability=True)
+report_with_leakage.metrics.summarize(data_source="both").frame()
 
 # %%
 # SKD011 - audit the suspect feature for leakage
 # ==============================================
 #
-# Correlate leakage columns with the target and inspect cardinality. A column
+# We correlate leakage columns with the target and inspect cardinality. A column
 # that is almost collinear with the label and available only after billing
 # closes should not ship to production.
 
@@ -140,11 +140,12 @@ ax.scatter(
     alpha=0.4,
     s=10,
 )
-ax.set_xlabel("Average_Medicare_Payments")
-ax.set_ylabel(y_sub.name)
-ax.set_title("Suspect feature vs target")
-plt.close(fig)
-fig
+ax.set(
+    xlabel="Average_Medicare_Payments",
+    ylabel=y_sub.name,
+    title="Suspect feature vs target",
+)
+_ = fig
 
 # %%
 # A tight scatter against the target confirms the column describes the same
@@ -171,7 +172,7 @@ comparison = compare(
         "without_leakage": report_without_leakage,
     }
 )
-comparison.metrics.summarize(data_source="both").frame(favorability=True)
+comparison.metrics.summarize(data_source="both").frame()
 
 # %%
 # Without leakage, SKD011 should clear. SKD012 may still flag weak columns, but
@@ -190,25 +191,28 @@ perm_without_leakage = report_without_leakage.inspection.permutation_importance(
 perm_without_leakage.frame()
 
 # %%
-perm_without_leakage.plot()
+_ = perm_without_leakage.plot()
+
+# %%
+# It seems like that most of the signal lives in ``DRG_Definition``;
+# so next we re-encode it.
 
 # %%
 # SKD011 - engineer legitimate features
 # =====================================
 #
-# Before engineering, almost all DRG signal sits in one column
-# (``DRG_Definition``), so permutation importance is highly concentrated there.
-# We *decompose* that column into parts the model can use separately:
+# We *decompose* ``DRG_Definition`` into parts the model can use separately:
 #
 # - ``DRG_Code`` (string): the categorical procedure id, kept as text so
 #   ``tabular_pipeline`` treats it as high-cardinality, not a float scale;
 # - ``has_MCC`` / ``has_CC``: severity bits that many DRGs share.
 #
-# Then we drop the original free-text column (id and definition are 1:1, so
-# keeping both would duplicate the same identity). The concrete goal of this
-# FE step is to distribute importance across those engineered features instead
-# of locking dependence in a single input. Materialize the columns so
-# permutation importance can show that split.
+# Then we drop the original free-text column (id and definition are the same, so
+# keeping both would duplicate the same identity).
+#
+# We wrap the transform in a :class:`~sklearn.preprocessing.FunctionTransformer`
+# and put it at the start of the estimator pipeline so the same engineering
+# runs on train and test (and cannot leak fit-time statistics).
 
 
 def engineer_features(X):
@@ -225,19 +229,26 @@ def engineer_features(X):
     return X
 
 
-X_engineered = engineer_features(X_without_leakage)
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import FunctionTransformer
+
+model_engineered = make_pipeline(
+    FunctionTransformer(engineer_features),
+    tabular_pipeline("regressor"),
+)
 
 report_engineered = evaluate(
-    tabular_pipeline("regressor"),
-    X=X_engineered,
+    model_engineered,
+    X=X_without_leakage,
     y=y_sub,
     splitter=splitter,
 )
 
+report_engineered
+
 # %%
-# Test scores may drop slightly versus the raw DRG text encoder; that is the
-# cost of dropping the free-text column. The point is a cleaner encoding: one
-# categorical id plus shared severity flags, not a duplicated identity.
+# Scores may move because the model no longer sees the raw free-text field,
+# only the decomposed ``DRG_Code`` and severity flags inside the pipeline.
 
 comparison_engineered = compare(
     {
@@ -245,73 +256,49 @@ comparison_engineered = compare(
         "with_feature_engineering": report_engineered,
     }
 )
-comparison_engineered.metrics.summarize(data_source="both").frame(favorability=True)
-
-# %%
-# After engineering, ``DRG_Code`` carries the DRG identity and ``has_MCC`` /
-# ``has_CC`` pick up shared severity structure, so dependence is no longer locked
-# in a single free-text column. This also addresses the SKD012 tip that a
-# "useless" column may only need better encoding.
-
-perm_engineered = report_engineered.inspection.permutation_importance(
-    seed=42,
-    n_repeats=5,
-)
-perm_engineered.frame()
-
-# %%
-perm_engineered.plot()
+comparison_engineered.metrics.summarize(data_source="both").frame()
 
 # %%
 report_engineered.checks.summarize(fast_mode=True)
 
 # %%
-# SKD012 - review weak features, then refit on a reduced set
-# ==========================================================
+# SKD012 - prune weak features inside the pipeline
+# ================================================
 #
 # On the *leaky* report, SKD012 often flagged geography and discharges because
 # Medicare payments already explained the target; those were overshadowed, not
-# truly useless. After cleaning and engineering, drop only columns whose
-# permutation importance is negligible (mean below ``1e-3`` or interval
-# overlapping zero), matching how SKD012 decides. Keep ``DRG_Code`` as the
-# categorical DRG identity.
+# a drop list. After cleaning and engineering, we prune weak *vectorized*
+# signal with :class:`~sklearn.feature_selection.SelectFromModel` so selection
+# is fit on the training fold only (same rule as any other pipeline step).
+#
+# We keep the same :func:`~sklearn.preprocessing.FunctionTransformer` first,
+# vectorize with :class:`~skrub.TableVectorizer`, select with a forest, then
+# fit the final regressor on the reduced representation.
 
-perm_frame = perm_engineered.frame()
-protected = {"DRG_Code"}
+from sklearn.ensemble import HistGradientBoostingRegressor, RandomForestRegressor
+from sklearn.feature_selection import SelectFromModel
+from skrub import TableVectorizer
 
-weak_mask = (perm_frame["value_mean"].abs() < 1e-3) | (
-    (perm_frame["value_mean"] - perm_frame["value_std"] <= 0)
-    & (perm_frame["value_mean"] + perm_frame["value_std"] >= 0)
+model_reduced = make_pipeline(
+    FunctionTransformer(engineer_features),
+    TableVectorizer(),
+    SelectFromModel(
+        RandomForestRegressor(n_estimators=100, random_state=42),
+        threshold="median",
+    ),
+    HistGradientBoostingRegressor(random_state=42),
 )
-
-cols_to_drop = []
-for feat in perm_frame.loc[weak_mask, "feature"]:
-    if (
-        feat in X_engineered.columns
-        and feat not in protected
-        and feat not in cols_to_drop
-    ):
-        cols_to_drop.append(feat)
-
-# If nothing meets the SKD012-style rule, drop the single weakest unprotected
-# column so we still illustrate a reduced refit.
-if not cols_to_drop:
-    for feat in perm_frame.sort_values("value_mean")["feature"]:
-        if feat in X_engineered.columns and feat not in protected:
-            cols_to_drop = [feat]
-            break
-
-cols_to_drop
+model_reduced
 
 # %%
-X_reduced = X_engineered.drop(columns=cols_to_drop)
-
 report_reduced = evaluate(
-    tabular_pipeline("regressor"),
-    X=X_reduced,
+    model_reduced,
+    X=X_without_leakage,
     y=y_sub,
     splitter=splitter,
 )
+
+report_reduced
 
 # %%
 comparison_reduced = compare(
@@ -320,7 +307,7 @@ comparison_reduced = compare(
         "reduced_features": report_reduced,
     }
 )
-comparison_reduced.metrics.summarize(data_source="test").frame(favorability=True)
+comparison_reduced.metrics.summarize(data_source="test").frame()
 
 # %%
 report_reduced.checks.summarize(fast_mode=True)
@@ -332,6 +319,7 @@ report_reduced.checks.summarize(fast_mode=True)
 # SKD011 and SKD012 often appear together when one leaky column dominates.
 # Audit that column, compare with-and-without it, then re-encode concentrated
 # signal without duplication (here: string ``DRG_Code`` plus severity flags
-# instead of free-text ``DRG_Definition``). Only then prune columns that remain
-# weak on the clean table. Do not treat SKD012 flags on a leaky report as a
-# drop list.
+# instead of free-text ``DRG_Definition``, inside the estimator pipeline). Only
+# then prune columns that remain weak on the clean table, for example with
+# :class:`~sklearn.feature_selection.SelectFromModel`. Do not treat SKD012
+# flags on a leaky report as a drop list.
