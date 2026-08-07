@@ -32,6 +32,7 @@ dependencies = [
   "matplotlib",
   "narwhals>=2.0.1",
   "numpy",
+  "packaging",
   "pandas",
   "plotly",
   "rich>=14.2",
