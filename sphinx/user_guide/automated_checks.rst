@@ -241,7 +241,7 @@ How to reduce the risk
 .. _skd006-unscaled-coefficients:
 
 SKD006 - Coefficient interpretation
-------------------------------------
+-----------------------------------
 
 How it is detected
 ^^^^^^^^^^^^^^^^^^
@@ -273,19 +273,28 @@ standard deviation rather than per original unit. Statements like "an increase o
 natural units have been scaled away.
 
 Read more about this in `the scikit-learn documentation
-<https://scikit-learn.org/dev/auto_examples/inspection/plot_linear_model_coefficient_interpretation.html#interpreting-coefficients-scale-matters>`__.
+<https://scikit-learn.org/stable/auto_examples/inspection/plot_linear_model_coefficient_interpretation.html#interpreting-coefficients-scale-matters>`__.
 
-How to reduce the risk
-^^^^^^^^^^^^^^^^^^^^^^
+How to interpret the tip
+^^^^^^^^^^^^^^^^^^^^^^^^
 
-- standardize the inputs (e.g. wrap the estimator in a pipeline with
+:ref:`SKD006 <skd006-unscaled-coefficients>` is a tip about interpretation, not a
+sign that the model failed: other issues may still exist. Depending on whether
+you want coefficients that are comparable across features or effects in original
+units, think of:
+
+- standardizing the inputs (e.g. wrap the estimator in a pipeline with
   :class:`~sklearn.preprocessing.StandardScaler`) to make coefficients
-  comparable,
-- when features are not standardized, multiply each coefficient by the feature's
-  standard deviation to make them comparable,
-- otherwise, interpret coefficient magnitudes only relative to the feature's own
-  scale, or rely on scale-invariant feature-importance methods such as
+  comparable (see `scale matters
+  <https://scikit-learn.org/stable/auto_examples/inspection/plot_linear_model_coefficient_interpretation.html#interpreting-coefficients-scale-matters>`_),
+- when features are not standardized, multiplying each coefficient by the
+  feature's standard deviation to make them comparable,
+- otherwise, interpreting coefficient magnitudes only relative to the feature's
+  own scale, or relying on scale-invariant feature-importance methods such as
   :class:`~skore.PermutationImportanceDisplay`.
+
+
+Check out the :ref:`example for this check <example_skd006_coefficient_interpretation>`.
 
 
 .. _skd007-mdi-cardinality-bias:
