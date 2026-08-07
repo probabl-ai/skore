@@ -32,6 +32,7 @@ from skore._sklearn._checks._utils import (
     detect_outliers_modified_zscore,
     get_fit_time,
     get_fitted_estimator,
+    get_predict_time,
     get_preprocessed_X,
     get_report_y,
     majority_vote,
@@ -506,17 +507,20 @@ class CheckCorrelatedFeatures(Check):
 
 
 class CheckWorseThanBaseline(Check):
-    """Check whether the model is worse than a strong baseline (SKD009).
+    """Check the model's performance against a strong baseline (SKD009).
 
     Compares test-set scores against a
-    :func:`skrub.tabular_pipeline`-wrapped HistGradientBoosting baseline.
+    :func:`skrub.tabular_pipeline`-wrapped HistGradientBoosting baseline, and
+    always reports the baseline's performance: as a warning when the model is
+    significantly worse, or for reference when it is on par with or better
+    than the baseline.
     """
 
     code = "SKD009"
-    title = "Model worse than baseline"
+    title = "Model performance vs. HistGradientBoosting baseline"
     report_types = ["estimator", "cross-validation"]
     docs_url = "skd009-worse-than-baseline"
-    severity = "issue"
+    severity = "tip"
     slow = True
 
     def check_function(self, report: _BaseReport) -> str | None:
@@ -525,37 +529,55 @@ class CheckWorseThanBaseline(Check):
 
         report_test = collect_scores(report, data_source="test")
         baseline_test = collect_scores(baseline, data_source="test")
+        common_keys = sorted(
+            report_test.keys() & baseline_test.keys(),
+            key=lambda key: tuple(str(part) for part in key),
+        )
 
-        votes = [
-            not check_score_gap_to_baseline(
-                score=report_test[key]["score"],
-                baseline=baseline_test[key]["score"],
+        worse_votes = [
+            check_score_gap_to_baseline(
+                score=baseline_test[key]["score"],
+                baseline=report_test[key]["score"],
                 greater_is_better=baseline_test[key]["greater_is_better"],
                 floor=0.01,
                 fraction=0.05,
             )
-            for key in report_test.keys() & baseline_test.keys()
+            for key in common_keys
         ]
-        majority, n_positive, total = majority_vote(votes)
+        majority, n_worse, total = majority_vote(worse_votes)
+
+        baseline_performance = ", ".join(
+            f"{key[0]}"
+            f"{f' ({key[1]})' if key[1] is not None else ''}"
+            f"={baseline_test[key]['score']:.3g}"
+            for key in common_keys
+        )
+
         if majority:
             return (
-                "Test scores are not significantly better than a "
-                "HistGradientBoosting baseline for "
-                f"{n_positive}/{total} default predictive metrics."
+                "Test scores are significantly worse than a HistGradientBoosting "
+                f"baseline for {n_worse}/{total} default predictive metrics. "
+                f"Baseline performance on the test set: {baseline_performance}."
             )
-        return None
+        return (
+            "Your model is on par with or better than a HistGradientBoosting "
+            "baseline. Baseline performance on the test set, for reference: "
+            f"{baseline_performance}."
+        )
 
 
 class CheckSlowerThanBaseline(Check):
     """Check whether the model is slower than a fast baseline (SKD010).
 
-    Compares fit time and test-set scores against a
+    Compares fit and predict time, and test-set scores, against a
     :func:`skrub.tabular_pipeline`-wrapped fast linear baseline
     (:class:`~sklearn.linear_model.RidgeCV` for regression,
     :class:`~sklearn.linear_model.LogisticRegression` for classification).
-    The slowness gate triggers when the report's fit time is at least ``2x``
-    the baseline's, with an absolute gap of at least ``0.05s`` to avoid noise
-    on very fast fits.
+
+    The slowness gate uses whichever of the fit-time or predict-time ratios is
+    larger, and triggers when that ratio is at least ``2x`` the baseline's,
+    with an absolute gap of at least ``1s`` on the winning dimension: below
+    that, the difference is negligible in practice regardless of the ratio.
     """
 
     code = "SKD010"
@@ -569,15 +591,28 @@ class CheckSlowerThanBaseline(Check):
         report = cast_report(report)
         baseline = _baseline_estimator_report(report, kind="fast")
 
-        report_fit_time = get_fit_time(report)
-        baseline_fit_time = get_fit_time(baseline)
-
-        slowness_ratio = report_fit_time / baseline_fit_time
-        if slowness_ratio < 2.0 or report_fit_time - baseline_fit_time < 0.05:
-            return None
-
         report_test = collect_scores(report, data_source="test")
         baseline_test = collect_scores(baseline, data_source="test")
+
+        report_fit_time = get_fit_time(report)
+        baseline_fit_time = get_fit_time(baseline)
+        report_predict_time = get_predict_time(report)
+        baseline_predict_time = get_predict_time(baseline)
+
+        fit_ratio = report_fit_time / baseline_fit_time
+        predict_ratio = report_predict_time / baseline_predict_time
+
+        if fit_ratio >= predict_ratio:
+            slowness_ratio = fit_ratio
+            dimension = "Fit time"
+            gap = report_fit_time - baseline_fit_time
+        else:
+            slowness_ratio = predict_ratio
+            dimension = "Predict time"
+            gap = report_predict_time - baseline_predict_time
+
+        if slowness_ratio < 2.0 or gap < 1.0:
+            return None
 
         votes = [
             not check_score_gap_to_baseline(
@@ -592,8 +627,8 @@ class CheckSlowerThanBaseline(Check):
         majority, n_positive, total = majority_vote(votes)
         if majority:
             return (
-                f"Fit is ~{slowness_ratio:.1f}x slower than a fast linear baseline "
-                f"without significantly better test scores "
+                f"{dimension} is ~{slowness_ratio:.1f}x slower than a fast linear "
+                "baseline without significantly better test scores "
                 f"({n_positive}/{total} default predictive metrics)."
             )
         return None
