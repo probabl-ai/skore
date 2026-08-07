@@ -6,8 +6,7 @@ from datetime import UTC, datetime
 from functools import partial
 from importlib.metadata import version
 from keyword import iskeyword
-from typing import TYPE_CHECKING, Generic, Literal, TypeVar
-from uuid import uuid4
+from typing import TYPE_CHECKING, Any, ClassVar, Generic, Literal, TypeVar, cast
 
 import pandas as pd
 
@@ -19,6 +18,7 @@ from skore._sklearn._checks.model_checks import _BUILTIN_CHECKS
 from skore._sklearn.metrics import Metric
 from skore._sklearn.types import DataSource, ReportMetadata
 from skore._utils._progress_bar import track
+from skore._utils._uuid import normalize_report_id, uuid7
 from skore._utils.docscrape import (
     build_numpy_docstring,
     callable_docstring,
@@ -41,7 +41,6 @@ if TYPE_CHECKING:
     from skore._sklearn._cross_validation.report import CrossValidationReport
     from skore._sklearn._estimator.report import EstimatorReport
     from skore._sklearn._plot import MetricsSummaryDisplay
-    from skore._utils.repr.data import AccessorHelpData
 
 
 class _BaseReport(ReportHelpMixin):
@@ -128,36 +127,52 @@ class _BaseReport(ReportHelpMixin):
             return self._aggregate_checks(ignored_codes, fast_mode=fast_mode)
 
         summary: dict[CheckCode, CheckResult] = {}
+        # NOTE: Every check should appear exactly once in the summary
         for check in self._checks_registry:
             if self._report_type not in check.report_types:
-                continue
-            code = check.code
-            if code in ignored_codes:
-                summary[code] = {
+                summary[check.code] = {
+                    "title": check.title,
+                    "docs_url": check.docs_url,
+                    "explanation": f"Not applicable to {self._report_type} reports.",
+                    "section": "not_applicable",
+                }
+            elif check.code in ignored_codes:
+                summary[check.code] = {
                     "title": check.title,
                     "docs_url": check.docs_url,
                     "explanation": None,
                     "section": "ignored",
                 }
-            elif fast_mode and check.slow and code not in self._check_results_cache:
-                summary[code] = {
+            elif (
+                fast_mode
+                and check.slow
+                and (check.code not in self._check_results_cache)
+            ):
+                summary[check.code] = {
                     "title": check.title,
                     "docs_url": check.docs_url,
                     "explanation": None,
                     "section": "skipped",
                 }
-            elif code in self._check_results_cache:
-                summary[code] = self._check_results_cache[code]
+            elif check.code in self._check_results_cache:
+                summary[check.code] = self._check_results_cache[check.code]
+
         return summary
 
     def _checks_summary_html_fragment(self) -> str:
         """HTML snippet for the checks summary tab in report reprs."""
         return self.checks.summarize(fast_mode=True)._embedded_repr_html()
 
+    @staticmethod
+    def _normalize_metadata(metadata: dict[str, Any]) -> ReportMetadata:
+        normalized = metadata.copy()
+        normalized["id"] = normalize_report_id(metadata["id"])
+        return cast(ReportMetadata, normalized)
+
     def __init__(self) -> None:
         self._checks_registry: list[Check] = list(_BUILTIN_CHECKS)
         self._metadata: ReportMetadata = {
-            "id": uuid4().int,
+            "id": str(uuid7()),
             "skore-version": version("skore"),
             "creation-date": datetime.now(UTC).isoformat(),
             # comparison reports don't have a _report_type yet at init time
@@ -167,8 +182,21 @@ class _BaseReport(ReportHelpMixin):
         }
 
     @property
-    def id(self) -> int:
+    def id(self) -> str:
         return self._metadata["id"]
+
+    def __setstate__(self, state: dict[str, Any]) -> None:
+        self.__dict__.update(state)
+        if "_metadata" in state:
+            self._metadata = self._normalize_metadata(state["_metadata"])
+        elif "id" in state:
+            self._metadata = {
+                "id": normalize_report_id(state["id"]),
+                "skore-version": "legacy",
+                "creation-date": "",
+                "report_type": getattr(self, "_report_type", "comparison"),
+                "git_commit": None,
+            }
 
 
 ParentT = TypeVar("ParentT", bound="_BaseReport")
@@ -210,6 +238,20 @@ def _summarize_report_metrics(
 
 class BaseMetricsAccessor(_BaseAccessor, Generic[ParentT]):
     """Base class for metrics accessor."""
+
+    # Help tree subgroups under ``.metrics``. Registry callables are injected
+    # into Metrics by ``_build_help_data``.
+    _HELP_METHOD_GROUPS: ClassVar[dict[str, tuple[str, ...]]] = {
+        "Registry": ("available", "add", "remove", "get"),
+        "Metrics": ("fit_time", "predict_time", "score", "timings"),
+        "Displays": (
+            "summarize",
+            "roc",
+            "precision_recall",
+            "prediction_error",
+            "confusion_matrix",
+        ),
+    }
 
     def _callable_metric_names(self) -> list[str]:
         """Registry metric names that can be exposed as ``metrics.<name>()``."""
@@ -327,28 +369,38 @@ class BaseMetricsAccessor(_BaseAccessor, Generic[ParentT]):
         """Add registry metrics to ``__dir__`` for tab-completion."""
         return list(set(super().__dir__()).union(self._callable_metric_names()))
 
-    def _build_help_data(self) -> AccessorHelpData:
-        """Include registry metrics in the help data.
+    def _extra_help_methods(self) -> list[MethodHelp]:
+        """Help entries for the registry metrics exposed through ``__getattr__``.
 
         Registry metrics are only reachable through ``__getattr__``, so they are not
         picked up by the default method-discovery logic used to build help data.
         Names that are not valid identifiers (e.g. containing spaces) are excluded,
         since they cannot be called as ``report.metrics.<name>(...)``.
         """
-        help_data = super()._build_help_data()
-        known_names = {method.name for method in help_data.methods}
         # Registry metrics have no Sphinx API page; show the summary tooltip only.
-        help_data.methods.extend(
+        # Keep registry order (``available()``) instead of sorting alphabetically.
+        return [
             MethodHelp(
                 name=name,
                 parameters="(...)",
                 description=self._metric_help_description(name),
             )
             for name in self._callable_metric_names()
-            if name not in known_names
+        ]
+
+    def _help_method_group_spec(self) -> dict[str, tuple[str, ...]]:
+        """Partition methods into Registry / Metrics / Displays groups.
+
+        Registry callables are listed first in Metrics, ahead of the static score
+        helpers declared on the class. Some helpers (e.g. ``fit_time``) are registry
+        metrics on reports that do not define them as methods, hence the dedupe.
+        """
+        group_spec = dict(self._HELP_METHOD_GROUPS)
+        registry_names = tuple(self._callable_metric_names())
+        group_spec["Metrics"] = registry_names + tuple(
+            name for name in group_spec["Metrics"] if name not in set(registry_names)
         )
-        help_data.methods.sort(key=lambda method: method.name)
-        return help_data
+        return group_spec
 
     def _formatted_summary_frame(
         self,

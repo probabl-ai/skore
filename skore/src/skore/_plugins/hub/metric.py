@@ -29,8 +29,9 @@ class Metric(BaseModel, Generic[Report]):
         Indicator of "greater value is better", default None.
     value : float
         Value of the metric.
-    label : bool | int | float | str | None, optional
+    label : str | None, optional
         Class label for per-class classification metrics, default None.
+        Always a string (or ``None``) so the hub wire format stays type-stable.
     output : int | None, optional
         Output index for multioutput regression metrics, default None.
     average : str | None, optional
@@ -44,11 +45,23 @@ class Metric(BaseModel, Generic[Report]):
     data_source: Literal["train", "test"] | None
     greater_is_better: bool | None
     value: float
-    label: bool | int | float | str | None = None
+    label: str | None = None
     output: int | None = None
     average: str | None = None
     # See https://github.com/probabl-ai/skore/issues/3025
     position: None = Field(default=None)
+
+
+def cast_to_str_or_none(label: object) -> str | None:
+    r"""Normalize a summarize class label for the hub metric payload.
+
+    Missing values become ``None``. All other values are cast with ``str(...)``
+    so the JSON payload is always ``string | null`` (e.g. ``True`` → ``\"True\"``,
+    ``0`` → ``\"0\"``).
+    """
+    if pd.isna(label):
+        return None
+    return str(label)
 
 
 def select_exportable_metrics(

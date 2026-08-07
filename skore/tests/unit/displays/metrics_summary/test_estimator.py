@@ -58,15 +58,15 @@ def test_format_wide_multiclass(forest_multiclass_classification_with_test):
         "precision_0",
         "precision_1",
         "precision_2",
-        "precision_macro",
+        "precision_avg_macro",
         "recall_0",
         "recall_1",
         "recall_2",
-        "recall_macro",
+        "recall_avg_macro",
         "roc_auc_0",
         "roc_auc_1",
         "roc_auc_2",
-        "roc_auc_macro",
+        "roc_auc_avg_macro",
         "log_loss",
         "fit_time",
         "predict_time",
@@ -256,7 +256,7 @@ def test_frame_multiclass_includes_macro_metrics(
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
     data = report.metrics.summarize().summary
 
-    for metric_name in ("precision", "recall", "roc_auc"):
+    for metric_name in ("precision_avg", "recall_avg", "roc_auc_avg"):
         macro_rows = data[(data["name"] == metric_name) & (data["average"] == "macro")]
         assert len(macro_rows) == 1
 

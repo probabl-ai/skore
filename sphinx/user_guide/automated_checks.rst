@@ -188,15 +188,24 @@ Why it matters
 
 When one class dominates the dataset, a model can achieve high accuracy simply by
 constantly predicting the majority class. Accuracy alone becomes a misleading performance
-indicator, and the model may fail to detect the minority class entirely.
+indicator, and the model may fail to detect the minority class entirely. The check
+flags that situation so you handle imbalance deliberately; clearing SKD004 by
+changing the class mix is not the main goal when natural prevalence matters.
 
 How to reduce the risk
 ^^^^^^^^^^^^^^^^^^^^^^
 
-- use metrics that account for imbalance (precision, recall, F1, ROC AUC),
-- resample the dataset (oversampling the minority or undersampling the majority),
-- use class weights in the estimator,
-- collect more data for the minority class if possible.
+- report absolute class counts as well as percentages,
+- evaluate ranking and calibration (ROC AUC, log-loss, calibration curves)
+  before trusting thresholded precision / recall,
+- tune the decision threshold under an explicit precision / recall or cost
+  constraint (for example with
+  :class:`~sklearn.model_selection.TunedThresholdClassifierCV`),
+- avoid ``class_weight`` and resampling when you need calibrated probabilities,
+- if you collect extra minority data, correct for prevalence shift relative to
+  production.
+
+Check out the :ref:`example for this check <example_skd004_high_class_imbalance>`.
 
 
 .. _skd005-underrepresented-classes:
@@ -584,8 +593,10 @@ How to reduce the risk
 - for :class:`~sklearn.model_selection.RandomizedSearchCV`, increase ``n_iter``
   and sample from a wider range,
 - if :ref:`SKD015 <skd015-hyperparameters-worth-tuning>` also fires, address
-  both together: the search space is too narrow on at least one axis and is
-  also missing recommended axes entirely.
+  both together: the search space is too narrow on at least one hyperparameter
+  and is also missing recommended hyperparameters entirely.
+
+Check out the :ref:`example for this check <example_skd014_hyperparams_at_search_edge_skd015_hyperparameters_worth_tuning>`.
 
 .. _skd015-hyperparameters-worth-tuning:
 
@@ -601,18 +612,22 @@ the tuning literature (Probst, Boulesteix & Bischl 2019; van Rijn & Hutter 2018)
 
 When the search wraps a :class:`~sklearn.pipeline.Pipeline`, every step whose
 class is in the table is checked independently, regardless of whether the search
-currently tunes any of its parameters. Recommended axes that play the same role
-(e.g. ``max_depth`` and ``min_samples_leaf`` for tree complexity) are collapsed
-to a single suggestion.
+currently tunes any of its parameters. Recommended hyperparameters that play
+the same role (e.g. ``max_depth`` and ``min_samples_leaf`` for tree complexity)
+are collapsed to a single suggestion.
 
 Why it matters
 ^^^^^^^^^^^^^^
 Not tuning the most impactful hyperparameters leaves performance on the table.
+This finding is a **tip**: the search is incomplete relative to a curated table,
+not proof that the fitted model is wrong.
 
 How to reduce the risk
 ^^^^^^^^^^^^^^^^^^^^^^
 
 - add the suggested parameters to ``param_grid`` or ``param_distributions``.
+
+Check out the :ref:`example for this check <example_skd014_hyperparams_at_search_edge_skd015_hyperparameters_worth_tuning>`.
 
 .. _skd016-estimator-not-tuned:
 

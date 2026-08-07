@@ -42,6 +42,7 @@ from skore._plugins.hub.artifact.media.data import TableReport
 from skore._plugins.hub.artifact.media.media import Media
 from skore._plugins.hub.metric import (
     Metric,
+    cast_to_str_or_none,
     find_multimetric_scalar_names,
     get_hub_metric_name,
     select_exportable_metrics,
@@ -422,7 +423,7 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
                     row["greater_is_better"] if suffix == "mean" else False
                 ),
                 value=row[suffix],
-                label=None if pd.isna(row["label"]) else row["label"],
+                label=cast_to_str_or_none(row["label"]),
                 output=None if pd.isna(row["output"]) else int(row["output"]),
                 average=None if pd.isna(row["average"]) else row["average"],
             )
