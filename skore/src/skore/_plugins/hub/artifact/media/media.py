@@ -14,6 +14,7 @@ Parameters = (
     | dict[Literal["with_roc_auc"], Literal[True]]
     | dict[Literal["threshold_value"], Literal["all"]]
     | dict[Literal["threshold_value"], None]
+    | dict[Literal["fast_mode"], Literal[True]]
     | None
 )
 

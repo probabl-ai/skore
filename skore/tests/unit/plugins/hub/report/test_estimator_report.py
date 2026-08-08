@@ -7,6 +7,7 @@ from sklearn.metrics import make_scorer, precision_score
 
 from skore import CrossValidationReport, EstimatorReport, evaluate
 from skore._plugins.hub.artifact.media import (
+    ChecksSummary,
     ConfusionMatrixDataFrameTestAll,
     ConfusionMatrixDataFrameTestNone,
     ConfusionMatrixDataFrameTrainAll,
@@ -437,6 +438,7 @@ class TestEstimatorReportPayload:
     @mark.respx()
     def test_medias(self, payload):
         assert list(map(type, payload.medias)) == [
+            ChecksSummary,
             ConfusionMatrixDataFrameTestAll,
             ConfusionMatrixDataFrameTestNone,
             ConfusionMatrixDataFrameTrainAll,

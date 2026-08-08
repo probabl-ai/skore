@@ -1,5 +1,6 @@
 """Class definitions of the payloads used to send a media to ``hub``."""
 
+from .checks import ChecksSummary
 from .data import TableReportTest, TableReportTrain
 from .inspection import (
     Coefficients,
@@ -22,6 +23,7 @@ from .performance import (
 )
 
 __all__ = [
+    "ChecksSummary",
     "Coefficients",
     "ConfusionMatrixDataFrameTestAll",
     "ConfusionMatrixDataFrameTestNone",

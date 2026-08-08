@@ -24,6 +24,7 @@ from sklearn.model_selection import (
 
 from skore import CrossValidationReport, EstimatorReport, evaluate
 from skore._plugins.hub.artifact.media import (
+    ChecksSummary,
     ConfusionMatrixDataFrameTestAll,
     ConfusionMatrixDataFrameTestNone,
     ConfusionMatrixDataFrameTrainAll,
@@ -1206,6 +1207,7 @@ class TestCrossValidationReportPayload:
     @mark.respx()
     def test_medias(self, payload):
         assert list(map(type, payload.medias)) == [
+            ChecksSummary,
             ConfusionMatrixDataFrameTestAll,
             ConfusionMatrixDataFrameTestNone,
             ConfusionMatrixDataFrameTrainAll,
