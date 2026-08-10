@@ -139,9 +139,11 @@ comparable["effect_per_std"] = comparable["coefficient"] * feature_std
 comparable.sort_values("effect_per_std", key=abs, ascending=False)
 
 # %%
-# After this rescaling, ``AveBedrms`` usually drops in the ranking: its large
-# raw coefficient was inflated by the small bedroom-count scale. Features such
-# as ``MedInc``, ``Latitude``, or ``Longitude`` move up when importance is
+# That rescaling erases the surprises from the side-by-side bars above. The
+# large raw ``AveBedrms`` coefficient shrinks once multiplied by its small
+# standard deviation, so it usually drops in the ranking. The tiny raw
+# ``Population`` coefficient grows with that column's large std, and features
+# such as ``MedInc``, ``Latitude``, or ``Longitude`` move up when importance is
 # measured per one standard deviation rather than per original unit.
 
 # %%
@@ -178,9 +180,13 @@ report_scaled.checks.summarize()
 # importance after standardization, not as effects per original unit of income,
 # rooms, or population.
 #
-# Up to small numerical differences (train-fold vs. scaler internals), these
-# values match the post-hoc ``coefficient * feature_std`` column from the
-# previous section: both express an effect per one standard deviation.
+# These values are the same quantity as the post-hoc
+# ``coefficient * feature_std`` column from the previous section: both are an
+# effect per one standard deviation. Fitting with ``StandardScaler`` does that
+# rescaling inside the pipeline; multiplying raw coefficients by the train-set
+# std does it after the fact. Small numerical differences can remain because the
+# scaler's internal mean/std and ``X_train.std()`` are not bit-identical, but the
+# ranking and interpretation should match.
 
 report_scaled.inspection.coefficients().frame()
 
@@ -210,7 +216,7 @@ display = report.inspection.permutation_importance(
 display.frame()
 
 # %%
-display.plot()
+_ = display.plot()
 
 # %%
 # Conclusion
