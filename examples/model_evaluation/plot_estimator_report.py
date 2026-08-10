@@ -170,13 +170,6 @@ report.metrics.log_loss(data_source="train")
 # scikit-learn scorers, i.e. functions taking `estimator`, `X` and `y` (and optional
 # keyword arguments). Let's take a look at an example.
 
-
-def operational_decision_gain(y_true, y_pred, *, amount):
-    mask_true_positive = (y_true == pos_label) & (y_pred == pos_label)
-    mask_true_negative = (y_true == neg_label) & (y_pred == neg_label)
-    mask_false_positive = (y_true == neg_label) & (y_pred == pos_label)
-    mask_false_negative = (y_true == pos_label) & (y_pred == neg_label)
-    # TP: recover basket amount, pay review cost (20)
 def operational_decision_gain(y_true, y_pred, *, amount):
     """The monetary gain we obtain depending on our predictions.
 
@@ -201,27 +194,18 @@ def operational_decision_gain(y_true, y_pred, *, amount):
     # Legitimate basket wrongly flagged: we pay the review costs, but we also annoy
     # the customer and risk losing them, so it is penalized compared to a correct
     # refusal
-    legitimate_refuse = mask_false_positive.sum() * (REVIEW_COST+REPUTATION_COST)
+    legitimate_refuse = mask_false_positive.sum() * (REVIEW_COST + REPUTATION_COST)
 
     # Legitimate basket correctly accepted: we earn a margin on the sale
     legitimate_accept = (amount[mask_true_negative] * MARGIN).sum()
 
     return fraudulent_refuse + fraudulent_accept + legitimate_refuse + legitimate_accept
-    # FN: miss fraud, lose full basket amount
-    fraudulent_accept = -amount[mask_false_negative].sum()
-    # FP: wrongly flag legitimate basket, pay review cost (20)
-    legitimate_refuse = mask_false_positive.sum() * -20
-    # TN: correctly accept, small margin on basket amount
-    legitimate_accept = (amount[mask_true_negative] * 0.02).sum()
-    return fraudulent_refuse + fraudulent_accept + legitimate_refuse + legitimate_accept
-
-
 # %%
 #
-# In our example use case, each classification decision we make has a cost.
-# The function above models this by translating the confusion matrix into a cost
-# matrix; this cost also depends on an extra parameter named ``amount``, to illustrate
-# that skore can handle custom metrics with non-standard arguments.
+# In our example use case, each classification decision changes monetary gain.
+# The function above models this by translating the confusion matrix into a gain
+# (payoff) matrix; this also depends on an extra parameter named ``amount``, to
+# illustrate that skore can handle custom metrics with non-standard arguments.
 # Here ``amount`` is the real basket cash value from the feature matrix.
 # Let's test adding this metric to our report.
 from sklearn.metrics import make_scorer
