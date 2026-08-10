@@ -481,12 +481,10 @@ class Project:
 
     def get(self, report_id: str) -> EstimatorReport | CrossValidationReport:
         """Get a persisted report by its ID."""
-        report_path = next(
-            iter((self.path / "reports").glob(f"*__id_{report_id}__*")), None
-        )
-        if report_path is None:
+        report_paths = sorted((self.path / "reports").glob(f"*__id_{report_id}__*"))
+        if not report_paths:
             raise KeyError(report_id)
-        return read_report(report_path)
+        return read_report(report_paths[-1])
 
     def summarize(self) -> list[dict[str, Any]]:
         """Obtain metadata/metrics for all persisted reports."""
