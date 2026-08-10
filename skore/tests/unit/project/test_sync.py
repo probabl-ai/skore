@@ -4,8 +4,8 @@ from typing import cast
 from unittest.mock import Mock
 
 import mlflow
+import pandas as pd
 import pytest
-from pandas import NA, DataFrame, Index, MultiIndex, RangeIndex, isna
 from pandas.testing import assert_frame_equal
 from sklearn.datasets import make_regression
 from sklearn.linear_model import LinearRegression, Ridge
@@ -15,10 +15,10 @@ from skore._project._sync import synchronize
 
 
 class FakeSummary:
-    def __init__(self, frame: DataFrame):
+    def __init__(self, frame: pd.DataFrame):
         self._frame = frame
 
-    def frame(self) -> DataFrame:
+    def frame(self) -> pd.DataFrame:
         return self._frame
 
 
@@ -47,12 +47,12 @@ class FakeProject:
         self.reports[backend_id] = report
 
     def summarize(self) -> FakeSummary:
-        frame = DataFrame(sorted(self.records, key=lambda row: row["date"]))
+        frame = pd.DataFrame(sorted(self.records, key=lambda row: row["date"]))
         if not frame.empty:
-            frame.index = MultiIndex.from_arrays(
+            frame.index = pd.MultiIndex.from_arrays(
                 [
-                    RangeIndex(len(frame)),
-                    Index(frame.pop("id"), name="id", dtype=str),
+                    pd.RangeIndex(len(frame)),
+                    pd.Index(frame.pop("id"), name="id", dtype=str),
                 ]
             )
         return FakeSummary(frame)
@@ -79,6 +79,7 @@ def report_ids(project):
     ("source_mode", "destination_mode"), permutations(("local", "hub", "mlflow"), 2)
 )
 def test_synchronize_supports_all_mode_pairs(source_mode, destination_mode):
+    """Synchronize each distinct pair of project modes."""
     source_report = report("report-1")
     source = FakeProject(
         source_mode,
@@ -89,13 +90,13 @@ def test_synchronize_supports_all_mode_pairs(source_mode, destination_mode):
 
     result = synchronize(source, destination, bidirectional=False, dry_run=False)
 
-    expected = DataFrame(
+    expected = pd.DataFrame(
         {
             "key": ["model"],
             "direction": ["outbound"],
             "status": ["transferred"],
         },
-        index=Index(["report-1"], name="report_id"),
+        index=pd.Index(["report-1"], name="report_id"),
         dtype="string",
     )
     assert_frame_equal(result, expected)
@@ -104,6 +105,7 @@ def test_synchronize_supports_all_mode_pairs(source_mode, destination_mode):
 
 
 def test_synchronize_bidirectionally_uses_initial_snapshots():
+    """Use initial snapshots for bidirectional synchronization."""
     left = FakeProject(
         "local",
         [
@@ -129,13 +131,13 @@ def test_synchronize_bidirectionally_uses_initial_snapshots():
 
     result = synchronize(left, right, bidirectional=True, dry_run=False)
 
-    expected = DataFrame(
+    expected = pd.DataFrame(
         {
             "key": ["left-only", "right-only", "shared"],
-            "direction": ["outbound", "inbound", NA],
+            "direction": ["outbound", "inbound", pd.NA],
             "status": ["transferred", "transferred", "skipped"],
         },
-        index=Index(["report-1", "report-3", "report-2"], name="report_id"),
+        index=pd.Index(["report-1", "report-3", "report-2"], name="report_id"),
         dtype="string",
     )
     assert_frame_equal(result, expected)
@@ -144,6 +146,7 @@ def test_synchronize_bidirectionally_uses_initial_snapshots():
 
 
 def test_synchronize_skips_same_id_without_loading_reports():
+    """Skip reports with IDs present in both projects without loading them."""
     left = FakeProject(
         "local",
         [record("left", "report-1", "left-key")],
@@ -159,13 +162,14 @@ def test_synchronize_skips_same_id_without_loading_reports():
 
     assert result.index.tolist() == ["report-1"]
     assert result.loc["report-1", "key"] == "left-key"
-    assert isna(result.loc["report-1", "direction"])
+    assert pd.isna(result.loc["report-1", "direction"])
     assert result.loc["report-1", "status"] == "skipped"
     left.get.assert_not_called()
     right.get.assert_not_called()
 
 
 def test_synchronize_allows_different_ids_with_same_key():
+    """Allow distinct reports to share a key."""
     left_report = report("report-1")
     left = FakeProject(
         "local",
@@ -184,6 +188,7 @@ def test_synchronize_allows_different_ids_with_same_key():
 
 
 def test_synchronize_uses_latest_source_duplicate():
+    """Transfer the most recent source record for duplicate report IDs."""
     latest = report("report-1")
     source = FakeProject(
         "local",
@@ -203,6 +208,7 @@ def test_synchronize_uses_latest_source_duplicate():
 
 
 def test_synchronize_ignores_missing_report_ids():
+    """Ignore records without a report ID."""
     identified_report = report("report-1")
     source = FakeProject(
         "local",
@@ -225,6 +231,7 @@ def test_synchronize_ignores_missing_report_ids():
 
 
 def test_synchronize_ignores_missing_report_id_column():
+    """Treat summaries without report IDs as empty."""
     source = FakeProject(
         "local",
         [{"id": "legacy", "key": "legacy", "date": "2026-01-01"}],
@@ -234,9 +241,9 @@ def test_synchronize_ignores_missing_report_id_column():
 
     result = synchronize(source, destination, bidirectional=False, dry_run=False)
 
-    expected = DataFrame(
-        index=Index([], name="report_id", dtype=object),
-        columns=Index(["key", "direction", "status"]),
+    expected = pd.DataFrame(
+        index=pd.Index([], name="report_id", dtype=object),
+        columns=pd.Index(["key", "direction", "status"]),
     ).astype("string")
     assert_frame_equal(result, expected)
     source.get.assert_not_called()
@@ -244,6 +251,7 @@ def test_synchronize_ignores_missing_report_id_column():
 
 
 def test_synchronize_dry_run_does_not_load_or_store_reports():
+    """Plan transfers without loading or storing reports."""
     source = FakeProject(
         "local",
         [record("source", "report-1", "model")],
@@ -261,6 +269,7 @@ def test_synchronize_dry_run_does_not_load_or_store_reports():
 
 
 def test_synchronize_stops_on_first_transfer_error():
+    """Stop on a failed transfer and resume the remaining reports later."""
     source = FakeProject(
         "local",
         [
@@ -284,9 +293,12 @@ def test_synchronize_stops_on_first_transfer_error():
 
     destination.put.side_effect = fail_second_put
 
-    with pytest.raises(RuntimeError, match="upload failed"):
+    with pytest.raises(RuntimeError, match="upload failed") as exc_info:
         synchronize(source, destination, bidirectional=False, dry_run=False)
 
+    assert exc_info.value.__notes__ == [
+        f"Failed to synchronize report 'report-2' from {source} to {destination}."
+    ]
     assert source.get.call_count == 2
     assert destination.put.call_count == 2
     assert report_ids(destination) == {"report-1"}
@@ -321,6 +333,7 @@ def isolated_mlflow_tracking(tmp_path, monkeypatch, mlflow_tracking_uri):
     r"ignore:codecs\.open\(\) is deprecated:DeprecationWarning:mlflow"
 )
 def test_sync_local_and_mlflow_bidirectionally(tmp_path, isolated_mlflow_tracking):
+    """Synchronize local and MLflow projects in both directions."""
     regression_data = make_regression(random_state=42, coef=False)
     X, y = regression_data[0], regression_data[1]
     local_report = cast(EstimatorReport, evaluate(LinearRegression(), X, y))
