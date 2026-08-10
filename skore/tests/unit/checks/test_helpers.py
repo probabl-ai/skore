@@ -13,7 +13,7 @@ from skore._sklearn._checks._utils import (
     CheckNotApplicable,
     adaptive_threshold,
     cast_report,
-    check_score_gap_to_baseline,
+    check_score_better_than_baseline,
     collect_scores,
     detect_outliers_modified_zscore,
     get_fit_time,
@@ -59,7 +59,7 @@ def test_adaptive_threshold_uses_largest_absolute_reference():
     assert adaptive_threshold(floor=0.0, fraction=0.5, references=(-10.0, 2.0)) == 5.0
 
 
-# check_score_gap_to_baseline
+# check_score_better_than_baseline
 
 
 @pytest.mark.parametrize(
@@ -72,20 +72,22 @@ def test_adaptive_threshold_uses_largest_absolute_reference():
         (True, 0.13, 0.1, True),  # gap of 0.03 hits the floor (fraction*baseline=0.01)
     ],
 )
-def test_check_score_gap_to_baseline(greater_is_better, score, baseline, expected):
+def test_check_score_better_than_baseline(greater_is_better, score, baseline, expected):
     """The gap direction follows `greater_is_better` and is floored/scaled."""
     assert (
-        check_score_gap_to_baseline(
+        check_score_better_than_baseline(
             score, baseline, greater_is_better, floor=0.03, fraction=0.1
         )
         == expected
     )
 
 
-def test_check_score_gap_to_baseline_nan_greater_is_better_returns_false():
+def test_check_score_better_than_baseline_nan_greater_is_better_returns_false():
     """A NaN `greater_is_better` (e.g. an undefined metric) never signals a gap."""
     assert (
-        check_score_gap_to_baseline(1.0, 0.0, float("nan"), floor=0.0, fraction=0.0)
+        check_score_better_than_baseline(
+            1.0, 0.0, float("nan"), floor=0.0, fraction=0.0
+        )
         is False
     )
 
