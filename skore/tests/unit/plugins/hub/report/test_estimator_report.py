@@ -109,7 +109,7 @@ class TestEstimatorReportPayload:
                 "data_source": "train",
                 "greater_is_better": True,
                 "value": approx(1.0, abs=1e-4),
-                "label": 0,
+                "label": "0",
                 "output": None,
                 "average": None,
                 "position": None,
@@ -120,7 +120,7 @@ class TestEstimatorReportPayload:
                 "data_source": "train",
                 "greater_is_better": True,
                 "value": approx(1.0, abs=1e-4),
-                "label": 1,
+                "label": "1",
                 "output": None,
                 "average": None,
                 "position": None,
@@ -131,7 +131,7 @@ class TestEstimatorReportPayload:
                 "data_source": "train",
                 "greater_is_better": True,
                 "value": approx(1.0, abs=1e-4),
-                "label": 0,
+                "label": "0",
                 "output": None,
                 "average": None,
                 "position": None,
@@ -142,7 +142,7 @@ class TestEstimatorReportPayload:
                 "data_source": "train",
                 "greater_is_better": True,
                 "value": approx(1.0, abs=1e-4),
-                "label": 1,
+                "label": "1",
                 "output": None,
                 "average": None,
                 "position": None,
@@ -219,7 +219,7 @@ class TestEstimatorReportPayload:
                 "data_source": "test",
                 "greater_is_better": True,
                 "value": approx(1.0, abs=1e-4),
-                "label": 0,
+                "label": "0",
                 "output": None,
                 "average": None,
                 "position": None,
@@ -230,7 +230,7 @@ class TestEstimatorReportPayload:
                 "data_source": "test",
                 "greater_is_better": True,
                 "value": approx(0.77778, abs=1e-4),
-                "label": 1,
+                "label": "1",
                 "output": None,
                 "average": None,
                 "position": None,
@@ -241,7 +241,7 @@ class TestEstimatorReportPayload:
                 "data_source": "test",
                 "greater_is_better": True,
                 "value": approx(0.84615, abs=1e-4),
-                "label": 0,
+                "label": "0",
                 "output": None,
                 "average": None,
                 "position": None,
@@ -252,7 +252,7 @@ class TestEstimatorReportPayload:
                 "data_source": "test",
                 "greater_is_better": True,
                 "value": approx(1.0, abs=1e-4),
-                "label": 1,
+                "label": "1",
                 "output": None,
                 "average": None,
                 "position": None,
@@ -333,7 +333,7 @@ class TestEstimatorReportPayload:
             if m.name == "precision" and m.data_source == "test"
         ]
         assert len(precision) == 2
-        assert {m.label for m in precision} == {0, 1}
+        assert {m.label for m in precision} == {"0", "1"}
         assert all(m.average is None for m in precision)
 
         custom = [
@@ -364,7 +364,7 @@ class TestEstimatorReportPayload:
             key="<key>",
         )
 
-        for metric_name in ("precision", "recall", "roc_auc"):
+        for metric_name in ("precision_avg", "recall_avg", "roc_auc_avg"):
             macro_metrics = [
                 m
                 for m in payload.metrics

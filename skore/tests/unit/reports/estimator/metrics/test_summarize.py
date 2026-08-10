@@ -18,7 +18,7 @@ from sklearn.datasets import make_classification
 from sklearn.decomposition import PCA
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import precision_score, recall_score
+from sklearn.metrics import make_scorer, precision_score, recall_score
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import make_pipeline
 
@@ -132,7 +132,7 @@ def test_default_multiclass_classification_forest(
         expected_average={"macro"},
     )
 
-    assert "precision_macro" in report.metrics.available()
+    assert "precision_avg" in report.metrics.available()
 
     assert display.summary["output"].isna().all()
     data = display.summary.set_index("verbose_name")
@@ -140,6 +140,22 @@ def test_default_multiclass_classification_forest(
     assert len(per_label) == 3
     assert len(data.loc["Recall"].dropna(subset=["label"])) == 3
     assert set(per_label["label"]) == {0, 1, 2}
+
+
+def test_name_is_registry_key(forest_multiclass_classification_with_test):
+    """Rows are named after the registry key, for built-in and custom metrics alike."""
+    estimator, X_test, y_test = forest_multiclass_classification_with_test
+    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
+    report.metrics.add(
+        make_scorer(precision_score, average="weighted"), name="precision_weighted"
+    )
+
+    names = set(report.metrics.summarize().summary["name"])
+
+    # `score` is the only registered metric that `summarize` skips here, because
+    # RandomForestClassifier uses the default `ClassifierMixin.score`.
+    assert names == set(report.metrics.available()) - {"score"}
+    assert {"precision", "precision_avg", "precision_weighted"} <= names
 
 
 def test_default_multiclass_classification_svc(svc_multiclass_classification_with_test):

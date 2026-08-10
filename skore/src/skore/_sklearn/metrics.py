@@ -180,14 +180,6 @@ class Metric:
         self.function = function
         self.function_kind = function_kind
 
-    @property
-    def summary_name(self) -> str:
-        """Name used in summarize output rows (may differ from registry ``name``)."""
-        cls_value = type(self).__dict__.get("summary_name")
-        if isinstance(cls_value, str):
-            return cls_value
-        return self.name
-
     @staticmethod
     def new(
         metric: MetricLike | Metric,
@@ -640,9 +632,8 @@ class Precision(Metric):
         return super()._raw(report=report, data_source=data_source, **kwargs)
 
 
-class PrecisionMacro(Precision):
-    name = "precision_macro"
-    summary_name = "precision"
+class PrecisionAvg(Precision):
+    name = "precision_avg"
     kwargs = {"average": "macro"}
 
     @staticmethod
@@ -673,9 +664,8 @@ class Recall(Metric):
         return super()._raw(report=report, data_source=data_source, **kwargs)
 
 
-class RecallMacro(Recall):
-    name = "recall_macro"
-    summary_name = "recall"
+class RecallAvg(Recall):
+    name = "recall_avg"
     kwargs = {"average": "macro"}
 
     @staticmethod
@@ -736,9 +726,8 @@ class RocAuc(Metric):
         return sklearn.metrics.roc_auc_score(y_true, y_score, **kwargs)
 
 
-class RocAucMacro(RocAuc):
-    name = "roc_auc_macro"
-    summary_name = "roc_auc"
+class RocAucAvg(RocAuc):
+    name = "roc_auc_avg"
     kwargs = {"average": "macro", "multi_class": "ovr"}
 
     @staticmethod
@@ -861,11 +850,11 @@ class Score(Metric):
 BUILTIN_METRICS: list[Metric] = [
     Accuracy(),
     Precision(),
-    PrecisionMacro(),
+    PrecisionAvg(),
     Recall(),
-    RecallMacro(),
+    RecallAvg(),
     RocAuc(),
-    RocAucMacro(),
+    RocAucAvg(),
     LogLoss(),
     Brier(),
     R2(),
@@ -931,10 +920,8 @@ class MetricRegistry(UserDict[str, Metric]):
         if position not in ("first", "last"):
             raise ValueError(f"position must be 'first' or 'last', got {position!r}.")
 
-        if metric.name in {m.name for m in BUILTIN_METRICS}:
-            raise ValueError(
-                f"Cannot add {metric.name!r}: it is a built-in metric name."
-            )
+        if metric.name == "score":
+            raise ValueError(f"Cannot add {metric.name!r}: it is a reserved name.")
 
         if metric.name in self.data:
             raise ValueError(
