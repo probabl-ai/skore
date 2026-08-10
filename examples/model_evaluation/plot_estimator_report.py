@@ -177,7 +177,36 @@ def operational_decision_gain(y_true, y_pred, *, amount):
     mask_false_positive = (y_true == neg_label) & (y_pred == pos_label)
     mask_false_negative = (y_true == pos_label) & (y_pred == neg_label)
     # TP: recover basket amount, pay review cost (20)
-    fraudulent_refuse = (amount[mask_true_positive] - 20).sum()
+def operational_decision_gain(y_true, y_pred, *, amount):
+    """The monetary gain we obtain depending on our predictions.
+
+    May be negative, in which case our predictions actually *cost* us money.
+    """
+    mask_true_positive = (y_true == pos_label) & (y_pred == pos_label)
+    mask_true_negative = (y_true == neg_label) & (y_pred == neg_label)
+    mask_false_positive = (y_true == neg_label) & (y_pred == pos_label)
+    mask_false_negative = (y_true == pos_label) & (y_pred == neg_label)
+
+    REVIEW_COST = -20
+    REPUTATION_COST = -30
+    MARGIN = 0.02
+
+    # Fraud correctly flagged: we pay the review costs, but do not incur
+    # more cost
+    fraudulent_refuse = mask_true_positive.sum() * REVIEW_COST
+
+    # Fraud missed: the payment goes through and we lose the full basket amount
+    fraudulent_accept = -amount[mask_false_negative].sum()
+
+    # Legitimate basket wrongly flagged: we pay the review costs, but we also annoy
+    # the customer and risk losing them, so it is penalized compared to a correct
+    # refusal
+    legitimate_refuse = mask_false_positive.sum() * (REVIEW_COST+REPUTATION_COST)
+
+    # Legitimate basket correctly accepted: we earn a margin on the sale
+    legitimate_accept = (amount[mask_true_negative] * MARGIN).sum()
+
+    return fraudulent_refuse + fraudulent_accept + legitimate_refuse + legitimate_accept
     # FN: miss fraud, lose full basket amount
     fraudulent_accept = -amount[mask_false_negative].sum()
     # FP: wrongly flag legitimate basket, pay review cost (20)
