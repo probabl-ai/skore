@@ -41,7 +41,7 @@ def test_not_detected_when_gap_below_floor(monkeypatch, report_type, regression_
     """SKD010 does not fire when the ratio is high but the absolute gap is tiny."""
     X, y = regression_data
     report = evaluate(
-        RidgeCV(), X, y, splitter=0.2 if report_type == "estimator" else 3
+        DummyRegressor(), X, y, splitter=0.2 if report_type == "estimator" else 3
     )
 
     def fake_get_fit_time(r):

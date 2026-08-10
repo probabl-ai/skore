@@ -534,6 +534,8 @@ class CheckWorseThanBaseline(Check):
             key=lambda key: tuple(str(part) for part in key),
         )
 
+        # score/baseline are swapped here: we vote when the HGB baseline is
+        # significantly better than the model, not when the model fails to beat it.
         worse_votes = [
             check_score_gap_to_baseline(
                 score=baseline_test[key]["score"],
@@ -546,23 +548,34 @@ class CheckWorseThanBaseline(Check):
         ]
         majority, n_worse, total = majority_vote(worse_votes)
 
-        baseline_performance = ", ".join(
-            f"{key[0]}"
-            f"{f' ({key[1]})' if key[1] is not None else ''}"
-            f"={baseline_test[key]['score']:.3g}"
-            for key in common_keys
-        )
+        baseline_scores = []
+        for key in common_keys:
+            verbose_name, label, average, output = key
+            qualifiers = []
+            if label is not None:
+                qualifiers.append(str(label))
+            if average is not None:
+                qualifiers.append(average)
+            if output is not None:
+                qualifiers.append(f"output {output}")
+            metric_name = (
+                f"{verbose_name} ({', '.join(qualifiers)})"
+                if qualifiers
+                else verbose_name
+            )
+            baseline_scores.append(f"{metric_name}={baseline_test[key]['score']:.3g}")
+        baseline_performance = ", ".join(baseline_scores)
 
         if majority:
             return (
-                "Test scores are significantly worse than a HistGradientBoosting "
-                f"baseline for {n_worse}/{total} default predictive metrics. "
-                f"Baseline performance on the test set: {baseline_performance}."
+                "Test scores are significantly worse than a HistGradientBoosting"
+                f" baseline for {n_worse}/{total} default predictive metrics."
+                f" Baseline performance on the test set: {baseline_performance}."
             )
         return (
-            "Your model is on par with or better than a HistGradientBoosting "
-            "baseline. Baseline performance on the test set, for reference: "
-            f"{baseline_performance}."
+            "Your model is on par with or better than a HistGradientBoosting"
+            " baseline. Baseline performance on the test set, for reference:"
+            f" {baseline_performance}."
         )
 
 
