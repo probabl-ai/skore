@@ -1,14 +1,15 @@
 """
 .. _example_skd010_slower_than_baseline:
 
-SKD010 — Model slower than baseline
+SKD010 - Model slower than baseline
 ===================================
 
 This example walks through mitigations when the check
-:ref:`SKD010 <skd010-slower-than-baseline>` fires. The check compares the user's model
-to a fast linear baseline — :class:`~sklearn.linear_model.RidgeCV` for
-regression, wrapped in :func:`~skrub.tabular_pipeline` — and flags a problem
-only when both of the following hold:
+:ref:`SKD010 <skd010-slower-than-baseline>` fires. The check compares the user's
+model to a fast linear baseline
+(:class:`~sklearn.linear_model.RidgeCV` for regression, wrapped in
+:func:`~skrub.tabular_pipeline`) and flags a problem only when both of the
+following hold:
 
 - fit time is at least 2 times the baseline (and at least 0.05s slower), and
 - test scores are not significantly better than the baseline on a majority
@@ -44,10 +45,10 @@ from skrub.datasets import fetch_employee_salaries
 
 dataset = fetch_employee_salaries()
 X = dataset.X
-y = dataset.y.squeeze()
+y = dataset.y
 
 # %%
-# Inspect column types with :class:`~skrub.TableReport` — encoding cost is part
+# Inspect column types with :class:`~skrub.TableReport`. Encoding cost is part
 # of total fit time.
 
 from skrub import TableReport
@@ -57,7 +58,7 @@ TableReport(X)
 # %%
 # Salaries are continuous and right-skewed, a typical regression target.
 
-TableReport(y.to_frame())
+TableReport(y)
 
 # %%
 from skore import TrainTestSplit
@@ -65,8 +66,8 @@ from skore import TrainTestSplit
 splitter = TrainTestSplit(test_size=0.2, random_state=42)
 
 # %%
-# Trigger SKD010 — heavy random forest pipeline
-# =============================================
+# Trigger SKD010 with a heavy random forest pipeline
+# ==================================================
 #
 # Two hundred shallow trees with full tabular preprocessing are deliberately
 # expensive. Expect SKD010 when this pipeline is much slower than RidgeCV and
@@ -89,14 +90,16 @@ report = evaluate(
     y=y,
     splitter=splitter,
 )
+report
 
 # %%
-# SKD010 should report a large fit-time ratio without a significant quality win.
+# Find ``SKD010`` in the Tips tab below: a large fit-time ratio without a
+# significant quality win.
 
 report.checks.summarize()
 
 # %%
-report.metrics.summarize(data_source="both").frame(favorability=True)
+report.metrics.summarize(data_source="both").frame()
 
 # %%
 # Check whether preprocessing is the bottleneck
@@ -105,10 +108,10 @@ report.metrics.summarize(data_source="both").frame(favorability=True)
 # First ask whether categorical encoding is what makes the pipeline slow. Fit
 # the same 200-tree forest on numeric columns only, skipping that encoding.
 #
-# SKD010 can still fire here: 200 trees may remain more than 2 times slower than RidgeCV
-# on the numeric table, and without categoricals the model is often not
+# SKD010 can still fire here: 200 trees may remain more than 2 times slower than
+# RidgeCV on the numeric table, and without categoricals the model is often not
 # significantly better. If the numeric-only forest stays slow, encoding was not
-# the dominant cost — the forest itself was.
+# the dominant cost; the forest itself was.
 
 numeric_cols = X.select_dtypes(include="number").columns.tolist()
 X_numeric = X[numeric_cols]
@@ -124,18 +127,19 @@ report_numeric = evaluate(
     y=y,
     splitter=splitter,
 )
+report_numeric
 
 # %%
 report_numeric.checks.summarize()
 
 # %%
-report_numeric.metrics.summarize(data_source="both").frame(favorability=True)
+report_numeric.metrics.summarize(data_source="both").frame()
 
 # %%
 # SKD010 did not drop after removing categoricals. Absolute fit time may look
 # smaller, but the forest is still much slower than the RidgeCV baseline on the
 # numeric table without a significant quality win. Encoding was therefore not
-# the problem — the model was.
+# the problem; the model was.
 
 # %%
 # Reduce model complexity
@@ -158,6 +162,7 @@ report_lighter = evaluate(
     y=y,
     splitter=splitter,
 )
+report_lighter
 
 # %%
 # With a lighter forest, SKD010 should typically be gone.
@@ -165,7 +170,7 @@ report_lighter = evaluate(
 report_lighter.checks.summarize()
 
 # %%
-report_lighter.metrics.summarize(data_source="both").frame(favorability=True)
+report_lighter.metrics.summarize(data_source="both").frame()
 
 # %%
 # Switch to the fast linear baseline
@@ -183,14 +188,15 @@ report_linear = evaluate(
     y=y,
     splitter=splitter,
 )
+report_linear
 
 # %%
-# SKD010 should be absent — this pipeline is the fast baseline.
+# SKD010 should be absent; this pipeline is the fast baseline.
 
 report_linear.checks.summarize()
 
 # %%
-report_linear.metrics.summarize(data_source="both").frame(favorability=True)
+report_linear.metrics.summarize(data_source="both").frame()
 
 # %%
 # Profile fit times
@@ -198,7 +204,7 @@ report_linear.metrics.summarize(data_source="both").frame(favorability=True)
 #
 # Compare train fit time (``_fit_time``) and test predict time for the
 # estimators we keep in the mitigation path. Cutting ``n_estimators`` is what
-# often exits the 2× gate; RidgeCV is the speed reference.
+# often exits the 2x gate; RidgeCV is the speed reference.
 
 import pandas as pd
 from skore import compare
@@ -235,7 +241,7 @@ comparison = compare(
         "ridge_pipeline": report_linear,
     }
 )
-comparison.metrics.summarize(data_source="test").frame(favorability=True)
+comparison.metrics.summarize(data_source="test").frame()
 
 # %%
 # Conclusion
@@ -244,6 +250,6 @@ comparison.metrics.summarize(data_source="test").frame(favorability=True)
 # SKD010 fires only for models that are much slower than a fast linear baseline
 # and not significantly better on test metrics. The numeric-only ablation
 # showed preprocessing need not be the bottleneck; fewer trees often clear the
-# check by exiting the 2× gate; RidgeCV removes it by matching the speed
+# check by exiting the 2x gate; RidgeCV removes it by matching the speed
 # baseline. Prefer a lighter model or the fast baseline unless held-out scores
 # clearly pay for the extra fit time.
