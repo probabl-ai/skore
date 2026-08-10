@@ -112,7 +112,7 @@ def adaptive_threshold(
     return max(floor, fraction * max(abs(reference) for reference in references))
 
 
-def check_score_gap_to_baseline(
+def check_score_better_than_baseline(
     score: float,
     baseline: float,
     greater_is_better: bool | None,

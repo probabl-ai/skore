@@ -27,7 +27,7 @@ from skore._sklearn._checks._utils import (
     ParameterName,
     StepName,
     cast_report,
-    check_score_gap_to_baseline,
+    check_score_better_than_baseline,
     collect_scores,
     detect_outliers_modified_zscore,
     get_fit_time,
@@ -170,7 +170,7 @@ class CheckOverfitting(Check):
         report_test = collect_scores(report, data_source="test")
 
         votes = [
-            check_score_gap_to_baseline(
+            check_score_better_than_baseline(
                 score=report_train[key]["score"],
                 baseline=report_test[key]["score"],
                 greater_is_better=report_train[key]["greater_is_better"],
@@ -214,14 +214,14 @@ class CheckUnderfitting(Check):
         baseline_test = collect_scores(baseline, data_source="test")
 
         votes = [
-            not check_score_gap_to_baseline(
+            not check_score_better_than_baseline(
                 score=report_train[key]["score"],
                 baseline=baseline_train[key]["score"],
                 greater_is_better=baseline_train[key]["greater_is_better"],
                 floor=0.01,
                 fraction=0.05,
             )
-            and not check_score_gap_to_baseline(
+            and not check_score_better_than_baseline(
                 score=report_test[key]["score"],
                 baseline=baseline_test[key]["score"],
                 greater_is_better=baseline_test[key]["greater_is_better"],
@@ -537,7 +537,7 @@ class CheckWorseThanBaseline(Check):
         # score/baseline are swapped here: we vote when the HGB baseline is
         # significantly better than the model, not when the model fails to beat it.
         worse_votes = [
-            check_score_gap_to_baseline(
+            check_score_better_than_baseline(
                 score=baseline_test[key]["score"],
                 baseline=report_test[key]["score"],
                 greater_is_better=baseline_test[key]["greater_is_better"],
@@ -628,7 +628,7 @@ class CheckSlowerThanBaseline(Check):
             return None
 
         votes = [
-            not check_score_gap_to_baseline(
+            not check_score_better_than_baseline(
                 score=report_test[key]["score"],
                 baseline=baseline_test[key]["score"],
                 greater_is_better=baseline_test[key]["greater_is_better"],
@@ -728,7 +728,7 @@ class CheckGoldenFeature(Check):
                     "Failed to create report from single feature."
                 ) from exc
             votes = [
-                not check_score_gap_to_baseline(
+                not check_score_better_than_baseline(
                     score=full_feature_scores[key]["score"],
                     baseline=single_feature_scores[key]["score"],
                     greater_is_better=full_feature_scores[key]["greater_is_better"],
