@@ -171,7 +171,7 @@ report.metrics.log_loss(data_source="train")
 # keyword arguments). Let's take a look at an example.
 
 
-def operational_decision_cost(y_true, y_pred, *, amount):
+def operational_decision_gain(y_true, y_pred, *, amount):
     mask_true_positive = (y_true == pos_label) & (y_pred == pos_label)
     mask_true_negative = (y_true == neg_label) & (y_pred == neg_label)
     mask_false_positive = (y_true == neg_label) & (y_pred == pos_label)
@@ -201,7 +201,7 @@ amount = report.X_test["basket_amount"]
 
 # We use `make_scorer` to convert the metric to the right format (a function
 # that takes `estimator`, `X`, `y`)
-report.metrics.add(metric=make_scorer(operational_decision_cost, amount=amount))
+report.metrics.add(metric=make_scorer(operational_decision_gain, amount=amount))
 
 # %%
 #
