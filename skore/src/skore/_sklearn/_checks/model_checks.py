@@ -640,9 +640,9 @@ class CheckSlowerThanBaseline(Check):
         majority, n_positive, total = majority_vote(votes)
         if majority:
             return (
-                f"{dimension} is ~{slowness_ratio:.1f}x slower than a fast linear "
-                "baseline without significantly better test scores "
-                f"({n_positive}/{total} default predictive metrics)."
+                f"{dimension} is ~{slowness_ratio:.1f}x slower than a fast linear"
+                " baseline without significantly better test scores"
+                f" ({n_positive}/{total} default predictive metrics)."
             )
         return None
 
