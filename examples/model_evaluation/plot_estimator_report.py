@@ -170,6 +170,7 @@ report.metrics.log_loss(data_source="train")
 # scikit-learn scorers, i.e. functions taking `estimator`, `X` and `y` (and optional
 # keyword arguments). Let's take a look at an example.
 
+
 def operational_decision_gain(y_true, y_pred, *, amount):
     """The monetary gain we obtain depending on our predictions.
 
@@ -200,6 +201,8 @@ def operational_decision_gain(y_true, y_pred, *, amount):
     legitimate_accept = (amount[mask_true_negative] * MARGIN).sum()
 
     return fraudulent_refuse + fraudulent_accept + legitimate_refuse + legitimate_accept
+
+
 # %%
 #
 # In our example use case, each classification decision changes monetary gain.
