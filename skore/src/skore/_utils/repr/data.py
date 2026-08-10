@@ -23,7 +23,7 @@ class MethodHelp:
     name: str
     parameters: str
     description: str
-    doc_url: str
+    doc_url: str | None = None
 
 
 @dataclass
@@ -34,10 +34,20 @@ class AttributeHelp:
 
 
 @dataclass
+class MethodGroupHelp:
+    """A named subgroup of methods under an accessor help tree."""
+
+    branch_id: str
+    name: str
+    methods: list[MethodHelp]
+
+
+@dataclass
 class AccessorBranchHelp:
     branch_id: str
     name: str
     methods: list[MethodHelp]
+    groups: list[MethodGroupHelp] | None = None
 
 
 @dataclass
@@ -59,6 +69,7 @@ class AccessorHelpData:
     accessor_name: str
     accessor_branch_id: str
     methods: list[MethodHelp]
+    groups: list[MethodGroupHelp] | None = None
 
 
 @dataclass
@@ -393,6 +404,68 @@ class _BaseHelpDataMixin(ABC):
         return items, section
 
 
+def _build_method_groups(
+    accessor: Any,
+    methods: list[MethodHelp],
+    group_spec: dict[str, tuple[str, ...]] | None = None,
+) -> list[MethodGroupHelp] | None:
+    """Partition ``methods`` according to ``accessor._HELP_METHOD_GROUPS``.
+
+    Returns ``None`` when no group specification is available. Otherwise
+    iterates groups in declared order, keeping only methods that are present in
+    ``methods`` and preserving the declared order. Empty groups are skipped.
+
+    Every public method of a grouped accessor must be listed in a group, so
+    that none is silently dropped from the help tree.
+
+    Parameters
+    ----------
+    accessor : object
+        The accessor instance whose class may declare ``_HELP_METHOD_GROUPS``.
+    methods : list of MethodHelp
+        The full list of method help entries already built for the accessor.
+    group_spec : dict of str to tuple of str, default=None
+        Group specification overriding ``accessor._HELP_METHOD_GROUPS``, for
+        accessors that extend a group with dynamically discovered methods.
+
+    Returns
+    -------
+    list of MethodGroupHelp or None
+
+    Raises
+    ------
+    ValueError
+        If a method is not listed in any declared group.
+    """
+    if group_spec is None:
+        group_spec = getattr(type(accessor), "_HELP_METHOD_GROUPS", None)
+    if not group_spec:
+        return None
+
+    method_by_name = {m.name: m for m in methods}
+    declared = {n for names in group_spec.values() for n in names}
+
+    if ungrouped := sorted(m.name for m in methods if m.name not in declared):
+        raise ValueError(
+            f"{type(accessor).__name__}._HELP_METHOD_GROUPS does not list "
+            f"{', '.join(ungrouped)}. Every public method must belong to a group."
+        )
+
+    groups = [
+        MethodGroupHelp(
+            branch_id=str(uuid.uuid4()),
+            name=group_name,
+            methods=[
+                method_by_name[name] for name in method_names if name in method_by_name
+            ],
+        )
+        for group_name, method_names in group_spec.items()
+        if any(name in method_by_name for name in method_names)
+    ]
+
+    return groups or None
+
+
 class _ReportHelpDataMixin(_BaseHelpDataMixin):
     """Mixin responsible for building help data structures for reports.
 
@@ -409,23 +482,15 @@ class _ReportHelpDataMixin(_BaseHelpDataMixin):
 
         accessors = []
         for accessor_attr, config in self._ACCESSOR_CONFIG.items():
-            accessor = getattr(self, accessor_attr)
-            methods = [
-                self._build_method_data(
-                    name=name,
-                    method=method,
-                    obj=accessor,
-                    parent_obj=self,
-                    accessor_name=config["name"],
-                )
-                for name, method in get_public_methods(accessor)
-            ]
+            accessor_help = getattr(self, accessor_attr)._build_help_data()
+            methods = accessor_help.methods
             if methods:
                 accessors.append(
                     AccessorBranchHelp(
                         branch_id=str(uuid.uuid4()),
                         name=config["name"],
                         methods=methods,
+                        groups=accessor_help.groups,
                     )
                 )
 
@@ -467,6 +532,21 @@ class _AccessorHelpDataMixin(_BaseHelpDataMixin):
     _parent: Any
     _accessor_name: ClassVar[str]  # set by _register_accessor on concrete classes
 
+    def _extra_help_methods(self) -> list[MethodHelp]:
+        """Help entries for methods that attribute introspection cannot discover.
+
+        Overridden by accessors exposing methods through ``__getattr__``.
+        """
+        return []
+
+    def _help_method_group_spec(self) -> dict[str, tuple[str, ...]] | None:
+        """Ordered help subgroups for this accessor, or ``None`` when ungrouped.
+
+        Overridden by accessors whose groups depend on the instance rather than
+        only on the class-level ``_HELP_METHOD_GROUPS``.
+        """
+        return getattr(type(self), "_HELP_METHOD_GROUPS", None)
+
     def _build_help_data(self) -> AccessorHelpData:
         """Build data structure for Jinja2/Rich rendering for accessors."""
         accessor_name = self.__class__._accessor_name
@@ -481,12 +561,21 @@ class _AccessorHelpDataMixin(_BaseHelpDataMixin):
             )
             for name, method in get_public_methods(self)
         ]
+        known_names = {method.name for method in methods}
+        methods.extend(
+            method
+            for method in self._extra_help_methods()
+            if method.name not in known_names
+        )
         return AccessorHelpData(
             title=self._get_help_title(),
             root_node=root_node,
             accessor_name=accessor_name,
             accessor_branch_id=str(uuid.uuid4()),
             methods=methods,
+            groups=_build_method_groups(
+                self, methods, group_spec=self._help_method_group_spec()
+            ),
         )
 
 

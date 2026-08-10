@@ -19,7 +19,7 @@ from sklearn.metrics._scorer import _BaseScorer
 
 from skore._sklearn.types import DataSource, PositiveLabel
 from skore._utils._cache_key import make_cache_key
-from skore._utils._callable import _callable_hash, _callable_name
+from skore._utils._callable import _callable_name
 
 if TYPE_CHECKING:
     from skore import EstimatorReport
@@ -61,9 +61,6 @@ class MetricRow(TypedDict):
     metric_verbose_name : str
         Human-readable metric name.
 
-    fingerprint : str or None
-        Identifier for custom metrics.
-
     greater_is_better : bool or None
         Whether higher values are better.
 
@@ -81,7 +78,6 @@ class MetricRow(TypedDict):
     """
 
     metric_verbose_name: str
-    fingerprint: str | None
     greater_is_better: bool | None
     score: float
     label: PositiveLabel | None
@@ -137,9 +133,6 @@ class Metric:
     function_kind : FunctionKind or None, default=None
         Kind of scoring function (either metric or scorer).
 
-    fingerprint : str or None, default=None
-        Identifier for custom metrics.
-
     kwargs : dict, default={}
         Default keyword arguments for the scoring function.
 
@@ -165,7 +158,6 @@ class Metric:
         response_method: str | list[str] | tuple[str, ...] | None = None,
         function: ScorerCallable | MetricCallable | None = None,
         function_kind: FunctionKind | None = None,
-        fingerprint: str | None = None,
         kwargs: dict[str, Any] | None = None,
     ):
         """Construct a Metric.
@@ -177,7 +169,6 @@ class Metric:
         # (e.g. Accuracy()) whose fields are defined as class attributes.
         # Only some attributes needs to be set at the instance level.
         self.kwargs = kwargs or self.kwargs
-        self.fingerprint = fingerprint
 
         if name is None:
             return
@@ -264,7 +255,6 @@ class Metric:
                 response_method=metric._response_method,
                 kwargs=metric._kwargs.copy(),
                 function_kind=FunctionKind.METRIC,
-                fingerprint=_callable_hash(metric._score_func),
             )
         elif isinstance(metric, str):
             metric_with_neg = _METRIC_ALIASES.get(metric, metric)
@@ -314,7 +304,6 @@ class Metric:
                 function=metric,
                 kwargs=resolved_kwargs,
                 function_kind=FunctionKind.SCORER,
-                fingerprint=_callable_hash(metric),
             )
         else:
             raise TypeError(
@@ -447,7 +436,6 @@ class Metric:
         return MetricRow(
             metric_verbose_name=self.verbose_name,
             greater_is_better=self.greater_is_better,
-            fingerprint=self.fingerprint,
             score=score.item() if hasattr(score, "item") else score,
             label=label,
             average=average,
@@ -466,7 +454,7 @@ class Metric:
             # Multimetric scorer
             result = []
             for submetric_name, submetric_value in score.items():
-                rows = self._to_rows(submetric_value, report=report, kwargs=kwargs)
+                rows = self._to_rows(submetric_value, report=report, **kwargs)
                 for r in rows:
                     r["metric_verbose_name"] = submetric_name
                 result.extend(rows)
@@ -481,6 +469,8 @@ class Metric:
             ]
         if report._ml_task in ("binary-classification", "multiclass-classification"):
             if isinstance(score, np.ndarray):
+                if score.ndim == 0:
+                    return [self._row(score=score)]
                 return [
                     self._row(score=s, label=label)
                     for label, s in zip(
@@ -566,6 +556,8 @@ class Metric:
 
 
 class FitTime(Metric):
+    """The time taken to fit the estimator."""
+
     name = "fit_time"
     verbose_name = "Fit time (s)"
     greater_is_better = False
@@ -584,6 +576,8 @@ class FitTime(Metric):
 
 
 class PredictTime(Metric):
+    """The time taken to compute model predictions."""
+
     name = "predict_time"
     verbose_name = "Predict time (s)"
     greater_is_better = False
@@ -638,6 +632,15 @@ class Precision(Metric):
         return super()._raw(report=report, data_source=data_source, **kwargs)
 
 
+class PrecisionAvg(Precision):
+    name = "precision_avg"
+    kwargs = {"average": "macro"}
+
+    @staticmethod
+    def available(report: EstimatorReport) -> bool:
+        return report._ml_task == "multiclass-classification"
+
+
 class Recall(Metric):
     name = "recall"
     verbose_name = "Recall"
@@ -659,6 +662,15 @@ class Recall(Metric):
                 kwargs["pos_label"] = None
 
         return super()._raw(report=report, data_source=data_source, **kwargs)
+
+
+class RecallAvg(Recall):
+    name = "recall_avg"
+    kwargs = {"average": "macro"}
+
+    @staticmethod
+    def available(report: EstimatorReport) -> bool:
+        return report._ml_task == "multiclass-classification"
 
 
 class Brier(Metric):
@@ -688,6 +700,8 @@ class Brier(Metric):
 
 
 class RocAuc(Metric):
+    """The area under the Receiver Operating Characteristic curve (ROC AUC)."""
+
     name = "roc_auc"
     verbose_name = "ROC AUC"
     response_method = ("predict_proba", "decision_function")
@@ -710,6 +724,17 @@ class RocAuc(Metric):
         if y_score.ndim == 2 and y_score.shape[1] == 2:
             y_score = y_score[:, 1]
         return sklearn.metrics.roc_auc_score(y_true, y_score, **kwargs)
+
+
+class RocAucAvg(RocAuc):
+    name = "roc_auc_avg"
+    kwargs = {"average": "macro", "multi_class": "ovr"}
+
+    @staticmethod
+    def available(report: EstimatorReport) -> bool:
+        return report._ml_task == "multiclass-classification" and RocAuc.available(
+            report
+        )
 
 
 class LogLoss(Metric):
@@ -807,15 +832,29 @@ class Score(Metric):
         # estimators; ``SkrubLearner`` takes the full env, preserving vars
         # beyond X/y (e.g. additional tables referenced by the DataOp).
         data, _ = report._get_data_and_y_true(data_source=data_source)
-        return report.learner_.score(data, **kwargs)
+
+        # Give skrub the cached predictions
+        predictions, _ = report._extract_cached_predictions()
+        skrub_predictions = {}
+        for key, value in predictions.items():
+            _, prediction_data_source, name, _ = key
+            if prediction_data_source == data_source:
+                skrub_predictions[name] = value
+
+        return report.learner_.score(
+            data | {"_skrub_predictions": skrub_predictions}, **kwargs
+        )
 
 
 # Order matters for default display
 BUILTIN_METRICS: list[Metric] = [
     Accuracy(),
     Precision(),
+    PrecisionAvg(),
     Recall(),
+    RecallAvg(),
     RocAuc(),
+    RocAucAvg(),
     LogLoss(),
     Brier(),
     R2(),
@@ -854,8 +893,7 @@ class MetricRegistry(UserDict[str, Metric]):
         )
 
         if Score.available(report):
-            fingerprint = _callable_hash(report.estimator_.score)
-            self.data["score"] = Score(fingerprint=fingerprint)
+            self.data["score"] = Score()
             self.data.move_to_end("score", last=False)
 
     def __repr__(self) -> str:
@@ -882,10 +920,8 @@ class MetricRegistry(UserDict[str, Metric]):
         if position not in ("first", "last"):
             raise ValueError(f"position must be 'first' or 'last', got {position!r}.")
 
-        if metric.name in {m.name for m in BUILTIN_METRICS}:
-            raise ValueError(
-                f"Cannot add {metric.name!r}: it is a built-in metric name."
-            )
+        if metric.name == "score":
+            raise ValueError(f"Cannot add {metric.name!r}: it is a reserved name.")
 
         if metric.name in self.data:
             raise ValueError(

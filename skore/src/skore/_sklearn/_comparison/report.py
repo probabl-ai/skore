@@ -75,6 +75,9 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
 
     See Also
     --------
+    skore.evaluate
+        Evaluate one or more estimators and return a report.
+
     skore.EstimatorReport
         Report for a fitted estimator.
 
@@ -451,7 +454,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
                     "estimator. Set `concatenate_train_and_test=False` instead."
                 )
             return EstimatorReport(
-                estimator_report.estimator_,
+                estimator_report.estimator,
                 train_data=estimator_report.train_data,
                 test_data=test_data,
                 pos_label=self._pos_label,

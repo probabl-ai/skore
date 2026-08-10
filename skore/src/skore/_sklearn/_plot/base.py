@@ -42,13 +42,13 @@ class Display(Protocol):
     ) -> None:
         """Set the style of the display."""
 
-    def frame(self, **kwargs: Any) -> pd.DataFrame:
+    def frame(self, **kwargs: Any) -> pd.DataFrame | pd.Series:
         """Get the data used to create the display.
 
         Returns
         -------
-        DataFrame
-            A DataFrame containing the data used to create the display.
+        pandas.DataFrame or pandas.Series
+            The data used to create the display.
         """
 
     def help(self) -> None:

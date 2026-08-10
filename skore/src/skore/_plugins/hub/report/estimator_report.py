@@ -3,6 +3,7 @@
 from functools import cached_property
 from typing import ClassVar
 
+import pandas as pd
 from pydantic import computed_field
 
 from skore import EstimatorReport
@@ -26,7 +27,13 @@ from skore._plugins.hub.artifact.media import (
     TableReportTrain,
 )
 from skore._plugins.hub.artifact.media.media import Media
-from skore._plugins.hub.metric import Metric
+from skore._plugins.hub.metric import (
+    Metric,
+    cast_to_str_or_none,
+    find_multimetric_scalar_names,
+    get_hub_metric_name,
+    select_exportable_metrics,
+)
 from skore._plugins.hub.report.report import ReportPayload
 
 
@@ -76,24 +83,23 @@ class EstimatorReportPayload(ReportPayload[EstimatorReport]):
         -----
         Unavailable metrics have been filtered out.
 
-        All metrics whose value is not a scalar are currently ignored:
-        - ignore ``NaN``,
-        - ignore ``list[float]`` for multi-output ML task,
-        - ignore ``dict[str: float]`` for multi-classes ML task.
+        Per-label (per-class) and per-output (multioutput regression) metrics are
+        sent with their ``label``/``output``/``average`` dimension so the UI can
+        expose a toggle. Non-scalar values (``NaN``) are ignored.
         """
-        data = self.report.metrics.summarize(data_source="both").data
-        scalar = data[
-            (data["label"].isna() & data["output"].isna() & data["average"].isna())
-            & data["score"].notna()
-        ]
+        metrics = select_exportable_metrics(self.report)
+        multimetric_names = find_multimetric_scalar_names(metrics)
 
         return [
             Metric(
-                name=row["metric_name"],
-                verbose_name=row["metric_verbose_name"],
+                name=get_hub_metric_name(row, multimetric_names=multimetric_names),
+                verbose_name=row["verbose_name"],
                 data_source=row["data_source"],
                 greater_is_better=row["greater_is_better"],
                 value=row["score"],
+                label=cast_to_str_or_none(row["label"]),
+                output=None if pd.isna(row["output"]) else int(row["output"]),
+                average=None if pd.isna(row["average"]) else row["average"],
             )
-            for row in scalar.to_dict("records")
+            for row in metrics.to_dict("records")
         ]
