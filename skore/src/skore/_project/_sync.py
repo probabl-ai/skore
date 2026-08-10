@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Literal, cast
 
-from pandas import NA, DataFrame, Index, concat
+import pandas as pd
 
 if TYPE_CHECKING:
     from skore._project.project import Project
@@ -14,13 +14,13 @@ Direction = Literal["outbound", "inbound"]
 Status = Literal["planned", "transferred", "skipped"]
 
 
-def _snapshot(project: Project) -> DataFrame:
+def _snapshot(project: Project) -> pd.DataFrame:
     frame = project.summarize().frame()
     if frame.empty or "report_id" not in frame:
         # Treat legacy summaries from before `report_id` was stored as empty snapshots.
-        return DataFrame(
-            index=Index([], name="report_id", dtype=object),
-            columns=Index(["backend_id", "key"]),
+        return pd.DataFrame(
+            index=pd.Index([], name="report_id", dtype=object),
+            columns=pd.Index(["backend_id", "key"]),
         )
 
     return (
@@ -33,7 +33,7 @@ def _snapshot(project: Project) -> DataFrame:
 
 
 def _transfer(
-    reports: DataFrame,
+    reports: pd.DataFrame,
     source: Project,
     destination: Project,
 ) -> None:
@@ -50,13 +50,13 @@ def _transfer(
 
 
 def _build_result_frame(
-    reports: DataFrame,
+    reports: pd.DataFrame,
     *,
     direction: Direction | None,
     status: Status,
-) -> DataFrame:
+) -> pd.DataFrame:
     result = reports.loc[:, ["key"]]
-    result["direction"] = NA if direction is None else direction
+    result["direction"] = pd.NA if direction is None else direction
     result["status"] = status
     return result
 
@@ -67,7 +67,7 @@ def synchronize(
     *,
     bidirectional: bool,
     dry_run: bool,
-) -> DataFrame:
+) -> pd.DataFrame:
     """Synchronize two projects using report IDs."""
     source_reports = _snapshot(source)
     destination_reports = _snapshot(destination)
@@ -107,6 +107,6 @@ def synchronize(
         _build_result_frame(skipped_reports, direction=None, status="skipped")
     )
 
-    result = concat(frames).reindex(columns=["key", "direction", "status"])
+    result = pd.concat(frames).reindex(columns=["key", "direction", "status"])
     result = result.rename_axis("report_id")
-    return cast(DataFrame, result.astype("string"))
+    return cast(pd.DataFrame, result.astype("string"))
