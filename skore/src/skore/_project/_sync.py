@@ -68,7 +68,7 @@ def synchronize(
     bidirectional: bool,
     dry_run: bool,
 ) -> pd.DataFrame:
-    """Synchronize two projects using report IDs."""
+    """Synchronize two projects."""
     source_reports = _snapshot(source)
     destination_reports = _snapshot(destination)
 
