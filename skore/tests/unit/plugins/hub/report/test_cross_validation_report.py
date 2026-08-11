@@ -624,7 +624,6 @@ class TestCrossValidationReportPayload:
                 "label": None,
                 "output": None,
                 "average": None,
-                "position": None,
             },
             {
                 "name": "accuracy_std",
@@ -635,7 +634,6 @@ class TestCrossValidationReportPayload:
                 "label": None,
                 "output": None,
                 "average": None,
-                "position": None,
             },
             {
                 "name": "accuracy_mean",
@@ -646,7 +644,6 @@ class TestCrossValidationReportPayload:
                 "label": None,
                 "output": None,
                 "average": None,
-                "position": None,
             },
             {
                 "name": "accuracy_std",
@@ -657,7 +654,6 @@ class TestCrossValidationReportPayload:
                 "label": None,
                 "output": None,
                 "average": None,
-                "position": None,
             },
             {
                 "name": "brier_score_mean",
@@ -668,7 +664,6 @@ class TestCrossValidationReportPayload:
                 "label": None,
                 "output": None,
                 "average": None,
-                "position": None,
             },
             {
                 "name": "brier_score_std",
@@ -679,7 +674,6 @@ class TestCrossValidationReportPayload:
                 "label": None,
                 "output": None,
                 "average": None,
-                "position": None,
             },
             {
                 "name": "brier_score_mean",
@@ -690,7 +684,6 @@ class TestCrossValidationReportPayload:
                 "label": None,
                 "output": None,
                 "average": None,
-                "position": None,
             },
             {
                 "name": "brier_score_std",
@@ -701,7 +694,6 @@ class TestCrossValidationReportPayload:
                 "label": None,
                 "output": None,
                 "average": None,
-                "position": None,
             },
             {
                 "name": "fit_time_mean",
@@ -712,7 +704,6 @@ class TestCrossValidationReportPayload:
                 "label": None,
                 "output": None,
                 "average": None,
-                "position": None,
             },
             {
                 "name": "fit_time_std",
@@ -723,7 +714,6 @@ class TestCrossValidationReportPayload:
                 "label": None,
                 "output": None,
                 "average": None,
-                "position": None,
             },
             {
                 "name": "fit_time_mean",
@@ -734,7 +724,6 @@ class TestCrossValidationReportPayload:
                 "label": None,
                 "output": None,
                 "average": None,
-                "position": None,
             },
             {
                 "name": "fit_time_std",
@@ -745,7 +734,6 @@ class TestCrossValidationReportPayload:
                 "label": None,
                 "output": None,
                 "average": None,
-                "position": None,
             },
             {
                 "name": "log_loss_mean",
@@ -756,7 +744,6 @@ class TestCrossValidationReportPayload:
                 "label": None,
                 "output": None,
                 "average": None,
-                "position": None,
             },
             {
                 "name": "log_loss_std",
@@ -767,7 +754,6 @@ class TestCrossValidationReportPayload:
                 "label": None,
                 "output": None,
                 "average": None,
-                "position": None,
             },
             {
                 "name": "log_loss_mean",
@@ -778,7 +764,6 @@ class TestCrossValidationReportPayload:
                 "label": None,
                 "output": None,
                 "average": None,
-                "position": None,
             },
             {
                 "name": "log_loss_std",
@@ -789,7 +774,6 @@ class TestCrossValidationReportPayload:
                 "label": None,
                 "output": None,
                 "average": None,
-                "position": None,
             },
             {
                 "name": "precision_mean",
@@ -800,7 +784,6 @@ class TestCrossValidationReportPayload:
                 "label": "0",
                 "output": None,
                 "average": None,
-                "position": None,
             },
             {
                 "name": "precision_std",
@@ -811,7 +794,6 @@ class TestCrossValidationReportPayload:
                 "label": "0",
                 "output": None,
                 "average": None,
-                "position": None,
             },
             {
                 "name": "precision_mean",
@@ -822,7 +804,6 @@ class TestCrossValidationReportPayload:
                 "label": "1",
                 "output": None,
                 "average": None,
-                "position": None,
             },
             {
                 "name": "precision_std",
@@ -833,7 +814,6 @@ class TestCrossValidationReportPayload:
                 "label": "1",
                 "output": None,
                 "average": None,
-                "position": None,
             },
             {
                 "name": "precision_mean",
@@ -844,7 +824,6 @@ class TestCrossValidationReportPayload:
                 "label": "0",
                 "output": None,
                 "average": None,
-                "position": None,
             },
             {
                 "name": "precision_std",
@@ -855,7 +834,6 @@ class TestCrossValidationReportPayload:
                 "label": "0",
                 "output": None,
                 "average": None,
-                "position": None,
             },
             {
                 "name": "precision_mean",
@@ -866,7 +844,6 @@ class TestCrossValidationReportPayload:
                 "label": "1",
                 "output": None,
                 "average": None,
-                "position": None,
             },
             {
                 "name": "precision_std",
@@ -877,7 +854,6 @@ class TestCrossValidationReportPayload:
                 "label": "1",
                 "output": None,
                 "average": None,
-                "position": None,
             },
             {
                 "name": "predict_time_mean",
@@ -888,7 +864,6 @@ class TestCrossValidationReportPayload:
                 "label": None,
                 "output": None,
                 "average": None,
-                "position": None,
             },
             {
                 "name": "predict_time_std",
@@ -899,7 +874,6 @@ class TestCrossValidationReportPayload:
                 "label": None,
                 "output": None,
                 "average": None,
-                "position": None,
             },
             {
                 "name": "predict_time_mean",
@@ -910,7 +884,6 @@ class TestCrossValidationReportPayload:
                 "label": None,
                 "output": None,
                 "average": None,
-                "position": None,
             },
             {
                 "name": "predict_time_std",
@@ -921,7 +894,6 @@ class TestCrossValidationReportPayload:
                 "label": None,
                 "output": None,
                 "average": None,
-                "position": None,
             },
             {
                 "name": "recall_mean",
@@ -932,7 +904,6 @@ class TestCrossValidationReportPayload:
                 "label": "0",
                 "output": None,
                 "average": None,
-                "position": None,
             },
             {
                 "name": "recall_std",
@@ -943,7 +914,6 @@ class TestCrossValidationReportPayload:
                 "label": "0",
                 "output": None,
                 "average": None,
-                "position": None,
             },
             {
                 "name": "recall_mean",
@@ -954,7 +924,6 @@ class TestCrossValidationReportPayload:
                 "label": "1",
                 "output": None,
                 "average": None,
-                "position": None,
             },
             {
                 "name": "recall_std",
@@ -965,7 +934,6 @@ class TestCrossValidationReportPayload:
                 "label": "1",
                 "output": None,
                 "average": None,
-                "position": None,
             },
             {
                 "name": "recall_mean",
@@ -976,7 +944,6 @@ class TestCrossValidationReportPayload:
                 "label": "0",
                 "output": None,
                 "average": None,
-                "position": None,
             },
             {
                 "name": "recall_std",
@@ -987,7 +954,6 @@ class TestCrossValidationReportPayload:
                 "label": "0",
                 "output": None,
                 "average": None,
-                "position": None,
             },
             {
                 "name": "recall_mean",
@@ -998,7 +964,6 @@ class TestCrossValidationReportPayload:
                 "label": "1",
                 "output": None,
                 "average": None,
-                "position": None,
             },
             {
                 "name": "recall_std",
@@ -1009,7 +974,6 @@ class TestCrossValidationReportPayload:
                 "label": "1",
                 "output": None,
                 "average": None,
-                "position": None,
             },
             {
                 "name": "roc_auc_mean",
@@ -1020,7 +984,6 @@ class TestCrossValidationReportPayload:
                 "label": None,
                 "output": None,
                 "average": None,
-                "position": None,
             },
             {
                 "name": "roc_auc_std",
@@ -1031,7 +994,6 @@ class TestCrossValidationReportPayload:
                 "label": None,
                 "output": None,
                 "average": None,
-                "position": None,
             },
             {
                 "name": "roc_auc_mean",
@@ -1042,7 +1004,6 @@ class TestCrossValidationReportPayload:
                 "label": None,
                 "output": None,
                 "average": None,
-                "position": None,
             },
             {
                 "name": "roc_auc_std",
@@ -1053,7 +1014,6 @@ class TestCrossValidationReportPayload:
                 "label": None,
                 "output": None,
                 "average": None,
-                "position": None,
             },
         ]
 

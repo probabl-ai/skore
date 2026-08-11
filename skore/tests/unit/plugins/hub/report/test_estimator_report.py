@@ -111,7 +111,6 @@ class TestEstimatorReportPayload:
                 "label": None,
                 "output": None,
                 "average": None,
-                "position": None,
             },
             {
                 "name": "precision",
@@ -122,7 +121,6 @@ class TestEstimatorReportPayload:
                 "label": "0",
                 "output": None,
                 "average": None,
-                "position": None,
             },
             {
                 "name": "precision",
@@ -133,7 +131,6 @@ class TestEstimatorReportPayload:
                 "label": "1",
                 "output": None,
                 "average": None,
-                "position": None,
             },
             {
                 "name": "recall",
@@ -144,7 +141,6 @@ class TestEstimatorReportPayload:
                 "label": "0",
                 "output": None,
                 "average": None,
-                "position": None,
             },
             {
                 "name": "recall",
@@ -155,7 +151,6 @@ class TestEstimatorReportPayload:
                 "label": "1",
                 "output": None,
                 "average": None,
-                "position": None,
             },
             {
                 "name": "roc_auc",
@@ -166,7 +161,6 @@ class TestEstimatorReportPayload:
                 "label": None,
                 "output": None,
                 "average": None,
-                "position": None,
             },
             {
                 "name": "log_loss",
@@ -177,7 +171,6 @@ class TestEstimatorReportPayload:
                 "label": None,
                 "output": None,
                 "average": None,
-                "position": None,
             },
             {
                 "name": "brier_score",
@@ -188,7 +181,6 @@ class TestEstimatorReportPayload:
                 "label": None,
                 "output": None,
                 "average": None,
-                "position": None,
             },
             {
                 "name": "fit_time",
@@ -199,7 +191,6 @@ class TestEstimatorReportPayload:
                 "label": None,
                 "output": None,
                 "average": None,
-                "position": None,
             },
             {
                 "name": "predict_time",
@@ -210,7 +201,6 @@ class TestEstimatorReportPayload:
                 "label": None,
                 "output": None,
                 "average": None,
-                "position": None,
             },
             {
                 "name": "accuracy",
@@ -221,7 +211,6 @@ class TestEstimatorReportPayload:
                 "label": None,
                 "output": None,
                 "average": None,
-                "position": None,
             },
             {
                 "name": "precision",
@@ -232,7 +221,6 @@ class TestEstimatorReportPayload:
                 "label": "0",
                 "output": None,
                 "average": None,
-                "position": None,
             },
             {
                 "name": "precision",
@@ -243,7 +231,6 @@ class TestEstimatorReportPayload:
                 "label": "1",
                 "output": None,
                 "average": None,
-                "position": None,
             },
             {
                 "name": "recall",
@@ -254,7 +241,6 @@ class TestEstimatorReportPayload:
                 "label": "0",
                 "output": None,
                 "average": None,
-                "position": None,
             },
             {
                 "name": "recall",
@@ -265,7 +251,6 @@ class TestEstimatorReportPayload:
                 "label": "1",
                 "output": None,
                 "average": None,
-                "position": None,
             },
             {
                 "name": "roc_auc",
@@ -276,7 +261,6 @@ class TestEstimatorReportPayload:
                 "label": None,
                 "output": None,
                 "average": None,
-                "position": None,
             },
             {
                 "name": "log_loss",
@@ -287,7 +271,6 @@ class TestEstimatorReportPayload:
                 "label": None,
                 "output": None,
                 "average": None,
-                "position": None,
             },
             {
                 "name": "brier_score",
@@ -298,7 +281,6 @@ class TestEstimatorReportPayload:
                 "label": None,
                 "output": None,
                 "average": None,
-                "position": None,
             },
             {
                 "name": "fit_time",
@@ -309,7 +291,6 @@ class TestEstimatorReportPayload:
                 "label": None,
                 "output": None,
                 "average": None,
-                "position": None,
             },
             {
                 "name": "predict_time",
@@ -320,7 +301,6 @@ class TestEstimatorReportPayload:
                 "label": None,
                 "output": None,
                 "average": None,
-                "position": None,
             },
         ]
 
