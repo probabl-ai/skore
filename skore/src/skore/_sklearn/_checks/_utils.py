@@ -112,7 +112,7 @@ def adaptive_threshold(
     return max(floor, fraction * max(abs(reference) for reference in references))
 
 
-def check_score_gap_to_baseline(
+def check_score_better_than_baseline(
     score: float,
     baseline: float,
     greater_is_better: bool | None,
@@ -266,6 +266,14 @@ def get_fit_time(report: EstimatorReport | CrossValidationReport) -> float:
     if report._fit_time is None:
         raise CheckNotApplicable("Fit time is unavailable.")
     return report._fit_time
+
+
+def get_predict_time(report: EstimatorReport | CrossValidationReport) -> float:
+    if report._report_type == "cross-validation":
+        return float(
+            report.metrics.predict_time(aggregate="mean").loc["Predict time (s)"]
+        )
+    return cast(float, report.metrics.predict_time(data_source="test"))
 
 
 def get_preprocessed_X(

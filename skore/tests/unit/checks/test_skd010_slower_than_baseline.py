@@ -34,6 +34,34 @@ def test_detects_slower_than_baseline(report_type, regression_data):
 
 
 @pytest.mark.parametrize("report_type", ["estimator", "cross-validation"])
+@pytest.mark.filterwarnings(
+    "ignore:Only pandas and polars DataFrames are supported:UserWarning:skrub"
+)
+def test_not_detected_when_gap_below_floor(monkeypatch, report_type, regression_data):
+    """SKD010 does not fire when the ratio is high but the absolute gap is tiny."""
+    X, y = regression_data
+    report = evaluate(
+        DummyRegressor(), X, y, splitter=0.2 if report_type == "estimator" else 3
+    )
+
+    def fake_get_fit_time(r):
+        # 5x ratio while under the 1s floor.
+        return 0.5 if r is report else 0.1
+
+    def fake_get_predict_time(_):
+        return 0.01
+
+    monkeypatch.setattr(
+        "skore._sklearn._checks.model_checks.get_fit_time", fake_get_fit_time
+    )
+    monkeypatch.setattr(
+        "skore._sklearn._checks.model_checks.get_predict_time", fake_get_predict_time
+    )
+
+    assert CheckSlowerThanBaseline().check_function(report) is None
+
+
+@pytest.mark.parametrize("report_type", ["estimator", "cross-validation"])
 def test_not_detected_for_fast_model(report_type, regression_data):
     """Check that SKD010 does not fire when the model is not slower than baseline."""
     X, y = regression_data

@@ -3,7 +3,7 @@ from re import escape
 from unittest.mock import Mock
 from uuid import uuid4
 
-from pandas import Timestamp
+from pandas import DataFrame, Timestamp
 from pytest import fixture, mark, param, raises
 from sklearn.datasets import make_classification, make_regression
 from sklearn.linear_model import LinearRegression, LogisticRegression
@@ -415,6 +415,56 @@ class TestProject:
         shell = InteractiveShell.instance()
         execution_result = shell.run_cell(snippet, silent=True)
         execution_result.raise_error()
+
+    def test_sync_uses_existing_counterpart(self, FakeHubProject, monkeypatch):
+        monkeypatch.setattr("skore._project.dependencies.requires", lambda _: [])
+        project = Project(name="<name>", mode="local", workspace="<local>")
+        other = Project(name="<name>", mode="hub", workspace="<hub>")
+        calls_before_sync = FakeHubProject.call_count
+
+        result = project.sync(other, dry_run=True)
+
+        assert isinstance(result, DataFrame)
+        assert result.columns.tolist() == ["key", "direction", "status"]
+        assert result.empty
+        assert FakeHubProject.call_count == calls_before_sync
+
+    def test_sync_rejects_non_project(self):
+        project = Project(name="<name>", mode="local")
+
+        with raises(TypeError, match="`other` must be a Project"):
+            project.sync("hub", dry_run=True)
+
+    def test_sync_allows_different_names(self):
+        project = Project(name="<name>", mode="local", workspace="<local>")
+        other = Project(name="<other>", mode="hub", workspace="<hub>")
+
+        result = project.sync(other, dry_run=True)
+
+        assert result.empty
+
+    def test_sync_allows_same_mode(self):
+        project = Project(name="<name>", mode="local", workspace="<left>")
+        other = Project(name="<name>", mode="local", workspace="<right>")
+
+        result = project.sync(other, dry_run=True)
+
+        assert result.empty
+
+    def test_sync_rejects_mlflow_projects_with_different_tracking_uris(self):
+        project = Project(name="<name>", mode="mlflow", tracking_uri="<left>")
+        other = Project(name="<name>", mode="mlflow", tracking_uri="<right>")
+
+        with raises(ValueError, match="requires the same tracking URI"):
+            project.sync(other, dry_run=True)
+
+    def test_sync_allows_mlflow_projects_with_same_tracking_uri(self):
+        project = Project(name="<name>", mode="mlflow", tracking_uri="<uri>")
+        other = Project(name="<other>", mode="mlflow", tracking_uri="<uri>")
+
+        result = project.sync(other, dry_run=True)
+
+        assert result.empty
 
     def test_repr(self):
         project = Project(name="<name>", mode="local")
