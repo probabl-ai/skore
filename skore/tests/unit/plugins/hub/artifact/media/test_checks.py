@@ -1,19 +1,19 @@
+import pytest
 from pydantic import ValidationError
-from pytest import mark, param, raises
 
 from skore._plugins.hub.artifact.media import ChecksSummary
 from skore._plugins.hub.artifact.serializer import Serializer
 from skore._plugins.hub.json import dumps
 
 
-@mark.parametrize(
+@pytest.mark.parametrize(
     "report",
     (
-        param("binary_classification", id="estimator"),
-        param("cv_binary_classification", id="cross-validation"),
+        pytest.param("binary_classification", id="estimator"),
+        pytest.param("cv_binary_classification", id="cross-validation"),
     ),
 )
-@mark.respx()
+@pytest.mark.respx()
 def test_checks_summary(report, upload_mock, request, project):
     report = request.getfixturevalue(report)
     frame = report.checks.summarize(fast_mode=True).frame()
@@ -40,7 +40,7 @@ def test_checks_summary(report, upload_mock, request, project):
         "content_type": "application/vnd.dataframe",
     }
 
-    with raises(
+    with pytest.raises(
         ValidationError,
         match=f"Input should be an instance of {report.__class__.__name__}",
     ):
