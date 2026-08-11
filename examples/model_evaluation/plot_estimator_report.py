@@ -205,11 +205,9 @@ def operational_decision_gain(y_true, y_pred, *, amount):
 
 # %%
 #
-# In our example use case, each classification decision changes monetary gain.
+# In our example use case, each classification decision has a different monetary gain.
 # The function above models this by translating the confusion matrix into a gain
-# (payoff) matrix; this also depends on an extra parameter named ``amount``, to
-# illustrate that skore can handle custom metrics with non-standard arguments.
-# Here ``amount`` is the real basket cash value from the feature matrix.
+# (payoff) matrix that depends on the basket cash value.
 # Let's test adding this metric to our report.
 from sklearn.metrics import make_scorer
 
