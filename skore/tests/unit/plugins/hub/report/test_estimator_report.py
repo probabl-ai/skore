@@ -7,6 +7,7 @@ from sklearn.metrics import make_scorer, precision_score
 
 from skore import CrossValidationReport, EstimatorReport, evaluate
 from skore._plugins.hub.artifact.media import (
+    ChecksSummary,
     ConfusionMatrixDataFrameTestAll,
     ConfusionMatrixDataFrameTestNone,
     ConfusionMatrixDataFrameTrainAll,
@@ -36,7 +37,14 @@ def serialize(object: EstimatorReport | CrossValidationReport) -> tuple[bytes, s
     reports_with_cache = [
         (report, report._cache) for report in reports if hasattr(report, "_cache")
     ]
+    reports_with_check_results_cache = [
+        (report, report._check_results_cache)
+        for report in reports
+        if hasattr(report, "_check_results_cache")
+    ]
     object._clear_cache()
+    for report, _ in reports_with_check_results_cache:
+        del report._check_results_cache
 
     try:
         with io.BytesIO() as stream:
@@ -45,6 +53,8 @@ def serialize(object: EstimatorReport | CrossValidationReport) -> tuple[bytes, s
     finally:
         for report, cache in reports_with_cache:
             report._cache = cache
+        for report, check_results_cache in reports_with_check_results_cache:
+            report._check_results_cache = check_results_cache
 
     with Serializer(pickle_bytes) as serializer:
         checksum = serializer.checksum
@@ -437,6 +447,7 @@ class TestEstimatorReportPayload:
     @mark.respx()
     def test_medias(self, payload):
         assert list(map(type, payload.medias)) == [
+            ChecksSummary,
             ConfusionMatrixDataFrameTestAll,
             ConfusionMatrixDataFrameTestNone,
             ConfusionMatrixDataFrameTrainAll,

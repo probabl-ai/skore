@@ -22,6 +22,7 @@ from sklearn.model_selection import (
 
 from skore import CrossValidationReport
 from skore._plugins.hub.artifact.media import (
+    ChecksSummary,
     Coefficients,
     ConfusionMatrixDataFrameTestAll,
     ConfusionMatrixDataFrameTestNone,
@@ -116,6 +117,7 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
     """
 
     MEDIAS: ClassVar[tuple[type[Media[CrossValidationReport]], ...]] = (
+        ChecksSummary,
         Coefficients,
         ConfusionMatrixDataFrameTestAll,
         ConfusionMatrixDataFrameTestNone,

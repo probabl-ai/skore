@@ -31,7 +31,8 @@ class Pickle(Artifact):
     -----
     It uploads the pickled report to the artifacts storage in a lazy way.
 
-    The report is uploaded without its cache, to avoid salting the checksum.
+    The report is uploaded without its prediction/display cache and without its
+    checks-results cache, to avoid salting the checksum.
     The report is primarily pickled on disk to reduce RAM footprint.
     """
 
@@ -45,13 +46,21 @@ class Pickle(Artifact):
 
         Notes
         -----
-        The report is pickled without its cache, to avoid salting the checksum.
+        The report is pickled without its prediction/display cache and without its
+        checks-results cache, to avoid salting the checksum.
         """
         reports = [self.report] + getattr(self.report, "reports_", [])
         reports_with_cache = [
             (report, report._cache) for report in reports if hasattr(report, "_cache")
         ]
+        reports_with_check_results_cache = [
+            (report, report._check_results_cache)
+            for report in reports
+            if hasattr(report, "_check_results_cache")
+        ]
         self.report._clear_cache()
+        for report, _ in reports_with_check_results_cache:
+            del report._check_results_cache
 
         try:
             with BytesIO() as stream:
@@ -63,3 +72,5 @@ class Pickle(Artifact):
         finally:
             for report, cache in reports_with_cache:
                 report._cache = cache
+            for report, check_results_cache in reports_with_check_results_cache:
+                report._check_results_cache = check_results_cache
