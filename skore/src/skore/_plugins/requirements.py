@@ -1,4 +1,8 @@
-"""Infer installed package requirements from currently imported modules."""
+"""Infer installed package requirements from currently imported modules.
+
+Results depend entirely on ``sys.modules`` at call time: two successive calls
+can return different requirements if imports (or unloadings) happen in between.
+"""
 
 import functools
 import importlib.metadata
@@ -66,6 +70,10 @@ class Requirement(typing.TypedDict):
 def infer() -> list[Requirement]:
     """
     Infer distribution requirements from modules currently in ``sys.modules``.
+
+    The returned list depends entirely on the contents of ``sys.modules`` at the
+    moment of the call. Two successive calls can therefore differ: any import (or
+    module removal) between them changes which distributions are discovered.
 
     Maps each imported top-level package to its distribution via
     :func:`importlib.metadata.packages_distributions`, then records the installed
