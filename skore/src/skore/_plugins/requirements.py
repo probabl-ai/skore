@@ -2,9 +2,11 @@
 
 import functools
 import importlib.metadata
+import itertools
 import logging
 import operator
 import pathlib
+import site
 import sys
 import sysconfig
 import types
@@ -13,18 +15,34 @@ import warnings
 
 import packaging.utils
 
-MODULE_TO_REQUIREMENT = importlib.metadata.packages_distributions()
-version = functools.cache(importlib.metadata.version)
 logger = logging.getLogger(__name__)
 
+version = functools.cache(importlib.metadata.version)
+MODULE_TO_REQUIREMENT = importlib.metadata.packages_distributions()
+SITE_PACKAGES_DIRPATHS = tuple(
+    {
+        pathlib.Path(path).resolve()
+        for path in itertools.chain(
+            map(sysconfig.get_path, ("stdlib", "purelib", "platlib")),
+            site.getsitepackages(),
+            (
+                [site.getusersitepackages()]
+                if site.ENABLE_USER_SITE and site.getusersitepackages()
+                else []
+            ),
+        )
+    }
+)
 
-def is_local_module(module: types.ModuleType) -> bool:
+
+def is_editable_or_local_module(module: types.ModuleType) -> bool:
     """
-    Return whether ``module`` was loaded from outside the standard library.
+    Return whether ``module`` was loaded from outside known install locations.
 
-    True for editable installs, source trees, and other non-stdlib paths.
-    False when there is no usable file origin (``None``, ``built-in``,
-    ``frozen``) or the origin is under the stdlib path.
+    True for editable installs, source trees, and other paths outside the
+    standard library and site-packages. False when there is no usable file
+    origin (``None``, ``built-in``, ``frozen``) or the origin is under a
+    site-packages path.
     """
     origin = (module.__spec__ and module.__spec__.origin) or getattr(
         module, "__file__", None
@@ -34,9 +52,8 @@ def is_local_module(module: types.ModuleType) -> bool:
         return False
 
     path = pathlib.Path(origin).resolve()
-    stdlib = pathlib.Path(sysconfig.get_path("stdlib")).resolve()
 
-    return not path.is_relative_to(stdlib)
+    return not any(map(path.is_relative_to, SITE_PACKAGES_DIRPATHS))
 
 
 class Requirement(typing.TypedDict):
@@ -52,8 +69,9 @@ def infer() -> list[Requirement]:
 
     Maps each imported top-level package to its distribution via
     :func:`importlib.metadata.packages_distributions`, then records the installed
-    version. Unmapped packages loaded from outside the standard library are
-    skipped and a warning is emitted once per package name.
+    version. Packages loaded from outside known install locations (editable or
+    local installs) are skipped and a warning is emitted once per package name,
+    even when a distribution mapping exists.
     """
     requirement_to_version = {}
     warned = set()
@@ -72,16 +90,8 @@ def infer() -> list[Requirement]:
         if top_level_name in sys.stdlib_module_names:
             continue
 
-        if requirements := MODULE_TO_REQUIREMENT.get(top_level_name):
-            for requirement in requirements:
-                if requirement not in requirement_to_version:
-                    requirement_to_version[requirement] = version(requirement)
-        else:
-            # No distribution mapping: Cython/C-extension aliases, runtime entrypoints
-            # (__main__), or local/dev imports outside site-packages.
-            logger.debug(module)
-
-            if is_local_module(module) and (top_level_name not in warned):
+        if is_editable_or_local_module(module):
+            if top_level_name not in warned:
                 warned.add(top_level_name)
                 warnings.warn(
                     (
@@ -91,6 +101,16 @@ def infer() -> list[Requirement]:
                     ),
                     stacklevel=2,
                 )
+            continue
+
+        if requirements := MODULE_TO_REQUIREMENT.get(top_level_name):
+            for requirement in requirements:
+                if requirement not in requirement_to_version:
+                    requirement_to_version[requirement] = version(requirement)
+        else:
+            # No distribution mapping: Cython/C-extension aliases, runtime entrypoints
+            # (__main__), etc.
+            logger.debug(module)
 
     return sorted(
         (

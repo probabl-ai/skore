@@ -14,23 +14,30 @@ class Module(ModuleType):
         self.__spec__ = ModuleSpec(name, loader=None, origin=origin)
 
 
-class TestIsLocalModule:
+class TestIsEditableOrLocalModule:
     def test_no_origin(self, tmp_path):
-        assert not requirements.is_local_module(Module("_cython_3_2_4", None))
+        assert not requirements.is_editable_or_local_module(
+            Module("_cython_3_2_4", None)
+        )
 
     def test_stdlib(self):
         import pathlib
         import sysconfig
 
-        assert not requirements.is_local_module(
+        assert not requirements.is_editable_or_local_module(
             Module(
                 "_sysconfigdata",
                 (pathlib.Path(sysconfig.get_path("stdlib")) / "_sysconfigdata.py"),
             )
         )
 
+    def test_site_packages(self):
+        import numpy
+
+        assert not requirements.is_editable_or_local_module(numpy)
+
     def test_editable_install(self, tmp_path):
-        assert requirements.is_local_module(
+        assert requirements.is_editable_or_local_module(
             Module(
                 "pkg",
                 (tmp_path / "pkg" / "src" / "pkg" / "__init__.py"),
@@ -190,3 +197,29 @@ class TestInfer:
                 {"name": "numpy", "version": numpy.__version__},
                 {"name": "scikit-learn", "version": sklearn.__version__},
             ]
+
+    def test_warns_fast_for_editable_package(self, tmp_path, monkeypatch):
+        """
+        Non-regression test for packages that are installed with setuptools in editable
+        mode, where distributions are still mapped.
+
+        Ensure `is_editable_or_local_module` is called before and routes well.
+        """
+        origin = tmp_path / "mypkg" / "src" / "mypkg" / "__init__.py"
+
+        import warnings
+
+        monkeypatch.setattr(requirements, "MODULE_TO_REQUIREMENT", None)  # dict
+        monkeypatch.setattr(requirements, "version", None)  # function
+        monkeypatch.setattr(
+            requirements.sys,
+            "modules",
+            {
+                "mypkg": Module("mypkg", origin),
+                "mypkg.utils": Module("mypkg.utils", origin),
+                "warnings": warnings,
+            },
+        )
+
+        with warns(UserWarning, match=r"mypkg seems to be an editable"):
+            assert not requirements.infer()
