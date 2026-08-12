@@ -1,5 +1,6 @@
 """Infer installed package requirements from currently imported modules."""
 
+import functools
 import importlib.metadata
 import logging
 import pathlib
@@ -11,6 +12,8 @@ import warnings
 
 import packaging.utils
 
+MODULE_TO_REQUIREMENT = importlib.metadata.packages_distributions()
+version = functools.cache(importlib.metadata.version)
 logger = logging.getLogger(__name__)
 
 
@@ -51,7 +54,6 @@ def infer() -> list[Requirement]:
     version. Unmapped packages loaded from outside the standard library are
     skipped and a warning is emitted once per package name.
     """
-    module_to_requirement = importlib.metadata.packages_distributions()
     requirement_to_version = {}
     warned = set()
 
@@ -69,12 +71,10 @@ def infer() -> list[Requirement]:
         if top_level_name in sys.stdlib_module_names:
             continue
 
-        if requirements := module_to_requirement.get(top_level_name):
+        if requirements := MODULE_TO_REQUIREMENT.get(top_level_name):
             for requirement in requirements:
                 if requirement not in requirement_to_version:
-                    requirement_to_version[requirement] = importlib.metadata.version(
-                        requirement
-                    )
+                    requirement_to_version[requirement] = version(requirement)
         else:
             # No distribution mapping: Cython/C-extension aliases, runtime entrypoints
             # (__main__), or local/dev imports outside site-packages.
