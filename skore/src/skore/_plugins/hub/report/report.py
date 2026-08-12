@@ -78,7 +78,7 @@ class ReportPayload(BaseModel, ABC, Generic[Report]):
         control of those filters so ``environment`` can be dumped after every
         other field.
         """
-        if info.context and ("break" in info.context):
+        if info.context and (info.context.get("break") is self):
             return handler(self)  # type: ignore[no-any-return]
 
         if info.include is not None or info.exclude is not None:
@@ -87,7 +87,7 @@ class ReportPayload(BaseModel, ABC, Generic[Report]):
         # break the recursion induced by the call of ``self.model_dump()`` using the
         # base condition ``break``
         context = ((info.context is not None) and info.context.copy()) or {}
-        context["break"] = True
+        context["break"] = self
 
         # serialize the payload with ``environment`` last
         base = self.model_dump(mode=info.mode, exclude={"environment"}, context=context)
