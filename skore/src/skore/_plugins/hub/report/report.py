@@ -142,6 +142,12 @@ class ReportPayload(BaseModel, ABC, Generic[Report]):
     @computed_field  # type: ignore[prop-decorator]
     @cached_property
     def environment(self) -> Environment | None:
+        """
+        A snapshot of the Python environment used to create the report.
+
+        Includes the Python version and package requirements inferred from that
+        environment. Returns ``None`` when the environment cannot be inferred.
+        """
         payload = Environment(project=self.project)
 
         if payload.checksum is not None:
