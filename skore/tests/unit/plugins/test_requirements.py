@@ -209,7 +209,7 @@ class TestInfer:
 
         import warnings
 
-        monkeypatch.setattr(requirements, "MODULE_TO_REQUIREMENT", None)  # dict
+        monkeypatch.setattr(requirements, "MODULE_TO_DISTRIBUTIONS", None)  # dict
         monkeypatch.setattr(requirements, "version", None)  # function
         monkeypatch.setattr(
             requirements.sys,
@@ -223,3 +223,42 @@ class TestInfer:
 
         with warns(UserWarning, match=r"mypkg seems to be an editable"):
             assert not requirements.infer()
+
+    def test_records_only_owning_namespace_distribution(self, monkeypatch):
+        """Namespace packages map one top-level name to several distributions."""
+        import pathlib
+        import sysconfig
+
+        site_packages = pathlib.Path(sysconfig.get_path("purelib"))
+        origin = site_packages / "google" / "protobuf" / "__init__.py"
+
+        monkeypatch.setattr(
+            requirements,
+            "MODULE_TO_DISTRIBUTIONS",
+            {"google": ["protobuf", "google-auth"]},
+        )
+        monkeypatch.setattr(
+            requirements,
+            "__distribution_files",
+            lambda name: {
+                "protobuf": frozenset({origin.resolve()}),
+                "google-auth": frozenset(
+                    {(site_packages / "google" / "auth" / "__init__.py").resolve()}
+                ),
+            }[name],
+        )
+        monkeypatch.setattr(
+            requirements,
+            "version",
+            lambda name: {"protobuf": "5.0.0", "google-auth": "2.0.0"}[name],
+        )
+        monkeypatch.setattr(
+            requirements.sys,
+            "modules",
+            {
+                "google": Module("google", None),
+                "google.protobuf": Module("google.protobuf", origin),
+            },
+        )
+
+        assert requirements.infer() == [{"name": "protobuf", "version": "5.0.0"}]
