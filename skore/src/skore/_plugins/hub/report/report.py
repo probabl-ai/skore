@@ -11,6 +11,7 @@ from pydantic import BaseModel, ConfigDict, Field, computed_field
 from rich.progress import BarColumn, Progress, TextColumn, TimeElapsedColumn
 
 from skore import THREADABLE, CrossValidationReport, EstimatorReport, console
+from skore._plugins.hub.artifact.environment import Environment
 from skore._plugins.hub.artifact.media.media import Media
 from skore._plugins.hub.artifact.pickle import Pickle
 from skore._plugins.hub.metric import Metric
@@ -137,3 +138,12 @@ class ReportPayload(BaseModel, ABC, Generic[Report]):
         retrieve it from the artifacts storage.
         """
         return Pickle(project=self.project, report=self.report)
+
+    @computed_field  # type: ignore[prop-decorator]
+    @cached_property
+    def environment(self) -> Environment | None:
+        payload = Environment(project=self.project)
+
+        if payload.checksum is not None:
+            return payload
+        return None
