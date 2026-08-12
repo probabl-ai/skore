@@ -4,10 +4,18 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from functools import cached_property, partial
-from typing import ClassVar, Generic, TypeVar
+from typing import Any, ClassVar, Generic, TypeVar
 
-import joblib
-from pydantic import BaseModel, ConfigDict, Field, computed_field
+from joblib import hash
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    SerializationInfo,
+    SerializerFunctionWrapHandler,
+    computed_field,
+    model_serializer,
+)
 from rich.progress import BarColumn, Progress, TextColumn, TimeElapsedColumn
 
 from skore import THREADABLE, CrossValidationReport, EstimatorReport, console
@@ -59,6 +67,34 @@ class ReportPayload(BaseModel, ABC, Generic[Report]):
     report: Report = Field(repr=False, exclude=True)
     key: str
 
+    @model_serializer(mode="wrap")
+    def serialize_model(
+        self, handler: SerializerFunctionWrapHandler, info: SerializationInfo
+    ) -> dict[str, Any]:
+        """
+        Serialize the payload, forcing ``environment`` to be computed last.
+
+        ``include`` / ``exclude`` are not supported: this serializer needs full
+        control of those filters so ``environment`` can be dumped after every
+        other field.
+        """
+        if info.context and ("break" in info.context):
+            return handler(self)  # type: ignore[no-any-return]
+
+        if info.include is not None or info.exclude is not None:
+            raise NotImplementedError("include/exclude not supported")
+
+        # break the recursion induced by the call of ``self.model_dump()`` using the
+        # base condition ``break``
+        context = ((info.context is not None) and info.context.copy()) or {}
+        context["break"] = True
+
+        # serialize the payload with ``environment`` last
+        base = self.model_dump(mode=info.mode, exclude={"environment"}, context=context)
+        env = self.model_dump(mode=info.mode, include={"environment"}, context=context)
+
+        return base | env
+
     @computed_field  # type: ignore[prop-decorator]
     @property
     def canonical_report_id(self) -> str:
@@ -75,7 +111,7 @@ class ReportPayload(BaseModel, ABC, Generic[Report]):
     @cached_property
     def dataset_fingerprint(self) -> str:
         """The hash of the targets in the test-set."""
-        fingerprint: str = joblib.hash(
+        fingerprint: str = hash(
             self.report.y_test
             if isinstance(self.report, EstimatorReport)
             else self.report.y
