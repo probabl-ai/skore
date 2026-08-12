@@ -486,7 +486,19 @@ class Metric:
                     self._row(score=s, output=idx)
                     for idx, s in enumerate(score.tolist())
                 ]
-            return [self._row(score=score, average=kwargs.get("multioutput"))]
+
+            # A scalar score means the outputs were aggregated: "raw_values" is the
+            # only `multioutput` mode that is not an average. Weights are reported
+            # as "weighted" rather than their values, which would make the average
+            # differ from one report to the next.
+            multioutput = kwargs.get("multioutput")
+            if multioutput is None:
+                average = None
+            elif isinstance(multioutput, str):
+                average = None if multioutput == "raw_values" else multioutput
+            else:
+                average = "weighted"
+            return [self._row(score=score, average=average)]
         return [self._row(score=score)]
 
     def rows(
