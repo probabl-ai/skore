@@ -3,6 +3,7 @@
 import functools
 import importlib.metadata
 import logging
+import operator
 import pathlib
 import sys
 import sysconfig
@@ -91,13 +92,16 @@ def infer() -> list[Requirement]:
                     stacklevel=2,
                 )
 
-    return [
-        Requirement(
-            name=packaging.utils.canonicalize_name(name),
-            version=packaging.utils.canonicalize_version(
-                version,
-                strip_trailing_zero=False,
-            ),
-        )
-        for name, version in sorted(requirement_to_version.items())
-    ]
+    return sorted(
+        (
+            Requirement(
+                name=packaging.utils.canonicalize_name(name),
+                version=packaging.utils.canonicalize_version(
+                    version,
+                    strip_trailing_zero=False,
+                ),
+            )
+            for name, version in requirement_to_version.items()
+        ),
+        key=operator.itemgetter("name"),
+    )
