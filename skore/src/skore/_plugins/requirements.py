@@ -81,14 +81,14 @@ def __distribution_files(name: str) -> frozenset[pathlib.Path]:
     return frozenset(located)
 
 
-def __distribution(top_level_name: str, module: types.ModuleType) -> str | None:
+def __distributions(top_level_name: str, module: types.ModuleType) -> list[str] | None:
     """
-    Return the distribution name that owns ``module``.
+    Return the distribution names that own ``module``.
 
     Uses :func:`importlib.metadata.packages_distributions` for the top-level
     name. When several distributions share that name (namespace packages), only
-    the distribution whose installed files include the module origin is returned.
-    A bare namespace root with no file origin owns nothing on its own.
+    those whose installed files include the module origin are returned. A bare
+    namespace root with no file origin owns nothing on its own.
     """
     candidates = MODULE_TO_DISTRIBUTIONS.get(top_level_name)
 
@@ -96,11 +96,11 @@ def __distribution(top_level_name: str, module: types.ModuleType) -> str | None:
         return None
 
     if len(candidates) == 1:
-        return candidates[0]
+        return candidates
 
     # When several distributions share that top-level name (namespace packages),
-    # we have to inspect each distribution and retrieve the one that contains the module
-    # file.
+    # we have to inspect each distribution and retrieve the ones that contain the
+    # module file.
 
     origin = (module.__spec__ and module.__spec__.origin) or getattr(
         module, "__file__", None
@@ -111,14 +111,11 @@ def __distribution(top_level_name: str, module: types.ModuleType) -> str | None:
 
     origin = pathlib.Path(origin).resolve()
 
-    return next(
-        (
-            candidate
-            for candidate in candidates
-            if origin in __distribution_files(candidate)
-        ),
-        None,
-    )
+    return [
+        candidate
+        for candidate in candidates
+        if origin in __distribution_files(candidate)
+    ]
 
 
 def infer() -> list[Requirement]:
@@ -129,10 +126,11 @@ def infer() -> list[Requirement]:
     moment of the call. Two successive calls can therefore differ: any import (or
     module removal) between them changes which distributions are discovered.
 
-    Maps each imported module to its distribution via
+    Maps each imported module to its distribution(s) via
     :func:`importlib.metadata.packages_distributions`. For namespace packages,
-    only the distribution that owns the imported file is recorded. Packages
-    loaded from outside known install locations (editable or local installs) are
+    only distributions whose installed files include the module origin are
+    recorded; a bare namespace root with no file is ignored. Packages loaded
+    from outside known install locations (editable or local installs) are
     skipped and a warning is emitted once per package name, even when a
     distribution mapping exists.
     """
@@ -166,9 +164,10 @@ def infer() -> list[Requirement]:
                 )
             continue
 
-        if distribution := __distribution(top_level_name, module):
-            if distribution not in requirement_to_version:
-                requirement_to_version[distribution] = version(distribution)
+        if distributions := __distributions(top_level_name, module):
+            for distribution in distributions:
+                if distribution not in requirement_to_version:
+                    requirement_to_version[distribution] = version(distribution)
         else:
             # No distribution mapping: Cython/C-extension aliases, runtime entrypoints
             # (__main__), bare namespace roots, etc.
