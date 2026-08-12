@@ -18,7 +18,7 @@ from sklearn.datasets import make_classification
 from sklearn.decomposition import PCA
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import make_scorer, precision_score, recall_score
+from sklearn.metrics import make_scorer, precision_score, r2_score, recall_score
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import make_pipeline
 
@@ -231,6 +231,36 @@ def test_default_multioutput_regression(linear_regression_multioutput_with_test)
     assert len(data.loc["R²", "output"]) == 2
     assert len(data.loc["RMSE", "output"]) == 2
     assert set(data.loc["R²", "output"]) == {0, 1}
+
+
+@pytest.mark.parametrize(
+    "multioutput, expected_average",
+    [
+        ("raw_values", None),
+        ("uniform_average", "uniform_average"),
+        ("variance_weighted", "variance_weighted"),
+        ([0.3, 0.7], "weighted"),
+        (np.array([0.3, 0.7]), "weighted"),
+    ],
+)
+def test_multioutput_regression_average(
+    linear_regression_multioutput_with_test, multioutput, expected_average
+):
+    """`multioutput` aggregation modes are reported in the `average` column."""
+    estimator, X_test, y_test = linear_regression_multioutput_with_test
+    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
+    report.metrics.add(make_scorer(r2_score, multioutput=multioutput), name="r2_custom")
+
+    data = report.metrics.summarize().summary
+    rows = data[data["name"] == "r2_custom"]
+
+    if expected_average is None:
+        assert set(rows["output"]) == {0, 1}
+        assert rows["average"].isna().all()
+    else:
+        assert len(rows) == 1
+        assert rows["output"].isna().all()
+        assert rows["average"].iloc[0] == expected_average
 
 
 def test_default_without_predict_proba(custom_classifier_no_predict_proba_with_test):

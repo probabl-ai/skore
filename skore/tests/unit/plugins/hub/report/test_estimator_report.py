@@ -1,9 +1,10 @@
 from joblib import hash
 from pydantic import ValidationError
 from pytest import approx, fixture, mark, raises
-from sklearn.datasets import make_classification
+from sklearn.datasets import make_classification, make_regression
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import make_scorer, precision_score
+from sklearn.linear_model import Ridge
+from sklearn.metrics import make_scorer, precision_score, r2_score
 
 from skore import CrossValidationReport, EstimatorReport, evaluate
 from skore._plugins.hub.artifact.media import (
@@ -397,6 +398,36 @@ class TestEstimatorReportPayload:
                 value=1.0,
             ),
         ]
+
+    @mark.respx(assert_all_called=False)
+    def test_metrics_multioutput_regression(self, project):
+        X, y = make_regression(n_targets=2, random_state=42)
+        report = evaluate(Ridge(random_state=42), X, y)
+        report.metrics.add(
+            make_scorer(r2_score, multioutput="uniform_average"),
+            name="r2_uniform",
+        )
+
+        payload = EstimatorReportPayload(
+            project=project,
+            report=report,
+            key="<key>",
+        )
+
+        r2_rows = [
+            m for m in payload.metrics if m.name == "r2" and m.data_source == "test"
+        ]
+        r2_uniform_rows = [
+            m
+            for m in payload.metrics
+            if m.name == "r2_uniform" and m.data_source == "test"
+        ]
+
+        assert {m.output for m in r2_rows} == {0, 1}
+        assert all(m.average is None for m in r2_rows)
+        assert len(r2_uniform_rows) == 1
+        assert r2_uniform_rows[0].average == "uniform_average"
+        assert r2_uniform_rows[0].output is None
 
     @mark.respx(assert_all_called=False)
     def test_metrics_multimetric_scorer(self, project):
