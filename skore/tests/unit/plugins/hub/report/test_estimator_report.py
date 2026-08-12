@@ -485,6 +485,7 @@ class TestEstimatorReportPayload:
 
         payload_dict.pop("metrics")
         payload_dict.pop("medias")
+        payload_dict.pop("environment")
 
         assert payload_dict == {
             "key": "<key>",

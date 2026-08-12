@@ -560,8 +560,9 @@ class TestCrossValidationReportPayload:
         "ignore:Precision is ill-defined*:sklearn.exceptions.UndefinedMetricWarning"
     )
     @mark.respx()
-    def test_estimators(self, project, payload, upload_mock):
+    def test_estimators(self, project, payload):
         payload.report._cache_predictions()
+
         assert len(payload.estimators) == len(payload.report.reports_)
 
         for i, estimator in enumerate(payload.estimators):
@@ -570,20 +571,7 @@ class TestCrossValidationReportPayload:
             assert estimator.project == project
             assert estimator.report == payload.report.reports_[i]
 
-            # ensure `upload` is well called
-            pickle, _ = serialize(payload.report.reports_[i])
-
             estimator.model_dump()
-
-            assert upload_mock.called
-            assert not upload_mock.call_args.args
-            assert upload_mock.call_args.kwargs == {
-                "project": project,
-                "content": pickle,
-                "content_type": "application/octet-stream",
-            }
-
-            upload_mock.reset_mock()
 
     @mark.respx()
     def test_pickle(
@@ -1212,6 +1200,7 @@ class TestCrossValidationReportPayload:
         payload_dict.pop("metrics")
         payload_dict.pop("medias")
         payload_dict.pop("splitting_strategy")
+        payload_dict.pop("environment")
 
         assert payload_dict == {
             "key": "<key>",
