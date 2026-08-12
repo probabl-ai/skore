@@ -478,6 +478,7 @@
     min-width: 11em;
     max-height: 260px;
     overflow-y: auto;
+    overscroll-behavior: contain;
     padding: 0.25em;
     background-color: var(--color-background);
     border: 1px solid var(--color-orange);
@@ -562,6 +563,7 @@
     min-width: 11em;
     max-height: 220px;
     overflow-y: auto;
+    overscroll-behavior: contain;
     padding: 0.25em 0.5em;
     background-color: var(--color-background);
     border: 1px solid var(--color-orange);
@@ -745,6 +747,7 @@
     flex: 1 1 auto;
     min-width: 0;
     overflow-x: auto;
+    overscroll-behavior-x: contain;
     white-space: nowrap;
     padding: 0.3em 0.5em;
     color: var(--color-text);
@@ -819,6 +822,14 @@
     max-height: 450px;
     overflow: auto;
     max-width: 100%;
+}
+
+/* Keep the wheel inside the table once it reaches an edge, instead of chaining
+   to the host page: in a notebook (VS Code, JupyterLab) that would scroll the
+   whole cell list. The class is set from JS only while the table overflows,
+   because containment on a table that fits would freeze the page around it. */
+.summary-table-wrap.summary-table-wrap--scrollable {
+    overscroll-behavior-y: contain;
 }
 
 .summary-table {
