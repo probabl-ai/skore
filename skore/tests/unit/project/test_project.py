@@ -429,11 +429,30 @@ class TestProject:
         assert result.empty
         assert FakeHubProject.call_count == calls_before_sync
 
-    def test_sync_rejects_non_project(self):
+    def test_sync_builds_counterpart_from_mode(self, FakeHubProject, monkeypatch):
+        monkeypatch.setattr("skore._project.dependencies.requires", lambda _: [])
+        project = Project(name="<name>", mode="local", workspace="<local>")
+
+        result = project.sync("hub", workspace="<hub>", dry_run=True)
+
+        assert result.empty
+        assert FakeHubProject.call_args.kwargs == {
+            "name": "<name>",
+            "workspace": "<hub>",
+        }
+
+    def test_sync_rejects_extra_kwargs_for_project(self):
+        project = Project(name="<name>", mode="local")
+        other = Project(name="<other>", mode="local")
+
+        with raises(TypeError, match="only supported when `other` is a mode string"):
+            project.sync(other, workspace="<workspace>", dry_run=True)
+
+    def test_sync_rejects_non_project_or_mode(self):
         project = Project(name="<name>", mode="local")
 
         with raises(TypeError, match="`other` must be a Project"):
-            project.sync("hub", dry_run=True)
+            project.sync(42, dry_run=True)
 
     def test_sync_allows_different_names(self):
         project = Project(name="<name>", mode="local", workspace="<local>")
