@@ -75,6 +75,13 @@ method is called is the source.
 The caller is the source; reverse the call for the opposite direction. Set
 ``bidirectional=True`` to transfer missing reports in both directions.
 
+When both projects have the same name, pass the destination mode as a shortcut. The
+destination is built with the caller's name and the supplied mode-specific arguments.
+
+.. code-block:: python
+
+   result = project_local.sync("hub", workspace="my-workspace")
+
 Reports are matched using the ``report_id`` column returned by
 ``Project.summarize().frame()`` and copied with their keys. Existing IDs are skipped;
 contents and metadata are not compared. Reports without a ``report_id`` are ignored.
