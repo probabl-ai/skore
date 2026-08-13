@@ -1,10 +1,13 @@
 """Definition of the payload associating an environment snapshot with the report."""
 
+from logging import getLogger
 from platform import python_version
 from typing import Literal
 
 from skore._plugins.hub.artifact.artifact import Artifact
 from skore._plugins.requirements import infer
+
+logger = getLogger(__name__)
 
 
 class Environment(Artifact):
@@ -45,4 +48,5 @@ class Environment(Artifact):
                 for requirement in infer()
             )
         except Exception:
+            logger.debug("Failed to infer environment", exc_info=True)
             return None
