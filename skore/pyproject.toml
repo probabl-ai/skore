@@ -141,6 +141,9 @@ xfail_strict = true
 log_cli_level = "info"
 filterwarnings = [
   "error",
+  # Editable/local packages (skore, tests, ...) trigger warnings when ``plugin/hub``
+  # snapshots the environment via ``infer()``.
+  "ignore:Package .* seems to be an editable or local install:UserWarning:skore._plugins.hub.artifact.environment",
   # mlflow-related
   # NOTE: Only affects python 3.11
   "ignore:SelectableGroups dict interface is deprecated. Use select.:DeprecationWarning",

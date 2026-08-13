@@ -29,6 +29,15 @@ from skore._plugins.hub.metric import Metric
 from skore._plugins.hub.report import EstimatorReportPayload
 
 
+def unique(iterable):
+    seen = set()
+
+    for x in iterable:
+        if x not in seen:
+            seen.add(x)
+            yield x
+
+
 def serialize(object: EstimatorReport | CrossValidationReport) -> tuple[bytes, str]:
     import io
 
@@ -98,6 +107,47 @@ class TestEstimatorReportPayload:
             "project": project,
             "content": pickle,
             "content_type": "application/octet-stream",
+        }
+
+    @mark.respx()
+    def test_environment(self, project, payload, upload_mock, monkeypatch):
+        from platform import python_version
+
+        import numpy
+        import numpy.linalg
+        import sklearn
+        import sklearn.base
+
+        from skore._plugins import requirements
+
+        monkeypatch.setattr(
+            requirements.sys,
+            "modules",
+            {
+                "numpy": numpy,
+                "numpy.linalg": numpy.linalg,
+                "sklearn": sklearn,
+                "sklearn.base": sklearn.base,
+            },
+        )
+
+        content = f"numpy=={numpy.__version__}\nscikit-learn=={sklearn.__version__}"
+
+        with Serializer(content) as serializer:
+            checksum = serializer.checksum
+
+        # Ensure payload is well constructed
+        assert payload.environment.checksum == checksum
+        assert payload.environment.content_type == "text/plain"
+        assert payload.environment.python_version == python_version()
+
+        # Ensure `upload` is well called
+        assert upload_mock.called
+        assert not upload_mock.call_args.args
+        assert upload_mock.call_args.kwargs == {
+            "project": project,
+            "content": content,
+            "content_type": "text/plain",
         }
 
     @mark.respx(assert_all_called=False)
@@ -485,6 +535,7 @@ class TestEstimatorReportPayload:
 
         payload_dict.pop("metrics")
         payload_dict.pop("medias")
+        payload_dict.pop("environment")
 
         assert payload_dict == {
             "key": "<key>",
@@ -497,6 +548,40 @@ class TestEstimatorReportPayload:
                 "content_type": "application/octet-stream",
             },
         }
+
+    @mark.respx()
+    def test_model_dump_environment_is_evaluated_last(
+        self, project, binary_classification, monkeypatch
+    ):
+        calls = []
+
+        # wrap each computed field to mark calls
+        for field in EstimatorReportPayload.model_computed_fields:
+            original = getattr(EstimatorReportPayload, field)
+
+            def mark(self, field=field, original=original):
+                calls.append(field)
+                return original.__get__(self, type(self))
+
+            monkeypatch.setattr(EstimatorReportPayload, field, property(mark))
+
+        payload = EstimatorReportPayload(
+            project=project, report=binary_classification, key="<key>"
+        )
+
+        payload.model_dump()
+
+        # filter properties that have been called multiple times: only keep first call
+        assert list(unique(calls)) == [
+            "canonical_report_id",
+            "estimator_class_name",
+            "dataset_fingerprint",
+            "ml_task",
+            "metrics",
+            "medias",
+            "pickle",
+            "environment",  # <- last
+        ]
 
     @mark.respx(assert_all_called=False)
     def test_exception(self, project):
