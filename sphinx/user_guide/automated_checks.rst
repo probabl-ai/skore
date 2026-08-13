@@ -326,6 +326,9 @@ How to reduce the risk
   permutation importance or drop-column importance.
 
 
+Check out the :ref:`example for this check <example_skd007_mdi_cardinality_bias>`.
+
+
 .. _skd008-correlated-features:
 
 SKD008 - Highly correlated input features
