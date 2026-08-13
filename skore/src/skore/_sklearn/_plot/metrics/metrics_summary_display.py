@@ -6,10 +6,12 @@ from typing import Any, Literal, NotRequired, TypedDict, cast
 
 import numpy as np
 import pandas as pd
+import seaborn as sns
 from matplotlib.figure import Figure
 from sklearn.utils.validation import _is_arraylike
 
-from skore._sklearn._plot.base import DisplayMixin
+from skore._sklearn._plot.base import BOXPLOT_STYLE, DisplayMixin
+from skore._sklearn._plot.utils import _reorder_categoricals_by_appearance
 from skore._sklearn.metrics import Metric
 from skore._sklearn.types import (
     Aggregate,
@@ -21,11 +23,18 @@ from skore._utils._index import flatten_multi_index, squeeze_single_column
 
 MetricIndexKey = Literal["metric", "label", "output", "average"]
 MetricColumnKey = Literal["estimator", "data_source", "split"]
+SubplotBy = Literal["auto", "estimator", "label", "output", "data_source", "split"]
 
 METRIC_INDEX_KEYS: tuple[MetricIndexKey, ...] = ("metric", "label", "output", "average")
 METRIC_DIMENSION_KEYS = METRIC_INDEX_KEYS[1:]
 PIVOT_VALUE_COLUMN = "score"
 PIVOT_META_COLUMN = "greater_is_better"
+GROUPBY_COLUMN_PRIORITY: tuple[str, ...] = (
+    "estimator",
+    "data_source",
+    "label",
+    "output",
+)
 
 
 class MetricsSummaryRow(TypedDict):
@@ -102,6 +111,19 @@ class MetricsSummaryDisplay(DisplayMixin):
     ConfusionMatrixDisplay : Display the confusion matrix.
     PredictionErrorDisplay : Plot regression prediction error.
     """
+
+    _default_barplot_kwargs: dict[str, Any] = {
+        "aspect": 2,
+        "height": 6,
+        "palette": "tab10",
+    }
+    _default_stripplot_kwargs: dict[str, Any] = {
+        "alpha": 0.5,
+        "aspect": 2,
+        "height": 6,
+        "palette": "tab10",
+    }
+    _default_boxplot_kwargs: dict[str, Any] = BOXPLOT_STYLE
 
     def __init__(
         self,
@@ -562,6 +584,408 @@ class MetricsSummaryDisplay(DisplayMixin):
         return "\n".join(lines)
 
     @DisplayMixin.style_plot
-    def plot(self) -> Figure:
-        """Plot the metrics summary (not implemented)."""
-        raise NotImplementedError()
+    def plot(
+        self,
+        *,
+        metric: str,
+        subplot_by: SubplotBy | None = "auto",
+    ) -> Figure:
+        """Plot a single metric.
+
+        Parameters
+        ----------
+        metric : str
+            The metric to plot. Must match a value in the ``name`` column of
+            :attr:`summary`.
+
+        subplot_by : {"auto", "estimator", "label", "output", "data_source", \
+                "split"} or None, default="auto"
+            Column used as the seaborn ``col`` facet. ``"auto"`` facets by
+            ``"estimator"`` for comparison reports when another grouping
+            dimension is present; otherwise no facets are created. At most one
+            other grouping column may remain: it is used as ``hue``. If more
+            dimensions would be left unencoded, a :class:`ValueError` is raised.
+
+        Returns
+        -------
+        matplotlib.figure.Figure
+            Figure containing the metrics plot.
+        """
+        if self.errors:
+            warnings.warn(
+                "\n".join(
+                    f"Metric {failed_metric.name!r} has failed: {error!r}"
+                    for failed_metric, error in self.errors
+                ),
+                stacklevel=2,
+            )
+        return self._plot(metric=metric, subplot_by=subplot_by)
+
+    def _plot_matplotlib(
+        self,
+        *,
+        metric: str,
+        subplot_by: SubplotBy | None = "auto",
+    ) -> Figure:
+        """Dispatch the plotting function for matplotlib backend."""
+        frame = self._prepare_plot_frame(metric)
+
+        barplot_kwargs = self._default_barplot_kwargs.copy()
+        boxplot_kwargs = self._default_boxplot_kwargs.copy()
+        stripplot_kwargs = self._default_stripplot_kwargs.copy()
+
+        if "comparison" in self.report_type:
+            return self._plot_comparison(
+                frame=frame,
+                report_type=self.report_type,
+                subplot_by=subplot_by,
+                barplot_kwargs=barplot_kwargs,
+                boxplot_kwargs=boxplot_kwargs,
+                stripplot_kwargs=stripplot_kwargs,
+            )
+
+        estimator_name = self.summary["estimator"].iloc[0]
+        return self._plot_single_estimator(
+            frame=frame,
+            estimator_name=estimator_name,
+            report_type=self.report_type,
+            subplot_by=subplot_by,
+            barplot_kwargs=barplot_kwargs,
+            boxplot_kwargs=boxplot_kwargs,
+            stripplot_kwargs=stripplot_kwargs,
+        )
+
+    def _prepare_plot_frame(self, metric: str) -> pd.DataFrame:
+        """Filter and reshape the summary into a long frame for plotting."""
+        available_metrics = list(dict.fromkeys(self.summary["name"].tolist()))
+        if metric not in available_metrics:
+            raise ValueError(
+                f"Unknown metric: {metric!r}. Available metrics: {available_metrics!r}."
+            )
+
+        frame = self.summary.query("name == @metric").copy()
+
+        for col in ["label", "output", "average"]:
+            if col in frame.columns and frame[col].isna().all():
+                frame = frame.drop(columns=col)
+
+        if "data_source" in frame.columns and frame["data_source"].nunique() == 1:
+            frame = frame.drop(columns="data_source")
+
+        if (
+            "estimator" in frame.columns
+            and frame["estimator"].nunique() == 1
+            and "comparison" not in self.report_type
+        ):
+            frame = frame.drop(columns="estimator")
+
+        if self.report_type in ("estimator", "comparison-estimator") and "split" in (
+            frame.columns
+        ):
+            frame = frame.drop(columns="split")
+
+        return frame
+
+    @staticmethod
+    def _get_columns_to_groupby(*, frame: pd.DataFrame) -> list[str]:
+        """Get the available columns from which to group by."""
+        return [column for column in GROUPBY_COLUMN_PRIORITY if column in frame.columns]
+
+    @staticmethod
+    def _valid_subplot_by_options(
+        *,
+        columns_to_groupby: list[str],
+        frame: pd.DataFrame,
+    ) -> list[str]:
+        """Build the list of valid ``subplot_by`` values for error messages."""
+        options: list[str] = ["auto", *columns_to_groupby]
+        if "split" in frame.columns:
+            options.append("split")
+        # ``None`` leaves at most one encoding column for hue. ``split`` is the
+        # CV distribution axis and does not count toward that budget.
+        if len(columns_to_groupby) <= 1:
+            options.append("None")
+        return options
+
+    @classmethod
+    def _raise_invalid_subplot_by(
+        cls,
+        subplot_by: str | None,
+        *,
+        columns_to_groupby: list[str],
+        frame: pd.DataFrame,
+    ) -> None:
+        options = cls._valid_subplot_by_options(
+            columns_to_groupby=columns_to_groupby,
+            frame=frame,
+        )
+        raise ValueError(
+            f"Invalid `subplot_by` parameter. Valid options are: "
+            f"{', '.join(options)}. Got {subplot_by!r} instead."
+        )
+
+    @classmethod
+    def _raise_too_many_dimensions(cls, leftover: Sequence[str]) -> None:
+        raise ValueError(
+            "There is too much information to display on a single plot. "
+            f"Unencoded grouping columns: {list(leftover)}. "
+            "Choose `subplot_by` so that at most one other grouping column "
+            "remains (used as hue), or filter the summary "
+            "(e.g. a single `data_source`)."
+        )
+
+    def _resolve_subplot_by(
+        self,
+        *,
+        frame: pd.DataFrame,
+        columns_to_groupby: list[str],
+        subplot_by: SubplotBy | None,
+        report_type: ReportType,
+    ) -> SubplotBy | None:
+        """Resolve ``"auto"`` and validate ``subplot_by``."""
+        if subplot_by == "auto":
+            if "comparison" in report_type and (
+                "label" in frame.columns or "output" in frame.columns
+            ):
+                return "estimator"
+            return None
+
+        allowed = list(columns_to_groupby)
+        # ``split`` is the strip/box distribution axis for CV reports; it is a
+        # valid facet choice but not an unencoded leftover dimension.
+        if "split" in frame.columns:
+            allowed.append("split")
+
+        if subplot_by is not None and subplot_by not in allowed:
+            self._raise_invalid_subplot_by(
+                subplot_by,
+                columns_to_groupby=columns_to_groupby,
+                frame=frame,
+            )
+        return subplot_by
+
+    def _resolve_plot_encodings(
+        self,
+        *,
+        frame: pd.DataFrame,
+        subplot_by: SubplotBy | None,
+        report_type: ReportType,
+    ) -> tuple[str | None, str | None, SubplotBy | None]:
+        """Return ``(col, hue, resolved_subplot_by)`` without unencoded dimensions."""
+        columns_to_groupby = self._get_columns_to_groupby(frame=frame)
+        subplot_by = self._resolve_subplot_by(
+            frame=frame,
+            columns_to_groupby=columns_to_groupby,
+            subplot_by=subplot_by,
+            report_type=report_type,
+        )
+
+        if subplot_by is None:
+            if len(columns_to_groupby) > 1:
+                # Comparison reports with multiple labels/outputs historically
+                # used a dedicated message; keep that for the common case.
+                if "comparison" in report_type and (
+                    (
+                        "label" in frame.columns
+                        and frame["label"].nunique(dropna=True) > 1
+                    )
+                    or (
+                        "output" in frame.columns
+                        and frame["output"].nunique(dropna=True) > 1
+                    )
+                ):
+                    raise ValueError(
+                        "There are multiple labels or outputs and `subplot_by` is "
+                        "`None`. There is too much information to display on a "
+                        "single plot. Please provide a column to group by using "
+                        "`subplot_by`."
+                    )
+                self._raise_too_many_dimensions(columns_to_groupby)
+            hue = columns_to_groupby[0] if columns_to_groupby else None
+            return None, hue, None
+
+        remaining = [column for column in columns_to_groupby if column != subplot_by]
+        hue = remaining[0] if remaining else None
+        leftover = remaining[1:]
+        if leftover:
+            self._raise_too_many_dimensions(leftover)
+        return subplot_by, hue, subplot_by
+
+    @staticmethod
+    def _decorate_matplotlib_axis(
+        *,
+        ax: Any,
+        xlabel: str,
+        ylabel: str = "",
+    ) -> None:
+        ax.set(xlabel=xlabel, ylabel=ylabel)
+        ax.axhspan(-0.5, 0.5, color="lightgray", alpha=0.4, zorder=0)
+
+    @staticmethod
+    def _iter_facet_axes(facet: Any) -> list[Any]:
+        """Yield axes from a seaborn FacetGrid, including the single-axes case."""
+        axes = np.atleast_1d(np.asarray(facet.axes, dtype=object)).ravel()
+        return [ax for ax in axes if ax is not None]
+
+    def _categorical_plot(
+        self,
+        *,
+        frame: pd.DataFrame,
+        report_type: ReportType,
+        hue: str | None = None,
+        col: str | None = None,
+        barplot_kwargs: dict[str, Any] | None = None,
+        boxplot_kwargs: dict[str, Any] | None = None,
+        stripplot_kwargs: dict[str, Any] | None = None,
+    ) -> Figure:
+        frame = _reorder_categoricals_by_appearance(frame, [col, hue])
+
+        is_estimator_report_type = report_type in (
+            "estimator",
+            "comparison-estimator",
+        )
+        if is_estimator_report_type:
+            facet = sns.catplot(
+                data=frame,
+                x="score",
+                y="verbose_name",
+                hue=hue,
+                col=col,
+                kind="bar",
+                **(barplot_kwargs or {}),
+            )
+        else:
+            facet = sns.catplot(
+                data=frame,
+                x="score",
+                y="verbose_name",
+                hue=hue,
+                col=col,
+                kind="strip",
+                dodge=True,
+                **(stripplot_kwargs or {}),
+            ).map_dataframe(
+                sns.boxplot,
+                x="score",
+                y="verbose_name",
+                hue=hue,
+                palette="tab10" if hue is not None else None,
+                dodge=True,
+                **(boxplot_kwargs or {}),
+            )
+
+        add_background_metric = hue is not None
+        figure = facet.figure
+        xlabel = frame["verbose_name"].iloc[0]
+        for ax in self._iter_facet_axes(facet):
+            self._decorate_matplotlib_axis(ax=ax, xlabel=xlabel)
+            if not add_background_metric:
+                for patch in ax.patches:
+                    patch.set_facecolor("lightgray")
+                    patch.set_alpha(0.4)
+
+        return figure
+
+    def _plot_single_estimator(
+        self,
+        *,
+        frame: pd.DataFrame,
+        estimator_name: str,
+        report_type: ReportType,
+        subplot_by: SubplotBy | None,
+        barplot_kwargs: dict[str, Any],
+        boxplot_kwargs: dict[str, Any],
+        stripplot_kwargs: dict[str, Any],
+    ) -> Figure:
+        """Plot metrics for an `EstimatorReport` or a `CrossValidationReport`."""
+        col, hue, subplot_by = self._resolve_plot_encodings(
+            frame=frame,
+            subplot_by=subplot_by,
+            report_type=report_type,
+        )
+        if hue is None:
+            barplot_kwargs.pop("palette", None)
+            stripplot_kwargs.pop("palette", None)
+
+        figure = self._categorical_plot(
+            frame=frame,
+            report_type=report_type,
+            hue=hue,
+            col=col,
+            barplot_kwargs=barplot_kwargs,
+            boxplot_kwargs=boxplot_kwargs,
+            stripplot_kwargs=stripplot_kwargs,
+        )
+
+        title = f"Metrics of {estimator_name}"
+        if subplot_by is not None:
+            title += f" by {subplot_by}"
+        figure.suptitle(title)
+        return figure
+
+    def _plot_comparison(
+        self,
+        *,
+        frame: pd.DataFrame,
+        report_type: ReportType,
+        subplot_by: SubplotBy | None,
+        barplot_kwargs: dict[str, Any],
+        boxplot_kwargs: dict[str, Any],
+        stripplot_kwargs: dict[str, Any],
+    ) -> Figure:
+        """Plot metrics for a `ComparisonReport`."""
+        col, hue, subplot_by = self._resolve_plot_encodings(
+            frame=frame,
+            subplot_by=subplot_by,
+            report_type=report_type,
+        )
+        if hue is None:
+            barplot_kwargs.pop("palette", None)
+            stripplot_kwargs.pop("palette", None)
+
+        figure = self._categorical_plot(
+            frame=frame,
+            report_type=report_type,
+            hue=hue,
+            col=col,
+            barplot_kwargs={"sharey": True} | barplot_kwargs,
+            boxplot_kwargs=boxplot_kwargs,
+            stripplot_kwargs={"sharey": True} | stripplot_kwargs,
+        )
+
+        title = "Metrics"
+        if subplot_by is not None:
+            title += f" by {subplot_by}"
+        figure.suptitle(title)
+        return figure
+
+    def set_style(  # type: ignore[override]
+        self,
+        *,
+        policy: Literal["override", "update"] = "update",
+        barplot_kwargs: dict[str, Any] | None = None,
+        boxplot_kwargs: dict[str, Any] | None = None,
+        stripplot_kwargs: dict[str, Any] | None = None,
+    ):
+        """Set the style parameters for the display.
+
+        Parameters
+        ----------
+        policy : {"override", "update"}, default="update"
+            Policy to use when setting the style parameters.
+
+        barplot_kwargs : dict, default=None
+            Keyword arguments passed to :func:`seaborn.barplot`.
+
+        boxplot_kwargs : dict, default=None
+            Keyword arguments passed to :func:`seaborn.boxplot`.
+
+        stripplot_kwargs : dict, default=None
+            Keyword arguments passed to :func:`seaborn.stripplot`.
+        """
+        return super().set_style(
+            policy=policy,
+            barplot_kwargs=barplot_kwargs or {},
+            boxplot_kwargs=boxplot_kwargs or {},
+            stripplot_kwargs=stripplot_kwargs or {},
+        )

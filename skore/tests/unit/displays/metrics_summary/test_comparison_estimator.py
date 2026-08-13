@@ -1,4 +1,6 @@
+import matplotlib as mpl
 import pandas as pd
+import pytest
 
 from skore import ComparisonReport, MetricsSummaryDisplay
 
@@ -96,3 +98,100 @@ def test_aggregate(comparison_estimator_reports_binary_classification):
         report.metrics.summarize().frame(aggregate="mean"),
         report.metrics.summarize().frame(),
     )
+
+
+@pytest.mark.parametrize(
+    "fixture_name, metric, valid_values",
+    [
+        (
+            "comparison_estimator_reports_binary_classification",
+            "score",
+            ["auto", "estimator", "None"],
+        ),
+        (
+            "comparison_estimator_reports_multiclass_classification",
+            "precision",
+            ["auto", "estimator", "label"],
+        ),
+        (
+            "comparison_estimator_reports_regression",
+            "score",
+            ["auto", "estimator", "None"],
+        ),
+        (
+            "comparison_estimator_reports_multioutput_regression",
+            "r2",
+            ["auto", "estimator", "output"],
+        ),
+    ],
+)
+def test_invalid_subplot_by(fixture_name, metric, valid_values, request):
+    report = request.getfixturevalue(fixture_name)
+    display = report.metrics.summarize(metric=metric)
+    err_msg = (
+        "Invalid `subplot_by` parameter. Valid options are: "
+        f"{', '.join(valid_values)}. Got 'incorrect' instead."
+    )
+    with pytest.raises(ValueError, match=err_msg):
+        display.plot(metric=metric, subplot_by="incorrect")
+
+
+@pytest.mark.parametrize(
+    "fixture_name, metric, subplot_by_tuples",
+    [
+        (
+            "comparison_estimator_reports_binary_classification",
+            "score",
+            [(None, 1), ("estimator", 2)],
+        ),
+        (
+            "comparison_estimator_reports_multiclass_classification",
+            "precision",
+            [("label", 3), ("estimator", 2)],
+        ),
+        (
+            "comparison_estimator_reports_regression",
+            "score",
+            [(None, 1), ("estimator", 2)],
+        ),
+        (
+            "comparison_estimator_reports_multioutput_regression",
+            "r2",
+            [("output", 2), ("estimator", 2)],
+        ),
+    ],
+)
+def test_valid_subplot_by(fixture_name, metric, subplot_by_tuples, request):
+    report = request.getfixturevalue(fixture_name)
+    display = report.metrics.summarize(metric=metric)
+    for subplot_by, expected_len in subplot_by_tuples:
+        fig = display.plot(metric=metric, subplot_by=subplot_by)
+        axes = fig.axes
+        if subplot_by is None:
+            assert len(axes) == 1
+            assert isinstance(axes[0], mpl.axes.Axes)
+        else:
+            assert len(axes) == expected_len
+
+
+@pytest.mark.parametrize(
+    "fixture_name, metric",
+    [
+        ("comparison_estimator_reports_multiclass_classification", "precision"),
+        ("comparison_estimator_reports_multioutput_regression", "r2"),
+    ],
+)
+def test_subplot_by_none_multiclass_or_multioutput(
+    request,
+    fixture_name,
+    metric,
+):
+    report = request.getfixturevalue(fixture_name)
+    display = report.metrics.summarize(metric=metric)
+    err_msg = (
+        "There are multiple labels or outputs and `subplot_by` is `None`. "
+        "There is too much information to display on a single plot. "
+        "Please provide a column to group by using `subplot_by`."
+    )
+    with pytest.raises(ValueError, match=err_msg):
+        display.plot(metric=metric, subplot_by=None)
