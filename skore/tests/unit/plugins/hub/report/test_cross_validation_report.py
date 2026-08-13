@@ -592,13 +592,54 @@ class TestCrossValidationReportPayload:
         # Ensure payload is well constructed
         assert payload.pickle.checksum == checksum
 
-        # ensure `upload` is well called
+        # Ensure `upload` is well called
         assert upload_mock.called
         assert not upload_mock.call_args.args
         assert upload_mock.call_args.kwargs == {
             "project": project,
             "content": pickle,
             "content_type": "application/octet-stream",
+        }
+
+    @mark.respx()
+    def test_environment(self, project, payload, upload_mock, monkeypatch):
+        from platform import python_version
+
+        import numpy
+        import numpy.linalg
+        import sklearn
+        import sklearn.base
+
+        from skore._plugins import requirements
+
+        monkeypatch.setattr(
+            requirements.sys,
+            "modules",
+            {
+                "numpy": numpy,
+                "numpy.linalg": numpy.linalg,
+                "sklearn": sklearn,
+                "sklearn.base": sklearn.base,
+            },
+        )
+
+        content = f"numpy=={numpy.__version__}\nscikit-learn=={sklearn.__version__}"
+
+        with Serializer(content) as serializer:
+            checksum = serializer.checksum
+
+        # Ensure payload is well constructed
+        assert payload.environment.checksum == checksum
+        assert payload.environment.content_type == "text/plain"
+        assert payload.environment.python_version == python_version()
+
+        # Ensure `upload` is well called
+        assert upload_mock.called
+        assert not upload_mock.call_args.args
+        assert upload_mock.call_args.kwargs == {
+            "project": project,
+            "content": content,
+            "content_type": "text/plain",
         }
 
     @mark.filterwarnings(
@@ -1230,7 +1271,7 @@ class TestCrossValidationReportPayload:
             "target_ranges": None,
         }
 
-    @mark.respx(assert_all_called=False)
+    @mark.respx()
     def test_model_dump_classification_environment_is_evaluated_last(
         self, project, small_cv_binary_classification, monkeypatch
     ):
