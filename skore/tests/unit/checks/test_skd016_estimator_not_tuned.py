@@ -1,11 +1,13 @@
 import pandas as pd
 import pytest
+import skrub
 from sklearn.decomposition import PCA
 from sklearn.dummy import DummyRegressor
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.linear_model import Ridge
 from sklearn.model_selection import GridSearchCV
 from sklearn.pipeline import Pipeline
+from skrub import SkrubLearner, tabular_pipeline
 
 from skore import evaluate
 from skore._sklearn._checks._utils import CheckNotApplicable
@@ -13,15 +15,31 @@ from skore._sklearn._checks.model_checks import CheckEstimatorNotTuned
 
 
 @pytest.mark.parametrize("report_type", ["estimator", "cross-validation"])
-def test_fires_on_default_estimator(report_type, regression_data):
+@pytest.mark.parametrize(
+    "estimator",
+    [
+        RandomForestRegressor(random_state=0),
+        tabular_pipeline(RandomForestRegressor(random_state=0)),
+        (
+            skrub.X()
+            .skb.apply(RandomForestRegressor(random_state=0), y=skrub.y())
+            .skb.make_learner()
+        ),
+    ],
+)
+def test_fires_on_default_estimator(report_type, estimator, regression_data):
     """SKD016 fires when the estimator is left at sklearn defaults."""
     X, y = regression_data
-    report = evaluate(
-        RandomForestRegressor(),
-        X,
-        y,
-        splitter=0.2 if report_type == "estimator" else 3,
-    )
+    if isinstance(estimator, SkrubLearner):
+        report = evaluate(
+            estimator,
+            data={"X": X, "y": y},
+            splitter=0.2 if report_type == "estimator" else 3,
+        )
+    else:
+        report = evaluate(
+            estimator, X, y, splitter=0.2 if report_type == "estimator" else 3
+        )
     explanation = CheckEstimatorNotTuned().check_function(report)
     assert explanation is not None
     assert "RandomForestRegressor" in explanation
@@ -81,6 +99,33 @@ def test_pipeline_walks_steps(report_type, regression_data):
     assert "PCA" in explanation
     assert "n_components" in explanation
     assert "Ridge" not in explanation
+
+
+def test_skrub_table_vectorizer_chain(regression_data):
+    """SKD016 walks fitted estimators from a non-linear skrub apply graph."""
+    X, y = regression_data
+    learner = (
+        skrub.X()
+        .skb.apply(skrub.TableVectorizer())
+        .skb.apply(Ridge(), y=skrub.y())
+        .skb.make_learner()
+    )
+    report = evaluate(learner, data={"X": X, "y": y})
+    explanation = CheckEstimatorNotTuned().check_function(report)
+    assert explanation is not None
+    assert "alpha" in explanation
+
+
+def test_passes_when_skrub_param_is_tunable(regression_data):
+    """SKD016 passes when a recommended param is a skrub choice in the DataOp."""
+    X, y = regression_data
+    learner = (
+        skrub.X()
+        .skb.apply(Ridge(alpha=skrub.choose_from([0.1, 1.0])), y=skrub.y())
+        .skb.make_learner()
+    )
+    report = evaluate(learner, data={"X": X, "y": y})
+    assert CheckEstimatorNotTuned().check_function(report) is None
 
 
 @pytest.mark.parametrize("report_type", ["estimator", "cross-validation"])

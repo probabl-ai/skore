@@ -1,11 +1,12 @@
 import numpy as np
 import pandas as pd
 import pytest
+import skrub
 from sklearn.cross_decomposition import PLSRegression
 from sklearn.linear_model import LinearRegression
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
-from skrub import tabular_pipeline
+from skrub import SkrubLearner, tabular_pipeline
 
 from skore import evaluate
 from skore._sklearn._checks._utils import CheckNotApplicable
@@ -14,7 +15,12 @@ from skore._sklearn._checks.model_checks import CheckGoldenFeature
 
 @pytest.mark.parametrize("report_type", ["estimator", "cross-validation"])
 @pytest.mark.parametrize(
-    "estimator", [LinearRegression(), tabular_pipeline(LinearRegression())]
+    "estimator",
+    [
+        LinearRegression(),
+        tabular_pipeline(LinearRegression()),
+        skrub.X().skb.apply(LinearRegression(), y=skrub.y()).skb.make_learner(),
+    ],
 )
 def test_detects_golden_feature(report_type, estimator):
     """Features correlated with the target get flagged as golden."""
@@ -30,12 +36,19 @@ def test_detects_golden_feature(report_type, estimator):
             "Feature 3": rng.normal(size=n),
         }
     )
-    report = evaluate(
-        estimator,
-        X,
-        y,
-        splitter=0.2 if report_type == "estimator" else 3,
-    )
+    if isinstance(estimator, SkrubLearner):
+        report = evaluate(
+            estimator,
+            data={"X": X, "y": y},
+            splitter=0.2 if report_type == "estimator" else 3,
+        )
+    else:
+        report = evaluate(
+            estimator,
+            X,
+            y,
+            splitter=0.2 if report_type == "estimator" else 3,
+        )
     explanation = CheckGoldenFeature().check_function(report)
 
     assert explanation is not None

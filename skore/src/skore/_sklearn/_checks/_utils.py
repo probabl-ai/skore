@@ -21,6 +21,11 @@ from skore._utils._dataframe import (
     _normalize_X_as_dataframe,
     _normalize_y_as_dataframe,
 )
+from skore._utils._skrub import (
+    get_predictor_and_input,
+    is_skrub_learner,
+    resolve_fitted_predictor,
+)
 
 if TYPE_CHECKING:
     from skore._sklearn._base import _BaseReport
@@ -200,12 +205,17 @@ def split_preprocessor_estimator(estimator):
 
     Splits sklearn :class:`~sklearn.pipeline.Pipeline` into its preprocessing
     steps and final predictor.
+
+    For :class:`~skrub.SkrubLearner`, returns ``(None, fitted_predictor)`` from the
+    supervised ``.skb.apply(estimator, y=...)`` step. Preprocessing lives in the
+    DataOp graph upstream of that step; use :func:`get_preprocessed_X` when checks
+    need the feature matrix seen by the predictor.
     """
+    if is_skrub_learner(estimator):
+        return None, resolve_fitted_predictor(estimator)
+
     if isinstance(estimator, Pipeline):
-        if len(estimator.steps) > 1:
-            return estimator[:-1], estimator[-1]
-        else:
-            return None, estimator[0]
+        return estimator[:-1] or None, estimator[-1]
     return None, estimator
 
 
@@ -307,18 +317,55 @@ def get_preprocessed_X(
         else:
             data = report.X_test
 
-    preprocessor, predictor = split_preprocessor_estimator(get_fitted_estimator(report))
-    if preprocessor is not None and len(preprocessor.steps) > 0:
-        data = preprocessor.transform(data)
-        if not nw.dependencies.is_into_dataframe(data) and not sp.issparse(data):
-            data = pd.DataFrame(
-                data,
-                columns=_get_feature_names(
-                    predictor,
-                    transformer=preprocessor,
-                    n_features=np.shape(data)[1],
-                ),
-            )
+    estimator = get_fitted_estimator(report)
+
+    if report._initialized_with_data_op:
+        learner = estimator
+        try:
+            if report._report_type == "cross-validation":
+                env = report.input_data
+                data, _ = get_predictor_and_input(learner, env)
+            else:
+                if data_source == "train":
+                    if report.train_data is None:
+                        raise CheckNotApplicable("Train data is unavailable.")
+                    env = report.train_data
+
+                    data, _ = get_predictor_and_input(learner, env)
+                elif data_source == "test":
+                    if report.test_data is None:
+                        raise CheckNotApplicable("Test data is unavailable.")
+                    env = report.test_data
+
+                    data, _ = get_predictor_and_input(learner, env)
+                else:  # data_source == "both"
+                    if report.train_data is None:
+                        raise CheckNotApplicable("Train data is unavailable.")
+                    train_X, _ = get_predictor_and_input(learner, report.train_data)
+
+                    if report.test_data is None:
+                        raise CheckNotApplicable("Test data is unavailable.")
+                    test_X, _ = get_predictor_and_input(learner, report.test_data)
+
+                    data = _concat_vertical(train_X, test_X)
+
+        except ValueError as err:
+            if "multiple supervised apply" not in str(err):
+                raise
+            raise CheckNotApplicable(str(err)) from err
+    else:
+        preprocessor, predictor = split_preprocessor_estimator(estimator)
+        if preprocessor is not None and len(preprocessor.steps) > 0:
+            data = preprocessor.transform(data)
+            if not nw.dependencies.is_into_dataframe(data) and not sp.issparse(data):
+                data = pd.DataFrame(
+                    data,
+                    columns=_get_feature_names(
+                        predictor,
+                        transformer=preprocessor,
+                        n_features=np.shape(data)[1],
+                    ),
+                )
 
     try:
         return _normalize_X_as_dataframe(data)
