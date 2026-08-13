@@ -1,4 +1,5 @@
 from io import BytesIO
+from itertools import chain, repeat
 
 import skrub
 from joblib import dump, hash
@@ -48,6 +49,15 @@ from skore._plugins.hub.report import (
 from skore._plugins.hub.report.cross_validation_report import (
     SPLITTING_STRATEGY_MAX_INDEX_COUNT,
 )
+
+
+def unique(iterable):
+    seen = set()
+
+    for x in iterable:
+        if x not in seen:
+            seen.add(x)
+            yield x
 
 
 def serialize(object: EstimatorReport | CrossValidationReport) -> tuple[bytes, str]:
@@ -1219,6 +1229,75 @@ class TestCrossValidationReportPayload:
             "target_names": None,
             "target_ranges": None,
         }
+
+    @mark.respx(assert_all_called=False)
+    def test_model_dump_classification_environment_is_evaluated_last(
+        self, project, small_cv_binary_classification, monkeypatch
+    ):
+        calls = []
+
+        # wrap each computed field to mark calls
+        for cls, field in chain(
+            zip(
+                repeat(EstimatorReportPayload),
+                EstimatorReportPayload.model_computed_fields,
+            ),
+            zip(
+                repeat(CrossValidationReportPayload),
+                CrossValidationReportPayload.model_computed_fields,
+            ),
+        ):
+            original = getattr(cls, field)
+
+            def mark(self, field=field, original=original):
+                calls.append((self.report.id, field))
+                return original.__get__(self, type(self))
+
+            monkeypatch.setattr(cls, field, property(mark))
+
+        payload = CrossValidationReportPayload(
+            project=project, report=small_cv_binary_classification, key="<key>"
+        )
+
+        payload.model_dump()
+
+        # filter properties that have been called multiple times: only keep first call
+        assert list(unique(calls)) == [
+            (small_cv_binary_classification.id, "ml_task"),
+            (small_cv_binary_classification.id, "canonical_report_id"),
+            (small_cv_binary_classification.id, "estimator_class_name"),
+            (small_cv_binary_classification.id, "dataset_fingerprint"),
+            (small_cv_binary_classification.id, "metrics"),
+            (small_cv_binary_classification.id, "medias"),
+            (small_cv_binary_classification.id, "pickle"),
+            (small_cv_binary_classification.id, "dataset_size"),
+            (small_cv_binary_classification.id, "splitting_strategy"),
+            (small_cv_binary_classification.id, "class_names"),
+            (small_cv_binary_classification.id, "target_names"),
+            (small_cv_binary_classification.id, "target_ranges"),
+            (small_cv_binary_classification.id, "target_range"),
+            (small_cv_binary_classification.id, "estimators"),
+            # First fold estimator
+            (small_cv_binary_classification.reports_[0].id, "canonical_report_id"),
+            (small_cv_binary_classification.reports_[0].id, "estimator_class_name"),
+            (small_cv_binary_classification.reports_[0].id, "dataset_fingerprint"),
+            (small_cv_binary_classification.reports_[0].id, "ml_task"),
+            (small_cv_binary_classification.reports_[0].id, "metrics"),
+            (small_cv_binary_classification.reports_[0].id, "medias"),
+            (small_cv_binary_classification.reports_[0].id, "pickle"),
+            (small_cv_binary_classification.reports_[0].id, "environment"),  # <- last
+            # Second fold estimator
+            (small_cv_binary_classification.reports_[1].id, "canonical_report_id"),
+            (small_cv_binary_classification.reports_[1].id, "estimator_class_name"),
+            (small_cv_binary_classification.reports_[1].id, "dataset_fingerprint"),
+            (small_cv_binary_classification.reports_[1].id, "ml_task"),
+            (small_cv_binary_classification.reports_[1].id, "metrics"),
+            (small_cv_binary_classification.reports_[1].id, "medias"),
+            (small_cv_binary_classification.reports_[1].id, "pickle"),
+            (small_cv_binary_classification.reports_[1].id, "environment"),  # <- last
+            #
+            (small_cv_binary_classification.id, "environment"),  # <- last
+        ]
 
     @mark.respx(assert_all_called=False)
     def test_exception(self, project):

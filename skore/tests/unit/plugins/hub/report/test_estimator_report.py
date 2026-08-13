@@ -29,6 +29,15 @@ from skore._plugins.hub.metric import Metric
 from skore._plugins.hub.report import EstimatorReportPayload
 
 
+def unique(iterable):
+    seen = set()
+
+    for x in iterable:
+        if x not in seen:
+            seen.add(x)
+            yield x
+
+
 def serialize(object: EstimatorReport | CrossValidationReport) -> tuple[bytes, str]:
     import io
 
@@ -498,6 +507,40 @@ class TestEstimatorReportPayload:
                 "content_type": "application/octet-stream",
             },
         }
+
+    @mark.respx(assert_all_called=False)
+    def test_model_dump_environment_is_evaluated_last(
+        self, project, binary_classification, monkeypatch
+    ):
+        calls = []
+
+        # wrap each computed field to mark calls
+        for field in EstimatorReportPayload.model_computed_fields:
+            original = getattr(EstimatorReportPayload, field)
+
+            def mark(self, field=field, original=original):
+                calls.append(field)
+                return original.__get__(self, type(self))
+
+            monkeypatch.setattr(EstimatorReportPayload, field, property(mark))
+
+        payload = EstimatorReportPayload(
+            project=project, report=binary_classification, key="<key>"
+        )
+
+        payload.model_dump()
+
+        # filter properties that have been called multiple times: only keep first call
+        assert list(unique(calls)) == [
+            "canonical_report_id",
+            "estimator_class_name",
+            "dataset_fingerprint",
+            "ml_task",
+            "metrics",
+            "medias",
+            "pickle",
+            "environment",  # <- last
+        ]
 
     @mark.respx(assert_all_called=False)
     def test_exception(self, project):
