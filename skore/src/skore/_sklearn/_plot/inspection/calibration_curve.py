@@ -15,7 +15,14 @@ from skore._sklearn._plot.utils import (
     _despine_matplotlib_axis,
     _one_hot_encode,
 )
-from skore._sklearn.types import _DEFAULT, DataSource, PositiveLabel, ReportType
+from skore._sklearn.types import (
+    _DEFAULT,
+    Aggregate,
+    DataSource,
+    PositiveLabel,
+    ReportType,
+)
+from skore._utils._index import flatten_multi_index
 
 
 class CalibrationDisplay(DisplayMixin):
@@ -40,24 +47,27 @@ class CalibrationDisplay(DisplayMixin):
     --------
     >>> from sklearn.datasets import make_classification
     >>> from sklearn.linear_model import LogisticRegression
-    >>> from skore import evaluate
+    >>> from skore import EstimatorReport, train_test_split
     >>> X, y = make_classification(
     ...     n_samples=100_000, n_features=20, n_informative=2, n_redundant=10,
     ...     random_state=42)
-    >>> report = evaluate(LogisticRegression(), X, y, splitter=0.2)
+    >>> split_data = train_test_split(
+    ...     X=X, y=y, random_state=0, as_dict=True, shuffle=False
+    ... )
+    >>> report = EstimatorReport(LogisticRegression(), **split_data)
     >>> display = report.inspection.calibration_curve(n_bins=5, strategy="uniform")
     >>> display.frame()
         predicted_probability  fraction_of_positives data_source  label
-    0               0.058169               0.058186        test      0
-    1               0.291218               0.279537        test      0
-    2               0.501687               0.507645        test      0
-    3               0.709106               0.705734        test      0
-    4               0.942051               0.940309        test      0
-    5               0.057949               0.059691        test      1
-    6               0.290894               0.294266        test      1
-    7               0.498313               0.492355        test      1
-    8               0.708782               0.720463        test      1
-    9               0.941831               0.941814        test      1
+    0               0.058363               0.059952        test      0
+    1               0.292843               0.293697        test      0
+    2               0.499930               0.473191        test      0
+    3               0.709112               0.712788        test      0
+    4               0.941642               0.945545        test      0
+    5               0.058358               0.054455        test      1
+    6               0.290888               0.287212        test      1
+    7               0.500070               0.526809        test      1
+    8               0.707157               0.706303        test      1
+    9               0.941637               0.940048        test      1
     """
 
     _default_line_kwargs = {
@@ -90,7 +100,12 @@ class CalibrationDisplay(DisplayMixin):
         """Return the list of labels available in the calibration data."""
         return self.calibration_report["label"].unique().tolist()
 
-    def frame(self, *, label: PositiveLabel = _DEFAULT) -> pd.DataFrame:
+    def frame(
+        self,
+        *,
+        label: PositiveLabel = _DEFAULT,
+        aggregate: Aggregate | None = ("mean", "std"),
+    ) -> pd.DataFrame:
         """Return the data used for the display as a DataFrame.
 
         Parameters
@@ -98,22 +113,29 @@ class CalibrationDisplay(DisplayMixin):
         label : int, float, bool, str or None, default=report pos_label
             The class whose curve to select. Use ``None`` to show all classes.
 
+        aggregate : ("mean", "std") or None, default=("mean", "std")
+            Aggregation over cross-validation splits. When ``None``, one curve
+            per split is returned for cross-validation reports. When ``("mean",
+            "std")``, calibration values are aggregated across splits.åå
+
         Returns
         -------
-        DataFrame
-        The returned frame always contains:
-        - `predicted_probability`
-        - `fraction_of_positives`
-        - `data_source`
+        DataFrame The returned frame always contains: - `predicted_probability`
+        - `fraction_of_positives` - `data_source`
 
-        It also contains `label` when `label=None` (one-vs-rest view).
-        When a specific label is selected, the `label` column is dropped from
-        the output to provide a single-curve table.
+        It also contains `label` when `label=None` (one-vs-rest view). When a
+        specific label is selected, the `label` column is dropped from the
+        output to provide a single-curve table.
 
-        Depending on the report type, `estimator` and/or `split` metadata may
-        be removed from the returned frame.
+        Depending on the report type, `estimator` and/or `split` metadata may be
+        removed from the returned frame.
         """
         label = _check_label(self.labels, label, self.report_pos_label)
+
+        if aggregate is not None and tuple(aggregate) != ("mean", "std"):
+            raise ValueError(
+                f"aggregate must be None or ('mean', 'std'); got {aggregate!r}."
+            )
 
         if self.report_type == "estimator":
             columns_to_drop = ["estimator", "split"]
@@ -129,6 +151,26 @@ class CalibrationDisplay(DisplayMixin):
         if label is not None:
             df = df.query("label == @label").reset_index(drop=True)
             df = df.drop(columns=["label"])
+
+        if aggregate is not None and "split" in df.columns:
+            df = df.copy()
+            curve_keys = [
+                c for c in ["estimator", "data_source", "label", "split"] if c in df
+            ]
+            df["_bin"] = df.groupby(curve_keys, sort=False).cumcount()
+
+            aggregate_columns = ["predicted_probability", "fraction_of_positives"]
+            group_by = [
+                c for c in ["estimator", "data_source", "label", "_bin"] if c in df
+            ]
+            df = (
+                df.groupby(group_by, sort=False, dropna=False)[aggregate_columns]
+                .aggregate(aggregate)
+                .reset_index()
+            )
+            if isinstance(df.columns, pd.MultiIndex):
+                df.columns = flatten_multi_index(df.columns)
+            df = df.drop(columns=["_bin"], errors="ignore")
 
         return df
 
@@ -179,13 +221,24 @@ class CalibrationDisplay(DisplayMixin):
         )
 
     @DisplayMixin.style_plot
-    def plot(self, *, label: PositiveLabel = _DEFAULT) -> Figure:
+    def plot(
+        self,
+        *,
+        label: PositiveLabel = _DEFAULT,
+        aggregate: Aggregate | None = ("mean", "std"),
+    ) -> Figure:
         """Plot the calibration curve.
 
         Parameters
         ----------
         label : int, float, bool, str or None, default=report pos_label
             The class whose curve to plot. Use ``None`` to show all classes.
+
+        aggregate : ("mean", "std") or None, default=("mean", "std")
+            Aggregation over cross-validation splits. When ``None``, one curve
+            per split is shown for cross-validation reports. When ``("mean",
+            "std")``, a mean curve is plotted with a standard-deviation
+            interval.
 
         Returns
         -------
@@ -195,28 +248,37 @@ class CalibrationDisplay(DisplayMixin):
         --------
         >>> from sklearn.datasets import make_classification
         >>> from sklearn.linear_model import LogisticRegression
-        >>> from skore import evaluate
+        >>> from skore import EstimatorReport, train_test_split
         >>> X, y = make_classification(
         ...     n_samples=100_000, n_features=20, n_informative=2, n_redundant=10,
         ...     random_state=42)
-        >>> report = evaluate(LogisticRegression(), X, y, splitter=0.2)
+        >>> split_data = train_test_split(
+        ...     X=X, y=y, random_state=0, as_dict=True, shuffle=True
+        ... )
+        >>> report = EstimatorReport(LogisticRegression(), **split_data)
         >>> display = report.inspection.calibration_curve()
         >>> display.plot()
         """
         label = _check_label(self.labels, label, self.report_pos_label)
-        return self._plot(label=label)
+        return self._plot(label=label, aggregate=aggregate)
 
-    def _plot_matplotlib(self, *, label: PositiveLabel) -> Figure:
+    def _plot_matplotlib(
+        self,
+        *,
+        label: PositiveLabel,
+        aggregate: Aggregate | None = ("mean", "std"),
+    ) -> Figure:
         """Dispatch the plotting function for matplotlib backend."""
         lineplot_kwargs = self._default_line_kwargs.copy()
         ax_set_kwargs = self._default_ax_set_kwargs.copy()
-        plot_data = self.frame(label=label)
+        plot_data = self.frame(label=label, aggregate=aggregate)
         return self._plot_calibration_curve_single_estimator(
             frame=plot_data,
             estimator_name=self.calibration_report["estimator"].iloc[0],
             lineplot_kwargs=lineplot_kwargs,
             ax_set_kwargs=ax_set_kwargs,
             label=label,
+            aggregate=aggregate,
         )
 
     def _plot_calibration_curve_single_estimator(
@@ -227,33 +289,77 @@ class CalibrationDisplay(DisplayMixin):
         lineplot_kwargs: dict[str, Any],
         ax_set_kwargs: dict[str, Any],
         label: PositiveLabel = None,
+        aggregate: Aggregate | None = ("mean", "std"),
     ):
-        if "label" in frame.columns:
-            lineplot_kwargs["hue"] = "label"
+        is_aggregated = aggregate is not None and "fraction_of_positives_mean" in frame
+        x_col = (
+            "predicted_probability_mean" if is_aggregated else "predicted_probability"
+        )
+        y_col = (
+            "fraction_of_positives_mean" if is_aggregated else "fraction_of_positives"
+        )
+
+        if "split" in frame.columns and aggregate is None:
+            relplot_kwargs = {
+                "data": frame,
+                "kind": "line",
+                "x": x_col,
+                "y": y_col,
+                "hue": "split",
+                **lineplot_kwargs,
+            }
+            if "label" in frame.columns:
+                relplot_kwargs["style"] = "label"
+            facet = sns.relplot(**relplot_kwargs)
+        elif "label" in frame.columns:
+            facet = sns.relplot(
+                data=frame,
+                kind="line",
+                x=x_col,
+                y=y_col,
+                hue="label",
+                **lineplot_kwargs,
+            )
         else:
             lineplot_kwargs = {
                 k: v for k, v in lineplot_kwargs.items() if k != "palette"
             }
-            lineplot_kwargs["label"] = estimator_name
-            lineplot_kwargs["hue"] = None
-
-        facet = sns.relplot(
-            data=frame,
-            kind="line",
-            x="predicted_probability",
-            y="fraction_of_positives",
-            **lineplot_kwargs,
-        )
+            facet = sns.relplot(
+                data=frame,
+                kind="line",
+                x=x_col,
+                y=y_col,
+                label=estimator_name,
+                hue=None,
+                **lineplot_kwargs,
+            )
 
         figure = facet.figure
         ax = facet.ax
+
+        if is_aggregated and "fraction_of_positives_std" in frame.columns:
+            if "label" in frame.columns:
+                for _, curve_frame in frame.groupby("label", sort=False):
+                    curve_frame = curve_frame.sort_values(by=x_col)
+                    lower = curve_frame["fraction_of_positives_mean"] - curve_frame[
+                        "fraction_of_positives_std"
+                    ].fillna(0)
+                    upper = curve_frame["fraction_of_positives_mean"] + curve_frame[
+                        "fraction_of_positives_std"
+                    ].fillna(0)
+                    ax.fill_between(curve_frame[x_col], lower, upper, alpha=0.15)
+            else:
+                curve_frame = frame.sort_values(by=x_col)
+                lower = curve_frame["fraction_of_positives_mean"] - curve_frame[
+                    "fraction_of_positives_std"
+                ].fillna(0)
+                upper = curve_frame["fraction_of_positives_mean"] + curve_frame[
+                    "fraction_of_positives_std"
+                ].fillna(0)
+                ax.fill_between(curve_frame[x_col], lower, upper, alpha=0.15)
+
         ref_line_label = "Perfectly calibrated"
         ax.plot([0, 1], [0, 1], "k:", label=ref_line_label)
-
-        # We always have to show the legend for at least the reference line
-        ax.legend(loc="lower right")
-
-        ax.set(**ax_set_kwargs)
 
         _despine_matplotlib_axis(
             ax,
