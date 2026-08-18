@@ -269,8 +269,10 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
                 scale = rng_size / len(target)
                 for param in ("gap", "max_train_size", "test_size"):
                     value = simplified_cls_parameters.get(param)
-                    if value is not None:
-                        simplified_cls_parameters[param] = max(1, round(value * scale))
+                    if value:
+                        simplified_cls_parameters[param] = max(
+                            1, round(float(value) * scale)
+                        )
 
             target = target_repr
             simplified_splitter = simplified_cls(**simplified_cls_parameters)
