@@ -264,6 +264,14 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
                 simplified_cls_parameters["shuffle"] = False
                 simplified_cls_parameters["random_state"] = None
 
+            if simplified_cls is TimeSeriesSplit:
+                # rescale sample-count parameters to stay meaningful after downsampling
+                scale = rng_size / len(target)
+                for param in ("gap", "max_train_size", "test_size"):
+                    value = simplified_cls_parameters.get(param)
+                    if value is not None:
+                        simplified_cls_parameters[param] = max(1, round(value * scale))
+
             target = target_repr
             simplified_splitter = simplified_cls(**simplified_cls_parameters)
             split_generator = simplified_splitter.split(
