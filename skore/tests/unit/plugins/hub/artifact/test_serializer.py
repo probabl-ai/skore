@@ -1,7 +1,7 @@
 from hashlib import blake2b
 from pathlib import Path
 
-from skore._plugins.hub.artifact.serializer import Serializer
+from skore.plugins.hub.artifact.serializer import Serializer
 
 
 class TestSerializer:

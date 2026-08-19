@@ -5,7 +5,7 @@ import pytest
 from sklearn.linear_model import LogisticRegression
 
 from skore import evaluate
-from skore._sklearn._plot.utils import (
+from skore.displays.utils import (
     _adjust_fig_size,
     _downsample_thresholds_indices,
     _get_adjusted_fig_size,

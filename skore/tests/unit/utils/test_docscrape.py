@@ -1,9 +1,9 @@
-"""Tests for :mod:`skore._utils.docscrape`."""
+"""Tests for :mod:`skore.utils.docscrape`."""
 
 import functools
 
 from skore._externals._docscrape import Parameter
-from skore._utils.docscrape import (
+from skore.utils.docscrape import (
     build_numpy_docstring,
     callable_docstring,
     docstring_summary,

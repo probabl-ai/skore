@@ -1,4 +1,4 @@
-"""Unit tests for ``skore._utils.repr.rich_repr``."""
+"""Unit tests for ``skore.utils.repr.rich_repr``."""
 
 from io import StringIO
 from typing import ClassVar
@@ -8,8 +8,8 @@ import pytest
 from rich.console import Console
 from sklearn.linear_model import LogisticRegression
 
-from skore._utils._testing import MockAccessor, MockDisplay, MockReport
-from skore._utils.repr.rich_repr import (
+from skore.utils._testing import MockAccessor, MockDisplay, MockReport
+from skore.utils.repr.rich_repr import (
     _RichAccessorHelpMixin,
     _RichHelpDisplayMixin,
     _RichReportHelpMixin,

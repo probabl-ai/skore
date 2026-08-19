@@ -1,0 +1,107 @@
+"""Class definition of the payload used to send an estimator report to ``hub``."""
+
+from functools import cached_property
+from typing import ClassVar
+
+import pandas as pd
+from pydantic import computed_field
+
+from skore import EstimatorReport
+from skore.plugins.hub.artifact.media import (
+    ChecksSummary,
+    Coefficients,
+    ConfusionMatrixDataFrameTestAll,
+    ConfusionMatrixDataFrameTestNone,
+    ConfusionMatrixDataFrameTrainAll,
+    ConfusionMatrixDataFrameTrainNone,
+    EstimatorHtmlRepr,
+    ImpurityDecrease,
+    PermutationImportanceTest,
+    PermutationImportanceTrain,
+    PrecisionRecallDataFrameTest,
+    PrecisionRecallDataFrameTrain,
+    PredictionErrorDataFrameTest,
+    PredictionErrorDataFrameTrain,
+    RocDataFrameTest,
+    RocDataFrameTrain,
+    TableReportTest,
+    TableReportTrain,
+)
+from skore.plugins.hub.artifact.media.media import Media
+from skore.plugins.hub.metric import (
+    Metric,
+    cast_to_str_or_none,
+    find_multimetric_scalar_names,
+    get_hub_metric_name,
+    select_exportable_metrics,
+)
+from skore.plugins.hub.report.report import ReportPayload
+
+
+class EstimatorReportPayload(ReportPayload[EstimatorReport]):
+    """
+    Payload used to send an estimator report to ``hub``.
+
+    Attributes
+    ----------
+    MEDIAS : ClassVar[tuple[Media, ...]]
+        The media classes that have to be computed from the report.
+    project : Project
+        The project to which the report payload should be sent.
+    report : EstimatorReport
+        The report on which to calculate the payload to be sent.
+    key : str
+        The key to associate to the report.
+    """
+
+    MEDIAS: ClassVar[tuple[type[Media[EstimatorReport]], ...]] = (
+        ChecksSummary,
+        Coefficients,
+        ConfusionMatrixDataFrameTestAll,
+        ConfusionMatrixDataFrameTestNone,
+        ConfusionMatrixDataFrameTrainAll,
+        ConfusionMatrixDataFrameTrainNone,
+        EstimatorHtmlRepr,
+        ImpurityDecrease,
+        PermutationImportanceTest,
+        PermutationImportanceTrain,
+        PrecisionRecallDataFrameTest,
+        PrecisionRecallDataFrameTrain,
+        PredictionErrorDataFrameTest,
+        PredictionErrorDataFrameTrain,
+        RocDataFrameTest,
+        RocDataFrameTrain,
+        TableReportTest,
+        TableReportTrain,
+    )
+
+    @computed_field  # type: ignore[prop-decorator]
+    @cached_property
+    def metrics(self) -> list[Metric[EstimatorReport]]:
+        """
+        The list of scalar metrics that have been computed from the report.
+
+        Notes
+        -----
+        Unavailable metrics have been filtered out.
+
+        Per-label (per-class) and per-output (multioutput regression) metrics are
+        sent with their ``label``/``output``/``average`` dimension so the UI can
+        expose a toggle. Non-scalar values (``NaN``) are ignored.
+        """
+        metrics = select_exportable_metrics(self.report)
+        multimetric_names = find_multimetric_scalar_names(metrics)
+
+        return [
+            Metric(
+                name=get_hub_metric_name(row, multimetric_names=multimetric_names),
+                verbose_name=row["verbose_name"],
+                data_source=row["data_source"],
+                greater_is_better=row["greater_is_better"],
+                value=row["score"],
+                label=cast_to_str_or_none(row["label"]),
+                output=None if pd.isna(row["output"]) else int(row["output"]),
+                average=None if pd.isna(row["average"]) else row["average"],
+            )
+            for row in metrics.to_dict("records")
+        ]

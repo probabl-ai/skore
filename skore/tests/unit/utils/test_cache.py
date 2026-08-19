@@ -3,7 +3,7 @@ from io import BytesIO
 from joblib import dump, load
 from pytest import mark, param, raises
 
-from skore._utils._cache import Cache
+from skore.utils._cache import Cache
 
 
 @mark.parametrize(

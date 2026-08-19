@@ -10,9 +10,9 @@ from sklearn.linear_model import LinearRegression
 from skrub import tabular_pipeline
 
 from skore import Check, EstimatorReport, configuration, evaluate
-from skore._sklearn._checks import base
-from skore._sklearn._checks._utils import CheckNotApplicable
-from skore._sklearn._checks.base import (
+from skore.checks import base
+from skore.checks._utils import CheckNotApplicable
+from skore.checks.base import (
     ChecksSummaryDisplay,
     _get_issue_documentation_url,
 )

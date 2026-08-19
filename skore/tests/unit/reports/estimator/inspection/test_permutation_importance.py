@@ -6,7 +6,7 @@ from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import SplineTransformer, StandardScaler
 
 from skore import EstimatorReport, PermutationImportanceDisplay
-from skore._utils._testing import check_cache_changed
+from skore.utils._testing import check_cache_changed
 
 
 @pytest.mark.parametrize(

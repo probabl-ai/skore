@@ -3,7 +3,7 @@ from sklearn.datasets import make_classification
 from sklearn.linear_model import LinearRegression, LogisticRegression
 
 from skore import evaluate
-from skore._sklearn._checks.model_checks import CheckMetricsConsistencyAcrossSplits
+from skore.checks.model_checks import CheckMetricsConsistencyAcrossSplits
 
 
 def test_passes_when_splits_are_consistent(regression_data):

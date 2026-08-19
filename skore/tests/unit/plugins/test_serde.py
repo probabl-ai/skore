@@ -1,6 +1,6 @@
 import pytest
 
-from skore._plugins.serde import externalize, internalize
+from skore.plugins.serde import externalize, internalize
 
 
 @pytest.fixture(
