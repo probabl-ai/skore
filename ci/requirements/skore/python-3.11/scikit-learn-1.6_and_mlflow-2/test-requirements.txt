@@ -347,7 +347,7 @@ sqlalchemy==2.0.51
     # via
     #   alembic
     #   mlflow
-sqlparse==0.5.5
+sqlparse==0.6.0
     # via mlflow-skinny
 stack-data==0.6.3
     # via ipython
