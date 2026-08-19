@@ -24,7 +24,7 @@ from sklearn.model_selection import (
 )
 
 from skore import CrossValidationReport, EstimatorReport, evaluate
-from skore._plugins.hub.artifact.media import (
+from skore.plugins.hub.artifact.media import (
     ChecksSummary,
     ConfusionMatrixDataFrameTestAll,
     ConfusionMatrixDataFrameTestNone,
@@ -39,14 +39,14 @@ from skore._plugins.hub.artifact.media import (
     RocDataFrameTest,
     RocDataFrameTrain,
 )
-from skore._plugins.hub.artifact.media.data import TableReport
-from skore._plugins.hub.artifact.serializer import Serializer
-from skore._plugins.hub.metric import Metric
-from skore._plugins.hub.report import (
+from skore.plugins.hub.artifact.media.data import TableReport
+from skore.plugins.hub.artifact.serializer import Serializer
+from skore.plugins.hub.metric import Metric
+from skore.plugins.hub.report import (
     CrossValidationReportPayload,
     EstimatorReportPayload,
 )
-from skore._plugins.hub.report.cross_validation_report import (
+from skore.plugins.hub.report.cross_validation_report import (
     SPLITTING_STRATEGY_MAX_INDEX_COUNT,
 )
 
@@ -181,7 +181,7 @@ class TestCrossValidationReportPayload:
         self, project, splitter, metadata, expected_splits, monkeypatch
     ):
         monkeypatch.setattr(
-            "skore._plugins.hub.report.cross_validation_report.TARGET_DISTRIBUTION_REPR_SAMPLE_COUNT",
+            "skore.plugins.hub.report.cross_validation_report.TARGET_DISTRIBUTION_REPR_SAMPLE_COUNT",
             10,
         )
 
@@ -237,7 +237,7 @@ class TestCrossValidationReportPayload:
     def test_multioutput_regression_splitting_strategy(self, project, monkeypatch):
         """Regression for https://github.com/probabl-ai/skore/issues/3021."""
         monkeypatch.setattr(
-            "skore._plugins.hub.report.cross_validation_report.TARGET_DISTRIBUTION_REPR_SAMPLE_COUNT",
+            "skore.plugins.hub.report.cross_validation_report.TARGET_DISTRIBUTION_REPR_SAMPLE_COUNT",
             10,
         )
 
@@ -630,7 +630,7 @@ class TestCrossValidationReportPayload:
         import sklearn
         import sklearn.base
 
-        from skore._plugins import requirements
+        from skore.plugins import requirements
 
         monkeypatch.setattr(
             requirements.sys,
@@ -1118,7 +1118,7 @@ class TestCrossValidationReportPayload:
     def test_multiclass_metrics_includes_aggregate_averages(
         self, project, cross_validation_report_multiclass_classification
     ):
-        from skore._plugins.hub.report import CrossValidationReportPayload
+        from skore.plugins.hub.report import CrossValidationReportPayload
 
         payload = CrossValidationReportPayload(
             project=project,

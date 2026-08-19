@@ -5,7 +5,7 @@ from skrub import tabular_pipeline
 
 from skore import CrossValidationReport, EstimatorReport, PermutationImportanceDisplay
 from skore._externals._sklearn_compat import convert_container
-from skore._sklearn._plot import TableReportDisplay
+from skore.displays import TableReportDisplay
 
 
 @pytest.mark.parametrize(

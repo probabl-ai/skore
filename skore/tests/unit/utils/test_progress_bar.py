@@ -4,7 +4,7 @@ from time import sleep
 from pytest import raises
 
 from skore import configuration
-from skore._utils._progress_bar import ProgressBar, track
+from skore.utils._progress_bar import ProgressBar, track
 
 
 def test_standalone_progress():
@@ -143,7 +143,7 @@ def test_track(monkeypatch):
         progress = ProgressBar(*args, **kwargs)
         return progress
 
-    monkeypatch.setattr("skore._utils._progress_bar.ProgressBar", RegisteredProgressBar)
+    monkeypatch.setattr("skore.utils._progress_bar.ProgressBar", RegisteredProgressBar)
 
     results = list(track(range(10), description="track", total=10))
 

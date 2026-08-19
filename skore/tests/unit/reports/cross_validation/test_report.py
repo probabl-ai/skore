@@ -18,8 +18,8 @@ from sklearn.utils.validation import check_is_fitted
 
 from skore import CrossValidationReport, EstimatorReport, evaluate
 from skore._externals._sklearn_compat import convert_container
-from skore._sklearn._cross_validation.report import _generate_estimator_report
-from skore._utils._testing import MockEstimator
+from skore.reports.cross_validation.report import _generate_estimator_report
+from skore.utils._testing import MockEstimator
 
 
 def test_generate_estimator_report(forest_binary_classification_data):

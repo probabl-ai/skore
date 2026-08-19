@@ -10,7 +10,7 @@ from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.model_selection import train_test_split
 
 from skore import CrossValidationReport, EstimatorReport, Project
-from skore._project._summary import Summary
+from skore.project._summary import Summary
 
 
 class FakeEntryPoint(EntryPoint):
@@ -60,7 +60,7 @@ def monkeypatch_entrypoints(
     monkeypatch, FakeLocalProject, FakeHubProject, FakeMlflowProject
 ):
     monkeypatch.setattr(
-        "skore._project.plugin.entry_points",
+        "skore.project.plugin.entry_points",
         lambda **kwargs: EntryPoints(
             [
                 FakeEntryPoint(
@@ -143,7 +143,7 @@ class TestProject:
             assert name == "skore"
             return [f'{fake_library_name} ; extra == "local"']
 
-        monkeypatch.setattr("skore._project.dependencies.requires", fake_requires)
+        monkeypatch.setattr("skore.project.dependencies.requires", fake_requires)
 
         with raises(
             ImportError,
@@ -163,9 +163,9 @@ class TestProject:
             return [f'{fake_library_name} ; extra == "local"']
 
         monkeypatch.undo()
-        monkeypatch.setattr("skore._project.dependencies.requires", fake_requires)
+        monkeypatch.setattr("skore.project.dependencies.requires", fake_requires)
         monkeypatch.setattr(
-            "skore._project.plugin.entry_points", lambda **kwargs: EntryPoints([])
+            "skore.project.plugin.entry_points", lambda **kwargs: EntryPoints([])
         )
 
         with raises(
@@ -178,7 +178,7 @@ class TestProject:
             Project(name="<name>", mode="local")
 
     def test_init_hub(self, FakeHubProject, monkeypatch):
-        monkeypatch.setattr("skore._project.dependencies.requires", lambda _: [])
+        monkeypatch.setattr("skore.project.dependencies.requires", lambda _: [])
 
         project = Project(name="<name>", mode="hub", workspace="<workspace>")
 
@@ -195,7 +195,7 @@ class TestProject:
         }
 
     def test_init_mlflow(self, FakeMlflowProject, monkeypatch):
-        monkeypatch.setattr("skore._project.dependencies.requires", lambda _: [])
+        monkeypatch.setattr("skore.project.dependencies.requires", lambda _: [])
 
         project = Project(name="<name>", mode="mlflow", tracking_uri="<uri>")
 
@@ -225,7 +225,7 @@ class TestProject:
         project_factory = Mock(return_value=project)
 
         monkeypatch.setattr(
-            "skore._project.plugin.entry_points",
+            "skore.project.plugin.entry_points",
             lambda **kwargs: EntryPoints(
                 [
                     FakeEntryPoint(
@@ -245,14 +245,14 @@ class TestProject:
             Project(name="<name>", mode="local", workspace="<workspace>")
 
     def test_mode(self, monkeypatch):
-        monkeypatch.setattr("skore._project.dependencies.requires", lambda _: [])
+        monkeypatch.setattr("skore.project.dependencies.requires", lambda _: [])
 
         assert Project(name="name", mode="local").mode == "local"
         assert Project(name="name", mode="hub", workspace="workspace").mode == "hub"
         assert Project(name="name", mode="mlflow").mode == "mlflow"
 
     def test_name(self, monkeypatch):
-        monkeypatch.setattr("skore._project.dependencies.requires", lambda _: [])
+        monkeypatch.setattr("skore.project.dependencies.requires", lambda _: [])
 
         assert Project(name="name", mode="local").name == "name"
         assert Project(name="name", mode="hub", workspace="workspace").name == "name"
@@ -417,7 +417,7 @@ class TestProject:
         execution_result.raise_error()
 
     def test_sync_uses_existing_counterpart(self, FakeHubProject, monkeypatch):
-        monkeypatch.setattr("skore._project.dependencies.requires", lambda _: [])
+        monkeypatch.setattr("skore.project.dependencies.requires", lambda _: [])
         project = Project(name="<name>", mode="local", workspace="<local>")
         other = Project(name="<name>", mode="hub", workspace="<hub>")
         calls_before_sync = FakeHubProject.call_count
@@ -430,7 +430,7 @@ class TestProject:
         assert FakeHubProject.call_count == calls_before_sync
 
     def test_sync_builds_counterpart_from_mode(self, FakeHubProject, monkeypatch):
-        monkeypatch.setattr("skore._project.dependencies.requires", lambda _: [])
+        monkeypatch.setattr("skore.project.dependencies.requires", lambda _: [])
         project = Project(name="<name>", mode="local", workspace="<local>")
 
         result = project.sync("hub", workspace="<hub>", dry_run=True)

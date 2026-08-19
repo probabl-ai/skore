@@ -3,8 +3,8 @@ from json import loads
 from pydantic import ValidationError
 from pytest import mark, param, raises
 
-from skore._plugins.hub.artifact.media import TableReportTest, TableReportTrain
-from skore._plugins.hub.artifact.serializer import Serializer
+from skore.plugins.hub.artifact.media import TableReportTest, TableReportTrain
+from skore.plugins.hub.artifact.serializer import Serializer
 
 
 @mark.parametrize(

@@ -1,4 +1,4 @@
-"""Unit tests for helpers in ``skore._utils.repr.data``."""
+"""Unit tests for helpers in ``skore.utils.repr.data``."""
 
 import re
 from typing import ClassVar
@@ -8,9 +8,9 @@ import numpy as np
 import pytest
 from sklearn.linear_model import LogisticRegression
 
-import skore._utils.repr.data as data_module
-from skore._utils._testing import MockAccessor, MockDisplay, MockReport
-from skore._utils.repr.data import (
+import skore.utils.repr.data as data_module
+from skore.utils._testing import MockAccessor, MockDisplay, MockReport
+from skore.utils.repr.data import (
     AccessorHelpData,
     DisplayHelpData,
     HelpSection,
@@ -384,7 +384,7 @@ def test_get_documentation_url_version_branches(
 ):
     """get_documentation_url uses \"dev\" for version < 0.1, else major.minor."""
     monkeypatch.setattr(
-        "skore._utils.repr.data.version",
+        "skore.utils.repr.data.version",
         lambda name: mocked_version,
     )
     url = get_documentation_url(obj=display_with_methods)

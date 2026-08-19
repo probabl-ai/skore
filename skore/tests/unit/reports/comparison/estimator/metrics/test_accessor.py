@@ -1,4 +1,4 @@
-from skore._utils._testing import check_cache_unchanged
+from skore.utils._testing import check_cache_unchanged
 
 
 def test_seed_none(comparison_estimator_reports_regression):

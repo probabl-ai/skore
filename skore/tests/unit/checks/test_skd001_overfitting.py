@@ -3,8 +3,8 @@ from sklearn.linear_model import LinearRegression
 from sklearn.tree import DecisionTreeRegressor
 
 from skore import EstimatorReport, evaluate
-from skore._sklearn._checks._utils import CheckNotApplicable
-from skore._sklearn._checks.model_checks import CheckOverfitting
+from skore.checks._utils import CheckNotApplicable
+from skore.checks.model_checks import CheckOverfitting
 
 
 @pytest.mark.parametrize("report_type", ["estimator", "cross-validation"])
