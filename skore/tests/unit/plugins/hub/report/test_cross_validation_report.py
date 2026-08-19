@@ -392,6 +392,26 @@ class TestCrossValidationReportPayload:
         assert report.ml_task == "multioutput-regression"
         assert payload.target_range is None
 
+    def test_splitting_strategy_time_series_split_rescales_gap_and_sizes(self, project):
+        X, y = make_regression(n_samples=1000, random_state=0)
+        splitter = TimeSeriesSplit(
+            n_splits=2, gap=200, max_train_size=400, test_size=100
+        )
+
+        report = CrossValidationReport(DummyRegressor(), X, y, splitter=splitter)
+        payload = CrossValidationReportPayload(project=project, report=report, key="-")
+
+        splits = payload.splitting_strategy["splits"]
+
+        # scale = SPLITTING_STRATEGY_REPR_SAMPLE_COUNT / n_samples = 100 / 1000 = 0.1
+        for split in splits:
+            last_train = max(i for i, flag in enumerate(split) if flag == 0)
+            first_test = min(i for i, flag in enumerate(split) if flag == 1)
+
+            assert split.count(0) == 40  # max_train_size=400 * scale
+            assert split.count(1) == 10  # test_size=100 * scale
+            assert first_test - last_train - 1 == 20  # gap=200 * scale
+
     def test_splitting_do_not_call_get_n_splits(self, project):
         # non-regression test for https://github.com/probabl-ai/skore/pull/3011
         X = array([0, 1, 2, 3, 4])
