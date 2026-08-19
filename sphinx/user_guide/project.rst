@@ -36,6 +36,13 @@ mode-specific keyword arguments.
        tracking_uri="http://localhost:5000",
    )
 
+.. note::
+
+   Databricks managed MLflow (``tracking_uri="databricks"``) only accepts experiment
+   names that are absolute workspace paths, so ``name`` must be one, for example
+   ``"/Users/me@example.com/my-experiment"``. `skore` places the internal experiment in
+   which it stores report objects in the home directory of the workspace user.
+
 Working with reports
 --------------------
 
