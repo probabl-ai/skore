@@ -11,7 +11,7 @@ from sklearn.dummy import DummyClassifier, DummyRegressor
 from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.multioutput import MultiOutputClassifier
 
-from skore._sklearn.find_ml_task import _find_ml_task
+from skore.sklearn.find_ml_task import _find_ml_task
 
 
 @pytest.mark.parametrize(

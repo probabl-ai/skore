@@ -3,7 +3,7 @@ from sklearn.dummy import DummyClassifier, DummyRegressor
 
 from skore import evaluate
 from skore._externals._sklearn_compat import convert_container
-from skore._sklearn._checks.model_checks import CheckUnderfitting
+from skore.checks.model_checks import CheckUnderfitting
 
 
 @pytest.mark.parametrize("report_type", ["estimator", "cross-validation"])

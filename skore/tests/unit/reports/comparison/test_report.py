@@ -21,7 +21,7 @@ from skore import (
     evaluate,
 )
 from skore._externals._sklearn_compat import convert_container
-from skore._utils._dataframe import _concat_vertical
+from skore.utils._dataframe import _concat_vertical
 
 
 def test_pickle(tmp_path, report):

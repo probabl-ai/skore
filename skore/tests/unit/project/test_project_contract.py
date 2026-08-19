@@ -12,7 +12,7 @@ from sklearn.datasets import make_regression
 from sklearn.linear_model import LinearRegression, Ridge
 
 from skore import EstimatorReport, Project, evaluate
-from skore._project._summary import Summary
+from skore.project._summary import Summary
 
 
 class FakeClient(Client):
@@ -137,12 +137,12 @@ class TestMlflowProjectContract:
 class TestHubProjectContract:
     @pytest.fixture(autouse=True)
     def hub_client(self, monkeypatch):
-        monkeypatch.setattr("skore._plugins.hub.project.project.HUBClient", FakeClient)
-        monkeypatch.setattr("skore._plugins.hub.artifact.upload.HUBClient", FakeClient)
+        monkeypatch.setattr("skore.plugins.hub.project.project.HUBClient", FakeClient)
+        monkeypatch.setattr("skore.plugins.hub.artifact.upload.HUBClient", FakeClient)
 
     def test_api_contract(self, regression_report, respx_mock, monkeypatch):
         monkeypatch.setattr(
-            "skore._plugins.hub.artifact.media.data.TableReport.content_to_upload",
+            "skore.plugins.hub.artifact.media.data.TableReport.content_to_upload",
             lambda self: None,
         )
         mocks = [

@@ -4,7 +4,7 @@ from sklearn.linear_model import LogisticRegression
 
 from skore import evaluate
 from skore._externals._sklearn_compat import convert_container
-from skore._sklearn._checks.model_checks import CheckHighClassImbalance
+from skore.checks.model_checks import CheckHighClassImbalance
 
 
 @pytest.mark.parametrize("report_type", ["estimator", "cross-validation"])

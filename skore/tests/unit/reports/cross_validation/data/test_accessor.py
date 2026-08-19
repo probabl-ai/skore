@@ -4,7 +4,7 @@ from sklearn.linear_model import LinearRegression
 
 from skore import CrossValidationReport
 from skore._externals._sklearn_compat import convert_container
-from skore._sklearn._plot import TableReportDisplay
+from skore.displays import TableReportDisplay
 
 
 @pytest.mark.parametrize(

@@ -1,6 +1,6 @@
 import pytest
 
-from skore._sklearn._plot.base import StyleDisplayMixin
+from skore.displays.base import StyleDisplayMixin
 
 
 class TestDisplay(StyleDisplayMixin):

@@ -15,38 +15,35 @@ from rich.theme import Theme
 
 from skore._config import configuration
 from skore._externals._sklearn_compat import parse_version
-from skore._project._summary import Summary
-from skore._project.login import login
-from skore._project.project import Project
-from skore._sklearn import (
-    ComparisonReport,
+from skore.checks import Check, CheckNotApplicable, ChecksSummaryDisplay
+from skore.dispatch import compare, evaluate
+from skore.displays import (
     ConfusionMatrixDisplay,
-    CrossValidationReport,
-    EstimatorReport,
     MetricsSummaryDisplay,
     PrecisionRecallCurveDisplay,
     PredictionErrorDisplay,
     RocCurveDisplay,
     TableReportDisplay,
-    TrainTestSplit,
-    compare,
-    evaluate,
 )
-from skore._sklearn._checks import Check, CheckNotApplicable, ChecksSummaryDisplay
-from skore._sklearn._plot.base import Display
-from skore._sklearn._plot.inspection.calibration_curve import (
+from skore.displays.base import Display
+from skore.displays.inspection.calibration_curve import (
     CalibrationDisplay,
 )
-from skore._sklearn._plot.inspection.coefficients import CoefficientsDisplay
-from skore._sklearn._plot.inspection.impurity_decrease import (
+from skore.displays.inspection.coefficients import CoefficientsDisplay
+from skore.displays.inspection.impurity_decrease import (
     ImpurityDecreaseDisplay,
 )
-from skore._sklearn._plot.inspection.permutation_importance import (
+from skore.displays.inspection.permutation_importance import (
     PermutationImportanceDisplay,
 )
-from skore._utils._environment import is_environment_notebook_like
-from skore._utils._patch import setup_jupyter_display
-from skore._utils._show_versions import show_versions
+from skore.project._summary import Summary
+from skore.project.login import login
+from skore.project.project import Project
+from skore.reports import ComparisonReport, CrossValidationReport, EstimatorReport
+from skore.sklearn import TrainTestSplit
+from skore.utils._environment import is_environment_notebook_like
+from skore.utils._patch import setup_jupyter_display
+from skore.utils._show_versions import show_versions
 
 plt.ion()
 setup_jupyter_display()

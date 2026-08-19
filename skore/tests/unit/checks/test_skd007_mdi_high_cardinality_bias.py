@@ -5,8 +5,8 @@ from sklearn.linear_model import LinearRegression
 from sklearn.pipeline import Pipeline
 
 from skore import evaluate
-from skore._sklearn._checks._utils import CheckNotApplicable
-from skore._sklearn._checks.model_checks import CheckMDIHighCardinalityBias
+from skore.checks._utils import CheckNotApplicable
+from skore.checks.model_checks import CheckMDIHighCardinalityBias
 
 
 @pytest.mark.parametrize("report_type", ["estimator", "cross-validation"])

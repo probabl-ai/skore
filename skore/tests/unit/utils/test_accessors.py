@@ -2,7 +2,7 @@ import pytest
 from sklearn.pipeline import make_pipeline
 
 from skore._externals._pandas_accessors import DirNamesMixin, _register_accessor
-from skore._utils._accessor import (
+from skore.utils._accessor import (
     _check_cross_validation_sub_estimator_has_coef,
     _check_estimator_has_coef,
     _check_estimator_has_feature_importances,

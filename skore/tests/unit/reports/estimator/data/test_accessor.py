@@ -9,8 +9,8 @@ from sklearn.tree import DecisionTreeRegressor
 
 from skore import EstimatorReport
 from skore._externals._sklearn_compat import convert_container
-from skore._sklearn._plot import TableReportDisplay
-from skore._utils._dataframe import _normalize_X_as_dataframe, _normalize_y_as_dataframe
+from skore.displays import TableReportDisplay
+from skore.utils._dataframe import _normalize_X_as_dataframe, _normalize_y_as_dataframe
 
 
 @pytest.mark.parametrize(

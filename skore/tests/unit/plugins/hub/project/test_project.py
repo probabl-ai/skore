@@ -6,9 +6,9 @@ from httpx import Response
 from pytest import fixture, mark, raises, warns
 
 from skore import CrossValidationReport, EstimatorReport
-from skore._plugins.hub.exception import ForbiddenException, NotFoundException
-from skore._plugins.hub.project.project import Project
-from skore._plugins.hub.report import (
+from skore.plugins.hub.exception import ForbiddenException, NotFoundException
+from skore.plugins.hub.project.project import Project
+from skore.plugins.hub.report import (
     CrossValidationReportPayload,
     EstimatorReportPayload,
 )
@@ -37,7 +37,7 @@ def regression():
 @fixture(autouse=True)
 def monkeypatch_table_report_representation(monkeypatch):
     monkeypatch.setattr(
-        "skore._plugins.hub.artifact.media.data.TableReport.content_to_upload",
+        "skore.plugins.hub.artifact.media.data.TableReport.content_to_upload",
         lambda self: None,
     )
 

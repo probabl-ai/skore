@@ -9,7 +9,7 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 
 from skore import CrossValidationReport, EstimatorReport
-from skore._sklearn._checks._utils import (
+from skore.checks._utils import (
     CheckNotApplicable,
     adaptive_threshold,
     cast_report,
@@ -23,8 +23,8 @@ from skore._sklearn._checks._utils import (
     majority_vote,
     split_preprocessor_estimator,
 )
-from skore._sklearn._checks.model_checks import _baseline_estimator_report
-from skore._utils._testing import MockReport
+from skore.checks.model_checks import _baseline_estimator_report
+from skore.utils._testing import MockReport
 
 
 @pytest.fixture

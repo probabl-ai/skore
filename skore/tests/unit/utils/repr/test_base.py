@@ -1,4 +1,4 @@
-"""Unit tests for ``skore._utils.repr.base``."""
+"""Unit tests for ``skore.utils.repr.base``."""
 
 from unittest.mock import Mock
 
@@ -6,8 +6,8 @@ import numpy as np
 import pytest
 from sklearn.linear_model import LogisticRegression
 
-from skore._utils._testing import MockAccessor, MockDisplay, MockReport
-from skore._utils.repr.base import (
+from skore.utils._testing import MockAccessor, MockDisplay, MockReport
+from skore.utils.repr.base import (
     AccessorHelpMixin,
     DisplayHelpMixin,
     ReportHelpMixin,
@@ -67,10 +67,10 @@ def test_report_help_mixin_sphinx_path(monkeypatch, report_with_base_help):
     mock_sphinx = Mock(return_value=True)
     mock_notebook = Mock(return_value=False)
     monkeypatch.setattr(
-        "skore._utils.repr.base.is_environment_sphinx_build", mock_sphinx
+        "skore.utils.repr.base.is_environment_sphinx_build", mock_sphinx
     )
     monkeypatch.setattr(
-        "skore._utils.repr.base.is_environment_notebook_like", mock_notebook
+        "skore.utils.repr.base.is_environment_notebook_like", mock_notebook
     )
     result = report_with_base_help.help()
     mock_sphinx.assert_called_once()
@@ -91,7 +91,7 @@ def test_report_help_mixin_html_path(monkeypatch, report_with_base_help):
     mock_display = Mock()
     mock_notebook = Mock(return_value=True)
     monkeypatch.setattr(
-        "skore._utils.repr.base.is_environment_notebook_like", mock_notebook
+        "skore.utils.repr.base.is_environment_notebook_like", mock_notebook
     )
     monkeypatch.setattr("IPython.display.display", mock_display)
     monkeypatch.setattr("IPython.display.HTML", mock_html_cls)
@@ -108,7 +108,7 @@ def test_report_help_mixin_rich_path(monkeypatch, report_with_base_help):
     mock_console_print = Mock()
     mock_notebook = Mock(return_value=False)
     monkeypatch.setattr(
-        "skore._utils.repr.base.is_environment_notebook_like", mock_notebook
+        "skore.utils.repr.base.is_environment_notebook_like", mock_notebook
     )
     monkeypatch.setattr("skore.console.print", mock_console_print)
     report_with_base_help.help()
@@ -123,10 +123,10 @@ def test_accessor_help_mixin_sphinx_path(monkeypatch, accessor_with_base_help):
     mock_sphinx = Mock(return_value=True)
     mock_notebook = Mock(return_value=False)
     monkeypatch.setattr(
-        "skore._utils.repr.base.is_environment_sphinx_build", mock_sphinx
+        "skore.utils.repr.base.is_environment_sphinx_build", mock_sphinx
     )
     monkeypatch.setattr(
-        "skore._utils.repr.base.is_environment_notebook_like", mock_notebook
+        "skore.utils.repr.base.is_environment_notebook_like", mock_notebook
     )
     result = accessor_with_base_help.help()
     mock_sphinx.assert_called_once()
@@ -146,7 +146,7 @@ def test_accessor_help_mixin_html_path(monkeypatch, accessor_with_base_help):
     mock_display = Mock()
     mock_notebook = Mock(return_value=True)
     monkeypatch.setattr(
-        "skore._utils.repr.base.is_environment_notebook_like", mock_notebook
+        "skore.utils.repr.base.is_environment_notebook_like", mock_notebook
     )
     monkeypatch.setattr("IPython.display.display", mock_display)
     monkeypatch.setattr("IPython.display.HTML", mock_html_cls)
@@ -163,7 +163,7 @@ def test_accessor_help_mixin_rich_path(monkeypatch, accessor_with_base_help):
     mock_console_print = Mock()
     mock_notebook = Mock(return_value=False)
     monkeypatch.setattr(
-        "skore._utils.repr.base.is_environment_notebook_like", mock_notebook
+        "skore.utils.repr.base.is_environment_notebook_like", mock_notebook
     )
     monkeypatch.setattr("skore.console.print", mock_console_print)
     accessor_with_base_help.help()
@@ -178,10 +178,10 @@ def test_display_help_mixin_sphinx_path(monkeypatch, display_with_base_help):
     mock_sphinx = Mock(return_value=True)
     mock_notebook = Mock(return_value=False)
     monkeypatch.setattr(
-        "skore._utils.repr.base.is_environment_sphinx_build", mock_sphinx
+        "skore.utils.repr.base.is_environment_sphinx_build", mock_sphinx
     )
     monkeypatch.setattr(
-        "skore._utils.repr.base.is_environment_notebook_like", mock_notebook
+        "skore.utils.repr.base.is_environment_notebook_like", mock_notebook
     )
     result = display_with_base_help.help()
     mock_sphinx.assert_called_once()
@@ -201,7 +201,7 @@ def test_display_help_mixin_html_path(monkeypatch, display_with_base_help):
     mock_display = Mock()
     mock_notebook = Mock(return_value=True)
     monkeypatch.setattr(
-        "skore._utils.repr.base.is_environment_notebook_like", mock_notebook
+        "skore.utils.repr.base.is_environment_notebook_like", mock_notebook
     )
     monkeypatch.setattr("IPython.display.display", mock_display)
     monkeypatch.setattr("IPython.display.HTML", mock_html_cls)
@@ -218,7 +218,7 @@ def test_display_help_mixin_rich_path(monkeypatch, display_with_base_help):
     mock_console_print = Mock()
     mock_notebook = Mock(return_value=False)
     monkeypatch.setattr(
-        "skore._utils.repr.base.is_environment_notebook_like", mock_notebook
+        "skore.utils.repr.base.is_environment_notebook_like", mock_notebook
     )
     monkeypatch.setattr("skore.console.print", mock_console_print)
     display_with_base_help.help()

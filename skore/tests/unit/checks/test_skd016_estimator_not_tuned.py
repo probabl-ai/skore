@@ -8,8 +8,8 @@ from sklearn.model_selection import GridSearchCV
 from sklearn.pipeline import Pipeline
 
 from skore import evaluate
-from skore._sklearn._checks._utils import CheckNotApplicable
-from skore._sklearn._checks.model_checks import CheckEstimatorNotTuned
+from skore.checks._utils import CheckNotApplicable
+from skore.checks.model_checks import CheckEstimatorNotTuned
 
 
 @pytest.mark.parametrize("report_type", ["estimator", "cross-validation"])

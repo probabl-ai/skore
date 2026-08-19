@@ -94,12 +94,12 @@ hub = [
 mlflow = ["mlflow>=2.20.4"]
 
 [project.entry-points."skore.plugins.login"]
-hub = "skore._plugins.hub.authentication.login:login"
+hub = "skore.plugins.hub.authentication.login:login"
 
 [project.entry-points."skore.plugins.project"]
-local = "skore._plugins.local:Project"
-hub = "skore._plugins.hub.project.project:Project"
-mlflow = "skore._plugins.mlflow:Project"
+local = "skore.plugins.local:Project"
+hub = "skore.plugins.hub.project.project:Project"
+mlflow = "skore.plugins.mlflow:Project"
 
 [project.urls]
 Homepage = "https://probabl.ai"
@@ -143,7 +143,7 @@ filterwarnings = [
   "error",
   # Editable/local packages (skore, tests, ...) trigger warnings when ``plugin/hub``
   # snapshots the environment via ``infer()``.
-  "ignore:Package .* seems to be an editable or local install:UserWarning:skore._plugins.hub.artifact.environment",
+  "ignore:Package .* seems to be an editable or local install:UserWarning:skore.plugins.hub.artifact.environment",
   # mlflow-related
   # NOTE: Only affects python 3.11
   "ignore:SelectableGroups dict interface is deprecated. Use select.:DeprecationWarning",
@@ -223,7 +223,7 @@ warn_unused_configs = true
 warn_redundant_casts = true
 
 [[tool.mypy.overrides]]
-module = ["skore._plugins.*"]
+module = ["skore.plugins.*"]
 #
 # strict = true is incompatible with per-module configuration
 # https://github.com/python/mypy/issues/11401
