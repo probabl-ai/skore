@@ -20,15 +20,15 @@ class FakeEntryPoint(EntryPoint):
 
 
 def test_login_local(monkeypatch, FakeLogin):
-    monkeypatch.setattr("skore.project.dependencies.requires", lambda _: [])
+    monkeypatch.setattr("skore._project.dependencies.requires", lambda _: [])
     monkeypatch.setattr(
-        "skore.project.plugin.entry_points",
+        "skore._project.plugin.entry_points",
         lambda **kwargs: EntryPoints(
             [
                 FakeEntryPoint(
                     name="local",
                     value=FakeLogin,
-                    group="skore.plugins.login",
+                    group="skore._plugins.login",
                 )
             ]
         ),
@@ -48,7 +48,7 @@ def test_login_local_missing_optional_dependency(monkeypatch):
         assert name == "skore"
         return [f'{fake_library_name} ; extra == "local"']
 
-    monkeypatch.setattr("skore.project.dependencies.requires", fake_requires)
+    monkeypatch.setattr("skore._project.dependencies.requires", fake_requires)
 
     from skore import login
 
@@ -63,15 +63,15 @@ def test_login_local_missing_optional_dependency(monkeypatch):
 
 
 def test_login_hub(monkeypatch, FakeLogin):
-    monkeypatch.setattr("skore.project.dependencies.requires", lambda _: [])
+    monkeypatch.setattr("skore._project.dependencies.requires", lambda _: [])
     monkeypatch.setattr(
-        "skore.project.plugin.entry_points",
+        "skore._project.plugin.entry_points",
         lambda **kwargs: EntryPoints(
             [
                 FakeEntryPoint(
                     name="hub",
                     value=FakeLogin,
-                    group="skore.plugins.login",
+                    group="skore._plugins.login",
                 )
             ]
         ),

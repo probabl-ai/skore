@@ -1,7 +1,7 @@
 from pydantic import ValidationError
 from pytest import mark, param, raises
 
-from skore.plugins.hub.artifact.media import (
+from skore._plugins.hub.artifact.media import (
     ConfusionMatrixDataFrameTestAll,
     ConfusionMatrixDataFrameTestNone,
     ConfusionMatrixDataFrameTrainAll,
@@ -13,8 +13,8 @@ from skore.plugins.hub.artifact.media import (
     RocDataFrameTest,
     RocDataFrameTrain,
 )
-from skore.plugins.hub.artifact.serializer import Serializer
-from skore.plugins.hub.json import dumps
+from skore._plugins.hub.artifact.serializer import Serializer
+from skore._plugins.hub.json import dumps
 
 
 @mark.filterwarnings(

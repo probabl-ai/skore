@@ -4,8 +4,8 @@ import numpy as np
 import pytest
 import seaborn as sns
 
-from skore.displays import PredictionErrorDisplay
-from skore.utils._testing import check_frame_structure
+from skore._displays import PredictionErrorDisplay
+from skore._utils.testing import check_frame_structure
 
 
 @pytest.mark.parametrize(

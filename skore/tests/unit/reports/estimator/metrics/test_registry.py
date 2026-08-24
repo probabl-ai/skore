@@ -17,8 +17,8 @@ from sklearn.metrics import (
 )
 
 from skore import EstimatorReport
-from skore.metrics import FunctionKind, Metric, MissingKwargsError
-from skore.utils._testing import check_cache_changed, check_cache_unchanged
+from skore._metrics import FunctionKind, Metric, MissingKwargsError
+from skore._utils.testing import check_cache_changed, check_cache_unchanged
 
 
 def business_loss(y_true, y_pred, *, cost_fp, cost_fn):

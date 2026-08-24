@@ -1,7 +1,7 @@
 import pandas as pd
 import pytest
 
-from skore.checks.base import ChecksSummaryDisplay
+from skore._checks.base import ChecksSummaryDisplay
 
 
 @pytest.fixture(

@@ -6,7 +6,7 @@ from sklearn.linear_model import RidgeCV
 from skrub import tabular_pipeline
 
 from skore import evaluate
-from skore.checks.model_checks import CheckWorseThanBaseline
+from skore._checks.model_checks import CheckWorseThanBaseline
 
 
 @pytest.mark.parametrize("report_type", ["estimator", "cross-validation"])

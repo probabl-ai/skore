@@ -6,9 +6,9 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 
 from skore import evaluate
-from skore.checks._utils import CheckNotApplicable
-from skore.checks.model_checks import CheckHyperparamsAtSearchEdge
-from skore.utils._testing import MockEstimator
+from skore._checks.model_checks import CheckHyperparamsAtSearchEdge
+from skore._checks.utils import CheckNotApplicable
+from skore._utils.testing import MockEstimator
 
 
 @pytest.mark.parametrize(

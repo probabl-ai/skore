@@ -10,12 +10,12 @@ from sklearn.linear_model import LinearRegression
 from skrub import tabular_pipeline
 
 from skore import Check, EstimatorReport, configuration, evaluate
-from skore.checks import base
-from skore.checks._utils import CheckNotApplicable
-from skore.checks.base import (
+from skore._checks import base
+from skore._checks.base import (
     ChecksSummaryDisplay,
     _get_issue_documentation_url,
 )
+from skore._checks.utils import CheckNotApplicable
 
 
 @pytest.fixture(params=[LinearRegression(), tabular_pipeline(LinearRegression())])

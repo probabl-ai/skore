@@ -13,11 +13,10 @@ from matplotlib import pyplot as plt
 from rich.console import Console
 from rich.theme import Theme
 
+from skore._checks import Check, CheckNotApplicable, ChecksSummaryDisplay
 from skore._config import configuration
-from skore._externals._sklearn_compat import parse_version
-from skore.checks import Check, CheckNotApplicable, ChecksSummaryDisplay
-from skore.dispatch import compare, evaluate
-from skore.displays import (
+from skore._dispatch import compare, evaluate
+from skore._displays import (
     ConfusionMatrixDisplay,
     MetricsSummaryDisplay,
     PrecisionRecallCurveDisplay,
@@ -25,25 +24,26 @@ from skore.displays import (
     RocCurveDisplay,
     TableReportDisplay,
 )
-from skore.displays.base import Display
-from skore.displays.inspection.calibration_curve import (
+from skore._displays.base import Display
+from skore._displays.inspection.calibration_curve import (
     CalibrationDisplay,
 )
-from skore.displays.inspection.coefficients import CoefficientsDisplay
-from skore.displays.inspection.impurity_decrease import (
+from skore._displays.inspection.coefficients import CoefficientsDisplay
+from skore._displays.inspection.impurity_decrease import (
     ImpurityDecreaseDisplay,
 )
-from skore.displays.inspection.permutation_importance import (
+from skore._displays.inspection.permutation_importance import (
     PermutationImportanceDisplay,
 )
-from skore.project._summary import Summary
-from skore.project.login import login
-from skore.project.project import Project
-from skore.reports import ComparisonReport, CrossValidationReport, EstimatorReport
-from skore.sklearn import TrainTestSplit
-from skore.utils._environment import is_environment_notebook_like
-from skore.utils._patch import setup_jupyter_display
-from skore.utils._show_versions import show_versions
+from skore._externals.sklearn_compat import parse_version
+from skore._project.login import login
+from skore._project.project import Project
+from skore._project.summary import Summary
+from skore._reports import ComparisonReport, CrossValidationReport, EstimatorReport
+from skore._sklearn import TrainTestSplit
+from skore._utils.environment import is_environment_notebook_like
+from skore._utils.patch import setup_jupyter_display
+from skore._utils.show_versions import show_versions
 
 plt.ion()
 setup_jupyter_display()

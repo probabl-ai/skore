@@ -8,7 +8,7 @@ from sklearn.model_selection import train_test_split
 from skrub import tabular_pipeline
 
 from skore import CrossValidationReport, EstimatorReport
-from skore.displays.data.table_report import (
+from skore._displays.data.table_report import (
     _compute_contingency_table,
     _resize_categorical_axis,
     _truncate_top_k_categories,

@@ -4,8 +4,8 @@ from joblib import Parallel, parallel_config
 from pytest import mark, raises
 
 from skore import configuration
-from skore.utils._parallel import delayed
-from skore.utils._testing import _change_configuration_for_testing
+from skore._utils.parallel import delayed
+from skore._utils.testing import _change_configuration_for_testing
 
 
 class CustomException(Exception): ...

@@ -69,7 +69,7 @@ def _metrics_summary_frame(metrics_accessor):
 
 
 def _metrics_summary_frame_html(metrics_accessor):
-    from skore.reports.comparison.metrics import (
+    from skore._reports.comparison.metrics import (
         _MetricsAccessor as ComparisonMetricsAccessor,
     )
 

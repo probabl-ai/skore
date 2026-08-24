@@ -1,9 +1,9 @@
 import pytest
 from pydantic import ValidationError
 
-from skore.plugins.hub.artifact.media import ChecksSummary
-from skore.plugins.hub.artifact.serializer import Serializer
-from skore.plugins.hub.json import dumps
+from skore._plugins.hub.artifact.media import ChecksSummary
+from skore._plugins.hub.artifact.serializer import Serializer
+from skore._plugins.hub.json import dumps
 
 
 @pytest.mark.parametrize(

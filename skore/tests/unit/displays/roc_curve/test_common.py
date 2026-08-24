@@ -6,8 +6,8 @@ import seaborn as sns
 from sklearn.linear_model import LogisticRegression
 
 from skore import EstimatorReport
-from skore.displays import RocCurveDisplay
-from skore.utils._testing import check_frame_structure
+from skore._displays import RocCurveDisplay
+from skore._utils.testing import check_frame_structure
 
 
 @pytest.mark.parametrize(

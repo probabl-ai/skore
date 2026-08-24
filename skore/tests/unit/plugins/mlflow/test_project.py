@@ -6,9 +6,9 @@ import pandas as pd
 import pytest
 from sklearn.linear_model import LinearRegression
 
-from skore.plugins.mlflow import Project
-from skore.plugins.mlflow import project as project_module
-from skore.plugins.mlflow.project import (
+from skore._plugins.mlflow import Project
+from skore._plugins.mlflow import project as project_module
+from skore._plugins.mlflow.project import (
     _log_artifact,
     format_date,
     report_type,

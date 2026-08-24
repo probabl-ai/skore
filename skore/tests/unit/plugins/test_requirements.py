@@ -3,7 +3,7 @@ from types import ModuleType
 
 from pytest import warns
 
-from skore.plugins import requirements
+from skore._plugins import requirements
 
 
 class Module(ModuleType):

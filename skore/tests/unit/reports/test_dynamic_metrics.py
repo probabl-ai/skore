@@ -4,9 +4,9 @@ from functools import partial
 import pytest
 import sklearn.metrics
 
-import skore.utils.repr.data as data_module
-from skore.metrics import Metric
-from skore.utils.docscrape import docstring_summary
+import skore._utils.repr.data as data_module
+from skore._metrics import Metric
+from skore._utils.docscrape import docstring_summary
 
 
 @pytest.fixture(

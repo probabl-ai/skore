@@ -12,7 +12,7 @@ from sklearn.model_selection import train_test_split
 
 import skore
 from skore import CrossValidationReport, EstimatorReport
-from skore.plugins.local import Project
+from skore._plugins.local import Project
 
 
 @fixture(autouse=True)
@@ -131,7 +131,7 @@ def test_get_uses_last_summary_entry_for_duplicate_id(tmp_path, monkeypatch):
     first.mkdir()
     last.mkdir()
     monkeypatch.setattr(
-        skore.plugins.local.project,
+        skore._plugins.local.project,
         "read_report",
         lambda path: Path(path).name,
     )
@@ -187,7 +187,7 @@ def test_find_workspace(tmp_path, monkeypatch):
     assert Project("regression").path == local / "skore" / "projects" / "regression"
     shutil.rmtree(local / "skore")
 
-    monkeypatch.setattr(skore.plugins.local.project, "git_repo_root", lambda: local)
+    monkeypatch.setattr(skore._plugins.local.project, "git_repo_root", lambda: local)
     # When we are in a git repo, create the workspace at the root of the repo
     # if no skore dir found
     assert Project("regression").path == local / "skore" / "projects" / "regression"

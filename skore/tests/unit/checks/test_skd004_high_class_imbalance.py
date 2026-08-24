@@ -3,8 +3,8 @@ from sklearn.datasets import make_classification
 from sklearn.linear_model import LogisticRegression
 
 from skore import evaluate
-from skore._externals._sklearn_compat import convert_container
-from skore.checks.model_checks import CheckHighClassImbalance
+from skore._checks.model_checks import CheckHighClassImbalance
+from skore._externals.sklearn_compat import convert_container
 
 
 @pytest.mark.parametrize("report_type", ["estimator", "cross-validation"])

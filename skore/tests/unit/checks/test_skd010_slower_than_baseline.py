@@ -7,7 +7,7 @@ from sklearn.linear_model import RidgeCV
 from sklearn.tree import DecisionTreeRegressor
 
 from skore import evaluate
-from skore.checks.model_checks import CheckSlowerThanBaseline
+from skore._checks.model_checks import CheckSlowerThanBaseline
 
 
 @pytest.mark.parametrize("report_type", ["estimator", "cross-validation"])
@@ -51,9 +51,9 @@ def test_not_detected_when_gap_below_floor(monkeypatch, report_type, regression_
     def fake_get_predict_time(_):
         return 0.01
 
-    monkeypatch.setattr("skore.checks.model_checks.get_fit_time", fake_get_fit_time)
+    monkeypatch.setattr("skore._checks.model_checks.get_fit_time", fake_get_fit_time)
     monkeypatch.setattr(
-        "skore.checks.model_checks.get_predict_time", fake_get_predict_time
+        "skore._checks.model_checks.get_predict_time", fake_get_predict_time
     )
 
     assert CheckSlowerThanBaseline().check_function(report) is None

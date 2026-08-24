@@ -5,7 +5,7 @@ from types import SimpleNamespace
 import pandas as pd
 import pytest
 
-from skore.plugins.hub.metric import (
+from skore._plugins.hub.metric import (
     cast_to_str_or_none,
     find_multimetric_scalar_names,
     get_hub_metric_name,

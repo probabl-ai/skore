@@ -1,4 +1,4 @@
-"""Unit tests for ``skore.utils.repr`` helpers."""
+"""Unit tests for ``skore._utils.repr`` helpers."""
 
 from __future__ import annotations
 
@@ -14,8 +14,8 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import GridSearchCV
 from sklearn.pipeline import Pipeline
 
-from skore.utils.repr.markdown import _markdown_estimator_kind
-from skore.utils.repr.utils import (
+from skore._utils.repr.markdown import _markdown_estimator_kind
+from skore._utils.repr.utils import (
     figure_to_html,
     repair_estimator_html_for_slotted_host,
 )

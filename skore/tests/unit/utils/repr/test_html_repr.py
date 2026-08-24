@@ -1,4 +1,4 @@
-"""Unit tests for ``skore.utils.repr.html_repr``."""
+"""Unit tests for ``skore._utils.repr.html_repr``."""
 
 from typing import ClassVar
 
@@ -6,12 +6,12 @@ import numpy as np
 import pytest
 from sklearn.linear_model import LogisticRegression
 
-from skore.utils._testing import MockAccessor, MockDisplay, MockReport
-from skore.utils.repr.html_repr import (
+from skore._utils.repr.html_repr import (
     _HTMLAccessorHelpMixin,
     _HTMLHelpDisplayMixin,
     _HTMLReportHelpMixin,
 )
+from skore._utils.testing import MockAccessor, MockDisplay, MockReport
 
 
 class _ReportWithHTML(MockReport, _HTMLReportHelpMixin):

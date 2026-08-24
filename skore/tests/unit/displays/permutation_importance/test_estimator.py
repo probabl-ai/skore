@@ -9,7 +9,7 @@ from sklearn.metrics import (
     recall_score,
 )
 
-from skore.utils._testing import custom_r2_score
+from skore._utils.testing import custom_r2_score
 
 
 @pytest.mark.parametrize(

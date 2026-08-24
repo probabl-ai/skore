@@ -1,6 +1,6 @@
 import numpy as np
 
-from skore.sklearn.train_test_split import TrainTestSplit
+from skore._sklearn.train_test_split import TrainTestSplit
 
 
 class TestTrainTestSplit:

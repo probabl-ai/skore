@@ -5,8 +5,8 @@ from sklearn.datasets import make_regression
 from sklearn.linear_model import Ridge
 
 from skore import EstimatorReport, evaluate
-from skore.checks._utils import CheckNotApplicable
-from skore.checks.model_checks import CheckUselessFeatures
+from skore._checks.model_checks import CheckUselessFeatures
+from skore._checks.utils import CheckNotApplicable
 
 
 @pytest.mark.parametrize("report_type", ["estimator", "cross-validation"])

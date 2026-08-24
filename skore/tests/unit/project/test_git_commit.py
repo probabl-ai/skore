@@ -2,7 +2,7 @@ import subprocess
 
 import pytest
 
-from skore.project.git import git_commit, head_commit_hash, working_tree_clean
+from skore._project.git import git_commit, head_commit_hash, working_tree_clean
 
 
 def success(*, stdout):
@@ -53,20 +53,20 @@ class TestGitCommit:
         git_commit.cache_clear()
 
     def test_clean_tree(self, monkeypatch):
-        monkeypatch.setattr("skore.project.git.working_tree_clean", lambda: True)
-        monkeypatch.setattr("skore.project.git.head_commit_hash", lambda: "abc123")
-        monkeypatch.setattr("skore.project.git.git_available", lambda: True)
+        monkeypatch.setattr("skore._project.git.working_tree_clean", lambda: True)
+        monkeypatch.setattr("skore._project.git.head_commit_hash", lambda: "abc123")
+        monkeypatch.setattr("skore._project.git.git_available", lambda: True)
 
         assert git_commit() == "abc123"
 
     def test_dirty_tree(self, monkeypatch):
-        monkeypatch.setattr("skore.project.git.working_tree_clean", lambda: False)
-        monkeypatch.setattr("skore.project.git.head_commit_hash", lambda: "abc123")
-        monkeypatch.setattr("skore.project.git.git_available", lambda: True)
+        monkeypatch.setattr("skore._project.git.working_tree_clean", lambda: False)
+        monkeypatch.setattr("skore._project.git.head_commit_hash", lambda: "abc123")
+        monkeypatch.setattr("skore._project.git.git_available", lambda: True)
 
         assert git_commit() == "abc123 (working tree dirty)"
 
     def test_git_unavailable(self, monkeypatch):
-        monkeypatch.setattr("skore.project.git.git_available", lambda: False)
+        monkeypatch.setattr("skore._project.git.git_available", lambda: False)
 
         assert git_commit() is None

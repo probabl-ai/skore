@@ -7,7 +7,7 @@ from sklearn.linear_model import Ridge
 from sklearn.metrics import make_scorer, precision_score, r2_score
 
 from skore import CrossValidationReport, EstimatorReport, evaluate
-from skore.plugins.hub.artifact.media import (
+from skore._plugins.hub.artifact.media import (
     ChecksSummary,
     ConfusionMatrixDataFrameTestAll,
     ConfusionMatrixDataFrameTestNone,
@@ -24,9 +24,9 @@ from skore.plugins.hub.artifact.media import (
     TableReportTest,
     TableReportTrain,
 )
-from skore.plugins.hub.artifact.serializer import Serializer
-from skore.plugins.hub.metric import Metric
-from skore.plugins.hub.report import EstimatorReportPayload
+from skore._plugins.hub.artifact.serializer import Serializer
+from skore._plugins.hub.metric import Metric
+from skore._plugins.hub.report import EstimatorReportPayload
 
 
 def unique(iterable):
@@ -118,7 +118,7 @@ class TestEstimatorReportPayload:
         import sklearn
         import sklearn.base
 
-        from skore.plugins import requirements
+        from skore._plugins import requirements
 
         monkeypatch.setattr(
             requirements.sys,

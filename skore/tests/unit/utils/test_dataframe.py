@@ -4,7 +4,7 @@ import polars as pl
 import pytest
 import scipy.sparse as sp
 
-from skore.utils._dataframe import (
+from skore._utils.dataframe import (
     _concat_vertical,
     _normalize_X_as_dataframe,
     _normalize_y_as_dataframe,

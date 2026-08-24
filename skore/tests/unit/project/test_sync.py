@@ -11,7 +11,7 @@ from sklearn.datasets import make_regression
 from sklearn.linear_model import LinearRegression, Ridge
 
 from skore import EstimatorReport, Project, evaluate
-from skore.project._sync import synchronize
+from skore._project.sync import synchronize
 
 
 class FakeSummary:
