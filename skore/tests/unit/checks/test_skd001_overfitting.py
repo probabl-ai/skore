@@ -3,7 +3,7 @@ from sklearn.linear_model import LinearRegression
 from sklearn.tree import DecisionTreeRegressor
 
 from skore import EstimatorReport, evaluate
-from skore._checks.model_checks import CheckOverfitting
+from skore._checks.skd001_overfitting import CheckOverfitting
 from skore._checks.utils import CheckNotApplicable
 
 

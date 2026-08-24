@@ -14,7 +14,7 @@ from sklearn.model_selection import check_cv
 from sklearn.pipeline import Pipeline
 from skrub._reporting._summarize import summarize_dataframe
 
-from skore._checks.model_checks import _BUILTIN_CHECKS
+from skore._checks import _BUILTIN_CHECKS
 from skore._externals.pandas_accessors import DirNamesMixin
 from skore._externals.sklearn_compat import _safe_indexing, is_clusterer
 from skore._reports.base import _BaseReport

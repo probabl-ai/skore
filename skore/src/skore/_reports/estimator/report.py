@@ -16,7 +16,7 @@ from sklearn.utils._response import _check_response_method
 from sklearn.utils.validation import _num_samples, check_is_fitted
 from skrub._reporting._summarize import summarize_dataframe
 
-from skore._checks.model_checks import _BUILTIN_CHECKS
+from skore._checks import _BUILTIN_CHECKS
 from skore._externals.pandas_accessors import DirNamesMixin
 from skore._externals.sklearn_compat import _safe_indexing, is_clusterer
 from skore._metrics import MetricRegistry

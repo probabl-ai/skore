@@ -6,7 +6,10 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 
 from skore import evaluate
-from skore._checks.model_checks import CheckHyperparamsAtSearchEdge
+from skore._checks.skd014_hyperparams_at_search_edge import (
+    CheckHyperparamsAtSearchEdge,
+    _get_space_bound,
+)
 from skore._checks.utils import CheckNotApplicable
 from skore._utils.testing import MockEstimator
 
@@ -32,9 +35,7 @@ from skore._utils.testing import MockEstimator
     ],
 )
 def test_get_space_bound(estimator, param_name, side, expected):
-    actual = CheckHyperparamsAtSearchEdge._get_space_bound(
-        estimator, param_name=param_name, side=side
-    )
+    actual = _get_space_bound(estimator, param_name=param_name, side=side)
     assert actual == expected
 
 

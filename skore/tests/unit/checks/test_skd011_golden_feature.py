@@ -8,7 +8,7 @@ from sklearn.preprocessing import StandardScaler
 from skrub import tabular_pipeline
 
 from skore import evaluate
-from skore._checks.model_checks import CheckGoldenFeature
+from skore._checks.skd011_golden_feature import CheckGoldenFeature
 from skore._checks.utils import CheckNotApplicable
 
 

@@ -7,7 +7,7 @@ from sklearn.pipeline import Pipeline
 from skrub import tabular_pipeline
 
 from skore import evaluate
-from skore._checks.model_checks import CheckCorrelatedFeatures
+from skore._checks.skd008_correlated_features import CheckCorrelatedFeatures
 from skore._checks.utils import CheckNotApplicable
 
 

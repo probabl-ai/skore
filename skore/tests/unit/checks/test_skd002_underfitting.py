@@ -2,7 +2,7 @@ import pytest
 from sklearn.dummy import DummyClassifier, DummyRegressor
 
 from skore import evaluate
-from skore._checks.model_checks import CheckUnderfitting
+from skore._checks.skd002_underfitting import CheckUnderfitting
 from skore._externals.sklearn_compat import convert_container
 
 

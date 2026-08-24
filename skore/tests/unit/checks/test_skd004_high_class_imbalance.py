@@ -3,7 +3,7 @@ from sklearn.datasets import make_classification
 from sklearn.linear_model import LogisticRegression
 
 from skore import evaluate
-from skore._checks.model_checks import CheckHighClassImbalance
+from skore._checks.skd004_high_class_imbalance import CheckHighClassImbalance
 from skore._externals.sklearn_compat import convert_container
 
 

@@ -10,7 +10,7 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 
 from skore import evaluate
-from skore._checks.model_checks import CheckSearchParamsToTune
+from skore._checks.skd015_search_params_to_tune import CheckSearchParamsToTune
 from skore._checks.utils import CheckNotApplicable
 
 

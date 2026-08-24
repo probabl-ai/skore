@@ -5,7 +5,7 @@ from sklearn.linear_model import LinearRegression
 from sklearn.pipeline import Pipeline
 
 from skore import evaluate
-from skore._checks.model_checks import CheckMDIHighCardinalityBias
+from skore._checks.skd007_mdi_high_cardinality_bias import CheckMDIHighCardinalityBias
 from skore._checks.utils import CheckNotApplicable
 
 

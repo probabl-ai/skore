@@ -8,9 +8,18 @@ import narwhals as nw
 import numpy as np
 import pandas as pd
 import scipy.sparse as sp
+from sklearn.dummy import DummyClassifier, DummyRegressor
+from sklearn.ensemble import (
+    HistGradientBoostingClassifier,
+    HistGradientBoostingRegressor,
+)
 from sklearn.exceptions import UndefinedMetricWarning
+from sklearn.linear_model import LogisticRegression, RidgeCV
+from sklearn.multioutput import MultiOutputRegressor
 from sklearn.pipeline import Pipeline
+from skrub import tabular_pipeline
 
+from skore._checks.tunable_hyperparameters import EQUIVALENT_PARAM_GROUPS
 from skore._displays.metrics.metrics_summary_display import MetricsSummaryRow
 from skore._sklearn.feature_names import _get_feature_names
 from skore._sklearn.types import EstimatorLike, PositiveLabel
@@ -121,7 +130,7 @@ def check_score_better_than_baseline(
 ) -> bool:
     """Check whether `score` is significantly better than `baseline`.
 
-    The gap threshold is `fraction` of the reference score, floored at `floor`
+    The gap threshold is ``fraction`` of the baseline score, floored at ``floor``
     to prevent the threshold from vanishing on near-zero scores.
     """
     if pd.isna(greater_is_better):
@@ -146,24 +155,6 @@ def majority_vote(votes: list[bool]) -> tuple[bool, int, int]:
     return n_positive > total / 2, n_positive, total
 
 
-def detect_outliers_modified_zscore(scores, threshold=3):
-    """Detect outliers using the modified Z-score method.
-
-    The constant 0.6745 is a scaling factor that makes the MAD a consistent estimator
-    of the standard deviation for Gaussian data, so that the resulting
-    scores are comparable to ordinary Z-scores.
-
-    See https://en.wikipedia.org/wiki/Median_absolute_deviation
-    """
-    median = np.median(scores)
-    mad = np.median(np.abs(scores - median))
-    if mad == 0:
-        return np.zeros_like(scores)
-    modified_z_scores = 0.6745 * (scores - median) / mad
-
-    return np.abs(modified_z_scores) > threshold
-
-
 class CheckNotApplicable(Exception):
     """Raised when a check cannot run on the given report.
 
@@ -174,7 +165,7 @@ class CheckNotApplicable(Exception):
 
     Notes
     -----
-    Check implementations raise this exception when required data, task type,
+    Check implementations raise this exception when required data, ML task,
     or model capabilities are missing. The check appears under the
     "Not Applicable" section of the checks summary.
 
@@ -260,22 +251,6 @@ def get_fitted_estimator(
     return report.estimator_
 
 
-def get_fit_time(report: EstimatorReport | CrossValidationReport) -> float:
-    if report._report_type == "cross-validation":
-        return float(report.metrics.timings(aggregate="mean").loc["Fit time (s)"])
-    if report._fit_time is None:
-        raise CheckNotApplicable("Fit time is unavailable.")
-    return report._fit_time
-
-
-def get_predict_time(report: EstimatorReport | CrossValidationReport) -> float:
-    if report._report_type == "cross-validation":
-        return float(
-            report.metrics.predict_time(aggregate="mean").loc["Predict time (s)"]
-        )
-    return cast(float, report.metrics.predict_time(data_source="test"))
-
-
 def get_preprocessed_X(
     report: EstimatorReport | CrossValidationReport,
     *,
@@ -324,3 +299,115 @@ def get_preprocessed_X(
         return _normalize_X_as_dataframe(data)
     except NotImplementedError as err:
         raise CheckNotApplicable("Feature data is sparse.") from err
+
+
+def baseline_estimator_report(
+    report: EstimatorReport | CrossValidationReport,
+    kind: Literal["dummy", "performance", "fast"],
+) -> EstimatorReport | CrossValidationReport:
+    """Build a baseline report mirroring ``report``.
+
+    For ``kind="dummy"``, returns a plain ``DummyClassifier`` / ``DummyRegressor``
+    baseline. For ``kind="performance"`` and ``kind="fast"``, the estimator is
+    wrapped in :func:`skrub.tabular_pipeline`.
+
+    Raises :class:`CheckNotApplicable` for unsupported ml tasks.
+    """
+    supported_tasks = [
+        "binary-classification",
+        "multiclass-classification",
+        "regression",
+        "multioutput-regression",
+    ]
+    if report.ml_task not in supported_tasks:
+        raise CheckNotApplicable(
+            f"Expected ML task to be one of {supported_tasks}; got {report.ml_task}."
+        )
+    if kind == "dummy":
+        estimator = (
+            DummyClassifier(strategy="prior")
+            if "classification" in report.ml_task
+            else DummyRegressor(strategy="mean")
+        )
+    elif kind == "performance":
+        if "classification" in report.ml_task:
+            base_estimator = HistGradientBoostingClassifier()
+        elif report.ml_task == "multioutput-regression":
+            base_estimator = MultiOutputRegressor(HistGradientBoostingRegressor())
+        else:
+            base_estimator = HistGradientBoostingRegressor()
+        estimator = tabular_pipeline(base_estimator)
+    else:  # kind == "fast"
+        estimator = tabular_pipeline(
+            LogisticRegression(max_iter=1000)
+            if "classification" in report.ml_task
+            else RidgeCV()
+        )
+
+    if report._report_type == "cross-validation":
+        from skore._reports.cross_validation.report import CrossValidationReport
+
+        try:
+            baseline = CrossValidationReport(
+                estimator,
+                X=report.X,
+                y=report.y,
+                splitter=report.splitter,
+                pos_label=report.pos_label,
+                n_jobs=report.n_jobs,
+            )
+        except Exception as exc:
+            raise CheckNotApplicable("Failed to create baseline report.") from exc
+        registry = report.reports_[0]._metric_registry.copy()
+        for baseline_split in baseline.reports_:
+            baseline_split._metric_registry = registry
+        return baseline
+
+    if report.X_train is None:
+        raise CheckNotApplicable("Train data is unavailable.")
+    try:
+        X_train = _normalize_X_as_dataframe(report.X_train)
+        X_test = _normalize_X_as_dataframe(report.X_test)
+    except NotImplementedError:
+        raise CheckNotApplicable("Data is sparse.") from None
+
+    y_train = get_report_y(report, data_source="train")
+    y_test = get_report_y(report, data_source="test")
+    from skore._reports.estimator.report import EstimatorReport
+
+    try:
+        baseline_report = EstimatorReport(
+            estimator,
+            X_train=X_train,
+            y_train=y_train,
+            X_test=X_test,
+            y_test=y_test,
+            pos_label=report.pos_label,
+        )
+    except Exception as exc:
+        raise CheckNotApplicable("Failed to create baseline report.") from exc
+    baseline_report._metric_registry = report._metric_registry
+    return baseline_report
+
+
+def collapse_equivalents(
+    recommended: set[ParameterName], searched: set[ParameterName]
+) -> set[ParameterName]:
+    """Return ``recommended - searched``, collapsing equivalence groups.
+
+    Some parameters serve the same purpose (e.g. ``max_depth``, ``min_samples_leaf``,
+    ``min_samples_split``, ``max_leaf_nodes`` all limit tree depth). If any group
+    member is already searched, drop the others; otherwise keep only the first
+    missing member of the group.
+    """
+    missing = recommended - searched
+    for group in EQUIVALENT_PARAM_GROUPS:
+        group_set = set(group)
+        if searched & group_set:
+            missing -= group_set
+        else:
+            in_group = [param for param in group if param in missing]
+            if len(in_group) > 1:
+                missing -= group_set
+                missing.add(in_group[0])
+    return missing

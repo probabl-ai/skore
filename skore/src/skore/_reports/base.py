@@ -10,8 +10,8 @@ from typing import TYPE_CHECKING, Any, ClassVar, Generic, Literal, TypeVar, cast
 
 import pandas as pd
 
+from skore._checks import _BUILTIN_CHECKS
 from skore._checks.base import Check, CheckCode, CheckResult, CheckSection
-from skore._checks.model_checks import _BUILTIN_CHECKS
 from skore._checks.utils import CheckNotApplicable
 from skore._externals.docscrape import Parameter
 from skore._metrics import Metric

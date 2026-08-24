@@ -9,21 +9,19 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 
 from skore import CrossValidationReport, EstimatorReport
-from skore._checks.model_checks import _baseline_estimator_report
 from skore._checks.utils import (
     CheckNotApplicable,
     adaptive_threshold,
     cast_report,
     check_score_better_than_baseline,
     collect_scores,
-    detect_outliers_modified_zscore,
-    get_fit_time,
     get_fitted_estimator,
     get_preprocessed_X,
     get_report_y,
     majority_vote,
     split_preprocessor_estimator,
 )
+from skore._checks.utils import baseline_estimator_report as _baseline_estimator_report
 from skore._utils.testing import MockReport
 
 
@@ -108,22 +106,6 @@ def test_majority_vote(votes, expected):
     assert majority_vote(votes) == expected
 
 
-# detect_outliers_modified_zscore
-
-
-def test_detect_outliers_modified_zscore_flags_extreme_value():
-    scores = np.array([1.0, 1.1, 0.9, 1.05, 50.0])
-    outliers = detect_outliers_modified_zscore(scores)
-    assert outliers.tolist() == [False, False, False, False, True]
-
-
-def test_detect_outliers_modified_zscore_zero_mad_returns_no_outliers():
-    """When all scores are identical, MAD is 0 and nothing is flagged."""
-    scores = np.array([1.0, 1.0, 1.0, 1.0])
-    outliers = detect_outliers_modified_zscore(scores)
-    assert not outliers.any()
-
-
 # split_preprocessor_estimator
 
 
@@ -171,31 +153,6 @@ def test_get_fitted_estimator_cv_report_uses_first_split(small_cv_report):
     assert get_fitted_estimator(small_cv_report) is (
         small_cv_report.reports_[0].estimator_
     )
-
-
-# get_fit_time
-
-
-def test_get_fit_time_estimator_report(small_estimator_report):
-    assert get_fit_time(small_estimator_report) == small_estimator_report._fit_time
-    assert get_fit_time(small_estimator_report) > 0
-
-
-def test_get_fit_time_cv_report_is_mean_across_splits(small_cv_report):
-    expected = float(
-        small_cv_report.metrics.timings(aggregate="mean").loc["Fit time (s)"]
-    )
-    assert get_fit_time(small_cv_report) == expected
-
-
-def test_get_fit_time_raises_not_applicable_for_prefit_estimator(regression_data):
-    """A prefit estimator skips `_fit_estimator`, so `_fit_time` stays None."""
-    X, y = regression_data
-    fitted = LinearRegression().fit(X, y)
-    report = EstimatorReport(fitted, X_test=X, y_test=y)
-    assert report._fit_time is None
-    with pytest.raises(CheckNotApplicable, match="Fit time is unavailable"):
-        get_fit_time(report)
 
 
 # get_report_y
