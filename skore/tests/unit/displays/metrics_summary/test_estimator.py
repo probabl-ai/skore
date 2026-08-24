@@ -1,6 +1,8 @@
-"""Tests for MetricsSummaryDisplay.frame() method."""
+"""Tests for MetricsSummaryDisplay with an EstimatorReport."""
 
+import matplotlib as mpl
 import pandas as pd
+import pytest
 from sklearn.metrics import make_scorer, mean_absolute_error, precision_score
 from sklearn.model_selection import train_test_split
 
@@ -327,3 +329,166 @@ def test_frame_data_source_both(forest_binary_classification_data):
         "RandomForestClassifier (train)",
         "RandomForestClassifier (test)",
     ]
+
+
+def test_plot_single_metric(forest_binary_classification_with_test):
+    estimator, X_test, y_test = forest_binary_classification_with_test
+    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
+    display = report.metrics.summarize()
+
+    fig = display.plot(metric="accuracy")
+    assert isinstance(fig.axes[0], mpl.axes.Axes)
+    assert fig._suptitle.get_text() == "Metrics of RandomForestClassifier"
+
+
+def test_plot_unknown_metric_raises(forest_binary_classification_with_test):
+    estimator, X_test, y_test = forest_binary_classification_with_test
+    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
+    display = report.metrics.summarize()
+
+    available_metrics = list(dict.fromkeys(display.summary["name"].tolist()))
+    with pytest.raises(
+        ValueError,
+        match=r"Unknown metric: 'not_a_metric'\. Available metrics:",
+    ) as exc_info:
+        display.plot(metric="not_a_metric")
+    assert str(available_metrics) in str(exc_info.value)
+
+
+def test_plot_data_source_both(forest_binary_classification_data):
+    estimator, X, y = forest_binary_classification_data
+    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
+    report = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    display = report.metrics.summarize(data_source="both")
+
+    fig = display.plot(metric="accuracy")
+    assert len(fig.axes) == 1
+
+
+@pytest.mark.parametrize(
+    "fixture_name, metric, subplot_by, err_msg",
+    [
+        (
+            "estimator_reports_binary_classification",
+            "score",
+            "label",
+            r"Invalid `subplot_by` parameter\. Valid options are: auto, None\.",
+        ),
+        (
+            "estimator_reports_regression",
+            "score",
+            "output",
+            r"Invalid `subplot_by` parameter\. Valid options are: auto, None\.",
+        ),
+        (
+            "estimator_reports_multiclass_classification",
+            "precision",
+            "incorrect",
+            r"Invalid `subplot_by` parameter\. Valid options are: auto, label, None\.",
+        ),
+        (
+            "estimator_reports_multioutput_regression",
+            "r2",
+            "incorrect",
+            r"Invalid `subplot_by` parameter\. Valid options are: auto, output, None\.",
+        ),
+    ],
+)
+def test_invalid_subplot_by(fixture_name, metric, subplot_by, err_msg, request):
+    reports = request.getfixturevalue(fixture_name)
+    report = reports[0]
+    display = report.metrics.summarize(metric=metric)
+    with pytest.raises(ValueError, match=err_msg):
+        display.plot(metric=metric, subplot_by=subplot_by)
+
+
+@pytest.mark.parametrize(
+    "fixture_name, metric, subplot_by_tuples",
+    [
+        (
+            "estimator_reports_binary_classification",
+            "score",
+            [(None, 1)],
+        ),
+        (
+            "estimator_reports_multiclass_classification",
+            "precision",
+            [("label", 3), (None, 1)],
+        ),
+        (
+            "estimator_reports_regression",
+            "score",
+            [(None, 1)],
+        ),
+        (
+            "estimator_reports_multioutput_regression",
+            "r2",
+            [("output", 2), (None, 1)],
+        ),
+    ],
+)
+def test_valid_subplot_by(fixture_name, metric, subplot_by_tuples, request):
+    reports = request.getfixturevalue(fixture_name)
+    report = reports[0]
+    display = report.metrics.summarize(metric=metric)
+    for subplot_by, expected_len in subplot_by_tuples:
+        fig = display.plot(metric=metric, subplot_by=subplot_by)
+        axes = fig.axes
+        if subplot_by is None:
+            assert len(axes) == 1
+            assert isinstance(axes[0], mpl.axes.Axes)
+        else:
+            assert len(axes) == expected_len
+
+
+def test_plot_averaged_and_per_class_are_distinct_metrics(
+    estimator_reports_multiclass_classification,
+):
+    """Per-class and averaged scores are distinct registry keys, so distinct plots."""
+    report = estimator_reports_multiclass_classification[0]
+    display = report.metrics.summarize()
+
+    per_class = display.plot(metric="precision")
+    assert len(per_class.axes[0].containers) == 3
+
+    averaged = display.plot(metric="precision_macro")
+    assert len(averaged.axes[0].containers) == 1
+
+
+def test_plot_subplot_by_label_keeps_data_source_hue():
+    """Train/test must not be mean-aggregated when faceting by label."""
+    from sklearn.datasets import make_classification
+    from sklearn.linear_model import LogisticRegression
+
+    X, y = make_classification(
+        n_samples=120, n_classes=3, n_informative=5, random_state=0
+    )
+    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0)
+    report = EstimatorReport(
+        LogisticRegression(max_iter=2000),
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
+    )
+    display = report.metrics.summarize(data_source="both", metric="precision")
+    fig = display.plot(metric="precision", subplot_by="label")
+    assert len(fig.axes) == 3
+    for ax in fig.axes:
+        # one bar per data_source (train/test), not a collapsed mean
+        widths = [p.get_width() for p in ax.patches if 0 < p.get_width() <= 1.0000001]
+        # seaborn may add an extra unit-width patch; keep score-like bars only
+        score_widths = [w for w in widths if w < 1]
+        assert len(score_widths) == 2
+
+
+def test_plot_subplot_by_split(forest_binary_classification_data):
+    from skore import CrossValidationReport
+
+    estimator, X, y = forest_binary_classification_data
+    report = CrossValidationReport(estimator, X=X, y=y, splitter=3)
+    display = report.metrics.summarize(metric="accuracy")
+    fig = display.plot(metric="accuracy", subplot_by="split")
+    assert len(fig.axes) == 3
