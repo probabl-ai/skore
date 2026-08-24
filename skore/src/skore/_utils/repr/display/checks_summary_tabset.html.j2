@@ -4,7 +4,7 @@
     {% set _ = report_tabs.append({"label": tab.label ~ " (" ~ tab.rows|length ~ ")", "help_variant": "text", "help_text": tab.help_text}) %}
 {% endfor %}
 <div class="report-tabset">
-    {% include "common/_report_tabset_chrome.html.j2" %}
+    {% include "common/report_tabset_chrome.html.j2" %}
     <div class="report-tab-panels">
         {% for tab in tabs %}
         <div class="report-tab-panel">

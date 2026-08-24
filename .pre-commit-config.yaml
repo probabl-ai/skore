@@ -35,3 +35,17 @@ repos:
         language: unsupported
         pass_filenames: false
         files: ^skore/
+
+      - id: no-redundant-underscore
+        name: check for redundant leading underscores
+        entry: >-
+          python -c "import sys; from pathlib import Path;
+          redundant = [
+            str(p) for p in map(Path, sys.argv[1:])
+            if p.name.startswith('_') and not p.name.startswith('__')
+            and any(d.startswith('_') for d in p.parent.parts)
+          ];
+          sys.exit(1 if redundant else 0)"
+        language: unsupported
+        pass_filenames: true
+        files: ^skore/src/
