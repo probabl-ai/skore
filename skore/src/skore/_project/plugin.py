@@ -15,8 +15,8 @@ def get(*, group: PluginGroup, mode: ProjectMode) -> Any:
 
     There are currently two types of plugins allowed:
     - the classes implementing the ``Project`` API, registered under the
-      ``skore._plugins.project`` group,
-    - the functions used to login, registered under the ``skore._plugins.login`` group.
+      ``skore.plugins.project`` group,
+    - the functions used to login, registered under the ``skore.plugins.login`` group.
 
     This function uses internally the python entry points mechanism: each package
     compatible with ``skore`` could expose its own plugins, as long as they are
@@ -26,8 +26,8 @@ def get(*, group: PluginGroup, mode: ProjectMode) -> Any:
     ----------
     group : PluginGroup
         The group of plugin to search for. Must be one of:
-        - "skore._plugins.project"
-        - "skore._plugins.login"
+        - "skore.plugins.project"
+        - "skore.plugins.login"
 
     mode : ProjectMode
         The project mode used to select the plugin implementation.

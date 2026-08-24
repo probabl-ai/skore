@@ -68,4 +68,4 @@ def login(*, mode: ProjectMode = "hub", **kwargs):
 
     logger.debug("Login to hub storage.")
 
-    return plugin.get(group="skore._plugins.login", mode="hub")(**kwargs)
+    return plugin.get(group="skore.plugins.login", mode="hub")(**kwargs)

@@ -93,10 +93,10 @@ hub = [
 ]
 mlflow = ["mlflow>=2.20.4"]
 
-[project.entry-points."skore._plugins.login"]
+[project.entry-points."skore.plugins.login"]
 hub = "skore._plugins.hub.authentication.login:login"
 
-[project.entry-points."skore._plugins.project"]
+[project.entry-points."skore.plugins.project"]
 local = "skore._plugins.local:Project"
 hub = "skore._plugins.hub.project.project:Project"
 mlflow = "skore._plugins.mlflow:Project"

@@ -155,7 +155,7 @@ class Project:
         assert_optional_dependencies_installed(mode)
 
         return (
-            plugin.get(group="skore._plugins.project", mode=mode),
+            plugin.get(group="skore.plugins.project", mode=mode),
             {"name": name} | kwargs,
         )
 

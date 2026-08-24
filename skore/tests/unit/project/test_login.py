@@ -28,7 +28,7 @@ def test_login_local(monkeypatch, FakeLogin):
                 FakeEntryPoint(
                     name="local",
                     value=FakeLogin,
-                    group="skore._plugins.login",
+                    group="skore.plugins.login",
                 )
             ]
         ),
@@ -71,7 +71,7 @@ def test_login_hub(monkeypatch, FakeLogin):
                 FakeEntryPoint(
                     name="hub",
                     value=FakeLogin,
-                    group="skore._plugins.login",
+                    group="skore.plugins.login",
                 )
             ]
         ),

@@ -66,17 +66,17 @@ def monkeypatch_entrypoints(
                 FakeEntryPoint(
                     name="local",
                     value=FakeLocalProject,
-                    group="skore._plugins.project",
+                    group="skore.plugins.project",
                 ),
                 FakeEntryPoint(
                     name="hub",
                     value=FakeHubProject,
-                    group="skore._plugins.project",
+                    group="skore.plugins.project",
                 ),
                 FakeEntryPoint(
                     name="mlflow",
                     value=FakeMlflowProject,
-                    group="skore._plugins.project",
+                    group="skore.plugins.project",
                 ),
             ]
         ),
@@ -231,7 +231,7 @@ class TestProject:
                     FakeEntryPoint(
                         name="local",
                         value=project_factory,
-                        group="skore._plugins.project",
+                        group="skore.plugins.project",
                     ),
                 ]
             ),
