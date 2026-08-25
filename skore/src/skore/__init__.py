@@ -6,9 +6,7 @@ experiment results, and inspect model behavior through interactive reports.
 
 from importlib.metadata import version
 from logging import INFO, NullHandler, getLogger
-from warnings import warn
 
-from joblib import __version__ as joblib_version
 from matplotlib import pyplot as plt
 from rich.console import Console
 from rich.theme import Theme
@@ -35,7 +33,6 @@ from skore._displays.inspection.impurity_decrease import (
 from skore._displays.inspection.permutation_importance import (
     PermutationImportanceDisplay,
 )
-from skore._externals.sklearn_compat import parse_version
 from skore._project.login import login
 from skore._project.project import Project
 from skore._project.summary import Summary
@@ -47,16 +44,6 @@ from skore._utils.show_versions import show_versions
 
 plt.ion()
 setup_jupyter_display()
-
-
-if parse_version(joblib_version) < parse_version("1.4"):
-    configuration.show_progress = False
-    warn(
-        "Because your version of joblib is older than 1.4, some of the features of "
-        "skore will not be enabled (e.g. progress bars). You can update joblib to "
-        "benefit from these features.",
-        stacklevel=2,
-    )
 
 
 __version__ = version("skore")

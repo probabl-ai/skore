@@ -28,7 +28,7 @@ classifiers = [
 ]
 dependencies = [
   "jinja2",
-  "joblib",
+  "joblib>=1.4",
   "matplotlib",
   "narwhals>=2.0.1",
   "numpy",
