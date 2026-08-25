@@ -10,11 +10,11 @@ import pandas as pd
 
 from skore._displays.base import DisplayMixin
 from skore._externals.sklearn_compat import parse_version
-from skore._sklearn.types import ReportType
 from skore._utils.repr.html_repr import render_template
 
 if TYPE_CHECKING:
     from skore._reports.base import _BaseReport
+    from skore._sklearn.types import ReportType
 
 
 CheckCode = str

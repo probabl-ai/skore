@@ -1,12 +1,10 @@
 from __future__ import annotations
 
-from typing import Any, Literal
+from typing import TYPE_CHECKING, Any, Literal
 
 import numpy as np
 import pandas as pd
 import seaborn as sns
-from matplotlib.figure import Figure
-from numpy.typing import ArrayLike
 from sklearn.calibration import calibration_curve
 
 from skore._displays.base import DisplayMixin
@@ -15,7 +13,13 @@ from skore._displays.utils import (
     _despine_matplotlib_axis,
     _one_hot_encode,
 )
-from skore._sklearn.types import _DEFAULT, DataSource, PositiveLabel, ReportType
+from skore._sklearn.types import _DEFAULT
+
+if TYPE_CHECKING:
+    from matplotlib.figure import Figure
+    from numpy.typing import ArrayLike
+
+    from skore._sklearn.types import DataSource, PositiveLabel, ReportType
 
 
 class CalibrationDisplay(DisplayMixin):

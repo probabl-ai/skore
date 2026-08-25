@@ -1,14 +1,12 @@
 from __future__ import annotations
 
-from typing import Any, Literal
+from typing import TYPE_CHECKING, Any, Literal
 
 import numpy as np
 import pandas as pd
 import seaborn as sns
-from matplotlib.figure import Figure
-from numpy.typing import ArrayLike
 from scipy.sparse import issparse
-from sklearn.base import BaseEstimator, is_classifier
+from sklearn.base import is_classifier
 from sklearn.compose import TransformedTargetRegressor
 from sklearn.pipeline import Pipeline
 from sklearn.utils.sparsefuncs import mean_variance_axis
@@ -20,8 +18,14 @@ from skore._displays.inspection.utils import (
     sort_features,
 )
 from skore._sklearn.feature_names import _get_feature_names
-from skore._sklearn.types import Aggregate, ReportType
 from skore._utils.index import flatten_multi_index
+
+if TYPE_CHECKING:
+    from matplotlib.figure import Figure
+    from numpy.typing import ArrayLike
+    from sklearn.base import BaseEstimator
+
+    from skore._sklearn.types import Aggregate, ReportType
 
 
 class CoefficientsDisplay(DisplayMixin):

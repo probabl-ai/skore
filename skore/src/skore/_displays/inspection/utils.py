@@ -1,9 +1,13 @@
-from typing import Literal
+from __future__ import annotations
 
-import matplotlib.pyplot as plt
+from typing import TYPE_CHECKING, Literal
+
 import pandas as pd
 
 from skore._displays.utils import _despine_matplotlib_axis
+
+if TYPE_CHECKING:
+    from matplotlib.axes import Axes
 
 
 def select_k_features_in_group(
@@ -183,7 +187,7 @@ def sort_features(
 
 def _decorate_matplotlib_axis(
     *,
-    ax: plt.Axes,
+    ax: Axes,
     add_background_features: bool,
     n_features: int,
     xlabel: str,

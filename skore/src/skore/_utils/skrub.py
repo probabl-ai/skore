@@ -1,13 +1,14 @@
 from __future__ import annotations
 
 import functools
-from typing import TypeGuard
+from typing import TYPE_CHECKING, TypeGuard
 
 from sklearn.base import BaseEstimator
 from sklearn.utils.validation import NotFittedError, check_is_fitted
 from skrub import DataOp, SkrubLearner
 
-from skore._sklearn.types import EstimatorLike
+if TYPE_CHECKING:
+    from skore._sklearn.types import EstimatorLike
 
 
 def eval_X_y(data_op: DataOp, env: dict) -> dict:

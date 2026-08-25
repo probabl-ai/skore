@@ -1,19 +1,21 @@
 from __future__ import annotations
 
 import warnings
-from collections.abc import Callable
 from functools import wraps
 from typing import TYPE_CHECKING, Any, Literal, Protocol, cast, runtime_checkable
 
 import matplotlib.pyplot as plt
+from matplotlib.figure import Figure
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    import pandas as pd
+
     try:
         from matplotlib.typing import RcKeyType as MatplotlibRcKeyType
     except ImportError:
         MatplotlibRcKeyType = str  # type: ignore[misc]
-import pandas as pd
-from matplotlib.figure import Figure
 
 from skore._config import configuration
 from skore._plugins import switch_plt_backend

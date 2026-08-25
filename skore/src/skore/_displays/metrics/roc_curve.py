@@ -1,11 +1,10 @@
-from collections.abc import Sequence
-from typing import Any, Literal, cast
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any, Literal, cast
 
 import seaborn as sns
-from matplotlib.figure import Figure
-from numpy.typing import ArrayLike, NDArray
+from numpy.typing import NDArray
 from pandas import DataFrame, Series
-from sklearn.base import BaseEstimator
 from sklearn.metrics import auc, roc_curve
 
 from skore._displays.base import DisplayMixin
@@ -21,13 +20,16 @@ from skore._displays.utils import (
     _reorder_categoricals_by_appearance,
     _validate_style_kwargs,
 )
-from skore._sklearn.types import (
-    _DEFAULT,
-    DataSource,
-    MLTask,
-    PositiveLabel,
-    ReportType,
-)
+from skore._sklearn.types import _DEFAULT
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
+
+    from matplotlib.figure import Figure
+    from numpy.typing import ArrayLike
+    from sklearn.base import BaseEstimator
+
+    from skore._sklearn.types import DataSource, MLTask, PositiveLabel, ReportType
 
 Label = int | float | bool | str
 
@@ -152,12 +154,12 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
     @classmethod
     def _concatenate(
         cls,
-        child_displays: Sequence["RocCurveDisplay"],
+        child_displays: Sequence[RocCurveDisplay],
         *,
         report_type: ReportType,
         data_source: None | Literal["both"] = None,
         column_data: dict[str, list] | None = None,
-    ) -> "RocCurveDisplay":
+    ) -> RocCurveDisplay:
         """Build a ROC display by concatenating child displays."""
         first_display = child_displays[0]
         return cls(
@@ -373,7 +375,7 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         report_pos_label: PositiveLabel = None,
         drop_intermediate: bool = True,
         max_n_thresholds: int | None = 500,
-    ) -> "RocCurveDisplay":
+    ) -> RocCurveDisplay:
         """Private method to create a RocCurveDisplay from predictions.
 
         Parameters

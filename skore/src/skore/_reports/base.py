@@ -11,12 +11,11 @@ from typing import TYPE_CHECKING, Any, ClassVar, Generic, Literal, TypeVar, cast
 import pandas as pd
 
 from skore._checks import _BUILTIN_CHECKS
-from skore._checks.base import Check, CheckCode, CheckResult, CheckSection
 from skore._checks.utils import CheckNotApplicable
 from skore._externals.docscrape import Parameter
 from skore._metrics import Metric
 from skore._project.git import git_commit
-from skore._sklearn.types import DataSource, ReportMetadata
+from skore._sklearn.types import ReportMetadata
 from skore._utils.docscrape import (
     build_numpy_docstring,
     callable_docstring,
@@ -35,12 +34,12 @@ from skore._utils.repr.data import MethodHelp
 from skore._utils.uuid import normalize_report_id, uuid7
 
 if TYPE_CHECKING:
-    import pandas as pd
-
     from skore._checks.accessor import _ChecksAccessor
+    from skore._checks.base import Check, CheckCode, CheckResult, CheckSection
     from skore._displays import MetricsSummaryDisplay
     from skore._reports.cross_validation.report import CrossValidationReport
     from skore._reports.estimator.report import EstimatorReport
+    from skore._sklearn.types import DataSource
 
 
 class _BaseReport(ReportHelpMixin):
