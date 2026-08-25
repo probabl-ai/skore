@@ -21,7 +21,6 @@ from skore._project.login import login
 from skore._project.project import Project
 from skore._project.summary import Summary
 from skore._reports import ComparisonReport, CrossValidationReport, EstimatorReport
-from skore._sklearn import TrainTestSplit
 from skore._utils.environment import is_environment_notebook_like
 from skore._utils.patch import setup_jupyter_display
 from skore._utils.show_versions import show_versions
@@ -73,6 +72,7 @@ __lazy__ = {
     "PredictionErrorDisplay": "skore._displays.metrics.prediction_error",
     "RocCurveDisplay": "skore._displays.metrics.roc_curve",
     "TableReportDisplay": "skore._displays.data.table_report",
+    "TrainTestSplit": "skore._sklearn.train_test_split",
 }
 
 if TYPE_CHECKING:
@@ -90,6 +90,7 @@ if TYPE_CHECKING:
     )
     from skore._displays.metrics.prediction_error import PredictionErrorDisplay
     from skore._displays.metrics.roc_curve import RocCurveDisplay
+    from skore._sklearn.train_test_split import TrainTestSplit
 
 
 def __getattr__(name: str) -> Any:

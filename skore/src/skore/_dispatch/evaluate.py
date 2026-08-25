@@ -11,7 +11,6 @@ from skore._config import configuration
 from skore._reports.comparison.report import ComparisonReport
 from skore._reports.cross_validation.report import CrossValidationReport
 from skore._reports.estimator.report import EstimatorReport
-from skore._sklearn.train_test_split import TrainTestSplit
 from skore._sklearn.types import (
     _DEFAULT,
     SKLearnCrossValidator,
@@ -218,6 +217,8 @@ def evaluate(
             test_data=data,
             pos_label=pos_label,
         )
+
+    from skore._sklearn.train_test_split import TrainTestSplit
 
     if isinstance(splitter, float):
         splitter = TrainTestSplit(test_size=splitter)
