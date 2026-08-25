@@ -5,15 +5,8 @@ from typing import TYPE_CHECKING
 import pandas as pd
 from sklearn.utils.metaestimators import available_if
 
-from skore._displays.inspection.coefficients import CoefficientsDisplay
-from skore._displays.inspection.impurity_decrease import ImpurityDecreaseDisplay
-from skore._displays.inspection.permutation_importance import (
-    PermutationImportanceDisplay,
-)
 from skore._externals.pandas_accessors import DirNamesMixin
-from skore._metrics import MetricLike
 from skore._reports.base import _BaseAccessor
-from skore._sklearn.types import DataSource
 from skore._utils.accessor import (
     _check_comparison_report_sub_estimators_have_coef,
     _check_comparison_report_sub_estimators_have_feature_importances,
@@ -21,6 +14,13 @@ from skore._utils.accessor import (
 
 if TYPE_CHECKING:
     from skore import ComparisonReport
+    from skore._displays.inspection.coefficients import CoefficientsDisplay
+    from skore._displays.inspection.impurity_decrease import ImpurityDecreaseDisplay
+    from skore._displays.inspection.permutation_importance import (
+        PermutationImportanceDisplay,
+    )
+    from skore._metrics import MetricLike
+    from skore._sklearn.types import DataSource
 
 
 class _InspectionAccessor(_BaseAccessor["ComparisonReport"], DirNamesMixin):
@@ -69,6 +69,8 @@ class _InspectionAccessor(_BaseAccessor["ComparisonReport"], DirNamesMixin):
         ...
         >>> display.plot() # shows plot
         """
+        from skore._displays.inspection.coefficients import CoefficientsDisplay
+
         return CoefficientsDisplay(
             coefficients=pd.concat(
                 [
@@ -135,6 +137,8 @@ class _InspectionAccessor(_BaseAccessor["ComparisonReport"], DirNamesMixin):
         7    big trees   petal width (cm)       0.4...
         >>> display.plot() # shows plot
         """
+        from skore._displays.inspection.impurity_decrease import ImpurityDecreaseDisplay
+
         return ImpurityDecreaseDisplay(
             importances=pd.concat(
                 [
@@ -305,6 +309,10 @@ class _InspectionAccessor(_BaseAccessor["ComparisonReport"], DirNamesMixin):
         """
         if seed is not None and not isinstance(seed, int):
             raise ValueError(f"seed must be an integer or None; got {type(seed)}")
+
+        from skore._displays.inspection.permutation_importance import (
+            PermutationImportanceDisplay,
+        )
 
         return PermutationImportanceDisplay(
             importances=pd.concat(

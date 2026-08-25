@@ -1,19 +1,23 @@
+from __future__ import annotations
+
 import warnings
-from typing import Literal
+from typing import TYPE_CHECKING, Literal
 
 import narwhals as nw
 
-from skore._displays import TableReportDisplay
 from skore._externals.pandas_accessors import DirNamesMixin
 from skore._reports.base import _BaseAccessor
-from skore._reports.estimator.report import EstimatorReport
 from skore._utils.dataframe import (
     _normalize_X_as_dataframe,
     _normalize_y_as_dataframe,
 )
 
+if TYPE_CHECKING:
+    from skore._displays.data.table_report import TableReportDisplay
+    from skore._reports.estimator.report import EstimatorReport
 
-class _DataAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
+
+class _DataAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
     """
     The data accessor helps you to get insights about the train and test datasets.
 
@@ -135,6 +139,8 @@ class _DataAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             subsample_strategy=subsample_strategy,
             seed=seed,
         )
+        from skore._displays.data.table_report import TableReportDisplay
+
         return TableReportDisplay._compute_data_for_display(df, with_plots=with_plots)
 
     def analyze(self, **kwargs) -> TableReportDisplay:

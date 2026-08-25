@@ -1,20 +1,11 @@
 from __future__ import annotations
 
-from typing import Literal
+from typing import TYPE_CHECKING, Literal
 
 from sklearn.utils.metaestimators import available_if
 
-from skore._displays.inspection.calibration_curve import CalibrationDisplay
-from skore._displays.inspection.coefficients import CoefficientsDisplay
-from skore._displays.inspection.impurity_decrease import ImpurityDecreaseDisplay
-from skore._displays.inspection.permutation_importance import (
-    PermutationImportanceDisplay,
-)
 from skore._externals.pandas_accessors import DirNamesMixin
-from skore._metrics import MetricLike
 from skore._reports.base import _BaseAccessor
-from skore._reports.estimator.report import EstimatorReport
-from skore._sklearn.types import DataSource
 from skore._utils.accessor import (
     _check_all_checks,
     _check_estimator_has_coef,
@@ -24,8 +15,19 @@ from skore._utils.accessor import (
 )
 from skore._utils.cache_key import make_cache_key
 
+if TYPE_CHECKING:
+    from skore._displays.inspection.calibration_curve import CalibrationDisplay
+    from skore._displays.inspection.coefficients import CoefficientsDisplay
+    from skore._displays.inspection.impurity_decrease import ImpurityDecreaseDisplay
+    from skore._displays.inspection.permutation_importance import (
+        PermutationImportanceDisplay,
+    )
+    from skore._metrics import MetricLike
+    from skore._reports.estimator.report import EstimatorReport
+    from skore._sklearn.types import DataSource
 
-class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
+
+class _InspectionAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
     """Accessor for model inspection related operations.
 
     You can access this accessor using the `inspection` attribute.
@@ -72,6 +74,8 @@ class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         10  Feature #9      102.2...
         >>> display.plot() # shows plot
         """
+        from skore._displays.inspection.coefficients import CoefficientsDisplay
+
         return CoefficientsDisplay._compute_data_for_display(
             estimator=self._parent.estimator_,
             name=self._parent.estimator_name_,
@@ -116,6 +120,8 @@ class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         3  Feature #3     0.48...
         4  Feature #4     0.00...
         """
+        from skore._displays.inspection.impurity_decrease import ImpurityDecreaseDisplay
+
         return ImpurityDecreaseDisplay._compute_data_for_display(
             estimator=self._parent.estimator_,
             name=self._parent.estimator_name_,
@@ -329,6 +335,10 @@ class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         # earlier.
         display = None if seed is None else self._parent._cache.get(cache_key)
         if display is None:
+            from skore._displays.inspection.permutation_importance import (
+                PermutationImportanceDisplay,
+            )
+
             display = PermutationImportanceDisplay._compute_data_for_display(
                 data_source=data_source,
                 estimator=self._parent.estimator_,
@@ -400,6 +410,8 @@ class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             data_source=data_source,
             response_method="predict_proba",
         )
+        from skore._displays.inspection.calibration_curve import CalibrationDisplay
+
         return CalibrationDisplay._compute_data_for_display(
             name=self._parent.estimator_name_,
             report_type=self._parent._report_type,

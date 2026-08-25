@@ -1,22 +1,10 @@
 from __future__ import annotations
 
-from typing import Any, Literal
+from typing import TYPE_CHECKING, Any, Literal
 
 import narwhals as nw
 import numpy as np
 import pandas as pd
-import seaborn as sns
-from matplotlib import pyplot as plt
-from matplotlib.axes import Axes
-from matplotlib.figure import Figure
-from skrub import _column_associations
-from skrub._reporting._html import to_html
-from skrub._reporting._summarize import summarize_dataframe
-from skrub._reporting._utils import (
-    duration_to_numeric,
-    ellide_string,
-    top_k_value_counts,
-)
 
 from skore._displays.base import DisplayMixin
 from skore._displays.utils import (
@@ -24,7 +12,12 @@ from skore._displays.utils import (
     _rotate_ticklabels,
     _validate_style_kwargs,
 )
-from skore._utils.dataframe import UserDataFrame
+
+if TYPE_CHECKING:
+    from matplotlib.axes import Axes
+    from matplotlib.figure import Figure
+
+    from skore._utils.dataframe import UserDataFrame
 
 
 def _truncate_top_k_categories(
@@ -53,6 +46,8 @@ def _truncate_top_k_categories(
     """
     if col is None or pd.api.types.is_numeric_dtype(col):
         return col
+
+    from skrub._reporting._utils import ellide_string, top_k_value_counts
 
     col = col.copy()
     _, counter = top_k_value_counts(col, k=k)
@@ -222,6 +217,9 @@ class TableReportDisplay(DisplayMixin):
         display : TableReportDisplay
             Object that stores computed values.
         """
+        from matplotlib import pyplot as plt
+        from skrub._reporting._summarize import summarize_dataframe
+
         with plt.ioff():
             summary = summarize_dataframe(
                 dataset,
@@ -307,6 +305,8 @@ class TableReportDisplay(DisplayMixin):
         top_k_categories: int = 20,
     ) -> Figure:
         """Matplotlib implementation of the `plot` method."""
+        from matplotlib import pyplot as plt
+
         figure, ax = plt.subplots()
         if kind == "dist":
             match (x is None, y is None, hue is None):
@@ -383,6 +383,9 @@ class TableReportDisplay(DisplayMixin):
             <https://seaborn.pydata.org/generated/seaborn.histplot.html>`_ for rendering
             the distribution 1D plot.
         """
+        import seaborn as sns
+        from skrub._reporting._utils import duration_to_numeric
+
         default_histplot_kwargs: dict[str, Any] = {}
 
         column = nw.from_native(self.summary["dataframe"])[x or y]
@@ -497,6 +500,9 @@ class TableReportDisplay(DisplayMixin):
         k : int, default=20
             The number of most frequent categories to plot.
         """
+        import seaborn as sns
+        from skrub._reporting._utils import ellide_string
+
         dataframe = nw.from_native(self.summary["dataframe"])
         x_col = dataframe[x] if x is not None else None
         y_col = dataframe[y] if y is not None else None
@@ -674,6 +680,9 @@ class TableReportDisplay(DisplayMixin):
         heatmap_kwargs : dict, default=None
             Keyword arguments to be passed to heatmap.
         """
+        import seaborn as sns
+        from skrub import _column_associations
+
         heatmap_kwargs_validated = _validate_style_kwargs(
             {
                 "xticklabels": True,
@@ -727,6 +736,8 @@ class TableReportDisplay(DisplayMixin):
             raise ValueError(f"Invalid kind: {kind!r}")
 
     def _repr_html_(self) -> str:
+        from skrub._reporting._html import to_html
+
         return f"{to_html(self.summary, standalone=False, column_filters=None)}"
 
     # ignore the type signature because we override kwargs by specifying the name of

@@ -1,24 +1,18 @@
 from __future__ import annotations
 
 import numbers
-from typing import Any, Literal, cast
+from typing import TYPE_CHECKING, Any, Literal, cast
 
 import pandas as pd
 from joblib import Parallel
 from sklearn.utils.metaestimators import available_if
 
-from skore._displays import (
-    ConfusionMatrixDisplay,
+from skore._displays.metrics.metrics_summary_display import (
     MetricsSummaryDisplay,
-    PrecisionRecallCurveDisplay,
-    PredictionErrorDisplay,
-    RocCurveDisplay,
+    MetricsSummaryRow,
 )
-from skore._displays.metrics.metrics_summary_display import MetricsSummaryRow
 from skore._externals.pandas_accessors import DirNamesMixin
-from skore._metrics import Metric, MetricLike
 from skore._reports.base import BaseMetricsAccessor, _summarize_report_metrics
-from skore._reports.cross_validation.report import CrossValidationReport
 from skore._sklearn.types import Aggregate
 from skore._utils.accessor import _check_estimator_report_has_method
 from skore._utils.fixes import _validate_joblib_parallel_params
@@ -26,10 +20,20 @@ from skore._utils.index import squeeze_single_column
 from skore._utils.parallel import delayed
 from skore._utils.progress_bar import track
 
+if TYPE_CHECKING:
+    from skore._displays.metrics.confusion_matrix import ConfusionMatrixDisplay
+    from skore._displays.metrics.precision_recall_curve import (
+        PrecisionRecallCurveDisplay,
+    )
+    from skore._displays.metrics.prediction_error import PredictionErrorDisplay
+    from skore._displays.metrics.roc_curve import RocCurveDisplay
+    from skore._metrics import Metric, MetricLike
+    from skore._reports.cross_validation.report import CrossValidationReport
+
 DataSource = Literal["test", "train"]
 
 
-class _MetricsAccessor(BaseMetricsAccessor[CrossValidationReport], DirNamesMixin):
+class _MetricsAccessor(BaseMetricsAccessor["CrossValidationReport"], DirNamesMixin):
     """Accessor for metrics-related operations.
 
     You can access this accessor using the `metrics` attribute.
@@ -500,6 +504,8 @@ class _MetricsAccessor(BaseMetricsAccessor[CrossValidationReport], DirNamesMixin
         ]
         split_indices = range(len(self._parent.reports_))
 
+        from skore._displays.metrics.roc_curve import RocCurveDisplay
+
         display = RocCurveDisplay._concatenate(
             child_displays,
             report_type=self._parent._report_type,
@@ -556,6 +562,10 @@ class _MetricsAccessor(BaseMetricsAccessor[CrossValidationReport], DirNamesMixin
             for report in self._parent.reports_
         ]
         split_indices = range(len(self._parent.reports_))
+
+        from skore._displays.metrics.precision_recall_curve import (
+            PrecisionRecallCurveDisplay,
+        )
 
         display = PrecisionRecallCurveDisplay._concatenate(
             child_displays,
@@ -632,6 +642,8 @@ class _MetricsAccessor(BaseMetricsAccessor[CrossValidationReport], DirNamesMixin
         ]
         split_indices = range(len(self._parent.reports_))
 
+        from skore._displays.metrics.prediction_error import PredictionErrorDisplay
+
         display = PredictionErrorDisplay._concatenate(
             child_displays,
             report_type=self._parent._report_type,
@@ -694,6 +706,8 @@ class _MetricsAccessor(BaseMetricsAccessor[CrossValidationReport], DirNamesMixin
             for report in self._parent.reports_
         ]
         split_indices = range(len(self._parent.reports_))
+
+        from skore._displays.metrics.confusion_matrix import ConfusionMatrixDisplay
 
         display = ConfusionMatrixDisplay._concatenate(
             child_displays,

@@ -1,39 +1,43 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
-from typing import Any, Literal, cast
+from typing import TYPE_CHECKING, Any, Literal, cast
 
 import pandas as pd
 from sklearn.base import ClassifierMixin, RegressorMixin
 from sklearn.pipeline import Pipeline
 from sklearn.utils.metaestimators import available_if
 
-from skore._displays import (
-    ConfusionMatrixDisplay,
+from skore._displays.metrics.metrics_summary_display import (
     MetricsSummaryDisplay,
-    PrecisionRecallCurveDisplay,
-    PredictionErrorDisplay,
-    RocCurveDisplay,
+    MetricsSummaryRow,
 )
-from skore._displays.metrics.metrics_summary_display import MetricsSummaryRow
 from skore._externals.pandas_accessors import DirNamesMixin
 from skore._metrics import (
     FitTime,
     Metric,
-    MetricLike,
     MetricRow,
     MissingKwargsError,
     PredictTime,
     Score,
 )
 from skore._reports.base import BaseMetricsAccessor
-from skore._reports.estimator.report import EstimatorReport
 from skore._sklearn.types import DataSource
 from skore._utils.accessor import _check_supported_ml_task
 from skore._utils.cache_key import make_cache_key
 
+if TYPE_CHECKING:
+    from skore._displays.metrics.confusion_matrix import ConfusionMatrixDisplay
+    from skore._displays.metrics.precision_recall_curve import (
+        PrecisionRecallCurveDisplay,
+    )
+    from skore._displays.metrics.prediction_error import PredictionErrorDisplay
+    from skore._displays.metrics.roc_curve import RocCurveDisplay
+    from skore._metrics import MetricLike
+    from skore._reports.estimator.report import EstimatorReport  # noqa: F401
 
-class _MetricsAccessor(BaseMetricsAccessor[EstimatorReport], DirNamesMixin):
+
+class _MetricsAccessor(BaseMetricsAccessor["EstimatorReport"], DirNamesMixin):
     """Accessor for metrics-related operations.
 
     You can access this accessor using the `metrics` attribute.
@@ -660,6 +664,8 @@ class _MetricsAccessor(BaseMetricsAccessor[EstimatorReport], DirNamesMixin):
         """
         response_method = ("predict_proba", "decision_function")
         display_kwargs = {"report_pos_label": self._parent.pos_label}
+        from skore._displays.metrics.roc_curve import RocCurveDisplay
+
         display = cast(
             RocCurveDisplay,
             self._get_display(
@@ -721,6 +727,10 @@ class _MetricsAccessor(BaseMetricsAccessor[EstimatorReport], DirNamesMixin):
         """
         response_method = ("predict_proba", "decision_function")
         display_kwargs = {"report_pos_label": self._parent.pos_label}
+        from skore._displays.metrics.precision_recall_curve import (
+            PrecisionRecallCurveDisplay,
+        )
+
         display = cast(
             PrecisionRecallCurveDisplay,
             self._get_display(
@@ -789,6 +799,8 @@ class _MetricsAccessor(BaseMetricsAccessor[EstimatorReport], DirNamesMixin):
         >>> display.plot()
         """
         display_kwargs = {"subsample": subsample, "seed": seed}
+        from skore._displays.metrics.prediction_error import PredictionErrorDisplay
+
         display = cast(
             PredictionErrorDisplay,
             self._get_display(
@@ -873,6 +885,8 @@ class _MetricsAccessor(BaseMetricsAccessor[EstimatorReport], DirNamesMixin):
             "report_pos_label": self._parent.pos_label,
             "y_scores": y_scores,
         }
+        from skore._displays.metrics.confusion_matrix import ConfusionMatrixDisplay
+
         display = cast(
             ConfusionMatrixDisplay,
             self._get_display(

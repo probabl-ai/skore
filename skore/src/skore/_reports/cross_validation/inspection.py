@@ -1,25 +1,29 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import pandas as pd
 from sklearn.utils.metaestimators import available_if
 
-from skore._displays.inspection.coefficients import CoefficientsDisplay
-from skore._displays.inspection.impurity_decrease import ImpurityDecreaseDisplay
-from skore._displays.inspection.permutation_importance import (
-    PermutationImportanceDisplay,
-)
 from skore._externals.pandas_accessors import DirNamesMixin
-from skore._metrics import MetricLike
 from skore._reports.base import _BaseAccessor
-from skore._reports.cross_validation.report import CrossValidationReport
-from skore._sklearn.types import DataSource
 from skore._utils.accessor import (
     _check_cross_validation_sub_estimator_has_coef,
     _check_cross_validation_sub_estimator_has_feature_importances,
 )
 
+if TYPE_CHECKING:
+    from skore._displays.inspection.coefficients import CoefficientsDisplay
+    from skore._displays.inspection.impurity_decrease import ImpurityDecreaseDisplay
+    from skore._displays.inspection.permutation_importance import (
+        PermutationImportanceDisplay,
+    )
+    from skore._metrics import MetricLike
+    from skore._reports.cross_validation.report import CrossValidationReport
+    from skore._sklearn.types import DataSource
 
-class _InspectionAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
+
+class _InspectionAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
     """Accessor for model inspection related operations.
 
     You can access this accessor using the `inspection` attribute.
@@ -58,6 +62,8 @@ class _InspectionAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         3  Feature #2            17.1...            0.0...
         >>> display.plot() # shows plot
         """
+        from skore._displays.inspection.coefficients import CoefficientsDisplay
+
         return CoefficientsDisplay(
             coefficients=pd.concat(
                 [
@@ -252,6 +258,10 @@ class _InspectionAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         if seed is not None and not isinstance(seed, int):
             raise ValueError(f"seed must be an integer or None; got {type(seed)}")
 
+        from skore._displays.inspection.permutation_importance import (
+            PermutationImportanceDisplay,
+        )
+
         return PermutationImportanceDisplay(
             importances=pd.concat(
                 [
@@ -310,6 +320,8 @@ class _InspectionAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         ...
         >>> display.plot() # shows plot
         """
+        from skore._displays.inspection.impurity_decrease import ImpurityDecreaseDisplay
+
         return ImpurityDecreaseDisplay(
             importances=pd.concat(
                 [

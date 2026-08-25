@@ -2,23 +2,15 @@ from __future__ import annotations
 
 import numbers
 import warnings
-from typing import Any, Literal
+from typing import TYPE_CHECKING, Any, Literal
 
 import pandas as pd
 from joblib import Parallel
 from sklearn.utils.metaestimators import available_if
 
-from skore._displays.metrics import (
-    ConfusionMatrixDisplay,
-    MetricsSummaryDisplay,
-    PrecisionRecallCurveDisplay,
-    PredictionErrorDisplay,
-    RocCurveDisplay,
-)
+from skore._displays.metrics.metrics_summary_display import MetricsSummaryDisplay
 from skore._externals.pandas_accessors import DirNamesMixin
-from skore._metrics import Metric, MetricLike
 from skore._reports.base import BaseMetricsAccessor, _summarize_report_metrics
-from skore._reports.comparison.report import ComparisonReport
 from skore._sklearn.types import Aggregate
 from skore._utils.accessor import (
     _check_any_sub_report_has_metric,
@@ -28,10 +20,20 @@ from skore._utils.fixes import _validate_joblib_parallel_params
 from skore._utils.parallel import delayed
 from skore._utils.progress_bar import track
 
+if TYPE_CHECKING:
+    from skore._displays.metrics.confusion_matrix import ConfusionMatrixDisplay
+    from skore._displays.metrics.precision_recall_curve import (
+        PrecisionRecallCurveDisplay,
+    )
+    from skore._displays.metrics.prediction_error import PredictionErrorDisplay
+    from skore._displays.metrics.roc_curve import RocCurveDisplay
+    from skore._metrics import Metric, MetricLike
+    from skore._reports.comparison.report import ComparisonReport
+
 DataSource = Literal["test", "train", "both"]
 
 
-class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
+class _MetricsAccessor(BaseMetricsAccessor["ComparisonReport"], DirNamesMixin):
     """Accessor for metrics-related operations.
 
     You can access this accessor using the `metrics` attribute.
@@ -548,6 +550,8 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
         ]
         estimator_names = self._parent.reports_.keys()
 
+        from skore._displays.metrics.roc_curve import RocCurveDisplay
+
         display = RocCurveDisplay._concatenate(
             child_displays,
             report_type=self._parent._report_type,
@@ -612,6 +616,10 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
             )
         ]
         estimator_names = self._parent.reports_.keys()
+
+        from skore._displays.metrics.precision_recall_curve import (
+            PrecisionRecallCurveDisplay,
+        )
 
         display = PrecisionRecallCurveDisplay._concatenate(
             child_displays,
@@ -691,6 +699,8 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
             )
         ]
         estimator_names = self._parent.reports_.keys()
+
+        from skore._displays.metrics.prediction_error import PredictionErrorDisplay
 
         display = PredictionErrorDisplay._concatenate(
             child_displays,
@@ -779,6 +789,8 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
             )
         ]
         estimator_names = self._parent.reports_.keys()
+
+        from skore._displays.metrics.confusion_matrix import ConfusionMatrixDisplay
 
         display = ConfusionMatrixDisplay._concatenate(
             child_displays,
