@@ -115,7 +115,7 @@ def test_not_applicable_when_x_test_is_not_a_dataframe():
 
 
 def test_not_applicable_when_x_train_is_none():
-    """SKD013 raises CheckNotApplicable when X_train is unavailable."""
+    """SKD013 raises CheckNotApplicable when X_train is unavailable.""" 
     rng = np.random.default_rng(0)
     X = rng.normal(size=(100, 3))
     y = rng.normal(size=100)
