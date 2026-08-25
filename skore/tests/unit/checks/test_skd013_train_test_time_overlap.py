@@ -8,8 +8,8 @@ from sklearn.pipeline import Pipeline
 from skrub import DatetimeEncoder
 
 from skore import EstimatorReport, evaluate
-from skore._sklearn._checks._utils import CheckNotApplicable
-from skore._sklearn._checks.model_checks import CheckTrainTestTimeOverlap
+from skore._checks.skd013_train_test_time_overlap import CheckTrainTestTimeOverlap
+from skore._checks.utils import CheckNotApplicable
 
 
 def _datetime_pipeline():

@@ -23,7 +23,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.pipeline import make_pipeline
 
 from skore import EstimatorReport, MetricsSummaryDisplay
-from skore._utils._testing import check_cache_changed, check_cache_unchanged
+from skore._utils.testing import check_cache_changed, check_cache_unchanged
 
 
 def check_display_structure(

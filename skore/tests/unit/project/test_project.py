@@ -10,7 +10,7 @@ from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.model_selection import train_test_split
 
 from skore import CrossValidationReport, EstimatorReport, Project
-from skore._project._summary import Summary
+from skore._project.summary import Summary
 
 
 class FakeEntryPoint(EntryPoint):

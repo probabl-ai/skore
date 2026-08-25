@@ -8,8 +8,8 @@ from sklearn.preprocessing import StandardScaler
 from skrub import tabular_pipeline
 
 from skore import evaluate
-from skore._sklearn._checks._utils import CheckNotApplicable
-from skore._sklearn._checks.model_checks import CheckGoldenFeature
+from skore._checks.skd011_golden_feature import CheckGoldenFeature
+from skore._checks.utils import CheckNotApplicable
 
 
 @pytest.mark.parametrize("report_type", ["estimator", "cross-validation"])

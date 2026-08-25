@@ -8,9 +8,9 @@ from typing import TYPE_CHECKING, Any, get_args
 from pandas import DataFrame, Index, MultiIndex, RangeIndex
 
 from skore._project import plugin
-from skore._project._summary import Summary
-from skore._project._sync import synchronize
 from skore._project.dependencies import assert_optional_dependencies_installed
+from skore._project.summary import Summary
+from skore._project.sync import synchronize
 from skore._project.types import ProjectMode
 
 if TYPE_CHECKING:

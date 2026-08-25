@@ -6,7 +6,7 @@ import re
 from functools import lru_cache
 from typing import Any
 
-from skore._externals._docscrape import NumpyDocString, Parameter
+from skore._externals.docscrape import NumpyDocString, Parameter
 
 _TRAILING_DEFAULT = re.compile(r"(?:,\s*)?(?:default\s*=.*|optional)\s*\Z")
 
