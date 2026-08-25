@@ -56,4 +56,5 @@ repos:
           "
         language: unsupported
         pass_filenames: true
-        files: ^skore/src/.*\.py$
+        files: ^skore/src/
+        types: [file, python]
