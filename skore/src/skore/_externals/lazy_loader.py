@@ -37,7 +37,7 @@ def attach(package_name, submodules=None, submod_attrs=None):
 
     The typical way to call this function, replacing the above imports, is::
 
-      __getattr__, __dir__, __all__ = lazy.attach(
+      __getattr__, __dir__, __all__ = lazy_loader.attach(
         __name__,
         ['mysubmodule', 'anothersubmodule'],
         {'foo': ['someattr']}
@@ -139,7 +139,7 @@ def load(fullname, *, require=None, error_on_import=False):
     This `load` function returns a proxy module that, upon access, imports
     the actual module.  So the idiom equivalent to the above example is::
 
-      np = lazy.load("numpy")
+      np = lazy_loader.load("numpy")
 
       def myfunc():
           np.norm(...)
@@ -164,7 +164,7 @@ def load(fullname, *, require=None, error_on_import=False):
     fullname : str
         The full name of the module or submodule to import.  For example::
 
-          sp = lazy.load('scipy')  # import scipy as sp
+          sp = lazy_loader.load('scipy')  # import scipy as sp
 
     require : str
         A dependency requirement as defined in PEP-508.  For example::

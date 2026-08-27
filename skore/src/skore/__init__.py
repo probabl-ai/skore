@@ -12,7 +12,7 @@ from matplotlib import pyplot as plt
 from rich.console import Console
 from rich.theme import Theme
 
-from skore._externals import lazy_loader as lazy
+from skore._externals import lazy_loader
 from skore._utils.environment import is_environment_notebook_like
 from skore._utils.patch import setup_jupyter_display
 
@@ -107,7 +107,7 @@ except Exception:
     THREADABLE = False
 
 
-__getattr__, __dir__, _ = lazy.attach(
+__getattr__, __dir__, _ = lazy_loader.attach(
     __name__,
     submod_attrs={
         "_checks": ["Check", "CheckNotApplicable", "ChecksSummaryDisplay"],
