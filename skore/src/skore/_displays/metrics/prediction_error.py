@@ -1,13 +1,12 @@
+from __future__ import annotations
+
 import numbers
 from collections import namedtuple
-from typing import Literal
+from typing import TYPE_CHECKING, Literal
 
 import numpy as np
 import seaborn as sns
-from matplotlib.artist import Artist
-from matplotlib.figure import Figure
 from matplotlib.lines import Line2D
-from numpy.typing import ArrayLike
 from pandas import DataFrame, Series
 from sklearn.utils.validation import _num_samples, check_array
 
@@ -19,7 +18,13 @@ from skore._displays.utils import (
     _validate_style_kwargs,
 )
 from skore._externals.sklearn_compat import _safe_indexing
-from skore._sklearn.types import DataSource, MLTask, ReportType
+
+if TYPE_CHECKING:
+    from matplotlib.artist import Artist
+    from matplotlib.figure import Figure
+    from numpy.typing import ArrayLike
+
+    from skore._sklearn.types import DataSource, MLTask, ReportType
 
 RangeData = namedtuple("RangeData", ["min", "max"])
 
@@ -127,12 +132,12 @@ class PredictionErrorDisplay(DisplayMixin):
     @classmethod
     def _concatenate(
         cls,
-        child_displays: list["PredictionErrorDisplay"],
+        child_displays: list[PredictionErrorDisplay],
         *,
         report_type: ReportType,
         data_source: None | Literal["both"] = None,
         column_data: dict[str, list] | None = None,
-    ) -> "PredictionErrorDisplay":
+    ) -> PredictionErrorDisplay:
         """Build a prediction-error display by concatenating child displays."""
         first_display = child_displays[0]
         return cls(
@@ -460,7 +465,7 @@ class PredictionErrorDisplay(DisplayMixin):
         subsample: float | int | None = 1_000,
         seed: int | None = None,
         **kwargs,
-    ) -> "PredictionErrorDisplay":
+    ) -> PredictionErrorDisplay:
         """Plot the prediction error given the true and predicted targets.
 
         Parameters

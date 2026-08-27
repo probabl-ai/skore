@@ -7,19 +7,11 @@ from dataclasses import asdict
 from typing import TYPE_CHECKING, Literal, cast
 
 import joblib
-from numpy.typing import ArrayLike
 
-from skore._checks.base import (
-    CheckCode,
-    CheckExplanation,
-    CheckResult,
-    CheckSource,
-)
 from skore._externals.pandas_accessors import DirNamesMixin
 from skore._reports.base import _BaseReport
 from skore._reports.cross_validation.report import CrossValidationReport
 from skore._reports.estimator.report import EstimatorReport
-from skore._sklearn.types import PositiveLabel
 from skore._utils.dataframe import _concat_vertical
 from skore._utils.repr.data import get_documentation_url
 from skore._utils.repr.html_repr import render_template
@@ -29,9 +21,18 @@ from skore._utils.repr.markdown import (
 )
 
 if TYPE_CHECKING:
+    from numpy.typing import ArrayLike
+
     from skore._checks.accessor import _ChecksAccessor
+    from skore._checks.base import (
+        CheckCode,
+        CheckExplanation,
+        CheckResult,
+        CheckSource,
+    )
     from skore._reports.comparison.inspection import _InspectionAccessor
     from skore._reports.comparison.metrics import _MetricsAccessor
+    from skore._sklearn.types import PositiveLabel
 
     ComparisonReportType = Literal[
         "comparison-estimator",

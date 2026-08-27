@@ -1,23 +1,25 @@
-from collections.abc import Sequence
-from typing import Any, Literal, cast
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any, Literal, cast
 
 import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
-from matplotlib.axes import Axes
-from matplotlib.colors import Colormap
-from matplotlib.figure import Figure
-from numpy.typing import NDArray
-from pandas import CategoricalDtype, DataFrame
+from pandas import CategoricalDtype
 from sklearn.preprocessing import LabelBinarizer
 
-from skore._sklearn.types import (
-    _DEFAULT,
-    DataSource,
-    MLTask,
-    PositiveLabel,
-    ReportType,
-)
+from skore._sklearn.types import _DEFAULT
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
+
+    from matplotlib.axes import Axes
+    from matplotlib.colors import Colormap
+    from matplotlib.figure import Figure
+    from numpy.typing import NDArray
+    from pandas import DataFrame
+
+    from skore._sklearn.types import DataSource, MLTask, PositiveLabel, ReportType
 
 LINESTYLE = [
     ("solid", "solid"),

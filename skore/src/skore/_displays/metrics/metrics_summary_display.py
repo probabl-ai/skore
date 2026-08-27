@@ -1,23 +1,23 @@
 from __future__ import annotations
 
 import warnings
-from collections.abc import Sequence
-from typing import Any, Literal, NotRequired, TypedDict, cast
+from typing import TYPE_CHECKING, Any, Literal, NotRequired, TypedDict, cast
 
 import numpy as np
 import pandas as pd
-from matplotlib.figure import Figure
 from sklearn.utils.validation import _is_arraylike
 
 from skore._displays.base import DisplayMixin
-from skore._metrics import Metric
-from skore._sklearn.types import (
-    Aggregate,
-    DataSource,
-    PositiveLabel,
-    ReportType,
-)
+from skore._sklearn.types import Aggregate
 from skore._utils.index import flatten_multi_index, squeeze_single_column
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
+
+    from matplotlib.figure import Figure
+
+    from skore._metrics import Metric
+    from skore._sklearn.types import DataSource, PositiveLabel, ReportType
 
 MetricIndexKey = Literal["metric", "label", "output", "average"]
 MetricColumnKey = Literal["estimator", "data_source", "split"]

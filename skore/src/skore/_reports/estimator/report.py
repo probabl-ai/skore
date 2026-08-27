@@ -8,7 +8,6 @@ from typing import TYPE_CHECKING, Any, Literal, NotRequired, TypedDict
 
 import numpy as np
 import skrub
-from numpy.typing import ArrayLike
 from sklearn.base import clone
 from sklearn.exceptions import NotFittedError
 from sklearn.pipeline import Pipeline
@@ -22,7 +21,6 @@ from skore._externals.sklearn_compat import _safe_indexing, is_clusterer
 from skore._metrics import MetricRegistry
 from skore._reports.base import _BaseReport
 from skore._sklearn.find_ml_task import _find_ml_task
-from skore._sklearn.types import DataSource, PositiveLabel
 from skore._utils.cache import Cache
 from skore._utils.cache_key import make_cache_key
 from skore._utils.measure_time import MeasureTime
@@ -33,11 +31,13 @@ from skore._utils.repr.utils import repair_estimator_html_for_slotted_host
 from skore._utils.skrub import eval_X_y, is_skrub_learner, to_estimator, to_learner
 
 if TYPE_CHECKING:
+    from numpy.typing import ArrayLike
+
     from skore._checks.accessor import _ChecksAccessor
     from skore._reports.estimator.data import _DataAccessor
     from skore._reports.estimator.inspection import _InspectionAccessor
     from skore._reports.estimator.metrics import _MetricsAccessor
-    from skore._sklearn.types import EstimatorLike
+    from skore._sklearn.types import DataSource, EstimatorLike, PositiveLabel
 
 
 _STATE_VERSION = 1

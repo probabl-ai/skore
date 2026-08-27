@@ -2,13 +2,11 @@ from __future__ import annotations
 
 import html
 import uuid
-from collections.abc import Generator
 from dataclasses import asdict
 from typing import TYPE_CHECKING, Any, Literal
 
 import skrub
 from joblib import Parallel
-from numpy.typing import ArrayLike
 from sklearn.base import clone, is_classifier
 from sklearn.model_selection import check_cv
 from sklearn.pipeline import Pipeline
@@ -19,7 +17,6 @@ from skore._externals.pandas_accessors import DirNamesMixin
 from skore._externals.sklearn_compat import _safe_indexing, is_clusterer
 from skore._reports.base import _BaseReport
 from skore._reports.estimator.report import EstimatorReport
-from skore._sklearn.types import PositiveLabel, SKLearnCrossValidator
 from skore._utils.fixes import _validate_joblib_parallel_params
 from skore._utils.parallel import delayed
 from skore._utils.progress_bar import track
@@ -30,11 +27,15 @@ from skore._utils.repr.utils import repair_estimator_html_for_slotted_host
 from skore._utils.skrub import is_skrub_learner, to_estimator, to_learner
 
 if TYPE_CHECKING:
+    from collections.abc import Generator
+
+    from numpy.typing import ArrayLike
+
     from skore._checks.accessor import _ChecksAccessor
     from skore._reports.cross_validation.data import _DataAccessor
     from skore._reports.cross_validation.inspection import _InspectionAccessor
     from skore._reports.cross_validation.metrics import _MetricsAccessor
-    from skore._sklearn.types import EstimatorLike
+    from skore._sklearn.types import EstimatorLike, PositiveLabel, SKLearnCrossValidator
 
 
 _STATE_VERSION = 1

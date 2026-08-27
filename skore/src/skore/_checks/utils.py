@@ -22,7 +22,7 @@ from skrub import tabular_pipeline
 from skore._checks.tunable_hyperparameters import EQUIVALENT_PARAM_GROUPS
 from skore._displays.metrics.metrics_summary_display import MetricsSummaryRow
 from skore._sklearn.feature_names import _get_feature_names
-from skore._sklearn.types import EstimatorLike, PositiveLabel
+from skore._sklearn.types import PositiveLabel
 from skore._utils.dataframe import (
     UserDataFrame,
     UserTarget,
@@ -35,7 +35,7 @@ if TYPE_CHECKING:
     from skore._reports.base import _BaseReport
     from skore._reports.cross_validation.report import CrossValidationReport
     from skore._reports.estimator.report import EstimatorReport
-    from skore._sklearn.types import DataSource
+    from skore._sklearn.types import DataSource, EstimatorLike
 
 _TIMING_METRICS = {"Fit time (s)", "Predict time (s)"}
 

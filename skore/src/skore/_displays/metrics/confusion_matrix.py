@@ -1,12 +1,10 @@
-from collections.abc import Sequence
-from typing import Literal
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Literal
 
 import numpy as np
 import pandas as pd
 import seaborn as sns
-from matplotlib.figure import Figure
-from numpy.typing import ArrayLike, NDArray
-from sklearn.base import BaseEstimator
 from sklearn.metrics import confusion_matrix as sklearn_confusion_matrix
 
 from skore._displays.base import DisplayMixin
@@ -19,13 +17,16 @@ from skore._displays.utils import (
     _validate_style_kwargs,
 )
 from skore._externals.sklearn_compat import confusion_matrix_at_thresholds
-from skore._sklearn.types import (
-    _DEFAULT,
-    DataSource,
-    MLTask,
-    PositiveLabel,
-    ReportType,
-)
+from skore._sklearn.types import _DEFAULT
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
+
+    from matplotlib.figure import Figure
+    from numpy.typing import ArrayLike, NDArray
+    from sklearn.base import BaseEstimator
+
+    from skore._sklearn.types import DataSource, MLTask, PositiveLabel, ReportType
 
 
 class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
@@ -147,13 +148,13 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
     @classmethod
     def _concatenate(
         cls,
-        child_displays: Sequence["ConfusionMatrixDisplay"],
+        child_displays: Sequence[ConfusionMatrixDisplay],
         *,
         do_thresholds: bool = True,
         report_type: ReportType,
         column_data: dict[str, list] | None = None,
         **kwargs,  # for compatibility
-    ) -> "ConfusionMatrixDisplay":
+    ) -> ConfusionMatrixDisplay:
         """Build a confusion-matrix display by concatenating child displays."""
         first_display = child_displays[0]
         confusion_matrix_predict = _concat_frames_with_column_data(
@@ -452,7 +453,7 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
         y_scores: NDArray | None = None,
         max_n_thresholds: int | None = 500,
         **kwargs,
-    ) -> "ConfusionMatrixDisplay":
+    ) -> ConfusionMatrixDisplay:
         """Compute the confusion matrix data for display.
 
         Parameters

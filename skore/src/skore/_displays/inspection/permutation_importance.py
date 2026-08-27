@@ -2,15 +2,13 @@ from __future__ import annotations
 
 import warnings
 from collections.abc import Callable
-from typing import Any, Literal, cast
+from typing import TYPE_CHECKING, Any, Literal, cast
 
 import numpy as np
 import pandas as pd
 import seaborn as sns
-from matplotlib.figure import Figure
-from numpy.typing import ArrayLike
 from scipy.sparse import issparse, spmatrix
-from sklearn.base import BaseEstimator, is_classifier
+from sklearn.base import is_classifier
 from sklearn.inspection import permutation_importance
 from sklearn.metrics._scorer import _BaseScorer
 from sklearn.pipeline import Pipeline
@@ -22,11 +20,17 @@ from skore._displays.inspection.utils import (
     select_k_features,
     sort_features,
 )
-from skore._metrics import MetricLike
 from skore._sklearn.feature_names import _get_feature_names
-from skore._sklearn.types import Aggregate, DataSource, ReportType
 from skore._utils.callable import _callable_name
 from skore._utils.index import flatten_multi_index
+
+if TYPE_CHECKING:
+    from matplotlib.figure import Figure
+    from numpy.typing import ArrayLike
+    from sklearn.base import BaseEstimator
+
+    from skore._metrics import MetricLike
+    from skore._sklearn.types import Aggregate, DataSource, ReportType
 
 
 class PermutationImportanceDisplay(DisplayMixin):
