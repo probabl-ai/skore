@@ -4,7 +4,7 @@ What's new in skore — August 2026
 Local project storage format
 ----------------------------
 
-Local projects used to be saved on disk in SQLite databases via the `diskcache` package. They are now backed by human-readable files instead, e.g. estimators in `.pickle` files and metrics in CSV files, so they can browsed and copied independently of skore. See :pr:`2905` by :user:`jeromedockes`.
+Local projects used to be saved on disk in SQLite databases via the `diskcache` package. They are now backed by human-readable files instead, e.g. estimators in `.pickle` files and metrics in CSV files, so they can be browsed and copied independently of skore. See :pr:`2905` by :user:`jeromedockes`.
 
 .. code-block:: python
 
