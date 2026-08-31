@@ -1,5 +1,6 @@
 """Integration tests for report accessor reprs."""
 
+import pandas as pd
 import pytest
 
 
@@ -64,9 +65,23 @@ def test_data_accessor_repr(report_with_data):
 
 
 def _metrics_summary_frame(metrics_accessor):
-    if hasattr(metrics_accessor, "_formatted_summary_frame"):
-        return metrics_accessor._formatted_summary_frame()
-    return metrics_accessor.summarize().frame()
+    return metrics_accessor._formatted_summary_frame()
+
+
+def _metrics_summary_frame_html(metrics_accessor):
+    from skore._reports.comparison.metrics import (
+        _MetricsAccessor as ComparisonMetricsAccessor,
+    )
+
+    if isinstance(metrics_accessor, ComparisonMetricsAccessor):
+        frame = metrics_accessor._formatted_summary_frame()
+    else:
+        frame = metrics_accessor.summarize().frame(verbose_name=True, flat_index=False)
+    return (
+        frame.to_frame()._repr_html_()
+        if isinstance(frame, pd.Series)
+        else frame._repr_html_()
+    )
 
 
 def test_metrics_accessor_repr(report):
@@ -82,7 +97,7 @@ def test_metrics_accessor_repr(report):
 
 def test_metrics_accessor_repr_html(report):
     """Metrics accessor _repr_html_ shows the summary frame and hints."""
-    frame_html = _metrics_summary_frame(report.metrics)._repr_html_()
+    frame_html = _metrics_summary_frame_html(report.metrics)
     html = report.metrics._repr_html_()
 
     assert html.startswith("<p>Metrics summary:</p>")

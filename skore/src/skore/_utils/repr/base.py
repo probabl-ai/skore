@@ -6,7 +6,7 @@ from io import StringIO
 from rich.console import Console
 from rich.panel import Panel
 
-from skore._utils._environment import (
+from skore._utils.environment import (
     is_environment_notebook_like,
     is_environment_sphinx_build,
 )
