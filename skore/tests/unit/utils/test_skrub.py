@@ -8,7 +8,7 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 from skrub import tabular_pipeline
 
-from skore._utils._skrub import (
+from skore._utils.skrub import (
     find_estimators,
     find_fitted_estimators,
     get_predictor_and_input,

@@ -77,10 +77,13 @@ training data and may generalize poorly.
 How to reduce the risk
 ^^^^^^^^^^^^^^^^^^^^^^
 
-- simplify the model,
 - regularize more strongly,
+- use early stopping for iterative models,
 - improve feature engineering,
 - use better validation protocols or more data.
+
+Check out the
+:ref:`example for this check <example_skd001_skd002_overfitting_underfitting>`.
 
 
 .. _skd002-underfitting:
@@ -118,6 +121,9 @@ How to reduce the risk
 - tune hyperparameters (see :ref:`SKD015 <skd015-hyperparameters-worth-tuning>`
   and :ref:`SKD016 <skd016-estimator-not-tuned>`),
 - collect richer data if possible.
+
+Check out the
+:ref:`example for this check <example_skd001_skd002_overfitting_underfitting>`.
 
 
 .. _skd003-inconsistent-performance:
@@ -182,15 +188,24 @@ Why it matters
 
 When one class dominates the dataset, a model can achieve high accuracy simply by
 constantly predicting the majority class. Accuracy alone becomes a misleading performance
-indicator, and the model may fail to detect the minority class entirely.
+indicator, and the model may fail to detect the minority class entirely. The check
+flags that situation so you handle imbalance deliberately; clearing SKD004 by
+changing the class mix is not the main goal when natural prevalence matters.
 
 How to reduce the risk
 ^^^^^^^^^^^^^^^^^^^^^^
 
-- use metrics that account for imbalance (precision, recall, F1, ROC AUC),
-- resample the dataset (oversampling the minority or undersampling the majority),
-- use class weights in the estimator,
-- collect more data for the minority class if possible.
+- report absolute class counts as well as percentages,
+- evaluate ranking and calibration (ROC AUC, log-loss, calibration curves)
+  before trusting thresholded precision / recall,
+- tune the decision threshold under an explicit precision / recall or cost
+  constraint (for example with
+  :class:`~sklearn.model_selection.TunedThresholdClassifierCV`),
+- avoid ``class_weight`` and resampling when you need calibrated probabilities,
+- if you collect extra minority data, correct for prevalence shift relative to
+  production.
+
+Check out the :ref:`example for this check <example_skd004_high_class_imbalance>`.
 
 
 .. _skd005-underrepresented-classes:
@@ -311,6 +326,9 @@ How to reduce the risk
   permutation importance or drop-column importance.
 
 
+Check out the :ref:`example for this check <example_skd007_mdi_cardinality_bias>`.
+
+
 .. _skd008-correlated-features:
 
 SKD008 - Highly correlated input features
@@ -355,10 +373,13 @@ How to reduce the risk
   correlated features,
 - group correlated features together before inspecting feature importance.
 
+Check out the :ref:`example for this check <example_skd008_correlated_features>`.
+
+
 .. _skd009-worse-than-baseline:
 
-SKD009 - Model worse than baseline
-----------------------------------
+SKD009 - Model performance vs. baseline
+----------------------------------------
 
 How it is detected
 ^^^^^^^^^^^^^^^^^^
@@ -370,18 +391,23 @@ is trained on the same train data as the report's estimator and is evaluated on 
 test set.
 
 For each of the report's default predictive metrics (timing metrics are excluded), a
-metric votes for the issue when the report is **not significantly better** than the
-baseline. A score is considered significantly better only when its gap to the baseline
-exceeds ``max(0.01, 0.05 * |baseline|)``.
+metric votes when the baseline is **significantly better** than the report. A baseline
+score is considered significantly better only when its gap to the report exceeds
+``max(0.01, 0.05 * |report score|)``.
 
-The check detects an issue when a **strict majority** of comparable metrics vote.
+This check always reports the baseline's performance on the test set. When a **strict
+majority** of comparable metrics vote, the tip warns that the model is significantly
+worse than the baseline; otherwise it reports that the model is on par with or better
+than the baseline, along with the baseline's scores for reference.
 
 Why it matters
 ^^^^^^^^^^^^^^
 
 If the model does not match or beat a sensible off-the-shelf baseline, the modeling
 effort may not be worth its complexity: a simpler, well-tuned default could deliver the
-same quality with less risk of overfitting or maintenance burden.
+same quality with less risk of overfitting or maintenance burden. Even when the model
+does beat the baseline, seeing the baseline's scores helps calibrate how large that
+improvement actually is.
 
 How to reduce the risk
 ^^^^^^^^^^^^^^^^^^^^^^
@@ -409,9 +435,11 @@ around :class:`~sklearn.linear_model.LogisticRegression` for classification task
 :class:`~sklearn.linear_model.RidgeCV` for regression tasks. The baseline is trained on
 the same train data as the report's estimator and is evaluated on the same test set.
 
-The check first compares fit times: it triggers only when the report's ``fit_time_`` is
-at least **2x** the baseline's fit time and the absolute gap is at least 0.05 seconds
-(the floor avoids spurious results on very fast fits).
+The check first compares timings: it computes the report-to-baseline ratio for both fit
+time and predict time on the test set, and keeps the larger of the two. The slowness
+gate triggers only when that ratio is at least **2x** and the absolute gap on the
+winning dimension is at least **1 second**. Below that, the difference is negligible
+in practice regardless of the ratio.
 
 Then, like :ref:`SKD009 <skd009-worse-than-baseline>`, each default predictive metric
 votes for the issue when the report is **not significantly better** than the baseline on
@@ -549,6 +577,9 @@ How to reduce the risk
 - use a time-based splitter such as
   :class:`~sklearn.model_selection.TimeSeriesSplit` or similar.
 
+Check out the
+:ref:`example for this check <example_skd013_train_test_time_overlap>`.
+
 .. _skd014-hyperparams-at-search-edge:
 
 SKD014 - Hyperparameters at search edge
@@ -578,8 +609,10 @@ How to reduce the risk
 - for :class:`~sklearn.model_selection.RandomizedSearchCV`, increase ``n_iter``
   and sample from a wider range,
 - if :ref:`SKD015 <skd015-hyperparameters-worth-tuning>` also fires, address
-  both together: the search space is too narrow on at least one axis and is
-  also missing recommended axes entirely.
+  both together: the search space is too narrow on at least one hyperparameter
+  and is also missing recommended hyperparameters entirely.
+
+Check out the :ref:`example for this check <example_skd014_hyperparams_at_search_edge_skd015_hyperparameters_worth_tuning>`.
 
 .. _skd015-hyperparameters-worth-tuning:
 
@@ -595,18 +628,22 @@ the tuning literature (Probst, Boulesteix & Bischl 2019; van Rijn & Hutter 2018)
 
 When the search wraps a :class:`~sklearn.pipeline.Pipeline`, every step whose
 class is in the table is checked independently, regardless of whether the search
-currently tunes any of its parameters. Recommended axes that play the same role
-(e.g. ``max_depth`` and ``min_samples_leaf`` for tree complexity) are collapsed
-to a single suggestion.
+currently tunes any of its parameters. Recommended hyperparameters that play
+the same role (e.g. ``max_depth`` and ``min_samples_leaf`` for tree complexity)
+are collapsed to a single suggestion.
 
 Why it matters
 ^^^^^^^^^^^^^^
 Not tuning the most impactful hyperparameters leaves performance on the table.
+This finding is a **tip**: the search is incomplete relative to a curated table,
+not proof that the fitted model is wrong.
 
 How to reduce the risk
 ^^^^^^^^^^^^^^^^^^^^^^
 
 - add the suggested parameters to ``param_grid`` or ``param_distributions``.
+
+Check out the :ref:`example for this check <example_skd014_hyperparams_at_search_edge_skd015_hyperparameters_worth_tuning>`.
 
 .. _skd016-estimator-not-tuned:
 
@@ -637,3 +674,5 @@ How to reduce the risk
   :class:`~sklearn.model_selection.RandomizedSearchCV` over the suggested
   parameters,
 - or set sensible non-default values manually.
+
+Check out the :ref:`example for this check <example_skd016_estimator_not_tuned>`.

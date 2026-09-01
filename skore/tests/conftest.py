@@ -23,7 +23,7 @@ from skore import (
     EstimatorReport,
 )
 from skore._config import LocalConfiguration
-from skore._externals._sklearn_compat import validate_data
+from skore._externals.sklearn_compat import validate_data
 
 
 @pytest.fixture(autouse=True)

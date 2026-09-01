@@ -56,3 +56,43 @@ returned by :meth:`Project.summarize`. This method returns a list of
 
 To retrieve a specific report for which you have its ``id`` (as returned by
 :meth:`Project.summarize`), use the :meth:`Project.get` method.
+
+Synchronizing projects
+----------------------
+
+Use :meth:`Project.sync` to transfer reports between projects. The project on which the
+method is called is the source.
+
+.. code-block:: python
+
+   project_hub = Project(
+       name=project_local.name,
+       mode="hub",
+       workspace="my-workspace",
+   )
+   result = project_local.sync(project_hub)
+
+The caller is the source; reverse the call for the opposite direction. Set
+``bidirectional=True`` to transfer missing reports in both directions.
+
+When both projects have the same name, pass the destination mode as a shortcut. The
+destination is built with the caller's name and the supplied mode-specific arguments.
+
+.. code-block:: python
+
+   result = project_local.sync("hub", workspace="my-workspace")
+
+Reports are matched using the ``report_id`` column returned by
+``Project.summarize().frame()`` and copied with their keys. Existing IDs are skipped;
+contents and metadata are not compared. Reports without a ``report_id`` are ignored.
+Set ``dry_run=True`` to return the transfer plan without loading or storing reports.
+
+The returned :class:`pandas.DataFrame` is indexed by ``report_id``. Its ``direction``
+column is ``"outbound"`` from the caller to the other project, ``"inbound"`` from the
+other project to the caller, or missing when a report is skipped. Its ``status`` column
+is ``"planned"``, ``"transferred"``, or ``"skipped"``.
+
+.. note::
+
+   Two MLflow projects must use the same tracking URI because MLflow uses process-global
+   tracking state. Synchronization does not provide concurrency control.

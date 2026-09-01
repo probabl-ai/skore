@@ -144,6 +144,18 @@ class TestProject:
             == second._Project__storage_experiment_id
         )
 
+    def test_init_reuses_existing_project(self, mlflow_tracking_uri):
+        tracking_uri = mlflow_tracking_uri()
+
+        first = Project("<project>", tracking_uri=tracking_uri)
+        second = Project("<project>", tracking_uri=tracking_uri)
+
+        assert first.experiment_id == second.experiment_id
+        assert (
+            first._Project__storage_experiment_id
+            == second._Project__storage_experiment_id
+        )
+
     @pytest.mark.parametrize(
         ("report_fixture", "expected_ml_task", "expected_metric", "expected_artifacts"),
         [
@@ -206,6 +218,7 @@ class TestProject:
         project.put("<key>", reg_report)
 
         summary = project.summarize()
+        assert summary[0]["report_id"] == str(reg_report.id)
         report = project.get(summary[0]["id"])
         predictions = report.estimator_.predict(reg_report.X_test)
         expected_predictions = reg_report.estimator_.predict(reg_report.X_test)

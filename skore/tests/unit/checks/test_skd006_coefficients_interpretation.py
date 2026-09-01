@@ -7,8 +7,10 @@ from sklearn.tree import DecisionTreeRegressor
 from skrub import SkrubLearner, tabular_pipeline
 
 from skore import evaluate
-from skore._sklearn._checks._utils import CheckNotApplicable
-from skore._sklearn._checks.model_checks import CheckCoefficientsInterpretation
+from skore._checks.skd006_coefficients_interpretation import (
+    CheckCoefficientsInterpretation,
+)
+from skore._checks.utils import CheckNotApplicable
 
 
 @pytest.mark.parametrize("report_type", ["estimator", "cross-validation"])
