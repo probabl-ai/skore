@@ -36,12 +36,12 @@ It is now possible to synchronise the contents of Projects, including between a 
     local.sync(hub, dry_run=True)            # preview the transfer plan
 
 Baseline-related checks
----------------------------------------
+-----------------------
 
 There have been several improvements to the checks which compare the estimator to a baseline, including:
 
-- SKD009 ("model worse than baseline") now always includes the baseline's performance, and is reported as a tip rather than an issue. It only becomes an issue if the model is much worse than the baseline, instead of when the model is not significantly better. One consequence of this change is that using the baseline itself as a model no longer triggers SKD009.
-- SKD010 ("model slower than baseline") class now compares both fit time and predict time, not just fit time, so a model that is slow to predict is caught as well.
+- SKD009 ("model worse than baseline") now always includes the baseline's performance, and is reported as a tip rather than an issue. It is now reported as an issue only if the model is much significantly than the baseline, whereas previously it was when the model is not significantly better. One consequence of this change is that using the baseline itself as a model no longer triggers SKD009.
+- SKD010 ("model slower than baseline") now also looks at predict time, not just fit time; a model that is slow to predict will trigger SKD010.
 - The SKD010 timing gate floor was raised from 0.05s to 1s, to avoid false positives from timing noise on small or fast fits.
 
 See :pr:`3197` by :user:`GaetandeCast`.
@@ -53,9 +53,9 @@ See :pr:`3197` by :user:`GaetandeCast`.
 
     #      code   section                explanation
     # 8   SKD009   tip     Your model is on par with or better than a
-    #                       HistGradientBoosting baseline. Baseline
-    #                       performance on the test set, for reference:
-    #                       Accuracy=0.94, ROC AUC=0.958, ...
+    #                      HistGradientBoosting baseline. Baseline
+    #                      performance on the test set, for reference:
+    #                      Accuracy=0.94, ROC AUC=0.958, ...
 
 Checks API examples
 -------------------
