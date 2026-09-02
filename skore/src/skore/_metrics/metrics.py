@@ -61,6 +61,9 @@ class MetricRow(TypedDict):
 
     Parameters
     ----------
+    name : str
+        Metric name.
+
     metric_verbose_name : str
         Human-readable metric name.
 
@@ -80,6 +83,7 @@ class MetricRow(TypedDict):
         Output index for multioutput regression metrics.
     """
 
+    name: str
     metric_verbose_name: str
     greater_is_better: bool | None
     score: float
@@ -437,6 +441,7 @@ class Metric:
     ) -> MetricRow:
         """Build a single :class:`MetricRow`."""
         return MetricRow(
+            name=self.name,
             metric_verbose_name=self.verbose_name,
             greater_is_better=self.greater_is_better,
             score=score.item() if hasattr(score, "item") else score,
@@ -459,7 +464,8 @@ class Metric:
             for submetric_name, submetric_value in score.items():
                 rows = self._to_rows(submetric_value, report=report, **kwargs)
                 for r in rows:
-                    r["metric_verbose_name"] = submetric_name
+                    r["name"] = submetric_name
+                    r["metric_verbose_name"] = _to_verbose(submetric_name)
                 result.extend(rows)
             return result
 
@@ -545,9 +551,7 @@ class Metric:
             # We assume each submetric's values are grouped together
             return {
                 name: self._to_pretty(list(rows_))
-                for name, rows_ in groupby(
-                    rows, key=lambda row: row["metric_verbose_name"]
-                )
+                for name, rows_ in groupby(rows, key=lambda row: row["name"])
             }
 
         if rows[0]["label"] is not None:
