@@ -52,6 +52,10 @@ _METRIC_ALIASES: dict[str, str] = {
 }
 
 
+def _to_verbose(name: str) -> str:
+    return name.replace("_", " ").title()
+
+
 class MetricRow(TypedDict):
     """A single row of a metric output.
 
@@ -173,7 +177,7 @@ class Metric:
             return
 
         self.name = name
-        self.verbose_name = verbose_name or name.replace("_", " ").title()
+        self.verbose_name = verbose_name or _to_verbose(name)
         self.greater_is_better = greater_is_better
         self.response_method = response_method
         self.function = function
@@ -238,7 +242,7 @@ class Metric:
 
             if name is not None:
                 result.name = name
-                result.verbose_name = name.replace("_", " ").title()
+                result.verbose_name = _to_verbose(name)
 
             if verbose_name is not None:
                 result.verbose_name = verbose_name
