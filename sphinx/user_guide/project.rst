@@ -57,6 +57,8 @@ returned by :meth:`Project.summarize`. This method returns a list of
 To retrieve a specific report for which you have its ``id`` (as returned by
 :meth:`Project.summarize`), use the :meth:`Project.get` method.
 
+.. _synchronizing-projects:
+
 Synchronizing projects
 ----------------------
 
