@@ -361,10 +361,7 @@ class MetricsSummaryDisplay(DisplayMixin):
             for level_index, name in enumerate(table.index.names):
                 if name == "label":
                     levels[level_index] = pd.Index(
-                        [
-                            "" if value == "" else str(value)
-                            for value in levels[level_index]
-                        ],
+                        [str(value) for value in levels[level_index]],
                         dtype="string",
                         name=name,
                     )
