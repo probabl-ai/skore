@@ -40,7 +40,7 @@ Baseline-related checks
 
 There have been several improvements to the checks which compare the estimator to a baseline, including:
 
-- SKD009 ("model worse than baseline") now always includes the baseline's performance, and is reported as a tip rather than an issue. It is now reported as an issue only if the model is much significantly than the baseline, whereas previously it was when the model is not significantly better. One consequence of this change is that using the baseline itself as a model no longer triggers SKD009.
+- SKD009 ("model worse than baseline") now always includes the baseline's performance, and is reported as a tip rather than an issue. It is now reported as an issue only if the model is significantly worse than the baseline, whereas previously it was when the model is not significantly better. One consequence of this change is that using the baseline itself as a model no longer triggers SKD009.
 - SKD010 ("model slower than baseline") now also looks at predict time, not just fit time; a model that is slow to predict will trigger SKD010.
 - The SKD010 timing gate floor was raised from 0.05s to 1s, to avoid false positives from timing noise on small or fast fits.
 
