@@ -1,17 +1,21 @@
 from types import SimpleNamespace
+from unittest.mock import Mock
 
 import numpy as np
 import pandas as pd
 import pytest
 import scipy.sparse as sp
-from sklearn.linear_model import LinearRegression, LogisticRegression
-from sklearn.pipeline import Pipeline
+import skrub
+from numpy.testing import assert_array_equal
+from sklearn.linear_model import LinearRegression, LogisticRegression, Ridge
+from sklearn.pipeline import Pipeline, make_pipeline
 from sklearn.preprocessing import StandardScaler
 
 from skore import CrossValidationReport, EstimatorReport
 from skore._checks.utils import (
     CheckNotApplicable,
     adaptive_threshold,
+    baseline_estimator_report,
     cast_report,
     check_score_better_than_baseline,
     collect_scores,
@@ -21,7 +25,7 @@ from skore._checks.utils import (
     majority_vote,
     split_preprocessor_estimator,
 )
-from skore._checks.utils import baseline_estimator_report as _baseline_estimator_report
+from skore._utils.skrub import get_predictor_and_input
 from skore._utils.testing import MockReport
 
 
@@ -219,9 +223,12 @@ def test_get_preprocessed_X_plain_estimator_returns_raw_features(
 def test_get_preprocessed_X_applies_pipeline_preprocessor(regression_data):
     """A pipeline estimator's features are passed through its preprocessor."""
     X, y = regression_data
-    pipeline = Pipeline([("scaler", StandardScaler()), ("model", LinearRegression())])
     report = EstimatorReport(
-        pipeline, X_train=X[:60], y_train=y[:60], X_test=X[60:], y_test=y[60:]
+        make_pipeline(StandardScaler(), LinearRegression()),
+        X_train=X[:60],
+        y_train=y[:60],
+        X_test=X[60:],
+        y_test=y[60:],
     )
     preprocessed = get_preprocessed_X(report, data_source="train")
     raw = pd.DataFrame(report.X_train)
@@ -258,6 +265,42 @@ def test_get_preprocessed_X_raises_not_applicable_for_sparse_features():
     report._report_type = "estimator"
     with pytest.raises(CheckNotApplicable, match="Feature data is sparse"):
         get_preprocessed_X(report, data_source="train")
+
+
+def test_get_preprocessed_X_skrub_uses_full_env(regression_data):
+    """get_preprocessed_X evaluates the graph with the report's full environment."""
+    df, y = regression_data
+    learner = (
+        skrub.X()
+        .skb.apply(StandardScaler())
+        .skb.apply(Ridge(), y=skrub.y())
+        .skb.make_learner()
+    )
+    split = learner.data_op.skb.train_test_split({"X": df, "y": y}, random_state=0)
+    learner.fit(split["train"])
+    report = EstimatorReport(learner, test_data=split["test"])
+
+    skrub_X = get_preprocessed_X(report, data_source="test")
+    direct_X, _ = get_predictor_and_input(learner, split["test"])
+
+    assert_array_equal(skrub_X, direct_X)
+
+
+def test_get_preprocessed_X_skrub_multiple_supervised_applies_not_applicable():
+    """Checks surface multiple supervised applies as not applicable."""
+    report = Mock()
+    report.estimator_ = (
+        skrub.X()
+        .skb.apply(Ridge(), y=skrub.y())
+        .skb.apply(Ridge(), y=skrub.var("y2", np.array([])))
+        .skb.make_learner()
+    )
+    report._report_type = "estimator"
+    report._initialized_with_data_op = True
+    # Don't even need to check the report data
+
+    with pytest.raises(CheckNotApplicable, match="multiple supervised apply"):
+        get_preprocessed_X(report, data_source="test")
 
 
 # collect_scores
@@ -299,7 +342,7 @@ def test_baseline_estimator_report_unsupported_ml_task():
     """A report with an ml_task outside the supported list is not applicable."""
     stub = SimpleNamespace(ml_task="clustering", _report_type="estimator")
     with pytest.raises(CheckNotApplicable, match="Expected ML task to be one of"):
-        _baseline_estimator_report(stub, kind="dummy")
+        baseline_estimator_report(stub, kind="dummy")
 
 
 def test_baseline_estimator_report_sparse_train_test_data():
@@ -312,7 +355,7 @@ def test_baseline_estimator_report_sparse_train_test_data():
         X_test=X_sparse,
     )
     with pytest.raises(CheckNotApplicable, match="Data is sparse"):
-        _baseline_estimator_report(stub, kind="dummy")
+        baseline_estimator_report(stub, kind="dummy")
 
 
 def test_baseline_estimator_report_train_data_missing(regression_train_test_split):
@@ -321,7 +364,7 @@ def test_baseline_estimator_report_train_data_missing(regression_train_test_spli
     estimator = LinearRegression().fit(X_train, y_train)
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
     with pytest.raises(CheckNotApplicable, match="Train data is unavailable."):
-        _baseline_estimator_report(report, kind="dummy")
+        baseline_estimator_report(report, kind="dummy")
 
 
 def test_baseline_estimator_report_creation_fails_estimator(
@@ -334,7 +377,7 @@ def test_baseline_estimator_report_creation_fails_estimator(
 
     monkeypatch.setattr(EstimatorReport, "_fit_estimator", failing_fit)
     with pytest.raises(CheckNotApplicable, match="Failed to create baseline report."):
-        _baseline_estimator_report(small_estimator_report, kind="dummy")
+        baseline_estimator_report(small_estimator_report, kind="dummy")
 
 
 def test_baseline_estimator_report_creation_fails_cv(small_cv_report, monkeypatch):
@@ -345,4 +388,4 @@ def test_baseline_estimator_report_creation_fails_cv(small_cv_report, monkeypatc
 
     monkeypatch.setattr(EstimatorReport, "_fit_estimator", failing_fit)
     with pytest.raises(CheckNotApplicable, match="Failed to create baseline report."):
-        _baseline_estimator_report(small_cv_report, kind="dummy")
+        baseline_estimator_report(small_cv_report, kind="dummy")

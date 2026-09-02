@@ -16,7 +16,7 @@ from skore._displays.metrics.precision_recall_curve import (
 )
 from skore._displays.metrics.roc_curve import RocCurveDisplay
 from skore._reports.base import _BaseAccessor, _BaseReport
-from skore._utils.skrub import to_learner
+from skore._utils.skrub import is_skrub_learner, to_learner
 
 
 def check_precision_recall_curve_display_data(display: PrecisionRecallCurveDisplay):
@@ -125,6 +125,7 @@ class MockReport(_BaseReport):
             self._test_data = None
         self.no_private = "no_private"
         self.attr_without_description = "attr_without_description"
+        self._initialized_with_data_op = is_skrub_learner(estimator)
 
     @property
     def estimator_(self):
