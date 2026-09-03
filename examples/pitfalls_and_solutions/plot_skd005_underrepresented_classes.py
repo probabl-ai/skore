@@ -10,7 +10,7 @@ look acceptable while rare labels are barely learned. This notebook is about
 how to work with that rarity once the check fires: we do not try to make SKD005
 disappear by reshaping the class histogram.
 
-What to do instead (see also :ref:`automated_checks`):
+What to do instead:
 
 - report absolute counts as well as percentages,
 - evaluate threshold-free / probabilistic metrics (especially log-loss) before
@@ -36,7 +36,9 @@ multiclass model honestly, then see what extra rare-class rows can do.
 #
 # The full Covertype task has seven forest types. A small stratified subsample
 # keeps frequent classes well represented while types 3-7 drop below 10 % each.
-# We keep the unused rows as a pool for the "more rare-class data" beat later.
+# We keep the unused rows as a pool for the "more rare-class data" section later.
+# Let us first import the data, split it and inspect the distribution of classes,
+# both in absolute count and relative frequencies.
 
 import pandas as pd
 from sklearn.datasets import fetch_covtype
@@ -69,8 +71,8 @@ from skrub import TableReport
 TableReport(X)
 
 # %%
-# The class histogram shows that the classes are not evenly distributed and
-# types 3-7 will trigger SKD005.
+# Clicking the column in the target's `TableReport` brings
+# a class histogram that shows that the classes are not evenly distributed.
 
 TableReport(y)
 
@@ -171,6 +173,10 @@ print("\nEnriched train counts:")
 print(y_train_more.value_counts().sort_index())
 
 # %%
+# Let us now fit a model on the enriched train set and compare the results with the
+# original model. We can observe that the model on the enriched train set has a better
+# log-loss and accuracies on the common test set.
+
 model_less = HistGradientBoostingClassifier(random_state=42).fit(X_train, y_train)
 report_less = skore.evaluate(model_less, X_test, y_test, splitter="prefit")
 
@@ -188,6 +194,11 @@ skore.compare(
     metric=["accuracy", "precision", "recall", "log_loss"],
     data_source="test",
 ).frame()
+
+# %%
+# Enriching the train set with more rare-class rows also clears SKD005.
+
+report_more.checks.summarize(fast_mode=True, ignore=["SKD008"])
 
 # %%
 # Collecting more rare-class rows can improve rare-class recall and log-loss on
