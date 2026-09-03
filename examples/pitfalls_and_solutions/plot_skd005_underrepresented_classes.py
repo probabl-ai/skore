@@ -13,10 +13,8 @@ disappear by reshaping the class histogram.
 What to do instead:
 
 - report absolute counts as well as percentages,
-- evaluate threshold-free / probabilistic metrics (especially log-loss) before
-  trusting per-class precision / recall,
-- treat per-class precision / recall as symptoms of the default multiclass
-  decision rule (argmax over class probabilities),
+- evaluate threshold-free / probabilistic metrics (such as log-loss) before
+  per class precision and accuracy,
 - collect more rare-class labels when possible, without treating a cleared
   check as success,
 - correct for prevalence shift if acquisition oversamples rare types.
@@ -163,6 +161,11 @@ print(y_train_more.value_counts().sort_index())
 # Let us now fit a model on the enriched train set and compare the results with the
 # original model. We can observe that the model on the enriched train set has a better
 # log-loss, accuracy and per-class precision on the common test set.
+#
+# The log-loss is the most importance metric to look at here, as it evaluates the model's
+# predicted probabilities, which give more robust estimate of the model's quality.
+# In contrast, accuracy and per-class precision are computed with hard class predictions,
+# obtained from the argmax of the predicted probabilities, which can hide uncalibrated predictions.
 
 model_less = HistGradientBoostingClassifier(random_state=42).fit(X_train, y_train)
 report_less = skore.evaluate(model_less, X_test, y_test, splitter="prefit")

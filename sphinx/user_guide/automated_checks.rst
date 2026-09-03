@@ -235,8 +235,8 @@ How to reduce the risk
 ^^^^^^^^^^^^^^^^^^^^^^
 
 - report absolute class counts as well as percentages,
-- evaluate probabilistic metrics (especially log-loss) before trusting
-  per-class precision / recall from the default argmax decision rule,
+- evaluate metrics based on predicted probabilities (such as log-loss) before
+  metrics based on hard class predictions (such as accuracy, precision, recall and F1),
 - collect more rare-class labels when possible, without treating a cleared
   SKD005 as the success criterion,
 - if you collect extra rare-class data, correct for prevalence shift relative to
