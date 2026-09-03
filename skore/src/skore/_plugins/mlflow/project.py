@@ -113,7 +113,15 @@ def _databricks_user_name(tracking_uri: str) -> str:
         method="GET",
     )
 
-    return cast(str, response.json()["userName"])
+    body = response.json()
+    try:
+        return cast(str, body["userName"])
+    except KeyError:
+        raise MlflowException(
+            "Databricks SCIM 'Me' response has no 'userName' field; this can happen "
+            "when authenticating as a service principal, which is identified by "
+            "'applicationId' rather than 'userName'."
+        ) from None
 
 
 def _storage_experiment_name(tracking_uri: str) -> str:
