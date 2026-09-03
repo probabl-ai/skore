@@ -78,6 +78,7 @@ report = evaluate(
     y=y,
     splitter=splitter,
 )
+report
 
 # %%
 # Find ``SKD006`` in the Tips tab below.
