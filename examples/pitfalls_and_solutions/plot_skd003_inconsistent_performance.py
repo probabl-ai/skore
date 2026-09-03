@@ -16,7 +16,7 @@ Realistic triggers:
 - a much easier or harder group in one test fold under
   :class:`~sklearn.model_selection.GroupKFold`,
 - temporal drift under :class:`~sklearn.model_selection.TimeSeriesSplit`
-  (e.g. an easy class that becomes rarer),
+  (e.g. more ill patients start showing up),
 - accidental fold imbalance from unshuffled
   :class:`~sklearn.model_selection.KFold` when prevalence varies along
   collection order (then shuffle or stratify if that will not appear in
