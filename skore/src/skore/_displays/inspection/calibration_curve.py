@@ -49,7 +49,7 @@ class CalibrationDisplay(DisplayMixin):
     ...     n_samples=100_000, n_features=20, n_informative=2, n_redundant=10,
     ...     random_state=42)
     >>> report = evaluate(LogisticRegression(), X, y, splitter=0.2)
-    >>> display = report.inspection.calibration_curve(n_bins=5, strategy="uniform")
+    >>> display = report.inspection.calibration_curve(n_bins="auto", strategy="uniform")
     >>> display.frame()
         predicted_probability  fraction_of_positives data_source  label
     0               0.058169               0.058186        test      0
@@ -144,7 +144,7 @@ class CalibrationDisplay(DisplayMixin):
         y_pred: ArrayLike,
         y: ArrayLike,
         report_type: ReportType,
-        n_bins: int = 5,
+        n_bins: int | Literal["auto"] = 5,
         strategy: Literal["uniform", "quantile"] = "quantile",
         report_pos_label: PositiveLabel = None,
     ) -> CalibrationDisplay:
