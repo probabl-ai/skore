@@ -34,7 +34,7 @@ problem is understood.
 
 # %%
 # Load Breast Cancer (two classes)
-# ============================
+# ================================
 #
 # Let us use the Breast Cancer dataset to show how SKD003 can detect a batch of corrupted labels.
 
