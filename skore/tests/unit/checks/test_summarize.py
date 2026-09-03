@@ -2,7 +2,7 @@ import pytest
 from sklearn.linear_model import LinearRegression
 
 from skore import evaluate
-from skore._sklearn._checks.base import ChecksSummaryDisplay
+from skore._checks.base import ChecksSummaryDisplay
 
 
 def display_html(check_results, fast_mode=False):

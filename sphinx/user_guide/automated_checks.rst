@@ -326,6 +326,9 @@ How to reduce the risk
   permutation importance or drop-column importance.
 
 
+Check out the :ref:`example for this check <example_skd007_mdi_cardinality_bias>`.
+
+
 .. _skd008-correlated-features:
 
 SKD008 - Highly correlated input features
@@ -369,6 +372,9 @@ How to reduce the risk
 - use regularization (Lasso, ElasticNet) to let the model select among
   correlated features,
 - group correlated features together before inspecting feature importance.
+
+Check out the :ref:`example for this check <example_skd008_correlated_features>`.
+
 
 .. _skd009-worse-than-baseline:
 

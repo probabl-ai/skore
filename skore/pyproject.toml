@@ -28,10 +28,11 @@ classifiers = [
 ]
 dependencies = [
   "jinja2",
-  "joblib",
+  "joblib>=1.4",
   "matplotlib",
   "narwhals>=2.0.1",
   "numpy",
+  "packaging>=24.2",
   "pandas",
   "plotly",
   "rich>=14.2",
@@ -140,14 +141,27 @@ xfail_strict = true
 log_cli_level = "info"
 filterwarnings = [
   "error",
+  # Editable/local packages (skore, tests, ...) trigger warnings when ``plugin/hub``
+  # snapshots the environment via ``infer()``.
+  "ignore:Package .* seems to be an editable or local install:UserWarning:skore._plugins.hub.artifact.environment",
   # mlflow-related
   # NOTE: Only affects python 3.11
   "ignore:SelectableGroups dict interface is deprecated. Use select.:DeprecationWarning",
   # mlflow writes its YAML and requirement files through `codecs.open()`, which
   # Python 3.14 deprecates. Reached by every test that logs a report.
   'ignore:codecs\.open\(\) is deprecated:DeprecationWarning:mlflow',
-  # sklearn needs to update its scipy.optimize calls
+  # sklearn (<=1.9) still passes ``iprint``/``disp`` to scipy's L-BFGS-B.
+  # SciPy (<=1.17) emits a DeprecationWarning; SciPy (>=1.18) treats them as
+  # unknown options (OptimizeWarning). Do not pin module to ``scipy``: the
+  # warning uses ``stacklevel=3``, so it is attributed to sklearn.
   'ignore:.*`disp` and `iprint` options of the L-BFGS-B solver are deprecated:DeprecationWarning',
+  'ignore:Unknown solver options:scipy.optimize._optimize.OptimizeWarning',
+  # skrub (<=0.10) datetime encoder still uses NumPy's generic timedelta unit
+  # (deprecated in NumPy 2.5).
+  'ignore:The .generic. unit for NumPy timedelta is deprecated:DeprecationWarning:skrub',
+  # joblib (<=1.5) numpy_pickle still assigns ``array.shape`` (deprecated in
+  # NumPy 2.5).
+  'ignore:Setting the shape on a NumPy array has been deprecated:DeprecationWarning:joblib',
   # seaborn's boxplot still passes the deprecated `vert=` kwarg to matplotlib.
   # Hit whenever any plot Display renders a boxplot, so keep at the top level.
   'ignore:vert.*was deprecated in Matplotlib:matplotlib._api.deprecation.MatplotlibDeprecationWarning:seaborn',

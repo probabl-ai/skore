@@ -14,7 +14,7 @@ import pandas as pd
 
 from skore import CrossValidationReport, EstimatorReport
 from skore._project.git import git_repo_root
-from skore._utils._cache_key import deep_key_sanitize
+from skore._utils.cache_key import deep_key_sanitize
 
 
 def _check_name(name: Any) -> str:

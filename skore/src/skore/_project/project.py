@@ -8,9 +8,9 @@ from typing import TYPE_CHECKING, Any, get_args
 from pandas import DataFrame, Index, MultiIndex, RangeIndex
 
 from skore._project import plugin
-from skore._project._summary import Summary
-from skore._project._sync import synchronize
 from skore._project.dependencies import assert_optional_dependencies_installed
+from skore._project.summary import Summary
+from skore._project.sync import synchronize
 from skore._project.types import ProjectMode
 
 if TYPE_CHECKING:
@@ -377,10 +377,11 @@ class Project:
 
     def sync(
         self,
-        other: Project,
+        other: Project | ProjectMode,
         *,
         bidirectional: bool = False,
         dry_run: bool = False,
+        **kwargs: Any,
     ) -> DataFrame:
         """Copy missing reports to another project.
 
@@ -390,13 +391,18 @@ class Project:
 
         Parameters
         ----------
-        other : Project
-            Destination project.
+        other : Project or {"hub", "local", "mlflow"}
+            Destination project. When a mode is given, build the destination with this
+            project's name and the mode-specific keyword arguments.
         bidirectional : bool, default=False
             If ``False``, transfer reports from this project to ``other``. If ``True``,
             also transfer reports missing from this project.
         dry_run : bool, default=False
             Return the planned operations without loading or storing reports.
+        **kwargs : dict
+            Mode-specific arguments used to build the destination when ``other`` is a
+            mode string. For example, pass ``workspace`` for ``"hub"`` or
+            ``tracking_uri`` for ``"mlflow"``.
 
         Returns
         -------
@@ -406,7 +412,14 @@ class Project:
             ``other`` to this project, or missing for skipped reports. The ``status``
             column is ``"planned"``, ``"transferred"``, or ``"skipped"``.
         """
-        if not isinstance(other, Project):
+        if isinstance(other, str):
+            other = Project(self.name, mode=other, **kwargs)
+        elif kwargs:
+            raise TypeError(
+                "Extra keyword arguments are only supported when `other` is a mode "
+                "string."
+            )
+        elif not isinstance(other, Project):
             raise TypeError(f"`other` must be a Project (found {type(other)!r}).")
         if (
             self.mode == other.mode == "mlflow"

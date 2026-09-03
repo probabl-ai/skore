@@ -11,7 +11,7 @@ from sklearn.datasets import make_regression
 from sklearn.linear_model import LinearRegression, Ridge
 
 from skore import EstimatorReport, Project, evaluate
-from skore._project._sync import synchronize
+from skore._project.sync import synchronize
 
 
 class FakeSummary:
@@ -76,7 +76,8 @@ def report_ids(project):
 
 
 @pytest.mark.parametrize(
-    ("source_mode", "destination_mode"), permutations(("local", "hub", "mlflow"), 2)
+    ("source_mode", "destination_mode"),
+    tuple(permutations(("local", "hub", "mlflow"), 2)),
 )
 def test_synchronize_supports_all_mode_pairs(source_mode, destination_mode):
     """Synchronize each distinct pair of project modes."""

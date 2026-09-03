@@ -10,8 +10,8 @@ from skrub import tabular_pipeline
 from skrub.datasets import fetch_employee_salaries
 
 from skore import Display, EstimatorReport
-from skore._externals._sklearn_compat import convert_container
-from skore._sklearn._plot.data.table_report import TableReportDisplay
+from skore._displays.data.table_report import TableReportDisplay
+from skore._externals.sklearn_compat import convert_container
 
 
 @pytest.fixture(scope="module")

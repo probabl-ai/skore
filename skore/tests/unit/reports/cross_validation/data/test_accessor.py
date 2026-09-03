@@ -3,8 +3,8 @@ from sklearn.datasets import make_regression
 from sklearn.linear_model import LinearRegression
 
 from skore import CrossValidationReport
-from skore._externals._sklearn_compat import convert_container
-from skore._sklearn._plot import TableReportDisplay
+from skore._displays import TableReportDisplay
+from skore._externals.sklearn_compat import convert_container
 
 
 @pytest.mark.parametrize(

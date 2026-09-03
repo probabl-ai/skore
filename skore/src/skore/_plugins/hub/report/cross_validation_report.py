@@ -163,7 +163,7 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
             self.__target_ranges = None
             self.__target_range = None
         elif self.ml_task == "multioutput-regression" and (self.report.y is not None):
-            from skore._utils._dataframe import _normalize_y_as_dataframe
+            from skore._utils.dataframe import _normalize_y_as_dataframe
 
             y_df = _normalize_y_as_dataframe(self.report.y)
             y_nw = nw.from_native(y_df)
@@ -201,7 +201,7 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
     @cached_property
     def splitting_strategy(self) -> dict[str, Any]:
         """The splitting strategy used in the report."""
-        from skore._externals._sklearn_compat import _safe_indexing
+        from skore._externals.sklearn_compat import _safe_indexing
 
         if self.report.y is None:
             return {}
@@ -263,6 +263,16 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
             if "shuffle" in simplified_cls_parameters:
                 simplified_cls_parameters["shuffle"] = False
                 simplified_cls_parameters["random_state"] = None
+
+            if simplified_cls is TimeSeriesSplit:
+                # rescale sample-count parameters to stay meaningful after downsampling
+                scale = rng_size / len(target)
+                for param in ("gap", "max_train_size", "test_size"):
+                    value = simplified_cls_parameters.get(param)
+                    if value:
+                        simplified_cls_parameters[param] = max(
+                            1, round(float(value) * scale)
+                        )
 
             target = target_repr
             simplified_splitter = simplified_cls(**simplified_cls_parameters)
