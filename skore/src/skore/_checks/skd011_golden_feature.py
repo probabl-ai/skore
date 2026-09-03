@@ -30,6 +30,10 @@ class CheckGoldenFeature(Check):
     Detects a single feature that, used alone to refit the estimator, reaches
     scores close to the full model on the report's default predictive metrics.
     This often signals data leakage or excessive reliance on one feature.
+
+    Note: for skrub learners whose preprocessing vectorizes columns (e.g.
+    :class:`~skrub.TableVectorizer`), a raw "golden column" may not appear as a
+    single preprocessed feature dimension.
     """
 
     code = "SKD011"

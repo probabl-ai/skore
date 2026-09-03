@@ -4,12 +4,14 @@ from types import SimpleNamespace
 import mlflow
 import pandas as pd
 import pytest
+from mlflow.exceptions import MlflowException
 from sklearn.linear_model import LinearRegression
 
 from skore._plugins.mlflow import Project
 from skore._plugins.mlflow import project as project_module
 from skore._plugins.mlflow.project import (
     _log_artifact,
+    _storage_experiment_name,
     format_date,
     report_type,
 )
@@ -18,6 +20,47 @@ from skore._plugins.mlflow.project import (
 def test_format_date() -> None:
     assert format_date(0) == "1970-01-01T00:00:00+00:00"
     assert format_date(None) == ""
+
+
+def test_storage_experiment_name_outside_databricks() -> None:
+    assert _storage_experiment_name("sqlite:///mlflow.db") == "__skore-storage__"
+
+
+@pytest.mark.parametrize("tracking_uri", ["databricks", "databricks://profile"])
+def test_storage_experiment_name_on_databricks(monkeypatch, tracking_uri) -> None:
+    request = {}
+
+    def fake_http_request_safe(host_creds, endpoint, method):
+        request.update(host_creds=host_creds, endpoint=endpoint, method=method)
+        return SimpleNamespace(json=lambda: {"userName": "user@example.com"})
+
+    monkeypatch.setattr(
+        project_module, "get_databricks_host_creds", lambda uri: f"<creds:{uri}>"
+    )
+    monkeypatch.setattr(project_module, "http_request_safe", fake_http_request_safe)
+
+    assert (
+        _storage_experiment_name(tracking_uri)
+        == "/Users/user@example.com/__skore-storage__"
+    )
+    assert request == {
+        "host_creds": f"<creds:{tracking_uri}>",
+        "endpoint": "/api/2.0/preview/scim/v2/Me",
+        "method": "GET",
+    }
+
+
+def test_storage_experiment_name_reports_identity_lookup_failure(monkeypatch) -> None:
+    def fake_http_request_safe(host_creds, endpoint, method):
+        raise MlflowException("PERMISSION_DENIED")
+
+    monkeypatch.setattr(project_module, "get_databricks_host_creds", lambda uri: None)
+    monkeypatch.setattr(project_module, "http_request_safe", fake_http_request_safe)
+
+    with pytest.raises(
+        MlflowException, match="Failed to resolve the Databricks workspace user"
+    ):
+        _storage_experiment_name("databricks")
 
 
 def test_report_type_invalid_report() -> None:
@@ -143,6 +186,21 @@ class TestProject:
             first._Project__storage_experiment_id
             == second._Project__storage_experiment_id
         )
+
+    def test_init_stores_in_databricks_home_directory(
+        self, monkeypatch, mlflow_tracking_uri
+    ):
+        monkeypatch.setattr(project_module, "is_databricks_uri", lambda uri: True)
+        monkeypatch.setattr(
+            project_module, "_databricks_user_name", lambda uri: "user@example.com"
+        )
+
+        project = Project("<project>", tracking_uri=mlflow_tracking_uri())
+        storage_experiment = mlflow.get_experiment(
+            project._Project__storage_experiment_id
+        )
+
+        assert storage_experiment.name == "/Users/user@example.com/__skore-storage__"
 
     def test_init_reuses_existing_project(self, mlflow_tracking_uri):
         tracking_uri = mlflow_tracking_uri()
