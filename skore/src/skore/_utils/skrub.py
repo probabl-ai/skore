@@ -1,13 +1,20 @@
 from __future__ import annotations
 
 import functools
-from typing import TYPE_CHECKING, TypeGuard
+from typing import TYPE_CHECKING, Any, TypeGuard
 
 from sklearn.base import BaseEstimator
+from sklearn.pipeline import Pipeline
 from sklearn.utils.validation import NotFittedError, check_is_fitted
-from skrub import DataOp, SkrubLearner
+from skrub import DataOp, as_data_op
+from skrub._data_ops._data_ops import Apply
+from skrub._data_ops._evaluation import _DataOpTraversal, find_first_apply
 
 if TYPE_CHECKING:
+    from collections.abc import Iterator
+
+    from skrub import SkrubLearner
+
     from skore._sklearn.types import EstimatorLike
 
 
@@ -44,6 +51,165 @@ def get_data_op(estimator: EstimatorLike) -> DataOp | None:
 def data_op_has_explicit_cv(data_op: DataOp) -> bool:
     """Return whether ``mark_as_X`` was called with an explicit ``cv`` argument."""
     return data_op.skb.find_X_y().get("cv") is not None
+
+
+def supervised_apply_node(data_op: DataOp) -> Apply:
+    """Return the supervised ``.skb.apply(estimator, y=...)`` node.
+
+    A supervised apply is a call to :meth:`~skrub.DataOp.skb.apply` where the
+    target ``y`` is passed (typically ``y=skrub.y()``).
+    """
+    apply_node = find_first_apply(data_op)
+    if apply_node is None:
+        raise NotFittedError("No supervised apply step found in the skrub learner.")
+    ensure_single_supervised_apply(data_op)
+    return apply_node
+
+
+def ensure_single_supervised_apply(data_op: DataOp) -> None:
+    """Guard against ambiguous graphs with more than one final predictor.
+
+    A node counts as a predictor candidate when it uses ``y`` *and* its estimator
+    has no ``transform`` method: supervised preprocessing steps (e.g.
+    ``SelectKBest(y=...)``, ``TargetEncoder(y=...)``) also pass ``y`` but remain
+    transformers, so they must not be mistaken for the final predictor.
+
+    The fitted ``estimator_`` is checked when available (falling back to the
+    unfitted ``estimator``): a skrub choice among estimators (e.g.
+    ``skrub.choose_from(...)``) never exposes ``transform`` itself, so it must be
+    resolved to the concrete fitted estimator to test its capability correctly.
+    """
+    supervised_applies: list[DataOp] = []
+
+    def check_node(node: DataOp) -> bool:
+        impl = getattr(node, "_skrub_impl", None)
+        if isinstance(impl, Apply) and impl.y is not None:
+            estimator = getattr(impl, "estimator_", impl.estimator)
+            if not hasattr(estimator, "transform"):
+                supervised_applies.append(node)
+        return False
+
+    data_op.skb.find(check_node)
+    if len(supervised_applies) > 1:
+        raise ValueError(
+            "The skrub learner has multiple supervised apply steps; checks that "
+            "inspect a single predictor are not supported."
+        )
+
+
+def fitted_predictor_from_apply(apply_node: Apply) -> BaseEstimator:
+    impl = apply_node._skrub_impl
+    if not hasattr(impl, "estimator_"):
+        raise NotFittedError(
+            "The skrub learner has not been fitted. Call fit() before inspecting "
+            "fitted sub-estimators."
+        )
+    predictor = impl.estimator_
+    if isinstance(predictor, Pipeline):
+        return predictor.steps[-1][1]
+    return predictor
+
+
+def get_predictor_and_input(
+    learner: SkrubLearner, env: dict
+) -> tuple[Any, BaseEstimator]:
+    """Return ``(predictor_input, fitted_predictor)`` for a fitted learner.
+
+    Uses the supervised ``.skb.apply(estimator, y=...)`` step (see
+    :func:`_supervised_apply_node`). ``env`` must be a full user environment
+    (for example ``report.train_data``, ``report.test_data``, or
+    ``CrossValidationReport.input_data``), not a reconstructed X/y-only dict.
+
+    The returned input is the value seen by the fitted predictor after all
+    upstream graph steps have been evaluated on ``env``.
+    """
+    apply_node = supervised_apply_node(learner.data_op)
+    impl = apply_node._skrub_impl
+    predictor_input_node = impl.X
+    truncated = learner.truncated_after(
+        lambda node, target=predictor_input_node: node is target
+    )
+    input_value = truncated.transform(env)
+    return input_value, fitted_predictor_from_apply(apply_node)
+
+
+def find_fitted_estimators(learner: SkrubLearner) -> list[BaseEstimator]:
+    """Return all fitted estimators from ``.skb.apply`` nodes in the learner graph."""
+    fitted_estimators: dict[int, BaseEstimator] = {}
+
+    def check_node(node: DataOp) -> bool:
+        try:
+            estimator = node._skrub_impl.estimator_
+        except AttributeError:
+            pass
+        else:
+            fitted_estimators[id(estimator)] = estimator
+        return False
+
+    learner.data_op.skb.find(check_node)
+    return list(fitted_estimators.values())
+
+
+class _FindEstimators(_DataOpTraversal):
+    def __init__(self, *, include_nested: bool) -> None:
+        self.include_nested = include_nested
+        self.estimators: dict[int, BaseEstimator] = {}
+
+    def handle_estimator(self, estimator: BaseEstimator):
+        self.estimators[id(estimator)] = estimator
+        if not self.include_nested:
+            return estimator
+        return (yield from super().handle_estimator(estimator))
+
+
+def find_estimators(
+    data_op: DataOp, *, include_nested: bool = False
+) -> list[BaseEstimator]:
+    """Return unfitted estimators referenced in a DataOp graph."""
+    finder = _FindEstimators(include_nested=include_nested)
+    finder.run(data_op)
+    return list(finder.estimators.values())
+
+
+def is_tunable(obj: object) -> bool:
+    """Return whether obj contains skrub parameter choices rather than a fixed value."""
+    return as_data_op(obj).skb.find(lambda o: not isinstance(o, DataOp)) is not None
+
+
+def iter_fitted_estimator_steps(
+    estimator: EstimatorLike,
+) -> Iterator[tuple[str, BaseEstimator]]:
+    """Yield ``(class_name, fitted_estimator)`` for hyperparameter checks.
+
+    For :class:`~skrub.SkrubLearner`, walks the full DataOp graph and yields every
+    fitted estimator from a ``.skb.apply()`` step (not only linear chains). Pipeline
+    steps are expanded. Used by check SKD016.
+    """
+    if is_skrub_learner(estimator):
+        estimators = find_fitted_estimators(estimator)
+    else:
+        estimators = [estimator]
+
+    for fitted in estimators:
+        if isinstance(fitted, Pipeline):
+            for _, step in fitted.steps:
+                yield type(step).__name__, step
+        else:
+            yield type(fitted).__name__, fitted
+
+
+def resolve_fitted_predictor(estimator: EstimatorLike) -> BaseEstimator:
+    """Return the fitted predictor behind ``estimator``.
+
+    For :class:`~skrub.SkrubLearner`, returns the estimator fitted in the supervised
+    ``.skb.apply(estimator, y=...)`` step, or the last step when that object is a
+    :class:`~sklearn.pipeline.Pipeline` (e.g. :func:`~skrub.tabular_pipeline`).
+    """
+    if is_skrub_learner(estimator):
+        return fitted_predictor_from_apply(supervised_apply_node(estimator.data_op))
+    if isinstance(estimator, Pipeline):
+        return estimator.steps[-1][1]
+    return estimator
 
 
 class _LearnerAdapter(BaseEstimator):

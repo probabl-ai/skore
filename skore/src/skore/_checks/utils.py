@@ -19,23 +19,29 @@ from sklearn.multioutput import MultiOutputRegressor
 from sklearn.pipeline import Pipeline
 from skrub import tabular_pipeline
 
-from skore._checks.tunable_hyperparameters import EQUIVALENT_PARAM_GROUPS
+from skore._checks.tunable_hyperparameters import (
+    EQUIVALENT_PARAM_GROUPS,
+)
 from skore._displays.metrics.metrics_summary_display import MetricsSummaryRow
 from skore._sklearn.feature_names import _get_feature_names
 from skore._sklearn.types import PositiveLabel
 from skore._utils.dataframe import (
-    UserDataFrame,
-    UserTarget,
     _concat_vertical,
     _normalize_X_as_dataframe,
     _normalize_y_as_dataframe,
+)
+from skore._utils.skrub import (
+    get_predictor_and_input,
+    is_skrub_learner,
+    resolve_fitted_predictor,
 )
 
 if TYPE_CHECKING:
     from skore._reports.base import _BaseReport
     from skore._reports.cross_validation.report import CrossValidationReport
     from skore._reports.estimator.report import EstimatorReport
-    from skore._sklearn.types import DataSource, EstimatorLike
+    from skore._sklearn.types import DataSource, EstimatorLike, PositiveLabel
+    from skore._utils.dataframe import UserDataFrame, UserTarget
 
 _TIMING_METRICS = {"Fit time (s)", "Predict time (s)"}
 
@@ -128,7 +134,7 @@ def check_score_better_than_baseline(
     floor: float,
     fraction: float,
 ) -> bool:
-    """Check whether `score` is significantly better than `baseline`.
+    """Check whether ``score`` is significantly better than ``baseline``.
 
     The gap threshold is ``fraction`` of the baseline score, floored at ``floor``
     to prevent the threshold from vanishing on near-zero scores.
@@ -191,12 +197,17 @@ def split_preprocessor_estimator(estimator):
 
     Splits sklearn :class:`~sklearn.pipeline.Pipeline` into its preprocessing
     steps and final predictor.
+
+    For :class:`~skrub.SkrubLearner`, returns ``(None, fitted_predictor)`` from the
+    supervised ``.skb.apply(estimator, y=...)`` step. Preprocessing lives in the
+    DataOp graph upstream of that step; use :func:`get_preprocessed_X` when checks
+    need the feature matrix seen by the predictor.
     """
+    if is_skrub_learner(estimator):
+        return None, resolve_fitted_predictor(estimator)
+
     if isinstance(estimator, Pipeline):
-        if len(estimator.steps) > 1:
-            return estimator[:-1], estimator[-1]
-        else:
-            return None, estimator[0]
+        return estimator[:-1] or None, estimator[-1]
     return None, estimator
 
 
@@ -282,18 +293,55 @@ def get_preprocessed_X(
         else:
             data = report.X_test
 
-    preprocessor, predictor = split_preprocessor_estimator(get_fitted_estimator(report))
-    if preprocessor is not None and len(preprocessor.steps) > 0:
-        data = preprocessor.transform(data)
-        if not nw.dependencies.is_into_dataframe(data) and not sp.issparse(data):
-            data = pd.DataFrame(
-                data,
-                columns=_get_feature_names(
-                    predictor,
-                    transformer=preprocessor,
-                    n_features=np.shape(data)[1],
-                ),
-            )
+    estimator = get_fitted_estimator(report)
+
+    if report._initialized_with_data_op:
+        learner = estimator
+        try:
+            if report._report_type == "cross-validation":
+                env = report.input_data
+                data, _ = get_predictor_and_input(learner, env)
+            else:
+                if data_source == "train":
+                    if report.train_data is None:
+                        raise CheckNotApplicable("Train data is unavailable.")
+                    env = report.train_data
+
+                    data, _ = get_predictor_and_input(learner, env)
+                elif data_source == "test":
+                    if report.test_data is None:
+                        raise CheckNotApplicable("Test data is unavailable.")
+                    env = report.test_data
+
+                    data, _ = get_predictor_and_input(learner, env)
+                else:  # data_source == "both"
+                    if report.train_data is None:
+                        raise CheckNotApplicable("Train data is unavailable.")
+                    train_X, _ = get_predictor_and_input(learner, report.train_data)
+
+                    if report.test_data is None:
+                        raise CheckNotApplicable("Test data is unavailable.")
+                    test_X, _ = get_predictor_and_input(learner, report.test_data)
+
+                    data = _concat_vertical(train_X, test_X)
+
+        except ValueError as err:
+            if "multiple supervised apply" not in str(err):
+                raise
+            raise CheckNotApplicable(str(err)) from err
+    else:
+        preprocessor, predictor = split_preprocessor_estimator(estimator)
+        if preprocessor is not None and len(preprocessor.steps) > 0:
+            data = preprocessor.transform(data)
+            if not nw.dependencies.is_into_dataframe(data) and not sp.issparse(data):
+                data = pd.DataFrame(
+                    data,
+                    columns=_get_feature_names(
+                        predictor,
+                        transformer=preprocessor,
+                        n_features=np.shape(data)[1],
+                    ),
+                )
 
     try:
         return _normalize_X_as_dataframe(data)
@@ -372,7 +420,9 @@ def baseline_estimator_report(
         raise CheckNotApplicable("Data is sparse.") from None
 
     y_train = get_report_y(report, data_source="train")
+
     y_test = get_report_y(report, data_source="test")
+
     from skore._reports.estimator.report import EstimatorReport
 
     try:

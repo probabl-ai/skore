@@ -92,6 +92,10 @@ class CheckGoldenFeature(Check):
     Features whose scores also match a model trained on the target itself are
     reported as likely target leakage. Skipped when SKD002 has already flagged
     underfitting.
+
+    Note: for skrub learners whose preprocessing vectorizes columns (e.g.
+    :class:`~skrub.TableVectorizer`), a raw "golden column" may not appear as a
+    single preprocessed feature dimension.
     """
 
     code = "SKD011"
