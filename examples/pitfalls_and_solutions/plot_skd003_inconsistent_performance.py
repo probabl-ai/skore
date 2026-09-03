@@ -4,10 +4,10 @@
 SKD003 - Inconsistent performance across splits
 ===============================================
 
-:ref:`SKD003 <skd003-inconsistent-performance>` flags folds whose test metrics
-diverge sharply from the median during a cross-validation evaluation.
-With a proper splitter this is often a diagnostic check: the data have structure
-(groups, time, or a corrupted batch) that shuffled cross-validation would hide.
+:ref:`SKD003 <skd003-inconsistent-performance>` flags folds whose test metrics diverge
+sharply from the median during a cross-validation evaluation. With a proper splitter
+this is often a diagnostic check: the data have structure (groups, time, or a corrupted
+batch) that shuffled cross-validation would hide.
 
 Realistic triggers:
 
@@ -22,21 +22,21 @@ Realistic triggers:
   collection order (then shuffle or stratify if that will not appear in
   production).
 
-When structure is real, shuffled cross-validation overestimates performance. SKD003 under a
-proper split is a good sign. The structure may not be fully fixable: once
-understood, mute with :func:`~skore.configuration` and consider collecting more
-data on the hard regime.
+When structure is real, shuffled cross-validation overestimates performance. SKD003
+under a proper split is a good sign. The structure may not be fully fixable: once
+understood, mute with :func:`~skore.configuration` and consider collecting more data on
+the hard regime.
 
-This notebook walks four beats: artificial corruption, a bad group in test,
-distribution shift in the last time-series fold, then ignoring SKD003 once the
-problem is understood.
+This notebook walks four beats: artificial corruption, a bad group in test, distribution
+shift in the last time-series fold, then ignoring SKD003 once the problem is understood.
 """
 
 # %%
 # Load Breast Cancer (two classes)
 # ================================
 #
-# Let us use the Breast Cancer dataset to show how SKD003 can detect a batch of corrupted labels.
+# Let us use the Breast Cancer dataset to show how SKD003 can detect a batch of
+# corrupted labels.
 
 import numpy as np
 import pandas as pd
@@ -47,8 +47,9 @@ X, y = cancer.data, cancer.target
 
 
 # %%
-# We can inspect the features and target with :class:`~skrub.TableReport`, and notice that it
-# is a well curated dataset with two balanced classes (they appear in roughly equal proportions).
+# We can inspect the features and target with :class:`~skrub.TableReport`, and
+# notice that it is a well curated dataset with two balanced classes (they
+# appear in roughly equal proportions).
 
 from skrub import TableReport
 
@@ -62,11 +63,12 @@ TableReport(y)
 # Artificial corruption: a bad contiguous batch
 # =============================================
 #
-# Let us permute the labels on the first fifth of the dataset to break any association
-# between `X` and `y`. Later, we will use unshuffled 5-fold cross-validation, so all corrupted rows
-# will land in the same fold. We expect the score of this fold to be low due to this corruption.
-# While we are creating this defect artificially, this is a scenario that can happen in practice
-# due to e.g. a logging bug, a broken sensor, or a merge mix-up.
+# Let us permute the labels on the first fifth of the dataset to break any
+# association between `X` and `y`. Later, we will use unshuffled 5-fold
+# cross-validation, so all corrupted rows will land in the same fold. We expect
+# the score of this fold to be low due to this corruption. While we are
+# creating this defect artificially, this is a scenario that can happen in
+# practice due to e.g. a logging bug, a broken sensor, or a merge mix-up.
 
 y_corrupted, n_corrupt = y.copy(), len(y) // 5
 rng = np.random.default_rng(seed=0)
@@ -87,8 +89,9 @@ model
 # Trigger SKD003: cross-validate on corrupted labels
 # ==================================================
 #
-# We will now evaluate the model on the corrupted labels using unshuffled 5-fold cross-validation
-# and look at non aggregated metrics values, to notice the discrepancy on the first fold.
+# We will now evaluate the model on the corrupted labels using unshuffled
+# 5-fold cross-validation and look at non aggregated metrics values, to notice
+# the discrepancy on the first fold.
 
 import skore
 
@@ -255,12 +258,11 @@ muted
 # Conclusion
 # ==========
 #
-# SKD003 is a reminder to inspect unstable cross-validation folds. With a
-# proper splitter, firing often means the evaluation exposed a bad batch,
-# a hard group, or temporal shift. Fix what you can (for example a corrupted
-# label window). When the structure is intrinsic, keep the honest splitter,
-# document the outlier regime, mute SKD003 via configuration, and collect more
-# data on that regime if you need better coverage. Avoid shuffled cross-validation as a way
-# to make the check disappear when groups or time are real.
-# See also :ref:`SKD013 <skd013-train-test-time-overlap>` for chronological
-# train/test overlap on hold-out reports.
+# SKD003 is a reminder to inspect unstable cross-validation folds. With a proper
+# splitter, firing often means the evaluation exposed a bad batch, a hard group, or
+# temporal shift. Fix what you can (for example a corrupted label window). When the
+# structure is intrinsic, keep the honest splitter, document the outlier regime, mute
+# SKD003 via configuration, and collect more data on that regime if you need better
+# coverage. Avoid shuffled cross-validation as a way to make the check disappear when
+# groups or time are real. See also :ref:`SKD013 <skd013-train-test-time-overlap>` for
+# chronological train/test overlap on hold-out reports.
