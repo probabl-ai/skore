@@ -17,8 +17,8 @@ from sklearn.metrics import (
 )
 
 from skore import EstimatorReport
-from skore._sklearn.metrics import FunctionKind, Metric, MissingKwargsError
-from skore._utils._testing import check_cache_changed, check_cache_unchanged
+from skore._metrics import FunctionKind, Metric, MissingKwargsError
+from skore._utils.testing import check_cache_changed, check_cache_unchanged
 
 
 def business_loss(y_true, y_pred, *, cost_fp, cost_fn):
@@ -154,16 +154,28 @@ class TestBasicAdd:
         assert "business_loss" in report._metric_registry
         assert "accuracy_score" in report._metric_registry
 
-    def test_cannot_override_builtin_metric(self, binary_classification_report):
-        """Test that adding with a built-in technical name raises an error."""
+    def test_cannot_use_reserved_name(self, binary_classification_report):
+        """Test that adding a metric named 'score' raises an error."""
+        report = binary_classification_report
+
+        def score(y_true, y_pred):
+            return 1.0
+
+        err_msg = "Cannot add 'score': it is a reserved name."
+        with pytest.raises(ValueError, match=err_msg):
+            report.metrics.add(make_scorer(score))
+
+    def test_readd_default_metric(self, binary_classification_report):
+        """Test that a default metric can be removed and added back."""
         report = binary_classification_report
 
         def accuracy(y_true, y_pred):
             return 1.0
 
-        err_msg = "Cannot add 'accuracy': it is a built-in metric name."
-        with pytest.raises(ValueError, match=err_msg):
-            report.metrics.add(make_scorer(accuracy))
+        report.metrics.remove("accuracy")
+        report.metrics.add(make_scorer(accuracy))
+
+        assert report.metrics.get("accuracy") == 1.0
 
 
 class TestRemove:

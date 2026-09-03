@@ -3,12 +3,32 @@
 from types import SimpleNamespace
 
 import pandas as pd
+import pytest
 
 from skore._plugins.hub.metric import (
+    cast_to_str_or_none,
     find_multimetric_scalar_names,
     get_hub_metric_name,
     select_exportable_metrics,
 )
+
+
+@pytest.mark.parametrize(
+    ("label", "expected"),
+    [
+        (None, None),
+        (pd.NA, None),
+        (float("nan"), None),
+        (0, "0"),
+        (1, "1"),
+        (True, "True"),
+        (False, "False"),
+        ("cat", "cat"),
+        ("1", "1"),
+    ],
+)
+def test_cast_to_str_or_none(label, expected) -> None:
+    assert cast_to_str_or_none(label) == expected
 
 
 def _metrics_summary(rows: list[dict]) -> pd.DataFrame:

@@ -10,12 +10,12 @@ from sklearn.linear_model import LinearRegression
 from skrub import tabular_pipeline
 
 from skore import Check, EstimatorReport, configuration, evaluate
-from skore._sklearn._checks import base
-from skore._sklearn._checks._utils import CheckNotApplicable
-from skore._sklearn._checks.base import (
+from skore._checks import base
+from skore._checks.base import (
     ChecksSummaryDisplay,
     _get_issue_documentation_url,
 )
+from skore._checks.utils import CheckNotApplicable
 
 
 @pytest.fixture(params=[LinearRegression(), tabular_pipeline(LinearRegression())])
@@ -147,10 +147,10 @@ def test_add_checks_cv_level(cv_regression_report):
 
 
 def test_add_checks_estimator_level_not_on_cv_summary(cv_regression_report):
-    """Estimator-scoped custom checks do not run on the CV report summary."""
+    """Estimator-scoped custom checks are surfaced as not applicable on CV reports."""
     cv_regression_report.checks.add([EstimatorCheck()])
-    summary = cv_regression_report.checks.summarize().frame()
-    assert "ESTCUSTOM" not in set(summary["code"])
+    summary = cv_regression_report.checks.summarize().frame(section="not_applicable")
+    assert "ESTCUSTOM" in set(summary["code"])
 
 
 def test_add_checks_reuses_builtin_cache(monkeypatch, regression_report):
@@ -279,6 +279,13 @@ def test_summarize(regression_report):
         "ignored",
     }
     assert "Checks summary:" in repr(result)
+
+
+def test_every_check_appears_in_one_section(regression_report):
+    report = regression_report
+    frame = report.checks.summarize().frame()
+    assert frame["code"].is_unique
+    assert set(frame["code"]) == {check.code for check in report._checks_registry}
 
 
 def test_no_issues(monkeypatch, regression_report):

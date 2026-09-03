@@ -1,14 +1,16 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import skrub
 from sklearn.base import MetaEstimatorMixin
 from sklearn.pipeline import Pipeline
 from skrub._reporting._summarize import summarize_dataframe
 
-from skore._sklearn.types import EstimatorLike
-from skore._utils._skrub import is_skrub_learner
+from skore._utils.skrub import is_skrub_learner
+
+if TYPE_CHECKING:
+    from skore._sklearn.types import EstimatorLike
 
 
 def _markdown_estimator_kind(estimator: EstimatorLike) -> str:

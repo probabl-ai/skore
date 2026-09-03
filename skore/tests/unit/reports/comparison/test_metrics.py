@@ -8,7 +8,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.svm import LinearSVC
 
 from skore import ComparisonReport, CrossValidationReport, EstimatorReport
-from skore._sklearn._plot import MetricsSummaryDisplay
+from skore._displays import MetricsSummaryDisplay
 
 
 @pytest.mark.parametrize("report", [EstimatorReport, CrossValidationReport])
