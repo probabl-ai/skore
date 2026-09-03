@@ -421,6 +421,8 @@ How to reduce the risk
   :class:`~sklearn.ensemble.HistGradientBoostingClassifier` /
   :class:`~sklearn.ensemble.HistGradientBoostingRegressor`.
 
+Check out the :ref:`example for this check <example_skd009_worse_than_baseline>`.
+
 
 .. _skd010-slower-than-baseline:
 
