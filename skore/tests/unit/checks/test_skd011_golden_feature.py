@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 import pytest
 from sklearn.cross_decomposition import PLSRegression
+from sklearn.dummy import DummyRegressor
 from sklearn.linear_model import LinearRegression
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
@@ -43,6 +44,8 @@ def test_detects_golden_feature(report_type, estimator):
     assert "Feature 1" in explanation
     assert "Feature 2" not in explanation
     assert "Feature 3" not in explanation
+    assert "target itself" in explanation
+    assert "all the features" not in explanation
 
 
 @pytest.mark.parametrize("report_type", ["estimator", "cross-validation"])
@@ -112,3 +115,76 @@ def test_not_applicable_when_single_feature_refit_fails(report_type, regression_
         CheckNotApplicable, match="Failed to create report from single feature."
     ):
         CheckGoldenFeature().check_function(report)
+
+
+@pytest.mark.parametrize("report_type", ["estimator", "cross-validation"])
+def test_not_applicable_when_skd002_detected(report_type, regression_data):
+    """SKD011 is skipped when SKD002 has already flagged underfitting."""
+    X, y = regression_data
+    report = evaluate(
+        DummyRegressor(), X, y, splitter=0.2 if report_type == "estimator" else 3
+    )
+    ignore = [
+        check.code
+        for check in report._checks_registry
+        if check.code not in {"SKD002", "SKD011"}
+    ]
+    summary = report.checks.summarize(ignore=ignore)
+    assert "SKD011" in set(summary.frame(section="not_applicable")["code"])
+    assert "SKD011" not in set(summary.frame(section="tip")["code"])
+    explanation = (
+        summary.frame(section="not_applicable")
+        .set_index("code")
+        .loc["SKD011", "explanation"]
+    )
+    assert "SKD002" in explanation
+
+
+@pytest.mark.parametrize("report_type", ["estimator", "cross-validation"])
+def test_message_when_target_in_features(report_type):
+    """SKD011 mentions the target itself when a feature is a copy of y."""
+    rng = np.random.RandomState(0)
+    n = 200
+    y = rng.normal(size=n)
+    X = pd.DataFrame({"leaked": y, "noise": rng.normal(size=n)})
+    report = evaluate(
+        LinearRegression(),
+        X,
+        y,
+        splitter=0.2 if report_type == "estimator" else 3,
+    )
+    explanation = CheckGoldenFeature().check_function(report)
+    assert explanation is not None
+    assert "leaked" in explanation
+    assert "noise" not in explanation
+    assert "target itself" in explanation
+    assert "all the features" not in explanation
+
+
+@pytest.mark.parametrize("report_type", ["estimator", "cross-validation"])
+def test_message_when_proxy_feature(report_type):
+    """SKD011 keeps the full-model wording when a feature is a proxy, not y."""
+    rng = np.random.RandomState(0)
+    n = 400
+    signal = rng.normal(size=n)
+    y = signal + rng.normal(scale=1.0, size=n)
+    X = pd.DataFrame(
+        {
+            "signal": signal,
+            "noise1": rng.normal(size=n),
+            "noise2": rng.normal(size=n),
+        }
+    )
+    report = evaluate(
+        LinearRegression(),
+        X,
+        y,
+        splitter=0.2 if report_type == "estimator" else 3,
+    )
+    explanation = CheckGoldenFeature().check_function(report)
+    assert explanation is not None
+    assert "signal" in explanation
+    assert "noise1" not in explanation
+    assert "noise2" not in explanation
+    assert "all the features" in explanation
+    assert "target itself" not in explanation
