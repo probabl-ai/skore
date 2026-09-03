@@ -100,28 +100,28 @@ coef_display = report.inspection.coefficients()
 coef_display.frame()
 
 # %%
-# Side by side, the raw coefficient magnitudes and the feature standard
+# One figure under another, the raw coefficient magnitudes and the feature standard
 # deviations tell different stories. ``AveBedrms`` often carries one of the
 # largest absolute coefficients while having a small standard deviation, so its
 # "per unit bedroom" effect looks large. ``Population`` has a tiny coefficient
 # because a one-person change is negligible on a head-count scale, even though
 # the column varies a lot across districts.
+import pandas as pd
 
-import matplotlib.pyplot as plt
+coef = coef_display.frame(include_intercept=False).set_index("feature")
+feature_std = report.X_train.std().rename("feature std. dev. (train)")
 
-coef = coef_display.frame()
-coef_no_intercept = coef[coef["feature"] != "Intercept"].set_index("feature")
-feature_std = report.X_train.std()
-
-_, axes = plt.subplots(1, 2, figsize=(10, 4), constrained_layout=True)
-_ = coef_no_intercept["coefficient"].plot.barh(ax=axes[0], legend=False)
-axes[0].set_title("Raw Ridge coefficients")
-axes[0].set_xlabel("coefficient")
-_ = feature_std.loc[coef_no_intercept.index].plot.barh(
-    ax=axes[1], legend=False, color="C1"
+df = pd.concat([coef, feature_std], axis=1)
+axes = df.plot.barh(
+    subplots=True,
+    layout=(1, 2),
+    legend=False,
+    sharey=True,
+    sharex=False,
+    figsize=(10, 4),
 )
-axes[1].set_title("Feature standard deviation (train)")
-axes[1].set_xlabel("std")
+axes[0, 0].set_xlabel("coefficient")
+_ = axes[0, 1].set_xlabel("feature std. dev. (train)")
 
 # %%
 # Scale coefficients by feature standard deviation
@@ -135,9 +135,9 @@ axes[1].set_xlabel("std")
 # `scale matters
 # <https://scikit-learn.org/stable/auto_examples/inspection/plot_linear_model_coefficient_interpretation.html#interpreting-coefficients-scale-matters>`_.
 
-comparable = coef_no_intercept.copy()
+comparable = coef.copy()
 comparable["effect_per_std"] = comparable["coefficient"] * feature_std
-comparable.sort_values("effect_per_std", key=abs, ascending=False)
+_ = comparable.plot.barh()
 
 # %%
 # That rescaling erases the surprises from the side-by-side bars above. The
@@ -170,6 +170,7 @@ report_scaled = evaluate(
     y=y,
     splitter=splitter,
 )
+report_scaled
 
 # %%
 # ``SKD006`` is still reported in the Tips tab but the warning message changed.
@@ -217,7 +218,7 @@ display = report.inspection.permutation_importance(
 display.frame()
 
 # %%
-_ = display.plot()
+display.plot()
 
 # %%
 # Conclusion
