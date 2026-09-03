@@ -37,8 +37,6 @@ multiclass model honestly, then see what extra rare-class rows can do.
 # The full Covertype task has seven forest types. A small stratified subsample
 # keeps frequent classes well represented while types 3-7 drop below 10 % each.
 # We keep the unused rows as a pool for the "more rare-class data" section later.
-# Let us first import the data, split it and inspect the distribution of classes,
-# both in absolute count and relative frequencies.
 
 import pandas as pd
 from sklearn.datasets import fetch_covtype
@@ -58,11 +56,6 @@ X, X_pool, y, y_pool = train_test_split(
 y = pd.Series(y, name="class")
 y_pool = pd.Series(y_pool, name="class")
 
-print("Relative frequencies:")
-print(y.value_counts(normalize=True).sort_index().round(4))
-print("\nAbsolute counts:")
-print(y.value_counts().sort_index())
-
 # %%
 # Let us inspect the feature matrix with :class:`~skrub.TableReport`.
 
@@ -75,6 +68,16 @@ TableReport(X)
 # a class histogram that shows that the classes are not evenly distributed.
 
 TableReport(y)
+
+# %%
+# Let us also look at absolute counts: type 4 is under 1 % with only a
+# few dozen rows in this subsample: even a good multiclass model has little to
+# learn from there. Types such as 6 are also under the 10 % SKD005 bar, but with
+# a few hundred rows they are less hopeless.
+
+shares = y.value_counts(normalize=True).sort_index()
+counts = y.value_counts().sort_index()
+print(pd.DataFrame({"share": shares.round(4), "count": counts}))
 
 # %%
 # Trigger SKD005: default classifier on imbalanced classes
@@ -107,32 +110,22 @@ report.checks.summarize(fast_mode=True, ignore=["SKD008"])
 # Accuracy hides rare-class failures
 # ==================================
 #
-# Accuracy alone can look strong when frequent classes dominate the table. We
-# report it together with log-loss. We do not use F1: it averages precision and
-# recall and is a poor default under imbalance. Precision and recall below are
-# thresholded symptoms at the model's default multiclass decision rule (argmax
-# of predicted probabilities), not the main quality scoreboard.
+# Accuracy alone can look strong when frequent classes dominate the table.
+# Let us however report it with per class precision and log-loss.
+# We see that global accuracy hides rare-class failures, such as for types
+# 4 and 5.
 
-report.metrics.summarize(
-    metric=["accuracy", "precision", "recall", "log_loss"],
-    data_source="both",
-).frame()
+report.metrics.summarize(metric=["accuracy", "precision", "log_loss"]).frame(
+    flat_index=False
+)
 
 # %%
+# Let us also inspect the confusion matrix. We see that the model has a hard time
+# predicting type 6, often confusing it with types 2 and 3 or when predicting type 7,
+# confusing it with type 1.
+
 report.metrics.confusion_matrix().plot()
 
-# %%
-print("Log-loss (test):", report.metrics.log_loss(data_source="test"))
-
-# %%
-# Absolute counts matter as much as percentages. Type 4 is under 1 % with only a
-# few dozen rows in this subsample: even a good multiclass model has little to
-# learn from there. Types such as 6 are also under the 10 % SKD005 bar, but with
-# a few hundred rows they are less hopeless.
-
-shares = y.value_counts(normalize=True).sort_index()
-counts = y.value_counts().sort_index()
-print(pd.DataFrame({"share": shares.round(4), "count": counts}))
 
 # %%
 # More rare-class training data
@@ -141,9 +134,7 @@ print(pd.DataFrame({"share": shares.round(4), "count": counts}))
 # Extra labels on underrepresented types can help the multiclass model see them
 # more often. Let us keep one fixed test fold with the natural mix, fit on the
 # original train fold, then refit after adding rare-class rows from the pool
-# (classes that were under 10 % in the subsample). We use
-# :func:`~skore.evaluate` with ``splitter="prefit"`` so both models are scored
-# on the same test rows.
+# (classes that were under 10 % in the subsample).
 
 X_train, X_test, y_train, y_test = train_test_split(
     X, y, test_size=0.2, random_state=42, stratify=y
@@ -151,8 +142,6 @@ X_train, X_test, y_train, y_test = train_test_split(
 
 rare_labels = shares[shares < 0.10].index
 pool_rare = y_pool.isin(rare_labels)
-# Cap how many extra rare rows we add so the gallery stays fast; the point is
-# the direction of the effect, not using the entire Covertype remainder.
 X_rare_extra, _, y_rare_extra, _ = train_test_split(
     X_pool.loc[pool_rare],
     y_pool.loc[pool_rare],
@@ -165,8 +154,6 @@ y_train_more = pd.concat([y_train, y_rare_extra])
 
 print("Rare labels added from the pool:", list(rare_labels))
 print("Extra rare-class rows added:", len(y_rare_extra))
-print("Train size (baseline):", len(y_train))
-print("Train size (more rare-class rows):", len(y_train_more))
 print("\nBaseline train counts:")
 print(y_train.value_counts().sort_index())
 print("\nEnriched train counts:")
@@ -175,7 +162,7 @@ print(y_train_more.value_counts().sort_index())
 # %%
 # Let us now fit a model on the enriched train set and compare the results with the
 # original model. We can observe that the model on the enriched train set has a better
-# log-loss and accuracies on the common test set.
+# log-loss, accuracy and per-class precision on the common test set.
 
 model_less = HistGradientBoostingClassifier(random_state=42).fit(X_train, y_train)
 report_less = skore.evaluate(model_less, X_test, y_test, splitter="prefit")
@@ -191,9 +178,9 @@ skore.compare(
         "more_rare_class_rows": report_more,
     }
 ).metrics.summarize(
-    metric=["accuracy", "precision", "recall", "log_loss"],
+    metric=["accuracy", "precision", "log_loss"],
     data_source="test",
-).frame()
+).frame(flat_index=False)
 
 # %%
 # Enriching the train set with more rare-class rows also clears SKD005.
@@ -201,7 +188,7 @@ skore.compare(
 report_more.checks.summarize(fast_mode=True, ignore=["SKD008"])
 
 # %%
-# Collecting more rare-class rows can improve rare-class recall and log-loss on
+# Collecting more rare-class rows can improve rare-class precision and log-loss on
 # a fixed natural-prevalence test set. That does not mean we should chase a
 # cleared SKD005: if acquisition preferentially samples rare types, the training
 # mix no longer matches the field, and production prevalence may stay low. We
@@ -214,8 +201,10 @@ report_more.checks.summarize(fast_mode=True, ignore=["SKD008"])
 # ==========
 #
 # SKD005 is a multiclass rarity warning, not a request to rebalance at all
-# costs. We prefer log-loss (and confusion matrices) over F1, we report
+# costs. We prefer log-loss (and confusion matrices) over accuracy, we report
 # absolute counts, and we can add rare-class labels when we can without treating
-# a silent check as success. For binary rare-event threshold tuning and when
+# a silent check as success.
+#
+# For binary rare-event threshold tuning and when
 # ``class_weight`` is a risky shortcut, see
 # :ref:`skd004-high-class-imbalance`.
