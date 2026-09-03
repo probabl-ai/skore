@@ -151,6 +151,7 @@ class CalibrationDisplay(DisplayMixin):
         """Compute the data for the calibration curve display."""
         y_arr = np.asarray(y)
         y_pred_arr = np.asarray(y_pred)
+        new_n_bins = int(np.ceil(len(y_arr) ** (1 / 3))) if n_bins == "auto" else n_bins
 
         classes = np.unique(y_arr)
         y_true_onehot = _one_hot_encode(y_arr, classes)
@@ -160,7 +161,7 @@ class CalibrationDisplay(DisplayMixin):
             frac_pos, pred_prob = calibration_curve(
                 y_true_onehot[:, class_idx],
                 y_pred_arr[:, class_idx],
-                n_bins=n_bins,
+                n_bins=new_n_bins,
                 strategy=strategy,
             )
             df = pd.DataFrame(
