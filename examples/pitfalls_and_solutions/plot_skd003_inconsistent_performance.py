@@ -114,7 +114,7 @@ report.checks.summarize(fast_mode=True)
 # widely spread and one of them sinks towards the chance level: this is the instability
 # that ``SKD003`` reported.
 
-_ = report.metrics.roc().plot()
+report.metrics.roc().plot()
 
 # %%
 # If the cause was a fixable bad batch, clean labels clear the outlier split.
