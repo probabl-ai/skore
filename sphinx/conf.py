@@ -13,9 +13,12 @@ extensions, themes, and gallery settings.
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
+import logging
 import os
 import pathlib
 import sys
+
+from sphinx.util import logging as sphinx_logging
 
 # Make it possible to load custom extensions from sphinxext directory
 sys.path.append(str(pathlib.Path("sphinxext").resolve()))
@@ -164,6 +167,23 @@ intersphinx_mapping = {
     "seaborn": ("http://seaborn.pydata.org", None),
     "xgboost": ("https://xgboost.readthedocs.io/en/stable/", None),
 }
+
+
+class _SuppressIntersphinxFetchWarnings(logging.Filter):
+    """Don't fail the build when an intersphinx inventory can't be fetched.
+
+    We run the build with warnings-as-errors to catch real doc issues, but a
+    third-party docs site being briefly unreachable from the CI runner (e.g.
+    a connection timeout) shouldn't break the whole build.
+    """
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        return "failed to reach any of the inventories" not in record.getMessage()
+
+
+sphinx_logging.getLogger("sphinx.ext.intersphinx").logger.addFilter(
+    _SuppressIntersphinxFetchWarnings()
+)
 
 numpydoc_show_class_members = False
 
