@@ -51,7 +51,7 @@ class CalibrationDisplay(DisplayMixin):
     >>> report = evaluate(LogisticRegression(), X, y, splitter=0.2)
     >>> display = report.inspection.calibration_curve(n_bins="auto", strategy="uniform")
     >>> display.frame()
-       predicted_probability  fraction_of_positives data_source  label
+        predicted_probability  fraction_of_positives data_source  label
     0               0.013323               0.018338        test      0
     1               0.052453               0.049888        test      0
     2               0.088494               0.093787        test      0
