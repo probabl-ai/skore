@@ -86,6 +86,7 @@ sphinx-lts-cpu = ["mlflow", "polars-lts-cpu", "skore[sphinx-base, hub, mlflow]"]
 dev = ["ipykernel", "nbformat"]
 hub = [
   "httpx",
+  "filelock",
   "orjson",
   "pydantic",
   "rich[jupyter]>=14.2",
