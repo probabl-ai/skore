@@ -1,5 +1,7 @@
+import numpy as np
 import pytest
 
+import skore._displays.inspection.calibration_curve as mod
 from skore import CalibrationDisplay
 
 
@@ -24,6 +26,32 @@ class TestCalibrationDisplay:
         fig = display.plot()
         assert fig is not None
         assert len(fig.axes) >= 1
+
+    @pytest.mark.parametrize(
+        "use_explicit_auto", [False, True], ids=["default", "explicit-auto"]
+    )
+    def test_auto_n_bins_uses_cube_root_rule(
+        self, fixture_prefix, task, request, monkeypatch, use_explicit_auto
+    ):
+        report = request.getfixturevalue(f"{fixture_prefix}_{task}")
+        if isinstance(report, tuple):
+            report = report[0]
+
+        observed_n_bins = []
+
+        def fake_calibration_curve(y_true, y_pred, *, n_bins, strategy):
+            expected_n_bins = int(np.ceil(len(y_true) ** (1 / 3)))
+            observed_n_bins.append(n_bins)
+            assert n_bins == expected_n_bins
+            return np.array([0.0]), np.array([0.5])
+
+        monkeypatch.setattr(mod, "calibration_curve", fake_calibration_curve)
+        display = report.inspection.calibration_curve(
+            **({"n_bins": "auto"} if use_explicit_auto else {})
+        )
+        assert isinstance(display, CalibrationDisplay)
+        assert observed_n_bins
+        assert all(n_bins == observed_n_bins[0] for n_bins in observed_n_bins)
 
     def test_frame_structure(self, fixture_prefix, task, request):
         report = request.getfixturevalue(f"{fixture_prefix}_{task}")
