@@ -8,6 +8,7 @@ import pandas as pd
 from sklearn.utils.validation import _is_arraylike
 
 from skore._displays.base import DisplayMixin
+from skore._metrics.metrics import _to_verbose
 from skore._sklearn.types import Aggregate
 from skore._utils.index import flatten_multi_index, squeeze_single_column
 
@@ -360,10 +361,7 @@ class MetricsSummaryDisplay(DisplayMixin):
             for level_index, name in enumerate(table.index.names):
                 if name == "label":
                     levels[level_index] = pd.Index(
-                        [
-                            "" if value == "" else str(value)
-                            for value in levels[level_index]
-                        ],
+                        [str(value) for value in levels[level_index]],
                         dtype="string",
                         name=name,
                     )
@@ -371,11 +369,11 @@ class MetricsSummaryDisplay(DisplayMixin):
 
         if verbose_name:
             table.index.names = [
-                None if name is None else name.replace("_", " ").title()
+                None if name is None else _to_verbose(name)
                 for name in table.index.names
             ]
             table.columns.names = [
-                None if name is None else name.replace("_", " ").title()
+                None if name is None else _to_verbose(name)
                 for name in table.columns.names
             ]
             table = table.rename(columns={"favorability": "Favorability"})
