@@ -63,7 +63,6 @@ def test_pos_label(forest_binary_classification_with_train_test):
     labels = np.array(["A", "B"], dtype=object)
     y_train = labels[y_train]
     y_test = labels[y_test]
-    estimator.fit(X_train, y_train)
     report = EstimatorReport(
         estimator,
         X_train=X_train,

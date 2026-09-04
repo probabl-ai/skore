@@ -13,16 +13,48 @@ quickly get insights from any scikit-learn estimator.
 # Loading our dataset and defining our estimator
 # ==============================================
 #
-# First, we load a dataset from skrub. Our goal is to predict if a healthcare
-# manufacturing company paid medical doctors or hospitals, in order to detect
-# potential conflicts of interest.
+# First, we load a dataset from skrub. Our goal is to predict whether an online
+# shopping basket is fraudulent, so that the payment can be reviewed before
+# money leaves the account.
+#
+# Baskets and products live in two tables, so we aggregate product-level
+# information (including the cash amount of the basket) into one feature matrix
+# with pandas. Using a skrub DataOp to keep those joins inside the estimator
+# (and replay them on unseen data) is shown in
+# :ref:`example_data_processing`.
 
 # %%
-from skrub.datasets import fetch_open_payments
+from skrub.datasets import fetch_credit_fraud
 
-dataset = fetch_open_payments()
-df = dataset.X
-y = dataset.y
+dataset = fetch_credit_fraud(split="train")
+baskets = dataset.baskets
+products = dataset.products
+
+basket_features = (
+    products.groupby("basket_ID")
+    .agg(
+        basket_amount=("cash_price", "sum"),
+        n_items=("cash_price", "count"),
+        mean_item_price=("cash_price", "mean"),
+        max_item_price=("cash_price", "max"),
+        n_makes=("make", "nunique"),
+        n_item_types=("item", "nunique"),
+    )
+    .reset_index()
+)
+top_product = (
+    products.sort_values("cash_price", ascending=False)
+    .groupby("basket_ID", as_index=False)
+    .first()[["basket_ID", "make", "item"]]
+    .rename(columns={"make": "top_make", "item": "top_item"})
+)
+
+df = (
+    baskets.merge(basket_features, left_on="ID", right_on="basket_ID")
+    .merge(top_product, on="basket_ID")
+    .drop(columns=["ID", "basket_ID"])
+)
+y = df.pop("fraud_flag")
 
 # %%
 from skrub import TableReport
@@ -36,11 +68,11 @@ TableReport(y.to_frame())
 # Looking at the distributions of the target, we observe that this classification
 # task is quite imbalanced. This means that we have to be careful when selecting a set
 # of statistical metrics to evaluate the classification performance of our predictive
-# model. In addition, we see that the class labels are not specified by an integer
-# 0 or 1 but instead by a string "allowed" or "disallowed".
+# model. In addition, we see that the class labels are specified by an integer
+# 0 or 1.
 #
-# For our application, the label of interest is "allowed".
-pos_label, neg_label = "allowed", "disallowed"
+# For our application, the label of interest is ``1`` (fraudulent).
+pos_label, neg_label = 1, 0
 
 # %%
 # Let's create a predictive model. Thankfully, `skrub` provides a convenient
@@ -139,34 +171,51 @@ report.metrics.log_loss(data_source="train")
 # keyword arguments). Let's take a look at an example.
 
 
-def operational_decision_cost(y_true, y_pred, *, amount):
+def operational_decision_gain(y_true, y_pred, *, amount):
+    """The monetary gain we obtain depending on our predictions.
+
+    May be negative, in which case our predictions actually *cost* us money.
+    """
     mask_true_positive = (y_true == pos_label) & (y_pred == pos_label)
     mask_true_negative = (y_true == neg_label) & (y_pred == neg_label)
     mask_false_positive = (y_true == neg_label) & (y_pred == pos_label)
     mask_false_negative = (y_true == pos_label) & (y_pred == neg_label)
-    fraudulent_refuse = mask_true_positive.sum() * 50
+
+    REVIEW_COST = -20
+    REPUTATION_COST = -30
+    MARGIN = 0.02
+
+    # Fraud correctly flagged: we pay the review costs, but do not incur
+    # more cost
+    fraudulent_refuse = mask_true_positive.sum() * REVIEW_COST
+
+    # Fraud missed: the payment goes through and we lose the full basket amount
     fraudulent_accept = -amount[mask_false_negative].sum()
-    legitimate_refuse = mask_false_positive.sum() * -5
-    legitimate_accept = (amount[mask_true_negative] * 0.02).sum()
+
+    # Legitimate basket wrongly flagged: we pay the review costs, but we also annoy
+    # the customer and risk losing them, so it is penalized compared to a correct
+    # refusal
+    legitimate_refuse = mask_false_positive.sum() * (REVIEW_COST + REPUTATION_COST)
+
+    # Legitimate basket correctly accepted: we earn a margin on the sale
+    legitimate_accept = (amount[mask_true_negative] * MARGIN).sum()
+
     return fraudulent_refuse + fraudulent_accept + legitimate_refuse + legitimate_accept
 
 
 # %%
 #
-# In our example use case, each classification decision we make has a cost.
-# The function above models this by translating the confusion matrix into a cost
-# matrix; this cost also depends on an extra parameter named ``amount``, to illustrate
-# that skore can handle custom metrics with non-standard arguments.
+# In our example use case, each classification decision has a different monetary gain.
+# The function above models this by translating the confusion matrix into a gain
+# (payoff) matrix that depends on the basket cash value.
 # Let's test adding this metric to our report.
-import numpy as np
 from sklearn.metrics import make_scorer
 
-rng = np.random.default_rng(42)
-amount = rng.integers(low=100, high=1000, size=len(report.y_test))
+amount = report.X_test["basket_amount"]
 
 # We use `make_scorer` to convert the metric to the right format (a function
 # that takes `estimator`, `X`, `y`)
-report.metrics.add(metric=make_scorer(operational_decision_cost, amount=amount))
+report.metrics.add(metric=make_scorer(operational_decision_gain, amount=amount))
 
 # %%
 #
@@ -240,9 +289,9 @@ cm_display.plot()
 # internally.
 #
 # To visualize the confusion matrix at a different threshold, use the
-# ``threshold_value`` parameter. For example, a threshold of 0.3 will classify
+# ``threshold_value`` parameter. For example, a threshold of 0.1 will classify
 # more samples as positive:
-cm_display.plot(threshold_value=0.3)
+cm_display.plot(threshold_value=0.1)
 
 # %%
 # We can normalize the confusion matrix to get percentages instead of raw counts.

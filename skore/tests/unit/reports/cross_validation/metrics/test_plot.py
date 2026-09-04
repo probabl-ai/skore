@@ -4,7 +4,7 @@ from sklearn.datasets import make_classification
 from sklearn.linear_model import LogisticRegression
 
 from skore import CrossValidationReport, RocCurveDisplay
-from skore._utils._testing import check_cache_unchanged
+from skore._utils.testing import check_cache_unchanged
 
 
 def test_plot_roc(forest_binary_classification_data):

@@ -19,10 +19,13 @@ import mlflow
 import mlflow.sklearn
 import pandas as pd
 from mlflow.entities import Run as MLFlowRun
-from mlflow.exceptions import MlflowException, RestException
+from mlflow.exceptions import MlflowException
 from mlflow.tracking import MlflowClient
 from mlflow.utils.autologging_utils import disable_discrete_autologging
+from mlflow.utils.databricks_utils import get_databricks_host_creds
 from mlflow.utils.logging_utils import MLFLOW_LOGGING_STREAM
+from mlflow.utils.rest_utils import http_request_safe
+from mlflow.utils.uri import is_databricks_uri
 from sklearn.base import BaseEstimator
 
 from skore import CrossValidationReport, EstimatorReport
@@ -53,6 +56,7 @@ except ImportError:
 
 class Metadata(TypedDict):  # noqa: D101
     id: str
+    report_id: str | None
     key: str
     date: str
     learner: str
@@ -97,6 +101,51 @@ def format_date(start_time: int | None) -> str:
     return datetime.fromtimestamp(start_time / 1_000, tz=UTC).isoformat()
 
 
+STORAGE_EXPERIMENT_NAME = "__skore-storage__"
+
+
+def _databricks_user_name(tracking_uri: str) -> str:
+    """Identity of the workspace user behind a Databricks ``tracking_uri``."""
+    creds = get_databricks_host_creds(tracking_uri)  # type: ignore[no-untyped-call]
+    response = http_request_safe(  # type: ignore[no-untyped-call]
+        host_creds=creds,
+        endpoint="/api/2.0/preview/scim/v2/Me",
+        method="GET",
+    )
+
+    body = response.json()
+    try:
+        return cast(str, body["userName"])
+    except KeyError:
+        raise MlflowException(
+            "Databricks SCIM 'Me' response has no 'userName' field; this can happen "
+            "when authenticating as a service principal, which is identified by "
+            "'applicationId' rather than 'userName'."
+        ) from None
+
+
+def _storage_experiment_name(tracking_uri: str) -> str:
+    """
+    Name of the internal experiment storing the objects of a project's reports.
+
+    Databricks only accepts experiment names that are absolute workspace paths, so the
+    storage experiment lives in the home directory of the workspace user there.
+    """
+    if not is_databricks_uri(tracking_uri):  # type: ignore[no-untyped-call]
+        return STORAGE_EXPERIMENT_NAME
+
+    try:
+        user_name = _databricks_user_name(tracking_uri)
+    except MlflowException as exc:
+        raise MlflowException(
+            "Failed to resolve the Databricks workspace user needed to create the "
+            f"{STORAGE_EXPERIMENT_NAME!r} experiment. Make sure the credentials used "
+            f"for '{tracking_uri}' can read the current user."
+        ) from exc
+
+    return f"/Users/{user_name}/{STORAGE_EXPERIMENT_NAME}"
+
+
 class Project:
     """
     API to persist in MLflow.
@@ -117,10 +166,14 @@ class Project:
             mlflow.set_tracking_uri(tracking_uri)
 
         self.__tracking_uri = mlflow.get_tracking_uri()
+        storage_name = _storage_experiment_name(self.__tracking_uri)
         try:
-            self.__storage_experiment_id = mlflow.create_experiment("__skore-storage__")
-        except RestException:
-            storage_experiment = mlflow.get_experiment_by_name("__skore-storage__")
+            self.__storage_experiment_id = mlflow.create_experiment(storage_name)
+        except MlflowException:
+            # Local stores raise a plain `MlflowException` on duplicate names, while
+            # tracking servers raise its `RestException` subclass. Reuse the existing
+            # experiment either way, so several projects can share a tracking URI.
+            storage_experiment = mlflow.get_experiment_by_name(storage_name)
             if storage_experiment is None:
                 raise
             self.__storage_experiment_id = storage_experiment.experiment_id
@@ -190,6 +243,7 @@ class Project:
                 {
                     "skore_status": "started",
                     "skore_version": version("skore"),
+                    "skore_report_id": report.id,
                     "report_type": report_type(report),
                     "ml_task": report.ml_task,
                     "learner": report.estimator_name_,
@@ -304,6 +358,7 @@ class Project:
 
         metadata = {
             "id": run.info.run_id,
+            "report_id": tags.get("skore_report_id"),
             "key": run.info.run_name,
             "date": format_date(run.info.start_time),
             "report_type": report_type,
@@ -547,8 +602,10 @@ def _log_figure(figure: Any, artifact_file: str) -> None:
             )
 
 
-def _flatten_df_index(df: pd.DataFrame) -> pd.DataFrame:
+def _flatten_df_index(df: pd.DataFrame | pd.Series) -> pd.DataFrame:
     """Normalize a dataframe-like object before CSV logging."""
+    if isinstance(df, pd.Series):
+        df = df.to_frame(name=df.name)
     df = df.copy(deep=False)
     columns = df.columns
     if columns is not None and columns.nlevels > 1:

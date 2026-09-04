@@ -1,3 +1,4 @@
+{% from "common/method_label.html.j2" import method_label %}
 <div class="container">
     <header class="title">{{ title }}</header>
     <div class="tree">
@@ -16,7 +17,7 @@
                     <div class="branch-content" id="{{ methods_section.branch_id }}">
                         {% for method in methods %}
                             <div class="node method">
-                                <span class="method-name">.<a href="{{ method.doc_url }}" target="_blank" class="method-tooltip">{{ method.name }}<span class="tooltip-text">{{ method.description|e }}</span></a>{{ method.parameters }}</span>
+                                <span class="method-name">{{ method_label(method) }}</span>
                                 </div>
                         {% endfor %}
                     </div>

@@ -287,17 +287,14 @@ _ = final_report.metrics.confusion_matrix().plot()
 
 # %%
 # We can easily combine the results of the previous cross-validation together with
-# the evaluation on the held-out dataset, since the two are accessible as dataframes.
-# This way, we can check if our chosen model meets the expectations we set during the
+# the evaluation on the held-out dataset, since the two are accessible as tables. This
+# way, we can check if our chosen model meets the expectations we set during the
 # experiment phase.
 
 # %%
-import pandas as pd
-
-pd.concat(
-    [final_metrics.frame(), logreg_cv_report.metrics.summarize().frame()],
-    axis="columns",
-)
+final_frame = final_metrics.frame().to_frame()
+cv_frame = logreg_cv_report.metrics.summarize().frame()
+final_frame.merge(cv_frame, on="metric", how="outer")
 
 # %%
 # As expected, our final model gets better performance, likely thanks to the
