@@ -6,7 +6,7 @@ from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
 
 from skore import CrossValidationReport, PermutationImportanceDisplay
-from skore._utils._testing import check_cache_changed
+from skore._utils.testing import check_cache_changed
 
 
 def _children_cache_size(report):

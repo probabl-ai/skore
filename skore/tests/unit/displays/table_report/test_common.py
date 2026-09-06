@@ -1,3 +1,4 @@
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import pytest
@@ -7,7 +8,7 @@ from sklearn.model_selection import train_test_split
 from skrub import tabular_pipeline
 
 from skore import CrossValidationReport, EstimatorReport
-from skore._sklearn._plot.data.table_report import (
+from skore._displays.data.table_report import (
     _compute_contingency_table,
     _resize_categorical_axis,
     _truncate_top_k_categories,
@@ -80,9 +81,9 @@ def test_truncate_top_k_categories(dtype, other_label):
 
 
 @pytest.mark.parametrize("is_x_axis", [True, False])
-def test_resize_categorical_axis(pyplot, is_x_axis):
+def test_resize_categorical_axis(is_x_axis):
     """Check the behaviour of the `_resize_categorical_axis` function."""
-    figure, ax = pyplot.subplots(figsize=(10, 10))
+    figure, ax = plt.subplots(figsize=(10, 10))
     _resize_categorical_axis(
         figure=figure,
         ax=ax,
@@ -107,7 +108,7 @@ def test_truncate_top_k_categories_return_as_is(col):
     assert _truncate_top_k_categories(col, k=3) is col
 
 
-def test_corr_plot(pyplot, estimator_report):
+def test_corr_plot(estimator_report):
     display = estimator_report.data.summarize(data_source="train")
     fig = display.plot(kind="corr")
     ax = fig.axes[0]

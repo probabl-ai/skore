@@ -6,7 +6,6 @@ import numpy as np
 import pytest
 from sklearn.linear_model import LogisticRegression
 
-from skore._utils._testing import MockAccessor, MockDisplay, MockReport
 from skore._utils.repr.base import (
     AccessorHelpMixin,
     DisplayHelpMixin,
@@ -14,6 +13,7 @@ from skore._utils.repr.base import (
     ReprHTMLMixin,
     _HelpDisplay,
 )
+from skore._utils.testing import MockAccessor, MockDisplay, MockReport
 
 
 class _ReportWithBaseHelp(MockReport, ReportHelpMixin):

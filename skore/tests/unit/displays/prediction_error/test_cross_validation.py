@@ -6,7 +6,7 @@ import pytest
     "task, legend_prefix",
     [("regression", "Split"), ("multioutput_regression", "Output")],
 )
-def test_legend(pyplot, task, legend_prefix, request):
+def test_legend(task, legend_prefix, request):
     """Check the legend of the prediction error plot with cross-validation."""
     figure, _ = request.getfixturevalue(f"cross_validation_reports_{task}_figure_axes")
     legend = figure.axes[len(figure.axes) // 2].get_legend()
@@ -22,7 +22,7 @@ def test_legend(pyplot, task, legend_prefix, request):
     "task, legend_prefix",
     [("regression", "Split"), ("multioutput_regression", "Output")],
 )
-def test_legend_actual_vs_predicted(pyplot, task, legend_prefix, request):
+def test_legend_actual_vs_predicted(task, legend_prefix, request):
     """Check the legend when kind is actual_vs_predicted."""
     report = request.getfixturevalue(f"cross_validation_reports_{task}")[0]
     display = report.metrics.prediction_error()
@@ -43,7 +43,7 @@ def test_legend_actual_vs_predicted(pyplot, task, legend_prefix, request):
         ("multioutput_regression", ["auto", "output", "split", "None"]),
     ],
 )
-def test_invalid_subplot_by(pyplot, task, valid_values, request):
+def test_invalid_subplot_by(task, valid_values, request):
     """Check that we raise a proper error message when passing an inappropriate
     value for the `subplot_by` argument.
     """
@@ -69,7 +69,7 @@ def test_invalid_subplot_by(pyplot, task, valid_values, request):
         ),
     ],
 )
-def test_valid_subplot_by(pyplot, fixture_name, subplot_by_tuples, request):
+def test_valid_subplot_by(fixture_name, subplot_by_tuples, request):
     """Check that we can pass valid values to `subplot_by`."""
     report = request.getfixturevalue(fixture_name)[0]
     display = report.metrics.prediction_error()
@@ -81,3 +81,54 @@ def test_valid_subplot_by(pyplot, fixture_name, subplot_by_tuples, request):
             assert isinstance(axes[0], mpl.axes.Axes)
         else:
             assert len(axes) == expected_len
+
+
+@pytest.mark.parametrize("task", ["regression", "multioutput_regression"])
+def test_subplot_by_data_source(task, request):
+    """Check the behaviour when `subplot_by` is `data_source`."""
+    report = request.getfixturevalue(f"cross_validation_reports_{task}")[0]
+    display = report.metrics.prediction_error(data_source="both")
+    fig = display.plot(subplot_by="data_source")
+    axes = fig.axes
+    assert len(axes) == 2
+    legend = fig.axes[len(fig.axes) // 2].get_legend()
+    legend_texts = [t.get_text() for t in legend.get_texts()]
+    assert legend_texts[-1] == "Perfect predictions"
+    if task == "regression":
+        assert legend_texts == ["Split #0", "Split #1", "Perfect predictions"]
+    else:
+        assert legend_texts == ["Output #0", "Output #1", "Perfect predictions"]
+
+
+@pytest.mark.parametrize("task", ["regression", "multioutput_regression"])
+def test_source_both(task, request):
+    """Check the behaviour of the plot when data_source='both'."""
+    report = request.getfixturevalue(f"cross_validation_reports_{task}")[0]
+    display = report.metrics.prediction_error(data_source="both")
+    assert display.data_source == "both"
+    plot_data = display.frame()
+    assert "data_source" in plot_data.columns
+    assert set(plot_data["data_source"]) == {"train", "test"}
+    fig = display.plot()
+    legend = fig.axes[len(fig.axes) // 2].get_legend()
+    assert legend is not None
+    legend_texts = [t.get_text() for t in legend.get_texts()]
+    assert legend_texts[-1] == "Perfect predictions"
+    assert "train" in legend_texts
+    assert "test" in legend_texts
+    if task == "regression":
+        assert legend_texts == [
+            "Split #0",
+            "Split #1",
+            "train",
+            "test",
+            "Perfect predictions",
+        ]
+    else:
+        assert legend_texts == [
+            "Output #0",
+            "Output #1",
+            "train",
+            "test",
+            "Perfect predictions",
+        ]

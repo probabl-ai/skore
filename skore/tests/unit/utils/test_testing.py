@@ -1,10 +1,10 @@
-"""Unit tests for ``skore._utils._testing``."""
+"""Unit tests for ``skore._utils.testing``."""
 
 import numpy as np
 import pytest
 from matplotlib.figure import Figure
 
-from skore._utils._testing import (
+from skore._utils.testing import (
     MockAccessor,
     MockDisplay,
     MockEstimator,
@@ -29,7 +29,7 @@ def test_mock_estimator_sklearn_clone_increments_n_call():
     est = MockEstimator(error=RuntimeError("test"), n_call=0)
     assert est.n_call == 0
     out = est.__sklearn_clone__()
-    assert out is est
+    assert isinstance(out, MockEstimator)
     assert est.n_call == 1
 
 

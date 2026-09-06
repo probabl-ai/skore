@@ -1,12 +1,9 @@
-import matplotlib as mpl
 import pytest
-
-mpl.rc("figure", max_open_warning=False)
 
 
 @pytest.fixture(scope="module")
 def estimator_reports_binary_classification_figure_axes(
-    pyplot, estimator_reports_binary_classification
+    estimator_reports_binary_classification,
 ):
     report = estimator_reports_binary_classification[0]
     display = report.inspection.calibration_curve()
@@ -16,7 +13,7 @@ def estimator_reports_binary_classification_figure_axes(
 
 @pytest.fixture(scope="module")
 def cross_validation_reports_binary_classification_figure_axes(
-    pyplot, cross_validation_reports_binary_classification
+    cross_validation_reports_binary_classification,
 ):
     report = cross_validation_reports_binary_classification[0]
     display = report.inspection.calibration_curve()
@@ -26,7 +23,7 @@ def cross_validation_reports_binary_classification_figure_axes(
 
 @pytest.fixture(scope="module")
 def comparison_estimator_reports_binary_classification_figure_axes(
-    pyplot, comparison_estimator_reports_binary_classification
+    comparison_estimator_reports_binary_classification,
 ):
     report = comparison_estimator_reports_binary_classification
     display = report.inspection.calibration_curve()
@@ -36,7 +33,7 @@ def comparison_estimator_reports_binary_classification_figure_axes(
 
 @pytest.fixture(scope="module")
 def comparison_cross_validation_reports_binary_classification_figure_axes(
-    pyplot, comparison_cross_validation_reports_binary_classification
+    comparison_cross_validation_reports_binary_classification,
 ):
     report = comparison_cross_validation_reports_binary_classification
     display = report.inspection.calibration_curve()
@@ -46,7 +43,7 @@ def comparison_cross_validation_reports_binary_classification_figure_axes(
 
 @pytest.fixture(scope="module")
 def estimator_reports_multiclass_classification_figure_axes(
-    pyplot, estimator_reports_multiclass_classification
+    estimator_reports_multiclass_classification,
 ):
     report = estimator_reports_multiclass_classification[0]
     display = report.inspection.calibration_curve()
@@ -56,7 +53,7 @@ def estimator_reports_multiclass_classification_figure_axes(
 
 @pytest.fixture(scope="module")
 def cross_validation_reports_multiclass_classification_figure_axes(
-    pyplot, cross_validation_reports_multiclass_classification
+    cross_validation_reports_multiclass_classification,
 ):
     report = cross_validation_reports_multiclass_classification[0]
     display = report.inspection.calibration_curve()
@@ -66,7 +63,7 @@ def cross_validation_reports_multiclass_classification_figure_axes(
 
 @pytest.fixture(scope="module")
 def comparison_estimator_reports_multiclass_classification_figure_axes(
-    pyplot, comparison_estimator_reports_multiclass_classification
+    comparison_estimator_reports_multiclass_classification,
 ):
     report = comparison_estimator_reports_multiclass_classification
     display = report.inspection.calibration_curve()
@@ -76,7 +73,7 @@ def comparison_estimator_reports_multiclass_classification_figure_axes(
 
 @pytest.fixture(scope="module")
 def comparison_cross_validation_reports_multiclass_classification_figure_axes(
-    pyplot, comparison_cross_validation_reports_multiclass_classification
+    comparison_cross_validation_reports_multiclass_classification,
 ):
     report = comparison_cross_validation_reports_multiclass_classification
     display = report.inspection.calibration_curve()

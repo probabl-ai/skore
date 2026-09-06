@@ -29,7 +29,6 @@ def test_negative(comparison_estimator_reports_binary_classification):
 
 
 def test_different_features(
-    pyplot,
     comparison_estimator_reports_binary_classification_different_features,
 ):
     """`select_k` works for plotting when the estimators have different features."""

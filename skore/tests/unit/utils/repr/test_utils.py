@@ -72,7 +72,7 @@ class TestRepairEstimatorHtmlForSlottedHost:
         assert o == c
 
 
-def test_figure_to_html_returns_base64_img(pyplot):
+def test_figure_to_html_returns_base64_img():
 
     fig = Figure()
     ax = fig.subplots()

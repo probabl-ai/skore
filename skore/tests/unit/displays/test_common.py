@@ -5,7 +5,7 @@ from sklearn.model_selection import train_test_split
 
 import skore
 from skore import EstimatorReport
-from skore._sklearn._plot.base import Display, DisplayMixin
+from skore._displays.base import Display, DisplayMixin
 
 DISPLAY_CLASSES = [
     getattr(skore, name)
@@ -31,7 +31,7 @@ def test_display_inherits_display_mixin(display_cls):
         ("prediction_error", LinearRegression(), make_regression(random_state=42)),
     ],
 )
-def test_display_protocol(pyplot, capsys, plot_func, estimator, dataset):
+def test_display_protocol(capsys, plot_func, estimator, dataset):
     """Check that the display object adheres to the Display protocol."""
 
     X_train, X_test, y_train, y_test = train_test_split(*dataset, random_state=42)

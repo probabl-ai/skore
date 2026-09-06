@@ -25,7 +25,7 @@ def test_multiple_thresholds_different_confusion_matrices(
     assert not np.array_equal(frame_low["value"].values, frame_high["value"].values)
 
 
-def test_split_aggregation(pyplot, forest_binary_classification_data):
+def test_split_aggregation(forest_binary_classification_data):
     """Check that confusion matrix values are aggregated across splits."""
     (estimator, X, y), cv = forest_binary_classification_data, 3
     report = CrossValidationReport(estimator, X=X, y=y, splitter=cv)
@@ -57,7 +57,7 @@ def test_split_aggregation(pyplot, forest_binary_classification_data):
         "forest_multiclass_classification_data",
     ],
 )
-def test_subplot_by(pyplot, subplot_by, fixture_name, request):
+def test_subplot_by(subplot_by, fixture_name, request):
     estimator, X, y = request.getfixturevalue(fixture_name)
     report = CrossValidationReport(estimator, X=X, y=y, splitter=3)
     display = report.metrics.confusion_matrix()
@@ -78,7 +78,7 @@ def test_subplot_by(pyplot, subplot_by, fixture_name, request):
         assert isinstance(axes[0], mpl.axes.Axes)
 
 
-def test_pos_label(pyplot, forest_binary_classification_data):
+def test_pos_label(forest_binary_classification_data):
     """Check that the report_pos_label parameter works correctly."""
     (estimator, X, y), cv = forest_binary_classification_data, 3
     labels = np.array(["A", "B"], dtype=object)

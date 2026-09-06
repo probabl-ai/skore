@@ -26,7 +26,7 @@ def test_frame_sorts_per_estimator(
 
 @pytest.mark.parametrize("sorting_order", ["descending", "ascending"])
 def test_plot_with_sorting_order(
-    pyplot, comparison_estimator_reports_binary_classification, sorting_order
+    comparison_estimator_reports_binary_classification, sorting_order
 ):
     """`sorting_order` works for plotting."""
     report = comparison_estimator_reports_binary_classification

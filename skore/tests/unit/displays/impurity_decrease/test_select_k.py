@@ -24,7 +24,7 @@ def test_negative(comparison_estimator_reports_binary_classification):
         assert group["feature"].nunique() == 2
 
 
-def test_plot_with_select_k(pyplot, comparison_estimator_reports_binary_classification):
+def test_plot_with_select_k(comparison_estimator_reports_binary_classification):
     """`select_k` works for plotting."""
     report = comparison_estimator_reports_binary_classification
     display = report.inspection.impurity_decrease()

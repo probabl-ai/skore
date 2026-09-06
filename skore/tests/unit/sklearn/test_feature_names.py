@@ -5,7 +5,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
 
-from skore._externals._sklearn_compat import convert_container
+from skore._externals.sklearn_compat import convert_container
 from skore._sklearn.feature_names import _get_feature_names
 
 

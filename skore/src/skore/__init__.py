@@ -6,60 +6,48 @@ experiment results, and inspect model behavior through interactive reports.
 
 from importlib.metadata import version
 from logging import INFO, NullHandler, getLogger
-from warnings import warn
+from typing import TYPE_CHECKING
 
-from joblib import __version__ as joblib_version
 from matplotlib import pyplot as plt
 from rich.console import Console
 from rich.theme import Theme
 
-from skore._config import configuration
-from skore._externals._sklearn_compat import parse_version
-from skore._project._summary import Summary
-from skore._project.login import login
-from skore._project.project import Project
-from skore._sklearn import (
-    ComparisonReport,
-    ConfusionMatrixDisplay,
-    CrossValidationReport,
-    EstimatorReport,
-    MetricsSummaryDisplay,
-    PrecisionRecallCurveDisplay,
-    PredictionErrorDisplay,
-    RocCurveDisplay,
-    TableReportDisplay,
-    TrainTestSplit,
-    compare,
-    evaluate,
-)
-from skore._sklearn._checks import Check, CheckNotApplicable, ChecksSummaryDisplay
-from skore._sklearn._plot.base import Display
-from skore._sklearn._plot.inspection.calibration_curve import (
-    CalibrationDisplay,
-)
-from skore._sklearn._plot.inspection.coefficients import CoefficientsDisplay
-from skore._sklearn._plot.inspection.impurity_decrease import (
-    ImpurityDecreaseDisplay,
-)
-from skore._sklearn._plot.inspection.permutation_importance import (
-    PermutationImportanceDisplay,
-)
-from skore._utils._environment import is_environment_notebook_like
-from skore._utils._patch import setup_jupyter_display
-from skore._utils._show_versions import show_versions
+from skore._externals import lazy_loader
+from skore._utils.environment import is_environment_notebook_like
+from skore._utils.patch import setup_jupyter_display
+
+if TYPE_CHECKING:
+    from skore._checks import Check, CheckNotApplicable, ChecksSummaryDisplay
+    from skore._config import configuration
+    from skore._dispatch import compare, evaluate
+    from skore._displays import (
+        ConfusionMatrixDisplay,
+        MetricsSummaryDisplay,
+        PrecisionRecallCurveDisplay,
+        PredictionErrorDisplay,
+        RocCurveDisplay,
+        TableReportDisplay,
+    )
+    from skore._displays.base import Display
+    from skore._displays.inspection.calibration_curve import CalibrationDisplay
+    from skore._displays.inspection.coefficients import CoefficientsDisplay
+    from skore._displays.inspection.impurity_decrease import ImpurityDecreaseDisplay
+    from skore._displays.inspection.permutation_importance import (
+        PermutationImportanceDisplay,
+    )
+    from skore._project.login import login
+    from skore._project.project import Project
+    from skore._project.summary import Summary
+    from skore._reports import (
+        ComparisonReport,
+        CrossValidationReport,
+        EstimatorReport,
+    )
+    from skore._sklearn import TrainTestSplit
+    from skore._utils.show_versions import show_versions
 
 plt.ion()
 setup_jupyter_display()
-
-
-if parse_version(joblib_version) < parse_version("1.4"):
-    configuration.show_progress = False
-    warn(
-        "Because your version of joblib is older than 1.4, some of the features of "
-        "skore will not be enabled (e.g. progress bars). You can update joblib to "
-        "benefit from these features.",
-        stacklevel=2,
-    )
 
 
 __version__ = version("skore")
@@ -117,3 +105,42 @@ try:
     thread.join()
 except Exception:
     THREADABLE = False
+
+
+# Declare objects as importable from here, but lazy-load them to avoid slowdowns.
+#
+# For an object to be lazy-loaded, declare it:
+# - in the ``if TYPE_CHECKING`` block, so type checkers can use it,
+# - in ``__all__``, so the F401 linter does not fail,
+# - in the ``lazy_loader.attach`` call below.
+__getattr__, __dir__, _ = lazy_loader.attach(
+    __name__,
+    submod_attrs={
+        "_checks": ["Check", "CheckNotApplicable", "ChecksSummaryDisplay"],
+        "_config": ["configuration"],
+        "_dispatch": ["compare", "evaluate"],
+        "_displays": [
+            "ConfusionMatrixDisplay",
+            "MetricsSummaryDisplay",
+            "PrecisionRecallCurveDisplay",
+            "PredictionErrorDisplay",
+            "RocCurveDisplay",
+            "TableReportDisplay",
+        ],
+        "_displays.base": ["Display"],
+        "_displays.inspection.calibration_curve": ["CalibrationDisplay"],
+        "_displays.inspection.coefficients": ["CoefficientsDisplay"],
+        "_displays.inspection.impurity_decrease": ["ImpurityDecreaseDisplay"],
+        "_displays.inspection.permutation_importance": ["PermutationImportanceDisplay"],
+        "_project.login": ["login"],
+        "_project.project": ["Project"],
+        "_project.summary": ["Summary"],
+        "_reports": [
+            "ComparisonReport",
+            "CrossValidationReport",
+            "EstimatorReport",
+        ],
+        "_sklearn": ["TrainTestSplit"],
+        "_utils.show_versions": ["show_versions"],
+    },
+)

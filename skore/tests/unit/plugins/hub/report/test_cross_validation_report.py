@@ -1,14 +1,19 @@
 from io import BytesIO
+from itertools import chain, repeat
 
+import skrub
 from joblib import dump, hash
 from numpy import array
+from pandas import DataFrame
 from pydantic import ValidationError
 from pytest import fixture, mark, param, raises
 from sklearn.datasets import make_classification, make_regression
 from sklearn.dummy import DummyRegressor
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LinearRegression, LogisticRegression
+from sklearn.metrics import make_scorer, precision_score
 from sklearn.model_selection import (
+    GroupKFold,
     KFold,
     RepeatedKFold,
     RepeatedStratifiedKFold,
@@ -20,6 +25,7 @@ from sklearn.model_selection import (
 
 from skore import CrossValidationReport, EstimatorReport, evaluate
 from skore._plugins.hub.artifact.media import (
+    ChecksSummary,
     ConfusionMatrixDataFrameTestAll,
     ConfusionMatrixDataFrameTestNone,
     ConfusionMatrixDataFrameTrainAll,
@@ -40,6 +46,18 @@ from skore._plugins.hub.report import (
     CrossValidationReportPayload,
     EstimatorReportPayload,
 )
+from skore._plugins.hub.report.cross_validation_report import (
+    SPLITTING_STRATEGY_MAX_INDEX_COUNT,
+)
+
+
+def unique(iterable):
+    seen = set()
+
+    for x in iterable:
+        if x not in seen:
+            seen.add(x)
+            yield x
 
 
 def serialize(object: EstimatorReport | CrossValidationReport) -> tuple[bytes, str]:
@@ -47,7 +65,14 @@ def serialize(object: EstimatorReport | CrossValidationReport) -> tuple[bytes, s
     reports_with_cache = [
         (report, report._cache) for report in reports if hasattr(report, "_cache")
     ]
+    reports_with_check_results_cache = [
+        (report, report._check_results_cache)
+        for report in reports
+        if hasattr(report, "_check_results_cache")
+    ]
     object._clear_cache()
+    for report, _ in reports_with_check_results_cache:
+        del report._check_results_cache
 
     try:
         with BytesIO() as stream:
@@ -56,6 +81,8 @@ def serialize(object: EstimatorReport | CrossValidationReport) -> tuple[bytes, s
     finally:
         for report, cache in reports_with_cache:
             report._cache = cache
+        for report, check_results_cache in reports_with_check_results_cache:
+            report._check_results_cache = check_results_cache
 
     with Serializer(pickle_bytes) as serializer:
         checksum = serializer.checksum
@@ -192,6 +219,10 @@ class TestCrossValidationReportPayload:
             test_target_distributions_sample_counts
         )
 
+        assert payload.ml_task == "regression"
+        assert payload.target_names is None
+        assert payload.target_ranges is None
+        assert payload.target_range == [y.min(), y.max()]
         assert payload.splitting_strategy == {
             "splitter": metadata,
             "splits": expected_splits,
@@ -241,7 +272,7 @@ class TestCrossValidationReportPayload:
             [float(y[:, 0].min()), float(y[:, 0].max())],
             [float(y[:, 1].min()), float(y[:, 1].max())],
         ]
-        assert payload.target_range == [float(y.min()), float(y.max())]
+        assert payload.target_range is None
 
     @mark.filterwarnings(
         # ignore deprecation warning due to `scikit-learn` misusing `scipy` arguments,
@@ -346,7 +377,43 @@ class TestCrossValidationReportPayload:
             "splits": expected_splits,
         }
 
-    def test_regression_splitting_do_not_call_get_n_splits(self, project):
+    def test_multioutput_regression_do_not_compute_target_range(self, project):
+        # non-regression test for https://github.com/probabl-ai/skore/pull/3120
+        X = array([0, 1, 2])
+        y = DataFrame([[3, 4], [5, 6], [7, 8]])
+
+        class Splitter:
+            def split(self, X, y=None, groups=None):
+                yield array([0, 1]), array([2])
+
+        report = CrossValidationReport(DummyRegressor(), X, y, splitter=Splitter())
+        payload = CrossValidationReportPayload(project=project, report=report, key="-")
+
+        assert report.ml_task == "multioutput-regression"
+        assert payload.target_range is None
+
+    def test_splitting_strategy_time_series_split_rescales_gap_and_sizes(self, project):
+        X, y = make_regression(n_samples=1000, random_state=0)
+        splitter = TimeSeriesSplit(
+            n_splits=2, gap=200, max_train_size=400, test_size=100
+        )
+
+        report = CrossValidationReport(DummyRegressor(), X, y, splitter=splitter)
+        payload = CrossValidationReportPayload(project=project, report=report, key="-")
+
+        splits = payload.splitting_strategy["splits"]
+
+        # scale = SPLITTING_STRATEGY_REPR_SAMPLE_COUNT / n_samples = 100 / 1000 = 0.1
+        for split in splits:
+            last_train = max(i for i, flag in enumerate(split) if flag == 0)
+            first_test = min(i for i, flag in enumerate(split) if flag == 1)
+
+            assert split.count(0) == 40  # max_train_size=400 * scale
+            assert split.count(1) == 10  # test_size=100 * scale
+            assert first_test - last_train - 1 == 20  # gap=200 * scale
+
+    def test_splitting_do_not_call_get_n_splits(self, project):
+        # non-regression test for https://github.com/probabl-ai/skore/pull/3011
         X = array([0, 1, 2, 3, 4])
         y = array([5, 6, 7, 8, 9])
 
@@ -354,16 +421,139 @@ class TestCrossValidationReportPayload:
             def split(self, X, y=None, groups=None):
                 yield array([0, 1]), array([2, 3, 4])
 
+        report = CrossValidationReport(DummyRegressor(), X, y, splitter=Splitter())
+        payload = CrossValidationReportPayload(project=project, report=report, key="-")
+
+        assert payload.splitting_strategy["splits"] == [[0, 0, 1, 1, 1]]
+        assert payload.splitting_strategy["splitter"] == {
+            "type": "Splitter",
+            "n_splits": 1,
+            "n_repeats": None,
+            "shuffle": False,
+            "random_state": None,
+        }
+
+    def test_splitting_strategy_do_not_call_custom_splitter_constructor(self, project):
+        # non-regression test for https://github.com/probabl-ai/skore/pull/3018
+        X = array([0, 1, 2, 3, 4])
+        y = array([5, 6, 7, 8, 9])
+
+        class Splitter:
+            def __init__(self, arg):
+                # raise TypeError: missing 1 required positional argument: 'arg'
+                pass
+
+            def split(self, X, y=None, groups=None):
+                nonlocal calls
+                calls += 1
+                yield array([0, 1]), array([2, 3, 4])
+
+        calls = 0
+        report = CrossValidationReport(DummyRegressor(), X, y, splitter=Splitter(0))
+        calls_before_put = calls
+        payload = CrossValidationReportPayload(project=project, report=report, key="-")
+
+        assert calls_before_put > 0
+        assert calls_before_put == calls
+        assert payload.splitting_strategy["splits"] == [[0, 0, 1, 1, 1]]
+        assert payload.splitting_strategy["splitter"] == {
+            "type": "Splitter",
+            "n_splits": 1,
+            "n_repeats": None,
+            "shuffle": False,
+            "random_state": None,
+        }
+
+    def test_splitting_strategy_do_not_send_more_than_10_000_samples(self, project):
+        # non-regression test for https://github.com/probabl-ai/skore/pull/3018
+        assert SPLITTING_STRATEGY_MAX_INDEX_COUNT < 10_001
+
+        X = array(range(10_001))
+        y = array(range(10_001, 20_002))
+
+        class Splitter:
+            def split(self, X, y=None, groups=None):
+                yield array(X[: (len(X) // 2)]), array(X[(len(X) // 2) :])
+
+        report = CrossValidationReport(DummyRegressor(), X, y, splitter=Splitter())
+        payload = CrossValidationReportPayload(project=project, report=report, key="-")
+
+        assert payload.splitting_strategy["splits"] == [None]
+        assert payload.splitting_strategy["splitter"] == {
+            "type": "Splitter",
+            "n_splits": 1,
+            "n_repeats": None,
+            "shuffle": False,
+            "random_state": None,
+        }
+
+    def test_splitting_strategy_do_not_call_split_with_groups_aware_splitter(
+        self, project
+    ):
+        # non-regression test for https://github.com/probabl-ai/skore/pull/3018
+        X = array([0, 1, 2, 3, 4])
+        y = array([5, 6, 7, 8, 9])
+        groups = array([0, 0, 1, 1, 2])
+        data = {"X": X, "y": y, "groups": groups}
+
+        splitter = GroupKFold(n_splits=2)
+
+        def split(X, y=None, groups=None):
+            nonlocal calls
+            calls += 1
+            yield from GroupKFold.split(splitter, X, y, groups=groups)
+
+        splitter.split = split
+
+        X_op = skrub.var("X", X).skb.mark_as_X(
+            cv=splitter,
+            split_kwargs={"groups": skrub.var("groups", groups)},
+        )
+        pred = X_op.skb.apply(DummyRegressor(), y=skrub.var("y", y).skb.mark_as_y())
+
+        calls = 0
+        report = CrossValidationReport(pred.skb.make_learner(), data=data)
+        calls_before_payload = calls
+        payload = CrossValidationReportPayload(project=project, report=report, key="-")
+
+        assert isinstance(report.splitter, splitter.__class__)
+        assert calls_before_payload > 0
+        assert calls_before_payload == calls
+        assert payload.splitting_strategy["splits"] == [
+            [0, 0, 1, 1, 1],
+            [1, 1, 0, 0, 0],
+        ]
+        assert payload.splitting_strategy["splitter"] == {
+            "type": "GroupKFold",
+            "n_splits": 2,
+            "n_repeats": None,
+            "shuffle": False,
+            "random_state": None,
+        }
+
+    def test_splitting_strategy_with_singleton_split(self, project):
+        # non-regression test for https://github.com/probabl-ai/skore/pull/3017
+        X = array([0, 1, 2, 3, 4])
+        y = array([5, 6, 7, 8, 9])
+
+        class Splitter:
+            def split(self, X, y=None, groups=None):
+                yield array([0, 1, 2, 3]), array([4])
+
             def get_n_splits(self, X, y=None, groups=None):
-                raise Exception
+                return 1
 
         report = CrossValidationReport(DummyRegressor(), X, y, splitter=Splitter())
         payload = CrossValidationReportPayload(
             project=project, report=report, key="<key>"
         )
 
-        assert payload.splitting_strategy["splits"] == [[0, 0, 1, 1, 1]]
-        assert payload.splitting_strategy["splitter"] == {
+        splitting_strategy = payload.splitting_strategy
+
+        assert splitting_strategy["test_target_distributions_sample_counts"] == [1]
+        assert splitting_strategy["train_target_distributions_sample_counts"] == [4]
+        assert splitting_strategy["splits"] == [[0, 0, 0, 0, 1]]
+        assert splitting_strategy["splitter"] == {
             "type": "Splitter",
             "n_splits": 1,
             "n_repeats": None,
@@ -400,8 +590,9 @@ class TestCrossValidationReportPayload:
         "ignore:Precision is ill-defined*:sklearn.exceptions.UndefinedMetricWarning"
     )
     @mark.respx()
-    def test_estimators(self, project, payload, upload_mock):
+    def test_estimators(self, project, payload):
         payload.report._cache_predictions()
+
         assert len(payload.estimators) == len(payload.report.reports_)
 
         for i, estimator in enumerate(payload.estimators):
@@ -410,20 +601,7 @@ class TestCrossValidationReportPayload:
             assert estimator.project == project
             assert estimator.report == payload.report.reports_[i]
 
-            # ensure `upload` is well called
-            pickle, _ = serialize(payload.report.reports_[i])
-
             estimator.model_dump()
-
-            assert upload_mock.called
-            assert not upload_mock.call_args.args
-            assert upload_mock.call_args.kwargs == {
-                "project": project,
-                "content": pickle,
-                "content_type": "application/octet-stream",
-            }
-
-            upload_mock.reset_mock()
 
     @mark.respx()
     def test_pickle(
@@ -434,13 +612,54 @@ class TestCrossValidationReportPayload:
         # Ensure payload is well constructed
         assert payload.pickle.checksum == checksum
 
-        # ensure `upload` is well called
+        # Ensure `upload` is well called
         assert upload_mock.called
         assert not upload_mock.call_args.args
         assert upload_mock.call_args.kwargs == {
             "project": project,
             "content": pickle,
             "content_type": "application/octet-stream",
+        }
+
+    @mark.respx()
+    def test_environment(self, project, payload, upload_mock, monkeypatch):
+        from platform import python_version
+
+        import numpy
+        import numpy.linalg
+        import sklearn
+        import sklearn.base
+
+        from skore._plugins import requirements
+
+        monkeypatch.setattr(
+            requirements.sys,
+            "modules",
+            {
+                "numpy": numpy,
+                "numpy.linalg": numpy.linalg,
+                "sklearn": sklearn,
+                "sklearn.base": sklearn.base,
+            },
+        )
+
+        content = f"numpy=={numpy.__version__}\nscikit-learn=={sklearn.__version__}"
+
+        with Serializer(content) as serializer:
+            checksum = serializer.checksum
+
+        # Ensure payload is well constructed
+        assert payload.environment.checksum == checksum
+        assert payload.environment.content_type == "text/plain"
+        assert payload.environment.python_version == python_version()
+
+        # Ensure `upload` is well called
+        assert upload_mock.called
+        assert not upload_mock.call_args.args
+        assert upload_mock.call_args.kwargs == {
+            "project": project,
+            "content": content,
+            "content_type": "text/plain",
         }
 
     @mark.filterwarnings(
@@ -461,7 +680,9 @@ class TestCrossValidationReportPayload:
                 "data_source": "test",
                 "greater_is_better": True,
                 "value": approx(0.4, abs=1e-4),
-                "position": None,
+                "label": None,
+                "output": None,
+                "average": None,
             },
             {
                 "name": "accuracy_std",
@@ -469,7 +690,9 @@ class TestCrossValidationReportPayload:
                 "data_source": "test",
                 "greater_is_better": False,
                 "value": approx(0.0, abs=1e-4),
-                "position": None,
+                "label": None,
+                "output": None,
+                "average": None,
             },
             {
                 "name": "accuracy_mean",
@@ -477,7 +700,9 @@ class TestCrossValidationReportPayload:
                 "data_source": "train",
                 "greater_is_better": True,
                 "value": approx(1.0, abs=1e-4),
-                "position": None,
+                "label": None,
+                "output": None,
+                "average": None,
             },
             {
                 "name": "accuracy_std",
@@ -485,7 +710,9 @@ class TestCrossValidationReportPayload:
                 "data_source": "train",
                 "greater_is_better": False,
                 "value": approx(0.0, abs=1e-4),
-                "position": None,
+                "label": None,
+                "output": None,
+                "average": None,
             },
             {
                 "name": "brier_score_mean",
@@ -493,7 +720,9 @@ class TestCrossValidationReportPayload:
                 "data_source": "test",
                 "greater_is_better": False,
                 "value": approx(0.32946, abs=1e-4),
-                "position": None,
+                "label": None,
+                "output": None,
+                "average": None,
             },
             {
                 "name": "brier_score_std",
@@ -501,7 +730,9 @@ class TestCrossValidationReportPayload:
                 "data_source": "test",
                 "greater_is_better": False,
                 "value": approx(0.03320, abs=1e-4),
-                "position": None,
+                "label": None,
+                "output": None,
+                "average": None,
             },
             {
                 "name": "brier_score_mean",
@@ -509,7 +740,9 @@ class TestCrossValidationReportPayload:
                 "data_source": "train",
                 "greater_is_better": False,
                 "value": approx(0.02895, abs=1e-4),
-                "position": None,
+                "label": None,
+                "output": None,
+                "average": None,
             },
             {
                 "name": "brier_score_std",
@@ -517,7 +750,9 @@ class TestCrossValidationReportPayload:
                 "data_source": "train",
                 "greater_is_better": False,
                 "value": approx(0.00128, abs=1e-4),
-                "position": None,
+                "label": None,
+                "output": None,
+                "average": None,
             },
             {
                 "name": "fit_time_mean",
@@ -525,7 +760,9 @@ class TestCrossValidationReportPayload:
                 "data_source": "test",
                 "greater_is_better": False,
                 "value": approx(0.0, abs=float("inf")),
-                "position": None,
+                "label": None,
+                "output": None,
+                "average": None,
             },
             {
                 "name": "fit_time_std",
@@ -533,7 +770,9 @@ class TestCrossValidationReportPayload:
                 "data_source": "test",
                 "greater_is_better": False,
                 "value": approx(0.0, abs=float("inf")),
-                "position": None,
+                "label": None,
+                "output": None,
+                "average": None,
             },
             {
                 "name": "fit_time_mean",
@@ -541,7 +780,9 @@ class TestCrossValidationReportPayload:
                 "data_source": "train",
                 "greater_is_better": False,
                 "value": approx(0.0, abs=float("inf")),
-                "position": None,
+                "label": None,
+                "output": None,
+                "average": None,
             },
             {
                 "name": "fit_time_std",
@@ -549,7 +790,9 @@ class TestCrossValidationReportPayload:
                 "data_source": "train",
                 "greater_is_better": False,
                 "value": approx(0.0, abs=float("inf")),
-                "position": None,
+                "label": None,
+                "output": None,
+                "average": None,
             },
             {
                 "name": "log_loss_mean",
@@ -557,7 +800,9 @@ class TestCrossValidationReportPayload:
                 "data_source": "test",
                 "greater_is_better": False,
                 "value": approx(0.90003, abs=1e-4),
-                "position": None,
+                "label": None,
+                "output": None,
+                "average": None,
             },
             {
                 "name": "log_loss_std",
@@ -565,7 +810,9 @@ class TestCrossValidationReportPayload:
                 "data_source": "test",
                 "greater_is_better": False,
                 "value": approx(0.04497, abs=1e-4),
-                "position": None,
+                "label": None,
+                "output": None,
+                "average": None,
             },
             {
                 "name": "log_loss_mean",
@@ -573,7 +820,9 @@ class TestCrossValidationReportPayload:
                 "data_source": "train",
                 "greater_is_better": False,
                 "value": approx(0.17775, abs=1e-4),
-                "position": None,
+                "label": None,
+                "output": None,
+                "average": None,
             },
             {
                 "name": "log_loss_std",
@@ -581,7 +830,89 @@ class TestCrossValidationReportPayload:
                 "data_source": "train",
                 "greater_is_better": False,
                 "value": approx(0.00232, abs=1e-4),
-                "position": None,
+                "label": None,
+                "output": None,
+                "average": None,
+            },
+            {
+                "name": "precision_mean",
+                "verbose_name": "Precision - MEAN",
+                "data_source": "test",
+                "greater_is_better": True,
+                "value": approx(0.2, abs=1e-4),
+                "label": "0",
+                "output": None,
+                "average": None,
+            },
+            {
+                "name": "precision_std",
+                "verbose_name": "Precision - STD",
+                "data_source": "test",
+                "greater_is_better": False,
+                "value": approx(0.28284, abs=1e-4),
+                "label": "0",
+                "output": None,
+                "average": None,
+            },
+            {
+                "name": "precision_mean",
+                "verbose_name": "Precision - MEAN",
+                "data_source": "test",
+                "greater_is_better": True,
+                "value": approx(0.2, abs=1e-4),
+                "label": "1",
+                "output": None,
+                "average": None,
+            },
+            {
+                "name": "precision_std",
+                "verbose_name": "Precision - STD",
+                "data_source": "test",
+                "greater_is_better": False,
+                "value": approx(0.28284, abs=1e-4),
+                "label": "1",
+                "output": None,
+                "average": None,
+            },
+            {
+                "name": "precision_mean",
+                "verbose_name": "Precision - MEAN",
+                "data_source": "train",
+                "greater_is_better": True,
+                "value": approx(1.0, abs=1e-4),
+                "label": "0",
+                "output": None,
+                "average": None,
+            },
+            {
+                "name": "precision_std",
+                "verbose_name": "Precision - STD",
+                "data_source": "train",
+                "greater_is_better": False,
+                "value": approx(0.0, abs=1e-4),
+                "label": "0",
+                "output": None,
+                "average": None,
+            },
+            {
+                "name": "precision_mean",
+                "verbose_name": "Precision - MEAN",
+                "data_source": "train",
+                "greater_is_better": True,
+                "value": approx(1.0, abs=1e-4),
+                "label": "1",
+                "output": None,
+                "average": None,
+            },
+            {
+                "name": "precision_std",
+                "verbose_name": "Precision - STD",
+                "data_source": "train",
+                "greater_is_better": False,
+                "value": approx(0.0, abs=1e-4),
+                "label": "1",
+                "output": None,
+                "average": None,
             },
             {
                 "name": "predict_time_mean",
@@ -589,7 +920,9 @@ class TestCrossValidationReportPayload:
                 "data_source": "test",
                 "greater_is_better": False,
                 "value": approx(0.0, abs=float("inf")),
-                "position": None,
+                "label": None,
+                "output": None,
+                "average": None,
             },
             {
                 "name": "predict_time_std",
@@ -597,7 +930,9 @@ class TestCrossValidationReportPayload:
                 "data_source": "test",
                 "greater_is_better": False,
                 "value": approx(0.0, abs=float("inf")),
-                "position": None,
+                "label": None,
+                "output": None,
+                "average": None,
             },
             {
                 "name": "predict_time_mean",
@@ -605,7 +940,9 @@ class TestCrossValidationReportPayload:
                 "data_source": "train",
                 "greater_is_better": False,
                 "value": approx(0.0, abs=float("inf")),
-                "position": None,
+                "label": None,
+                "output": None,
+                "average": None,
             },
             {
                 "name": "predict_time_std",
@@ -613,7 +950,89 @@ class TestCrossValidationReportPayload:
                 "data_source": "train",
                 "greater_is_better": False,
                 "value": approx(0.0, abs=float("inf")),
-                "position": None,
+                "label": None,
+                "output": None,
+                "average": None,
+            },
+            {
+                "name": "recall_mean",
+                "verbose_name": "Recall - MEAN",
+                "data_source": "test",
+                "greater_is_better": True,
+                "value": approx(0.5, abs=1e-4),
+                "label": "0",
+                "output": None,
+                "average": None,
+            },
+            {
+                "name": "recall_std",
+                "verbose_name": "Recall - STD",
+                "data_source": "test",
+                "greater_is_better": False,
+                "value": approx(0.70711, abs=1e-4),
+                "label": "0",
+                "output": None,
+                "average": None,
+            },
+            {
+                "name": "recall_mean",
+                "verbose_name": "Recall - MEAN",
+                "data_source": "test",
+                "greater_is_better": True,
+                "value": approx(0.5, abs=1e-4),
+                "label": "1",
+                "output": None,
+                "average": None,
+            },
+            {
+                "name": "recall_std",
+                "verbose_name": "Recall - STD",
+                "data_source": "test",
+                "greater_is_better": False,
+                "value": approx(0.70711, abs=1e-4),
+                "label": "1",
+                "output": None,
+                "average": None,
+            },
+            {
+                "name": "recall_mean",
+                "verbose_name": "Recall - MEAN",
+                "data_source": "train",
+                "greater_is_better": True,
+                "value": approx(1.0, abs=1e-4),
+                "label": "0",
+                "output": None,
+                "average": None,
+            },
+            {
+                "name": "recall_std",
+                "verbose_name": "Recall - STD",
+                "data_source": "train",
+                "greater_is_better": False,
+                "value": approx(0.0, abs=1e-4),
+                "label": "0",
+                "output": None,
+                "average": None,
+            },
+            {
+                "name": "recall_mean",
+                "verbose_name": "Recall - MEAN",
+                "data_source": "train",
+                "greater_is_better": True,
+                "value": approx(1.0, abs=1e-4),
+                "label": "1",
+                "output": None,
+                "average": None,
+            },
+            {
+                "name": "recall_std",
+                "verbose_name": "Recall - STD",
+                "data_source": "train",
+                "greater_is_better": False,
+                "value": approx(0.0, abs=1e-4),
+                "label": "1",
+                "output": None,
+                "average": None,
             },
             {
                 "name": "roc_auc_mean",
@@ -621,7 +1040,9 @@ class TestCrossValidationReportPayload:
                 "data_source": "test",
                 "greater_is_better": True,
                 "value": approx(0.45833, abs=1e-4),
-                "position": None,
+                "label": None,
+                "output": None,
+                "average": None,
             },
             {
                 "name": "roc_auc_std",
@@ -629,7 +1050,9 @@ class TestCrossValidationReportPayload:
                 "data_source": "test",
                 "greater_is_better": False,
                 "value": approx(0.29462, abs=1e-4),
-                "position": None,
+                "label": None,
+                "output": None,
+                "average": None,
             },
             {
                 "name": "roc_auc_mean",
@@ -637,7 +1060,9 @@ class TestCrossValidationReportPayload:
                 "data_source": "train",
                 "greater_is_better": True,
                 "value": approx(1.0, abs=1e-4),
-                "position": None,
+                "label": None,
+                "output": None,
+                "average": None,
             },
             {
                 "name": "roc_auc_std",
@@ -645,9 +1070,75 @@ class TestCrossValidationReportPayload:
                 "data_source": "train",
                 "greater_is_better": False,
                 "value": approx(0.0, abs=1e-4),
-                "position": None,
+                "label": None,
+                "output": None,
+                "average": None,
             },
         ]
+
+    @mark.filterwarnings(
+        "ignore:Precision is ill-defined.*:sklearn.exceptions.UndefinedMetricWarning"
+    )
+    @mark.respx(assert_all_called=False)
+    def test_binary_metrics_includes_averaged_rows(self, project):
+        X, y = make_classification(random_state=42, n_samples=10)
+        report = evaluate(RandomForestClassifier(random_state=42), X, y, splitter=2)
+
+        report.metrics.add(make_scorer(precision_score, average="macro"), name="xxx")
+
+        payload = CrossValidationReportPayload(
+            project=project,
+            report=report,
+            key="<key>",
+        )
+
+        precision = [
+            m
+            for m in payload.metrics
+            if m.name == "precision_mean" and m.data_source == "test"
+        ]
+        assert len(precision) >= 1
+        assert all(m.average is None for m in precision)
+        assert all(m.label is not None for m in precision)
+
+        custom = [
+            m
+            for m in payload.metrics
+            if m.name == "xxx_mean" and m.data_source == "test"
+        ]
+        assert len(custom) == 1
+        assert custom[0].average == "macro"
+        assert custom[0].label is None
+        assert custom[0].value is not None
+
+    @mark.filterwarnings(
+        "ignore:Precision is ill-defined.*:sklearn.exceptions.UndefinedMetricWarning"
+    )
+    @mark.respx(assert_all_called=False)
+    def test_multiclass_metrics_includes_aggregate_averages(
+        self, project, cross_validation_report_multiclass_classification
+    ):
+        from skore._plugins.hub.report import CrossValidationReportPayload
+
+        payload = CrossValidationReportPayload(
+            project=project,
+            report=cross_validation_report_multiclass_classification,
+            key="<key>",
+        )
+
+        for metric_name in (
+            "precision_avg_mean",
+            "recall_avg_mean",
+            "roc_auc_avg_mean",
+        ):
+            macro_metrics = [
+                m
+                for m in payload.metrics
+                if m.name == metric_name
+                and m.average == "macro"
+                and m.data_source == "test"
+            ]
+            assert len(macro_metrics) == 1
 
     @mark.filterwarnings(
         # `small_cv_binary_classification` has too few labels
@@ -702,12 +1193,49 @@ class TestCrossValidationReportPayload:
         ]
 
     @mark.filterwarnings(
+        # `small_cv_binary_classification` has too few labels
+        "ignore:Precision is ill-defined.*:sklearn.exceptions.UndefinedMetricWarning"
+    )
+    @mark.respx(assert_all_called=False)
+    def test_metrics_multimetric_scorer(self, project):
+        def my_multi_scorer(_estimator, _X, _y):
+            return {"score_a_1": 1.0, "score_b_1": 2.0, "score_c_1": 3.0}
+
+        X, y = make_classification(random_state=42, n_samples=10)
+        report = evaluate(RandomForestClassifier(random_state=42), X, y, splitter=2)
+        report.metrics.add(my_multi_scorer)
+
+        payload = CrossValidationReportPayload(
+            project=project,
+            report=report,
+            key="<key>",
+        )
+
+        custom = [
+            m
+            for m in payload.metrics
+            if m.name.startswith("score_") and m.name.endswith(("_mean", "_std"))
+        ]
+        assert {m.name for m in custom} == {
+            "score_a_1_mean",
+            "score_a_1_std",
+            "score_b_1_mean",
+            "score_b_1_std",
+            "score_c_1_mean",
+            "score_c_1_std",
+        }
+        # train + test × mean/std × 3 submetrics
+        assert len(custom) == 12
+        assert len({m.name for m in custom}) == 6
+
+    @mark.filterwarnings(
         # seaborn's use of pandas
         "ignore:The default of observed=False is deprecated.*:FutureWarning",
     )
     @mark.respx()
     def test_medias(self, payload):
         assert list(map(type, payload.medias)) == [
+            ChecksSummary,
             ConfusionMatrixDataFrameTestAll,
             ConfusionMatrixDataFrameTestNone,
             ConfusionMatrixDataFrameTrainAll,
@@ -743,9 +1271,11 @@ class TestCrossValidationReportPayload:
         payload_dict.pop("metrics")
         payload_dict.pop("medias")
         payload_dict.pop("splitting_strategy")
+        payload_dict.pop("environment")
 
         assert payload_dict == {
             "key": "<key>",
+            "canonical_report_id": str(small_cv_binary_classification.id),
             "estimator_class_name": "RandomForestClassifier",
             "dataset_fingerprint": hash(small_cv_binary_classification.y),
             "ml_task": "binary-classification",
@@ -760,6 +1290,75 @@ class TestCrossValidationReportPayload:
             "target_names": None,
             "target_ranges": None,
         }
+
+    @mark.respx()
+    def test_model_dump_classification_environment_is_evaluated_last(
+        self, project, small_cv_binary_classification, monkeypatch
+    ):
+        calls = []
+
+        # wrap each computed field to mark calls
+        for cls, field in chain(
+            zip(
+                repeat(EstimatorReportPayload),
+                EstimatorReportPayload.model_computed_fields,
+            ),
+            zip(
+                repeat(CrossValidationReportPayload),
+                CrossValidationReportPayload.model_computed_fields,
+            ),
+        ):
+            original = getattr(cls, field)
+
+            def mark(self, field=field, original=original):
+                calls.append((self.report.id, field))
+                return original.__get__(self, type(self))
+
+            monkeypatch.setattr(cls, field, property(mark))
+
+        payload = CrossValidationReportPayload(
+            project=project, report=small_cv_binary_classification, key="<key>"
+        )
+
+        payload.model_dump()
+
+        # filter properties that have been called multiple times: only keep first call
+        assert list(unique(calls)) == [
+            (small_cv_binary_classification.id, "ml_task"),
+            (small_cv_binary_classification.id, "canonical_report_id"),
+            (small_cv_binary_classification.id, "estimator_class_name"),
+            (small_cv_binary_classification.id, "dataset_fingerprint"),
+            (small_cv_binary_classification.id, "metrics"),
+            (small_cv_binary_classification.id, "medias"),
+            (small_cv_binary_classification.id, "pickle"),
+            (small_cv_binary_classification.id, "dataset_size"),
+            (small_cv_binary_classification.id, "splitting_strategy"),
+            (small_cv_binary_classification.id, "class_names"),
+            (small_cv_binary_classification.id, "target_names"),
+            (small_cv_binary_classification.id, "target_ranges"),
+            (small_cv_binary_classification.id, "target_range"),
+            (small_cv_binary_classification.id, "estimators"),
+            # First fold estimator
+            (small_cv_binary_classification.reports_[0].id, "canonical_report_id"),
+            (small_cv_binary_classification.reports_[0].id, "estimator_class_name"),
+            (small_cv_binary_classification.reports_[0].id, "dataset_fingerprint"),
+            (small_cv_binary_classification.reports_[0].id, "ml_task"),
+            (small_cv_binary_classification.reports_[0].id, "metrics"),
+            (small_cv_binary_classification.reports_[0].id, "medias"),
+            (small_cv_binary_classification.reports_[0].id, "pickle"),
+            (small_cv_binary_classification.reports_[0].id, "environment"),  # <- last
+            # Second fold estimator
+            (small_cv_binary_classification.reports_[1].id, "canonical_report_id"),
+            (small_cv_binary_classification.reports_[1].id, "estimator_class_name"),
+            (small_cv_binary_classification.reports_[1].id, "dataset_fingerprint"),
+            (small_cv_binary_classification.reports_[1].id, "ml_task"),
+            (small_cv_binary_classification.reports_[1].id, "metrics"),
+            (small_cv_binary_classification.reports_[1].id, "medias"),
+            (small_cv_binary_classification.reports_[1].id, "pickle"),
+            (small_cv_binary_classification.reports_[1].id, "environment"),  # <- last
+            #
+            (small_cv_binary_classification.id, "environment"),  # <- last
+        ]
 
     @mark.respx(assert_all_called=False)
     def test_exception(self, project):
