@@ -29,8 +29,8 @@ them here:
 
 We use the medical charge dataset with leakage columns retained in the
 with-leakage table. The goal is to audit suspect aggregates, remove leakage,
-re-encode concentrated DRG signal without duplicating it, and only then prune
-genuinely weak columns.
+then prune weak columns that `TableVectorizer` builds — not the original
+inputs SKD012 flagged while a golden feature was present.
 """
 
 # %%
@@ -172,10 +172,14 @@ comparison.metrics.summarize().frame()
 _ = second_report.inspection.permutation_importance().plot()
 
 # %%
-# SKD012 still flags `Total_Discharges`. This time it is not an artefact of a
-# golden feature: the column stays weak without the payment aggregates. Let us
-# drop it, and also the extra columns that `TableVectorizer` builds from
-# high-cardinality strings.
+# SKD012 inspects those original columns. Without the leaky payments they all
+# contribute some signal, so the check no longer fires — including for
+# `Total_Discharges`, which is the weakest but whose importance interval does
+# not contain zero. That is what we hoped: do not drop columns from a leaky
+# report.
+#
+# The check never sees the extra columns `TableVectorizer` creates from
+# high-cardinality strings. Those can still be weak, which we prune next.
 
 second_report.checks.summarize()
 
@@ -185,7 +189,7 @@ second_report.checks.summarize()
 #
 # SKD012 only sees the original input columns. `TableVectorizer` turns
 # high-cardinality fields such as `DRG_Definition` into many numeric
-# components; some of those can be as uninformative as `Total_Discharges`.
+# components; some of those add little once the useful ones are present.
 # We therefore select *after* vectorizing, with
 # :class:`~sklearn.feature_selection.SelectFromModel`, so the choice is fit on
 # the training fold only.
@@ -209,6 +213,10 @@ model_reduced = make_pipeline(
 model_reduced
 
 # %%
+# Let us evaluate the reduced pipeline on the same split. Test scores are a
+# little better, and the model is lighter: selection dropped the weak
+# vectorized components before fitting histogram boosting.
+
 third_report = evaluate(
     model_reduced,
     X=X_without_payment,
@@ -225,6 +233,9 @@ comparison_reduced = compare(
 comparison_reduced.metrics.summarize().frame()
 
 # %%
+# SKD012 still looks at the original columns, so it does not record the
+# features we pruned after vectorizing. We skip the slow checks here.
+
 third_report.checks.summarize(fast_mode=True)
 
 # %%
@@ -232,9 +243,9 @@ third_report.checks.summarize(fast_mode=True)
 # ==========
 #
 # SKD011 and SKD012 often appear together when one leaky column dominates.
-# Audit that column, compare with-and-without it, then re-encode concentrated
-# signal without duplication (here: string ``DRG_Code`` plus severity flags
-# instead of free-text ``DRG_Definition``, inside the estimator pipeline). Only
-# then prune columns that remain weak on the clean table, for example with
-# :class:`~sklearn.feature_selection.SelectFromModel`. Do not treat SKD012
-# flags on a leaky report as a drop list.
+# Audit that column and compare with-and-without it; do not treat SKD012 flags
+# on a leaky report as a drop list. Once leakage is gone, SKD012 may clear on
+# the original columns even though `TableVectorizer` still builds weak
+# encoded components. Prune those inside the pipeline, for example with
+# :class:`~sklearn.feature_selection.SelectFromModel`, and check that test
+# performance is preserved.
