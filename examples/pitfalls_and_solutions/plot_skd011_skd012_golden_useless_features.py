@@ -14,8 +14,9 @@ them here:
 
 **SKD011 - golden feature**
 
-- audit the suspect feature for leakage,
-- compare predictive performance with and without the feature,
+- audit the suspect feature for leakage (is it derived from the target or
+  from data that would not be available at inference time?),
+- decide whether to keep or drop it,
 - collect or engineer additional features so the model is less dependent on
   a single one.
 
@@ -36,39 +37,27 @@ genuinely weak columns.
 # Load the medical charge dataset
 # ===============================
 #
-# The target is ``Average_Total_Payments``. Columns such as
-# ``Average_Medicare_Payments`` are billing aggregates from the same process;
-# they are not available before the target is known in a real deployment. We
-# keep them in the with-leakage table to show what happens when leakage slips
-# through validation.
-#
-# SKD011 and SKD012 often fire on the same report: a golden feature alone
-# matches full-model scores, so other columns look useless even though they can
-# matter once the golden column is removed. Audit leakage (SKD011) before
-# dropping features flagged by SKD012.
-#
-# Both checks are slow (per-feature refits / permutation importance). Run
-# full :meth:`~skore.EstimatorReport.checks.summarize` on the trigger and on the
-# cleaned report so you can see both checks clear.
+# Let's load the `medical_charge` dataset, which we will use to predict the average
+# cost of an inpatient stay from the hospital's location and the type of medical
+# procedure.
 
 from skrub.datasets import fetch_medical_charge
 
 dataset = fetch_medical_charge()
-X, y = dataset.X, dataset.y
+X_full, y_full = dataset.X, dataset.y
 
 # %%
-# Inspect predictors and target with :class:`~skrub.TableReport`.
+# Then we can inspect predictors and target with :class:`~skrub.TableReport`.
 
 from skrub import TableReport
 
-TableReport(X)
+TableReport(X_full)
 
 # %%
-TableReport(y)
+TableReport(y_full)
 
 # %%
-# Drop provider identifiers for modelling, subsample 3,000 rows, and build two
-# tables: one with leakage columns and one without.
+# Next, we drop provider identifiers for modelling and subsample 3,000 rows.
 
 id_cols = [
     "Provider_Zip_Code",
@@ -76,241 +65,167 @@ id_cols = [
     "Provider_Name",
     "Provider_Street_Address",
 ]
-leakage_cols = ["Average_Covered_Charges", "Average_Medicare_Payments"]
 
-X_with_leakage = X.drop(columns=id_cols).sample(3_000, random_state=42)
-y_sub = y.loc[X_with_leakage.index]
-X_without_leakage = X_with_leakage.drop(columns=leakage_cols)
+X = X_full.drop(columns=id_cols).sample(3_000, random_state=42).reset_index(drop=True)
+y = y_full.sample(3_000, random_state=42).reset_index(drop=True)
 
 # %%
+# We now create a splitter, vectorizer, and regressor that we reuse throughout
+# the example. :func:`~skore.evaluate` clones them before fitting.
+#
+# High-cardinality strings are encoded with :class:`~skrub.StringEncoder` (TF-IDF
+# then randomized SVD); we seed it so reruns stay comparable.
+
+from sklearn.ensemble import HistGradientBoostingRegressor
+from sklearn.pipeline import make_pipeline
 from skore import TrainTestSplit
+from skrub import StringEncoder, TableVectorizer
 
 splitter = TrainTestSplit(random_state=42, test_size=0.2)
+vectorizer = TableVectorizer(high_cardinality=StringEncoder(random_state=42))
+regressor = HistGradientBoostingRegressor(random_state=42)
 
 # %%
-# Trigger SKD011 and SKD012 - with leakage
-# ========================================
+# Trigger SKD011 and SKD012
+# =========================
+#
+# Let us train a gradient boosting model, using skrub's `TableVectorizer` to vectorize
+# the data first.
 
 from skore import evaluate
-from skrub import tabular_pipeline
 
-report_with_leakage = evaluate(
-    tabular_pipeline("regressor"),
-    X=X_with_leakage,
-    y=y_sub,
+model = make_pipeline(vectorizer, regressor)
+
+first_report = evaluate(
+    model,
+    X=X,
+    y=y,
     splitter=splitter,
 )
+first_report
 
 # %%
-# Expect tips for SKD011 on ``Average_Medicare_Payments`` and SKD012 on columns
-# overshadowed by that leakage feature. Near-perfect scores plus a golden
-# feature are a leakage smoke signal so pause before treating SKD012 flags as a list
-# of columns to drop.
+# We can see from the metrics table that the models performs very well on the data,
+# with an R² of 0.96.
+# However, looking at the checks, we can see in the Tips tab that SKD011 triggers on
+# the `Average_Medicare_Payments` column.
 
-report_with_leakage.checks.summarize()
-
-# %%
-report_with_leakage.metrics.summarize(data_source="both").frame()
+first_report.checks.summarize()
 
 # %%
-# SKD011 - audit the suspect feature for leakage
+# We should then question whether this column would be available in a real deployment.
+# If it would, then we have found a good proxy for the target and we can move on.
+# If it would not, then we should not use this column to train our model.
+#
+# In our case, the target (`Average_Total_Payments`) and the golden feature
+# (`Average_Medicare_Payments`) come from the same process (billing aggregates).
+# Therefore, `Average_Medicare_Payments` would not be available in a real deployment,
+# and we should not use it to train our model. As a matter of fact,
+# `Average_Covered_Charges` would also not be able in a deployment setting so we will
+# also drop it.
+#
+# A final thing to be careful about is that SKD012 is triggered and tips us about
+# `ProviderCity` and `Total_Discharges` being useless. As we can see in the importance
+# plot below, every feature receives very low importance in the presence of the golden
+# feature, when they may be signal rich and important in the absence of the golden
+# feature. We will keep them for now.
+
+_ = first_report.inspection.permutation_importance().plot()
+
+
+# SKD011 - Inspect after dropping golden feature
 # ==============================================
 #
-# We correlate leakage columns with the target and inspect cardinality. A column
-# that is almost collinear with the label and available only after billing
-# closes should not ship to production.
-
-leak_audit = (
-    X_with_leakage[leakage_cols]
-    .corrwith(y_sub)
-    .rename("corr_with_target")
-    .to_frame()
-    .assign(unique_values=X_with_leakage[leakage_cols].nunique())
-    .sort_values("corr_with_target", key=abs, ascending=False)
-)
-leak_audit
-
-# %%
-import matplotlib.pyplot as plt
-
-fig, ax = plt.subplots(figsize=(4, 4))
-ax.scatter(
-    X_with_leakage["Average_Medicare_Payments"],
-    y_sub,
-    alpha=0.4,
-    s=10,
-)
-ax.set(
-    xlabel="Average_Medicare_Payments",
-    ylabel=y_sub.name,
-    title="Suspect feature vs target",
-)
-_ = fig
-
-# %%
-# A tight scatter against the target confirms the column describes the same
-# outcome you are trying to forecast, not a legitimate precursor.
+# First let's evaluate the same model on the same test set with the payment features
+# removed, and compare it with our original model.
 #
-# SKD011 - compare with and without leakage
-# =========================================
-#
-# :func:`~skore.compare` contrasts metrics on the leaky and clean tables. Test
-# scores should drop once legitimate predictors must carry the signal alone.
+# Thankfully there is still signal in the remaining features, as we get a decent R²
+# of 0.90.
 
 from skore import compare
 
-report_without_leakage = evaluate(
-    tabular_pipeline("regressor"),
-    X=X_without_leakage,
-    y=y_sub,
+X_without_payment = X.drop(
+    columns=["Average_Medicare_Payments", "Average_Covered_Charges"]
+)
+
+second_report = evaluate(
+    model,
+    X=X_without_payment,
+    y=y,
     splitter=splitter,
 )
 
 comparison = compare(
     {
-        "with_leakage": report_with_leakage,
-        "without_leakage": report_without_leakage,
+        "with_payment_features": first_report,
+        "without_payment_features": second_report,
     }
 )
-comparison.metrics.summarize(data_source="both").frame()
+comparison.metrics.summarize().frame()
 
 # %%
-# Without leakage, SKD011 should clear. SKD012 may still flag weak columns, but
-# those flags are no longer caused by a golden feature. As we see now there is only
-# one weak column.
+# Let us inspect which features are now the ones our model relies on the most.
+# We can see that `DRG_Definition` is by far most important one, according to
+# permutation importance. This feature encodes the medical reason for which patients
+# were treated. It will therefore be available at inference time and we can use it.
 
-report_without_leakage.checks.summarize()
-
-# %%
-# After leakage is gone, ``DRG_Definition`` still carries most of the signal.
-
-perm_without_leakage = report_without_leakage.inspection.permutation_importance(
-    seed=42,
-    n_repeats=5,
-)
-perm_without_leakage.frame()
+_ = second_report.inspection.permutation_importance().plot()
 
 # %%
-_ = perm_without_leakage.plot()
+# SKD012 still flags `Total_Discharges`. This time it is not an artefact of a
+# golden feature: the column stays weak without the payment aggregates. Let us
+# drop it, and also the extra columns that `TableVectorizer` builds from
+# high-cardinality strings.
 
-# %%
-# It seems like that most of the signal lives in ``DRG_Definition``;
-# so next we re-encode it.
-
-# %%
-# SKD011 - engineer legitimate features
-# =====================================
-#
-# We *decompose* ``DRG_Definition`` into parts the model can use separately:
-#
-# - ``DRG_Code`` (string): the categorical procedure id, kept as text so
-#   ``tabular_pipeline`` treats it as high-cardinality, not a float scale;
-# - ``has_MCC`` / ``has_CC``: severity bits that many DRGs share.
-#
-# Then we drop the original free-text column (id and definition are the same, so
-# keeping both would duplicate the same identity).
-#
-# We wrap the transform in a :class:`~sklearn.preprocessing.FunctionTransformer`
-# and put it at the start of the estimator pipeline so the same engineering
-# runs on train and test (and cannot leak fit-time statistics).
-
-
-def engineer_features(X):
-    X = X.copy()
-    if "DRG_Definition" in X.columns:
-        X["DRG_Code"] = X["DRG_Definition"].str.extract(r"^(\d+)", expand=False)
-        drg = X["DRG_Definition"].str.upper()
-        X["has_MCC"] = drg.str.contains("W MCC", regex=False).astype(int)
-        X["has_CC"] = (
-            drg.str.contains("W CC", regex=False)
-            & ~drg.str.contains("W MCC", regex=False)
-        ).astype(int)
-        X = X.drop(columns=["DRG_Definition"])
-    return X
-
-
-from sklearn.pipeline import make_pipeline
-from sklearn.preprocessing import FunctionTransformer
-
-model_engineered = make_pipeline(
-    FunctionTransformer(engineer_features),
-    tabular_pipeline("regressor"),
-)
-
-report_engineered = evaluate(
-    model_engineered,
-    X=X_without_leakage,
-    y=y_sub,
-    splitter=splitter,
-)
-
-report_engineered
-
-# %%
-# Scores may move because the model no longer sees the raw free-text field,
-# only the decomposed ``DRG_Code`` and severity flags inside the pipeline.
-
-comparison_engineered = compare(
-    {
-        "without_leakage": report_without_leakage,
-        "with_feature_engineering": report_engineered,
-    }
-)
-comparison_engineered.metrics.summarize(data_source="both").frame()
-
-# %%
-report_engineered.checks.summarize(fast_mode=True)
+second_report.checks.summarize()
 
 # %%
 # SKD012 - prune weak features inside the pipeline
 # ================================================
 #
-# On the *leaky* report, SKD012 often flagged geography and discharges because
-# Medicare payments already explained the target; those were overshadowed, not
-# a drop list. After cleaning and engineering, we prune weak *vectorized*
-# signal with :class:`~sklearn.feature_selection.SelectFromModel` so selection
-# is fit on the training fold only (same rule as any other pipeline step).
+# SKD012 only sees the original input columns. `TableVectorizer` turns
+# high-cardinality fields such as `DRG_Definition` into many numeric
+# components; some of those can be as uninformative as `Total_Discharges`.
+# We therefore select *after* vectorizing, with
+# :class:`~sklearn.feature_selection.SelectFromModel`, so the choice is fit on
+# the training fold only.
 #
-# We keep the same :func:`~sklearn.preprocessing.FunctionTransformer` first,
-# vectorize with :class:`~skrub.TableVectorizer`, select with a forest, then
-# fit the final regressor on the reduced representation.
+# Histogram gradient boosting has no `feature_importances_`, so the selector
+# uses :class:`~sklearn.ensemble.GradientBoostingRegressor`. The final
+# estimator stays a :class:`~sklearn.ensemble.HistGradientBoostingRegressor` on
+# the reduced matrix.
 
-from sklearn.ensemble import HistGradientBoostingRegressor, RandomForestRegressor
+from sklearn.ensemble import GradientBoostingRegressor
 from sklearn.feature_selection import SelectFromModel
-from skrub import TableVectorizer
 
 model_reduced = make_pipeline(
-    FunctionTransformer(engineer_features),
-    TableVectorizer(),
+    vectorizer,
     SelectFromModel(
-        RandomForestRegressor(n_estimators=100, random_state=42),
+        GradientBoostingRegressor(random_state=42),
         threshold="median",
     ),
-    HistGradientBoostingRegressor(random_state=42),
+    regressor,
 )
 model_reduced
 
 # %%
-report_reduced = evaluate(
+third_report = evaluate(
     model_reduced,
-    X=X_without_leakage,
-    y=y_sub,
+    X=X_without_payment,
+    y=y,
     splitter=splitter,
 )
 
-report_reduced
-
-# %%
 comparison_reduced = compare(
     {
-        "with_feature_engineering": report_engineered,
-        "reduced_features": report_reduced,
+        "without_payment_features": second_report,
+        "without_payment_features_reduced": third_report,
     }
 )
-comparison_reduced.metrics.summarize(data_source="test").frame()
+comparison_reduced.metrics.summarize().frame()
 
 # %%
-report_reduced.checks.summarize(fast_mode=True)
+third_report.checks.summarize(fast_mode=True)
 
 # %%
 # Conclusion

@@ -500,7 +500,7 @@ How to reduce the risk
 
 - audit the suspect feature for leakage (is it derived from the target or
   from data that would not be available at inference time?),
-- compare predictive performance with and without the feature,
+- decide whether to keep or drop it,
 - collect or engineer additional features so the model is less dependent on
   a single one.
 
