@@ -29,8 +29,7 @@ them here:
 
 We use the medical charge dataset with leakage columns retained in the
 with-leakage table. The goal is to audit suspect aggregates, remove leakage,
-then prune weak columns that `TableVectorizer` builds — not the original
-inputs SKD012 flagged while a golden feature was present.
+then prune weak columns that `TableVectorizer` builds.
 """
 
 # %%
@@ -173,10 +172,8 @@ _ = second_report.inspection.permutation_importance().plot()
 
 # %%
 # SKD012 inspects those original columns. Without the leaky payments they all
-# contribute some signal, so the check no longer fires — including for
-# `Total_Discharges`, which is the weakest but whose importance interval does
-# not contain zero. That is what we hoped: do not drop columns from a leaky
-# report.
+# contribute some signal, so the check no longer fires. That is what we hoped:
+# do not drop columns from a leaky report.
 #
 # The check never sees the extra columns `TableVectorizer` creates from
 # high-cardinality strings. Those can still be weak, which we prune next.
@@ -231,12 +228,6 @@ comparison_reduced = compare(
     }
 )
 comparison_reduced.metrics.summarize().frame()
-
-# %%
-# SKD012 still looks at the original columns, so it does not record the
-# features we pruned after vectorizing. We skip the slow checks here.
-
-third_report.checks.summarize(fast_mode=True)
 
 # %%
 # Conclusion
