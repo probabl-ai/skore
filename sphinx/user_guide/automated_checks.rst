@@ -229,15 +229,25 @@ Why it matters
 
 When some classes are severely underrepresented, the model may never learn to
 distinguish them reliably. Overall accuracy can look acceptable while per-class
-performance on the rare classes remains poor.
+performance on the rare classes remains poor. The check flags that situation so
+you handle rarity deliberately; clearing SKD005 by changing the class mix is not
+the main goal when natural prevalence matters.
 
 How to reduce the risk
 ^^^^^^^^^^^^^^^^^^^^^^
 
-- use per-class metrics (precision, recall, F1 per class) to monitor all classes,
-- resample the dataset (oversampling rare classes or undersampling frequent ones),
-- use class weights in the estimator,
-- collect more data for the underrepresented classes if possible.
+- report absolute class counts as well as percentages,
+- evaluate metrics based on predicted probabilities (such as log-loss) before
+  metrics based on hard class predictions (such as accuracy, precision, recall and F1),
+- collect more rare-class labels when possible, without treating a cleared
+  SKD005 as the success criterion,
+- if you collect extra rare-class data, correct for prevalence shift relative to
+  production.
+
+For binary rare-event threshold tuning and when ``class_weight`` is a risky
+shortcut, see :ref:`SKD004 <skd004-high-class-imbalance>`.
+
+Check out the :ref:`example for this check <example_skd005_underrepresented_classes>`.
 
 
 .. _skd006-unscaled-coefficients:
