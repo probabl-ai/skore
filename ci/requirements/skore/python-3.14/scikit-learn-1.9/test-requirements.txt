@@ -13,6 +13,7 @@ annotated-types==0.8.0
 anyio==4.14.2
     # via
     #   httpx
+    #   mlflow-skinny
     #   starlette
 ast-serialize==0.6.0
     # via mypy
@@ -52,7 +53,7 @@ contourpy==1.3.3
     # via matplotlib
 coverage[toml]==7.15.3
     # via pytest-cov
-cryptography==49.0.0
+cryptography==50.0.1
     # via
     #   google-auth
     #   mlflow
@@ -179,11 +180,11 @@ matplotlib-inline==0.2.2
     # via ipython
 mdurl==0.1.2
     # via markdown-it-py
-mlflow==3.15.1
+mlflow==3.16.0
     # via skore (skore/pyproject.toml)
-mlflow-skinny==3.15.1
+mlflow-skinny==3.16.0
     # via mlflow
-mlflow-tracing==3.15.1
+mlflow-tracing==3.16.0
     # via mlflow
 multidict==6.7.1
     # via
