@@ -90,8 +90,11 @@ class CheckGoldenFeature(Check):
     Detects a single feature that, used alone to refit the estimator, reaches
     scores close to the full model on the report's default predictive metrics.
     Features whose scores also match a model trained on the target itself are
-    reported as likely target leakage. Skipped when SKD002 has already flagged
-    underfitting.
+    reported as likely target leakage.
+
+    If SKD002 has already flagged underfitting on the same report, This check is marked
+    as not applicable so a uniformly bad model is not treated as having many golden
+    features.
 
     Note: for skrub learners whose preprocessing vectorizes columns (e.g.
     :class:`~skrub.TableVectorizer`), a raw "golden column" may not appear as a
