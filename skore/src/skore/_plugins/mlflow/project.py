@@ -180,7 +180,7 @@ class Project:
         self.__mlflow_client = MlflowClient()
         self.__name = name
         experiment = mlflow.set_experiment(name)
-        self.__experiment_id = cast(str, experiment.experiment_id)
+        self.__experiment_id = experiment.experiment_id
 
     @property
     def name(self) -> str:
@@ -304,14 +304,11 @@ class Project:
 
     def summarize(self) -> list[Metadata]:
         """Obtain metadata/metrics for all persisted models in insertion order."""
-        runs = cast(
-            list[MLFlowRun],
-            mlflow.search_runs(
-                experiment_ids=[self.experiment_id],
-                output_format="list",
-                order_by=["attributes.start_time ASC"],
-                filter_string='tags.skore_status = "completed"',
-            ),
+        runs = mlflow.search_runs(
+            experiment_ids=[self.experiment_id],
+            output_format="list",
+            order_by=["attributes.start_time ASC"],
+            filter_string='tags.skore_status = "completed"',
         )
 
         metadatas = []
@@ -326,32 +323,34 @@ class Project:
     @staticmethod
     def _run_to_metadata(run: MLFlowRun) -> Metadata:
         tags = run.data.tags
-        metrics = run.data.metrics
+        run_metrics = run.data.metrics
         report_type = tags["report_type"]
 
         if report_type == "estimator":
-            inputs = sorted(run.inputs.dataset_inputs, key=_dataset_context_tag)
+            dataset_inputs = [] if run.inputs is None else run.inputs.dataset_inputs
+            inputs = sorted(dataset_inputs, key=_dataset_context_tag)
             digests = [inp.dataset.digest for inp in inputs]
-            metrics = {
-                "rmse": run.data.metrics.get("rmse"),
-                "log_loss": run.data.metrics.get("log_loss"),
-                "roc_auc": run.data.metrics.get("roc_auc"),
-                "fit_time": metrics["fit_time"],
-                "predict_time": metrics["predict_time"],
+            metrics: dict[str, float | None] = {
+                "rmse": run_metrics.get("rmse"),
+                "log_loss": run_metrics.get("log_loss"),
+                "roc_auc": run_metrics.get("roc_auc"),
+                "fit_time": run_metrics["fit_time"],
+                "predict_time": run_metrics["predict_time"],
             }
         elif report_type == "cross-validation":
-            digests = [run.inputs.dataset_inputs[0].dataset.digest]
+            dataset_inputs = [] if run.inputs is None else run.inputs.dataset_inputs
+            digests = [dataset_inputs[0].dataset.digest]
             metrics = {
-                "rmse_mean": run.data.metrics.get("rmse"),
-                "log_loss_mean": run.data.metrics.get("log_loss"),
-                "roc_auc_mean": run.data.metrics.get("roc_auc"),
-                "fit_time_mean": metrics["fit_time"],
-                "predict_time_mean": metrics["predict_time"],
-                "rmse_std": run.data.metrics.get("rmse_std"),
-                "log_loss_std": run.data.metrics.get("log_loss_std"),
-                "roc_auc_std": run.data.metrics.get("roc_auc_std"),
-                "fit_time_std": run.data.metrics.get("fit_time_std"),
-                "predict_time_std": run.data.metrics.get("predict_time_std"),
+                "rmse_mean": run_metrics.get("rmse"),
+                "log_loss_mean": run_metrics.get("log_loss"),
+                "roc_auc_mean": run_metrics.get("roc_auc"),
+                "fit_time_mean": run_metrics["fit_time"],
+                "predict_time_mean": run_metrics["predict_time"],
+                "rmse_std": run_metrics.get("rmse_std"),
+                "log_loss_std": run_metrics.get("log_loss_std"),
+                "roc_auc_std": run_metrics.get("roc_auc_std"),
+                "fit_time_std": run_metrics.get("fit_time_std"),
+                "predict_time_std": run_metrics.get("predict_time_std"),
             }
         else:
             raise ValueError(f"Unsupported report type: {report_type}")
@@ -398,14 +397,11 @@ class Project:
                 f"tracking_uri='{tracking_uri}') does not exist."
             )
 
-        active_runs = cast(
-            list[MLFlowRun],
-            mlflow.search_runs(
-                experiment_ids=[experiment.experiment_id],
-                filter_string='attributes.status = "RUNNING"',
-                max_results=1,
-                output_format="list",
-            ),
+        active_runs = mlflow.search_runs(
+            experiment_ids=[experiment.experiment_id],
+            filter_string='attributes.status = "RUNNING"',
+            max_results=1,
+            output_format="list",
         )
         if active_runs:
             raise RuntimeError(
@@ -607,9 +603,8 @@ def _flatten_df_index(df: pd.DataFrame | pd.Series) -> pd.DataFrame:
     if isinstance(df, pd.Series):
         df = df.to_frame(name=df.name)
     df = df.copy(deep=False)
-    columns = df.columns
-    if columns is not None and columns.nlevels > 1:
-        df.columns = columns.droplevel(0)
+    if isinstance(df.columns, pd.MultiIndex):
+        df.columns = df.columns.droplevel(0)
 
     index = df.index
     if isinstance(index, pd.RangeIndex) and len(index.names) == 1:
