@@ -159,6 +159,31 @@ def test_post_oauth_refresh_token(respx_mock):
     assert expires_at == "C"
 
 
+def test_open_webbrowser_discards_child_stdio(monkeypatch):
+    launched = {}
+
+    monkeypatch.setattr(
+        "skore._plugins.hub.authentication.token.which",
+        lambda command: "/usr/bin/xdg-open" if command == "xdg-open" else None,
+    )
+
+    def fake_popen(args, **kwargs):
+        launched["args"] = args
+        launched["kwargs"] = kwargs
+
+    monkeypatch.setattr("skore._plugins.hub.authentication.token.Popen", fake_popen)
+
+    from subprocess import DEVNULL
+
+    from skore._plugins.hub.authentication.token import open_webbrowser
+
+    open_webbrowser("https://example.test")
+
+    assert launched["args"] == ["/usr/bin/xdg-open", "https://example.test"]
+    assert launched["kwargs"]["stdout"] is DEVNULL
+    assert launched["kwargs"]["stderr"] is DEVNULL
+
+
 class TestToken:
     @mark.respx()
     def test_init(self, monkeypatch, respx_mock):

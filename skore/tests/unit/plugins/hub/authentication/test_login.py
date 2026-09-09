@@ -71,8 +71,8 @@ def test_login_with_token(monkeypatch, respx_mock):
 
 
 @mark.respx()
-def test_login_interactive_success_prints_one_panel(monkeypatch, respx_mock):
-    """Interactive login prints one titled panel, after unboxed waiting copy."""
+def test_login_interactive_success_replaces_waiting_panel(monkeypatch, respx_mock):
+    """Interactive login updates the waiting Live panel to success, same frame."""
     monkeypatch.setattr(
         "skore._plugins.hub.authentication.token.open_webbrowser",
         lambda _: True,
@@ -102,24 +102,29 @@ def test_login_interactive_success_prints_one_panel(monkeypatch, respx_mock):
         )
     )
 
+    live_updates = []
     printed = []
+
+    class TrackingLive(login_module.Live):
+        def update(self, renderable, *, refresh=False):
+            live_updates.append(renderable)
+            return super().update(renderable, refresh=refresh)
+
     original_print = login_module.console.print
 
     def capture_print(*args, **kwargs):
         printed.extend(args)
         original_print(*args, **kwargs)
 
+    monkeypatch.setattr(login_module, "Live", TrackingLive)
     monkeypatch.setattr(login_module.console, "print", capture_print)
 
     login_module.login()
 
-    panels = [panel for panel in printed if isinstance(panel, Panel)]
-    assert len(panels) == 1
-    assert "interactive authentication" in str(panels[0].renderable)
-    assert any(
-        isinstance(message, str) and "API key not detected" in message
-        for message in printed
-    )
+    assert len(live_updates) == 2
+    assert "API key not detected" in str(live_updates[0].renderable)
+    assert "interactive authentication" in str(live_updates[1].renderable)
+    assert not any(isinstance(item, Panel) for item in printed)
 
 
 @mark.respx()

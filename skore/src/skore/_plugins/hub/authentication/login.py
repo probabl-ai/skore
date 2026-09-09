@@ -1,10 +1,13 @@
 """Login to ``skore hub``."""
 
 from collections.abc import Callable
+from io import StringIO
 from logging import getLogger
 from os import environ
 
 from rich.align import Align
+from rich.console import Console
+from rich.live import Live
 from rich.panel import Panel
 
 from skore import console
@@ -24,6 +27,27 @@ logger = getLogger(__name__)
 credentials: Callable[[], dict[str, str]] | None = None
 
 
+def _login_panel(message: str) -> Panel:
+    return Panel(
+        Align.center(message),
+        title="[cyan]Login to [bold]Skore Hub",
+        border_style="cyan",
+        padding=1,
+    )
+
+
+def _panel_line_count(panel: Panel) -> int:
+    buffer = StringIO()
+    Console(
+        file=buffer,
+        width=console.width,
+        color_system=None,
+        force_terminal=True,
+        highlight=False,
+    ).print(panel)
+    return buffer.getvalue().count("\n")
+
+
 def login(*, timeout: int = 600) -> None:
     """Login to ``skore hub``.
 
@@ -39,37 +63,27 @@ def login(*, timeout: int = 600) -> None:
 
     if credentials is not None:
         logger.debug(f"Already logged in {URI()} with {credentials.__module__}.")
-        console.print(
-            Panel(
-                Align.center("Already logged in."),
-                title="[cyan]Login to [b]Skore Hub",
-                border_style="cyan",
-                padding=1,
-            )
-        )
+        console.print(_login_panel("Already logged in."))
 
         return
 
     try:
         credentials = APIKey()
     except KeyError:
-        credentials = Token(timeout=timeout)
-        console.print(
-            Panel(
-                Align.center(
-                    "Successfully logged in, using [b]interactive authentication."
-                ),
-                title="[cyan]Login to [bold]Skore Hub",
-                border_style="cyan",
-                padding=1,
+        success = "Successfully logged in, using [b]interactive authentication."
+        with Live(
+            console=console,
+            auto_refresh=False,
+            redirect_stdout=False,
+            redirect_stderr=False,
+        ) as live:
+            credentials = Token(timeout=timeout, live=live)
+            extra = max(
+                0,
+                live._live_render.last_render_height
+                - _panel_line_count(_login_panel(success)),
             )
-        )
+            live.update(_login_panel(success + extra * "\n"))
+            live.refresh()
     else:
-        console.print(
-            Panel(
-                Align.center("Successfully logged in, using [b]API key."),
-                title="[cyan]Login to [bold]Skore Hub",
-                border_style="cyan",
-                padding=1,
-            )
-        )
+        console.print(_login_panel("Successfully logged in, using [b]API key."))
