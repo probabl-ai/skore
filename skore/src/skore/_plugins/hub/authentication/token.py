@@ -9,9 +9,6 @@ from urllib.parse import urljoin
 from webbrowser import open as open_webbrowser
 
 from httpx import HTTPStatusError, TimeoutException
-from rich.align import Align
-from rich.live import Live
-from rich.panel import Panel
 
 from skore import console
 from skore._plugins.hub.authentication.uri import URI
@@ -199,28 +196,18 @@ class Token:
     Refresh the token on-the-fly if necessary.
     """
 
-    def __init__(self, *, timeout: int = 600, live: Live | None = None) -> None:
+    def __init__(self, *, timeout: int = 600) -> None:
         url, device_code, user_code = get_oauth_device_login()
-        panel = Panel(
-            Align.center(
-                "[b]API key not detected.[/b]\n\n"
-                "Starting interactive authentication for the session.\n"
-                "[i]We recommend that you create an API key and use it to log in, "
-                "at [link=https://skore.probabl.ai/account]"
-                "https://skore.probabl.ai/account[/link].[/i]\n\n"
-                "Opening browser for interactive authentication; if this fails, "
-                f"please visit:\n[link={url}]{url}[/link]"
-            ),
-            title="[cyan]Login to [bold]Skore Hub",
-            border_style="cyan",
-            padding=1,
+        console.print(
+            "[b]API key not detected.[/b]\n\n"
+            "Starting interactive authentication for the session.\n"
+            "[i]We recommend that you create an API key and use it to log in, "
+            "at [link=https://skore.probabl.ai/account]"
+            "https://skore.probabl.ai/account[/link].[/i]\n\n"
+            "Opening browser for interactive authentication; if this fails, "
+            f"please visit:\n[link={url}]{url}[/link]",
+            soft_wrap=True,
         )
-
-        if live:
-            live.update(panel)
-            live.refresh()
-        else:
-            console.print(panel, soft_wrap=True)
 
         open_webbrowser(url)
 

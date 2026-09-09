@@ -5,7 +5,6 @@ from logging import getLogger
 from os import environ
 
 from rich.align import Align
-from rich.live import Live
 from rich.panel import Panel
 
 from skore import console
@@ -54,9 +53,7 @@ def login(*, timeout: int = 600) -> None:
     try:
         credentials = APIKey()
     except KeyError:
-        with Live(console=console, auto_refresh=False, transient=True) as live:
-            credentials = Token(timeout=timeout, live=live)
-
+        credentials = Token(timeout=timeout)
         console.print(
             Panel(
                 Align.center(
