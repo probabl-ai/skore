@@ -31,8 +31,7 @@ class TestCalibrationDisplay:
         if isinstance(report, tuple):
             report = report[0]
         display = report.inspection.calibration_curve()
-        label = display.labels[0]
-        frame = display.frame(label=label)
+        frame = display.frame(label=display.labels[0])
         n_samples = len(report.y_test)
         expected_n_bins = int(np.ceil(n_samples ** (1 / 3)))
         assert len(frame) <= expected_n_bins
