@@ -163,10 +163,12 @@ distributions across splits, or a model that is sensitive to specific data split
 How to reduce the risk
 ^^^^^^^^^^^^^^^^^^^^^^
 
-- use stratified or grouped cross-validation to ensure a more even split,
+- use grouped cross-validation when observations share a group structure,
 - investigate whether the outlier split contains a different data distribution,
 - check for data leakage or temporal effects,
 - increase the size of the dataset to improve stability.
+
+Check out the :ref:`example for this check <example_skd003_inconsistent_performance>`.
 
 
 .. _skd004-high-class-imbalance:
@@ -476,12 +478,21 @@ This check is *slow*: it requires fitting one model per feature. Skip it with
 How it is detected
 ^^^^^^^^^^^^^^^^^^
 
+The check does not run when :ref:`SKD002 <skd002-underfitting>` has already
+flagged underfitting on the same report: an underfit model performs similarly
+with any single feature, which would otherwise produce false golden-feature tips.
+
 For each input feature, `skore` clones the report's estimator, refits it on
 that single feature, and scores it on the test set. A feature is considered as
 *golden* when its single-feature scores are close to the full model's scores within
 an adaptive threshold (``max(0.03, 0.10 * |full_score|)``) on a **strict
 majority** of the report's default predictive metrics (timing metrics
 excluded).
+
+When golden features are found, `skore` also refits the estimator using the
+target as the only feature. Golden features whose scores are close to that
+oracle (same adaptive threshold) are described as likely copies of the target;
+the others are described as features the model relies on almost exclusively.
 
 The check only runs when the report has at least two features.
 
