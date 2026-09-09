@@ -54,20 +54,19 @@ def login(*, timeout: int = 600) -> None:
     try:
         credentials = APIKey()
     except KeyError:
-        with Live(console=console, auto_refresh=False) as live:
+        with Live(console=console, auto_refresh=False, transient=True) as live:
             credentials = Token(timeout=timeout, live=live)
 
-            live.update(
-                Panel(
-                    Align.center(
-                        "Successfully logged in, using [b]interactive authentication."
-                    ),
-                    title="[cyan]Login to [bold]Skore Hub",
-                    border_style="cyan",
-                    padding=1,
-                )
+        console.print(
+            Panel(
+                Align.center(
+                    "Successfully logged in, using [b]interactive authentication."
+                ),
+                title="[cyan]Login to [bold]Skore Hub",
+                border_style="cyan",
+                padding=1,
             )
-            live.refresh()
+        )
     else:
         console.print(
             Panel(

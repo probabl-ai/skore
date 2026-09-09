@@ -5,6 +5,7 @@ from httpx import (
     TimeoutException,
 )
 from pytest import mark, raises
+from rich.panel import Panel
 
 from skore._plugins.hub.authentication import login as login_module
 
@@ -67,6 +68,69 @@ def test_login_with_token(monkeypatch, respx_mock):
 
     assert login_module.credentials is not None
     assert login_module.credentials() == {"Authorization": "Bearer D"}
+
+
+@mark.respx()
+def test_login_interactive_success_panel_is_printed_after_live(monkeypatch, respx_mock):
+    """Success is printed after Live exits so it does not nest in the waiting panel."""
+    monkeypatch.setattr(
+        "skore._plugins.hub.authentication.token.open_webbrowser",
+        lambda _: True,
+    )
+    respx_mock.get(LOGIN_URL).mock(
+        Response(
+            200,
+            json={
+                "authorization_url": "<url>",
+                "device_code": "<device>",
+                "user_code": "<user>",
+            },
+        )
+    )
+    respx_mock.get(PROBE_URL).mock(Response(200))
+    respx_mock.post(CALLBACK_URL).mock(Response(200))
+    respx_mock.get(TOKEN_URL).mock(
+        Response(
+            200,
+            json={
+                "token": {
+                    "access_token": "D",
+                    "refresh_token": "E",
+                    "expires_at": DATETIME_MAX,
+                }
+            },
+        )
+    )
+
+    live_kwargs = {}
+    live_updates = []
+    printed = []
+
+    class TrackingLive(login_module.Live):
+        def __init__(self, *args, **kwargs):
+            live_kwargs.update(kwargs)
+            super().__init__(*args, **kwargs)
+
+        def update(self, renderable, *, refresh=False):
+            live_updates.append(renderable)
+            return super().update(renderable, refresh=refresh)
+
+    original_print = login_module.console.print
+
+    def capture_print(*args, **kwargs):
+        printed.extend(args)
+        original_print(*args, **kwargs)
+
+    monkeypatch.setattr(login_module, "Live", TrackingLive)
+    monkeypatch.setattr(login_module.console, "print", capture_print)
+
+    login_module.login()
+
+    assert live_kwargs.get("transient") is True
+    assert len(live_updates) == 1
+    success_panels = [panel for panel in printed if isinstance(panel, Panel)]
+    assert len(success_panels) == 1
+    assert "interactive authentication" in str(success_panels[0].renderable)
 
 
 @mark.respx()
