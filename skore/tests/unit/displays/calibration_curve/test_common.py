@@ -35,7 +35,7 @@ class TestCalibrationDisplay:
         frame = display.frame(label=label)
         n_samples = len(report.y_test)
         expected_n_bins = int(np.ceil(n_samples ** (1 / 3)))
-        assert len(frame) <= expected_n_bins
+        assert len(frame) == expected_n_bins
 
     def test_frame_structure(self, fixture_prefix, task, request):
         report = request.getfixturevalue(f"{fixture_prefix}_{task}")
