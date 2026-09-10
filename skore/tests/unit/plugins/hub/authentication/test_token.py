@@ -1,4 +1,6 @@
 from datetime import UTC, datetime
+from subprocess import run
+from sys import executable
 from urllib.parse import urljoin
 
 from httpx import HTTPError, Response, TimeoutException
@@ -9,6 +11,7 @@ from skore._plugins.hub.authentication.token import (
     get_oauth_device_code_probe,
     get_oauth_device_login,
     get_oauth_device_token,
+    open_webbrowser,
     post_oauth_device_callback,
     post_oauth_refresh_token,
 )
@@ -159,29 +162,47 @@ def test_post_oauth_refresh_token(respx_mock):
     assert expires_at == "C"
 
 
-def test_open_webbrowser_discards_child_stdio(monkeypatch):
-    launched = {}
+def test_open_webbrowser_silences_browser_output(monkeypatch, capfd):
+    # The browser is a child process writing straight to the inherited file
+    # descriptors, so it must be silenced at the descriptor level, not by swapping
+    # `sys.stdout`/`sys.stderr`. Noise landing mid-`Live` desynchronizes rich's cursor
+    # bookkeeping and leaves a stale panel border behind.
+    def noisy_browser(url):
+        run([executable, "-c", "from sys import stderr; stderr.write('Gtk-Message')"])
+        return True
 
     monkeypatch.setattr(
-        "skore._plugins.hub.authentication.token.which",
-        lambda command: "/usr/bin/xdg-open" if command == "xdg-open" else None,
+        "skore._plugins.hub.authentication.token._open_webbrowser", noisy_browser
     )
-
-    def fake_popen(args, **kwargs):
-        launched["args"] = args
-        launched["kwargs"] = kwargs
-
-    monkeypatch.setattr("skore._plugins.hub.authentication.token.Popen", fake_popen)
-
-    from subprocess import DEVNULL
-
-    from skore._plugins.hub.authentication.token import open_webbrowser
 
     open_webbrowser("https://example.test")
 
-    assert launched["args"] == ["/usr/bin/xdg-open", "https://example.test"]
-    assert launched["kwargs"]["stdout"] is DEVNULL
-    assert launched["kwargs"]["stderr"] is DEVNULL
+    assert capfd.readouterr() == ("", "")
+
+
+def test_open_webbrowser_restores_stdio(monkeypatch, capfd):
+    monkeypatch.setattr(
+        "skore._plugins.hub.authentication.token._open_webbrowser", lambda url: True
+    )
+
+    open_webbrowser("https://example.test")
+    run([executable, "-c", "from sys import stderr; stderr.write('after')"])
+
+    assert capfd.readouterr().err == "after"
+
+
+def test_open_webbrowser_uses_webbrowser(monkeypatch):
+    # Resolution must be delegated to `webbrowser`, so that `BROWSER` and the standard
+    # browser ordering keep working.
+    opened = []
+
+    monkeypatch.setattr(
+        "skore._plugins.hub.authentication.token._open_webbrowser", opened.append
+    )
+
+    open_webbrowser("https://example.test")
+
+    assert opened == ["https://example.test"]
 
 
 class TestToken:

@@ -3,8 +3,7 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
-from shutil import which
-from subprocess import DEVNULL, Popen
+from os import close, devnull, dup, dup2
 from threading import RLock
 from time import sleep
 from urllib.parse import urljoin
@@ -20,18 +19,31 @@ from skore._plugins.hub.authentication.uri import URI
 
 
 def open_webbrowser(url: str) -> None:
-    """Open ``url`` without leaking browser or GTK messages onto the terminal."""
-    opener = which("xdg-open") or which("open")
-    if opener:
-        Popen(
-            [opener, url],
-            stdin=DEVNULL,
-            stdout=DEVNULL,
-            stderr=DEVNULL,
-            start_new_session=True,
-        )
-        return
-    _open_webbrowser(url)
+    """
+    Open ``url`` in a browser, keeping the browser's own output off the terminal.
+
+    ``webbrowser`` launches some browsers, such as ``xdg-open``, without redirecting the
+    child's stdio. Messages like ``Gtk-Message`` then land in the middle of a ``rich``
+    ``Live`` region and desynchronize its cursor bookkeeping, which leaves a stale panel
+    border behind on the next refresh.
+
+    Point the file descriptors the child inherits at ``os.devnull`` for the duration of
+    the call, rather than spawning the browser here, so that ``BROWSER`` and the
+    standard ``webbrowser`` resolution order keep working.
+    """
+    with open(devnull, "wb") as null:
+        stdout, stderr = dup(1), dup(2)
+
+        try:
+            dup2(null.fileno(), 1)
+            dup2(null.fileno(), 2)
+
+            _open_webbrowser(url)
+        finally:
+            dup2(stdout, 1)
+            dup2(stderr, 2)
+            close(stdout)
+            close(stderr)
 
 
 def get_oauth_device_login(success_uri: str | None = None) -> tuple[str, str, str]:
@@ -226,7 +238,7 @@ class Token:
                 "at [link=https://skore.probabl.ai/account]"
                 "https://skore.probabl.ai/account[/link].[/i]\n\n"
                 "Opening browser for interactive authentication; if this fails, "
-                f"please visit:\n{url}"
+                f"please visit:\n[link={url}]{url}[/link]"
             ),
             title="[cyan]Login to [bold]Skore Hub",
             border_style="cyan",

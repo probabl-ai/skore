@@ -1,12 +1,10 @@
 """Login to ``skore hub``."""
 
 from collections.abc import Callable
-from io import StringIO
 from logging import getLogger
 from os import environ
 
 from rich.align import Align
-from rich.console import Console
 from rich.live import Live
 from rich.panel import Panel
 
@@ -36,18 +34,6 @@ def _login_panel(message: str) -> Panel:
     )
 
 
-def _panel_line_count(panel: Panel) -> int:
-    buffer = StringIO()
-    Console(
-        file=buffer,
-        width=console.width,
-        color_system=None,
-        force_terminal=True,
-        highlight=False,
-    ).print(panel)
-    return buffer.getvalue().count("\n")
-
-
 def login(*, timeout: int = 600) -> None:
     """Login to ``skore hub``.
 
@@ -70,20 +56,14 @@ def login(*, timeout: int = 600) -> None:
     try:
         credentials = APIKey()
     except KeyError:
-        success = "Successfully logged in, using [b]interactive authentication."
-        with Live(
-            console=console,
-            auto_refresh=False,
-            redirect_stdout=False,
-            redirect_stderr=False,
-        ) as live:
+        with Live(console=console, auto_refresh=False) as live:
             credentials = Token(timeout=timeout, live=live)
-            extra = max(
-                0,
-                live._live_render.last_render_height
-                - _panel_line_count(_login_panel(success)),
+
+            live.update(
+                _login_panel(
+                    "Successfully logged in, using [b]interactive authentication."
+                )
             )
-            live.update(_login_panel(success + extra * "\n"))
             live.refresh()
     else:
         console.print(_login_panel("Successfully logged in, using [b]API key."))
