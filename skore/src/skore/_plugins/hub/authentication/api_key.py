@@ -12,39 +12,49 @@ from typing import TYPE_CHECKING, Final, cast
 
 from filelock import FileLock
 
+from skore._plugins.hub.authentication.uri import URI
+
 if TYPE_CHECKING:
     from collections.abc import Generator
 
 ENV_VAR_NAME: Final[str] = "SKORE_HUB_API_KEY"
 
 
-class APIKeyError(Exception): ...
+class APIKeyError(KeyError):
+    pass
 
 
 def API_key() -> Callable[[], dict[str, str]]:
-    """Get the API key used for ``skore hub`` authentication.
-
-    In the form of HTTP header parameters.
-    """
+    """Retrieve the API key from the environment as an HTTP header."""
     if ENV_VAR_NAME in environ:
         return lambda: {"X-API-Key": environ[ENV_VAR_NAME]}
 
     raise APIKeyError()
 
 
-class PersistedAPIKey:
+class Registry:
     """
-    [
-        {
-            "host": "<host>",
-            "workspace": "<workspace>",
-            "api_key": "<api_key>",
-        },
-    ]
+    Registry used to persist API keys on disk.
+
+    API keys are stored in ``~/.skore.hub/credentials.json`` as a JSON list:
+
+        [
+            {
+                "host": "<host>",
+                "workspace": "<workspace>",
+                "api_key": "<api_key>",
+            },
+        ]
+
+    Notes
+    -----
+    Writes are serialized with a file lock. When ``uri`` is omitted on :meth:`persist`,
+    the URI is derived from :func:`URI`.
     """
 
     @property
     def filepath(self) -> Path:
+        """Path to the credentials file, creating an empty registry if missing."""
         file = Path.home() / ".skore.hub" / "credentials.json"
 
         if not file.exists():
@@ -55,12 +65,14 @@ class PersistedAPIKey:
 
     @contextmanager
     def lock(self) -> Generator[None]:
+        """Acquire an exclusive lock around writes to the credentials file."""
         lockfile = Path(gettempdir()) / ".skore_hub_credentials.json.lock"
 
         with FileLock(lockfile):
             yield
 
     def __iter__(self) -> Generator[tuple[str, str]]:
+        """Yield ``(host, workspace)`` pairs stored in the registry."""
         with self.filepath.open() as file:
             for credential in load(file):
                 yield (
@@ -69,14 +81,46 @@ class PersistedAPIKey:
                 )
 
     def get(self, *, uri: str, workspace: str) -> str:
+        """
+        Return the API key for ``uri`` and ``workspace``.
+
+        Parameters
+        ----------
+        uri : str
+            URI associated with the API key.
+        workspace : str
+            Workspace associated with the API Key.
+
+        Returns
+        -------
+        str
+            The matching API key.
+
+        Raises
+        ------
+        APIKeyError
+            If no credential matches ``uri`` and ``workspace``.
+        """
         with self.filepath.open() as file:
             for credential in load(file):
                 if credential["host"] == uri and credential["workspace"] == workspace:
                     return cast(str, credential["api_key"])
 
-        raise KeyError
+        raise APIKeyError()
 
-    def persist(self, *, uri: str, workspace: str, api_key: str) -> None:
+    def persist(self, *, uri: str | None = None, workspace: str, api_key: str) -> None:
+        """
+        Insert or replace the API key for ``uri`` and ``workspace``.
+
+        Parameters
+        ----------
+        uri : str, optional
+            URI associated with the API key. If omitted, :func:`URI` is used.
+        workspace : str
+            Workspace associated with the API key.
+        api_key : str
+            API key to persist.
+        """
         with (
             self.lock(),
             open(self.filepath) as credentials_file_reader,
@@ -93,7 +137,13 @@ class PersistedAPIKey:
                 list(
                     chain(
                         credentials,
-                        [{"host": uri, "workspace": workspace, "api_key": api_key}],
+                        [
+                            {
+                                "host": (uri or URI()),
+                                "workspace": workspace,
+                                "api_key": api_key,
+                            }
+                        ],
                     )
                 ),
                 credentials_tmpfile_writer,
