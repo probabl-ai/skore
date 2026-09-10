@@ -1,5 +1,7 @@
 """API key used for ``skore hub`` authentication."""
 
+from __future__ import annotations
+
 from collections.abc import Callable
 from contextlib import contextmanager
 from functools import cached_property
