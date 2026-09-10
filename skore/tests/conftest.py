@@ -45,6 +45,18 @@ def monkeypatch_tmpdir(monkeypatch, tmp_path):
 
 
 @pytest.fixture(autouse=True)
+def monkeypatch_home(monkeypatch, tmp_path):
+    """
+    Change ``HOME`` used by ``os.path.expanduser()`` to point to ``tmp_path``, so
+    that it is automatically deleted after use, with no impact on user's environment.
+
+    https://docs.python.org/3/library/os.path.html#os.path.expanduser
+    """
+    monkeypatch.setenv("HOME", str(tmp_path))
+    monkeypatch.setenv("USERPROFILE", str(tmp_path))
+
+
+@pytest.fixture(autouse=True)
 def monkeypatch_configuration(monkeypatch):
     """Ensure that the test gets the default configuration,
     independently of the others."""
