@@ -2,6 +2,7 @@
 
 from collections.abc import Callable
 from contextlib import contextmanager
+from functools import cached_property
 from itertools import chain, filterfalse
 from json import dump, load
 from os import environ
@@ -52,7 +53,7 @@ class Registry:
     the URI is derived from :func:`URI`.
     """
 
-    @property
+    @cached_property
     def filepath(self) -> Path:
         """Path to the credentials file, creating an empty registry if missing."""
         file = Path.home() / ".skore.hub" / "credentials.json"
@@ -121,6 +122,8 @@ class Registry:
         api_key : str
             API key to persist.
         """
+        uri = uri or URI()
+
         with (
             self.lock(),
             open(self.filepath) as credentials_file_reader,
@@ -139,7 +142,7 @@ class Registry:
                         credentials,
                         [
                             {
-                                "host": (uri or URI()),
+                                "host": uri,
                                 "workspace": workspace,
                                 "api_key": api_key,
                             }
