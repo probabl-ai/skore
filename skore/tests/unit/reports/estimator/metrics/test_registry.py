@@ -609,10 +609,15 @@ class TestMultiMetric:
 
         display = report.metrics.summarize(metric="multimetric_scorer")
 
-        assert list(display.summary["verbose_name"]) == [
+        assert list(display.summary["name"]) == [
             "accuracy",
             "precision",  # Label 0
             "precision",  # Label 1
+        ]
+        assert list(display.summary["verbose_name"]) == [
+            "Accuracy",
+            "Precision",  # Label 0
+            "Precision",  # Label 1
         ]
         assert list(display.summary["label"]) == [pd.NA, np.int64(0), np.int64(1)]
 
@@ -644,10 +649,15 @@ class TestMultiMetric:
 
         display = report.metrics.summarize(metric="score")
 
-        assert list(display.summary["verbose_name"]) == [
+        assert list(display.summary["name"]) == [
             "accuracy",
             "precision",  # Label 0
             "precision",  # Label 1
+        ]
+        assert list(display.summary["verbose_name"]) == [
+            "Accuracy",
+            "Precision",  # Label 0
+            "Precision",  # Label 1
         ]
         assert list(display.summary["label"]) == [pd.NA, np.int64(0), np.int64(1)]
 

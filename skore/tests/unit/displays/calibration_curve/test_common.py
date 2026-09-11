@@ -1,3 +1,4 @@
+import numpy as np
 import pytest
 
 from skore import CalibrationDisplay
@@ -25,6 +26,16 @@ class TestCalibrationDisplay:
         fig = display.plot()
         assert fig is not None
         assert len(fig.axes) >= 1
+
+    def test_auto_n_bins_uses_cube_root_rule(self, fixture_prefix, task, request):
+        report = request.getfixturevalue(f"{fixture_prefix}_{task}")
+        if isinstance(report, tuple):
+            report = report[0]
+        display = report.inspection.calibration_curve()
+        frame = display.frame(label=display.labels[0])
+        n_samples = len(report.y_test)
+        expected_n_bins = int(np.ceil(n_samples ** (1 / 3)))
+        assert len(frame) == expected_n_bins
 
     def test_frame_structure(self, fixture_prefix, task, request):
         report = request.getfixturevalue(f"{fixture_prefix}_{task}")

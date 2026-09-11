@@ -111,7 +111,7 @@ def _write_report(
     with contextlib.suppress(FileNotFoundError):
         symlink.unlink()
     with contextlib.suppress(OSError):
-        symlink.symlink_to(output_dir)
+        symlink.symlink_to(filename)
 
     if isinstance(report, EstimatorReport):
         _write_estimator_report(report, workspace, output_dir, name=name)
