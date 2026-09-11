@@ -117,7 +117,7 @@ def _databricks_user_name(tracking_uri: str) -> str:
     try:
         return cast(str, body["userName"])
     except KeyError:
-        raise MlflowException(
+        raise MlflowException(  # type: ignore[no-untyped-call]
             "Databricks SCIM 'Me' response has no 'userName' field; this can happen "
             "when authenticating as a service principal, which is identified by "
             "'applicationId' rather than 'userName'."
@@ -137,7 +137,7 @@ def _storage_experiment_name(tracking_uri: str) -> str:
     try:
         user_name = _databricks_user_name(tracking_uri)
     except MlflowException as exc:
-        raise MlflowException(
+        raise MlflowException(  # type: ignore[no-untyped-call]
             "Failed to resolve the Databricks workspace user needed to create the "
             f"{STORAGE_EXPERIMENT_NAME!r} experiment. Make sure the credentials used "
             f"for '{tracking_uri}' can read the current user."

@@ -45,7 +45,7 @@ def test_invalid_aggregate(fixture_name, aggregate, err_msg, request):
         ),
     ],
 )
-def test_plot_aggregate(pyplot, fixture_name, aggregate, request):
+def test_plot_aggregate(fixture_name, aggregate, request):
     """Check that plot works for both aggregate modes across classification tasks."""
     report = request.getfixturevalue(fixture_name)[0]
     display = report.inspection.calibration_curve(n_bins=5, strategy="uniform")
