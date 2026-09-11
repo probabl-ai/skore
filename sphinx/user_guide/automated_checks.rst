@@ -509,9 +509,11 @@ How to reduce the risk
 
 - audit the suspect feature for leakage (is it derived from the target or
   from data that would not be available at inference time?),
-- compare predictive performance with and without the feature,
+- decide whether to keep or drop it,
 - collect or engineer additional features so the model is less dependent on
   a single one.
+
+Check out the :ref:`example for this check <example_skd011_golden_feature_skd012_useless_features>`.
 
 
 .. _skd012-useless-features:
@@ -548,6 +550,8 @@ How to reduce the risk
   preserved,
 - if a flagged feature is expected to matter, investigate whether the model
   is too simple or the feature is poorly encoded.
+
+Check out the :ref:`example for this check <example_skd011_golden_feature_skd012_useless_features>`.
 
 .. note::
 
