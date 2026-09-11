@@ -212,3 +212,25 @@ def test_scale_features_plot_labels(regression_train_test_split):
     fig = report.inspection.coefficients().plot(scale_features=True)
     assert fig.axes[0].get_xlabel() == "Magnitude of scaled coefficient"
     assert fig.get_suptitle() == "Scaled coefficients of Ridge"
+
+
+def test_feature_std_with_polars_train_data():
+    """Feature standard deviations are computed on a polars frame too (#3263).
+
+    ``np.std`` defers to the container's ``std`` method, and a polars frame does
+    not accept ``axis``; the display has to reduce a plain array.
+    """
+    polars = pytest.importorskip("polars")
+    X, y = make_regression(n_samples=40, n_features=3, random_state=0)
+    X = polars.DataFrame(X, schema=["a", "b", "c"])
+    report = EstimatorReport(
+        LinearRegression(), X_train=X, y_train=y, X_test=X, y_test=y
+    )
+
+    display = report.inspection.coefficients()
+
+    feature_std = display.coefficients.set_index("feature")["feature_std"]
+    np.testing.assert_allclose(feature_std["Intercept"], 1.0)
+    np.testing.assert_allclose(
+        feature_std[["a", "b", "c"]].to_numpy(), np.std(X.to_numpy(), axis=0)
+    )
