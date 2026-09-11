@@ -9,7 +9,7 @@ from rich.live import Live
 from rich.panel import Panel
 
 from skore import console
-from skore._plugins.hub.authentication.apikey import APIKey
+from skore._plugins.hub.authentication.api_key import API_key, APIKeyError
 from skore._plugins.hub.authentication.token import Token
 from skore._plugins.hub.authentication.uri import URI
 
@@ -30,10 +30,7 @@ def login(*, timeout: int = 600) -> None:
 
     This function is a no op if SKORE_HUB_JUPYTERLITE
     """
-    is_running_in_hub_jupyterlite = environ.get(
-        "SKORE_HUB_JUPYTERLITE", ""
-    ).lower() in ("1", "true", "yes")
-    if is_running_in_hub_jupyterlite:
+    if environ.get("SKORE_HUB_JUPYTERLITE", "").lower() in ("1", "true", "yes"):
         return
 
     global credentials
@@ -52,8 +49,8 @@ def login(*, timeout: int = 600) -> None:
         return
 
     try:
-        credentials = APIKey()
-    except KeyError:
+        credentials = API_key()
+    except APIKeyError:
         with Live(console=console, auto_refresh=False) as live:
             credentials = Token(timeout=timeout, live=live)
 
