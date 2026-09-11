@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from contextlib import contextmanager
 from functools import cached_property
-from itertools import chain, filterfalse
+from itertools import chain
 from json import dump, load
 from os import environ
 from pathlib import Path
@@ -78,10 +78,7 @@ class Registry:
         """Yield ``(host, workspace)`` pairs stored in the registry."""
         with self.filepath.open() as file:
             for credential in load(file):
-                yield (
-                    credential["host"],
-                    credential["workspace"],
-                )
+                yield (credential["host"], credential["workspace"])
 
     def get(self, *, uri: str, workspace: str) -> str:
         """
@@ -126,36 +123,33 @@ class Registry:
         """
         uri = uri or URI()
 
-        with (
-            self.lock(),
-            open(self.filepath) as credentials_file_reader,
-            NamedTemporaryFile(mode="w", delete=False) as credentials_tmpfile_writer,
-        ):
-            credentials = filterfalse(
-                lambda cred: cred["host"] == uri and cred["workspace"] == workspace,
-                load(credentials_file_reader),
-            )
+        with self.lock():
+            with open(self.filepath) as credentials_reader:
+                credentials = load(credentials_reader)
+                credentials_filtered = (
+                    credential
+                    for credential in credentials
+                    if credential["host"] != uri or credential["workspace"] != workspace
+                )
 
-            # Save the new credentials to the tmpfile, taking care not to truncate the
-            # previous credentials in case of JSON/IO error.
-            dump(
-                list(
-                    chain(
-                        credentials,
-                        [
-                            {
-                                "host": uri,
-                                "workspace": workspace,
-                                "api_key": api_key,
-                            }
-                        ],
-                    )
-                ),
-                credentials_tmpfile_writer,
-            )
-
-            credentials_tmpfile_writer.seek(0)
-            credentials_tmpfile_writer.flush()
+            # Save the new credentials to the tmpfile, taking care not to truncate
+            # the previous credentials in case of JSON/IO error.
+            with NamedTemporaryFile(mode="w", delete=False) as credentials_writer:
+                dump(
+                    list(
+                        chain(
+                            credentials_filtered,
+                            [
+                                {
+                                    "host": uri,
+                                    "workspace": workspace,
+                                    "api_key": api_key,
+                                }
+                            ],
+                        )
+                    ),
+                    credentials_writer,
+                )
 
             # Move tmpfile to file
-            move(credentials_tmpfile_writer.name, self.filepath)
+            move(credentials_writer.name, self.filepath)
