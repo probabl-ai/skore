@@ -33,7 +33,11 @@ class TestCalibrationDisplay:
             report = report[0]
         display = report.inspection.calibration_curve()
         frame = display.frame(label=display.labels[0])
-        n_samples = len(report.y_test)
+        n_samples = (
+            len(report.y_test)
+            if hasattr(report, "y_test")
+            else len(report.reports_[0].y_test)
+        )
         expected_n_bins = int(np.ceil(n_samples ** (1 / 3)))
         assert len(frame) == expected_n_bins
 

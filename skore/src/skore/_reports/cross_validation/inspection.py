@@ -332,10 +332,27 @@ class _InspectionAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         self,
         *,
         data_source: DataSource = "test",
-        n_bins: int = 5,
+        n_bins: int | Literal["auto"] = "auto",
         strategy: Literal["uniform", "quantile"] = "quantile",
     ) -> CalibrationDisplay:
-        """Display calibration curves across cross-validation splits."""
+        """Display calibration curves across cross-validation splits.
+
+        Parameters
+        ----------
+        data_source : {"test", "train"}, default="test"
+            The data source for the calibration curve.
+
+        n_bins : int or "auto", default="auto"
+            The number of bins to use for the calibration curve.
+
+        strategy : {"uniform", "quantile"}, default="quantile"
+            The strategy to use for binning.
+
+        Returns
+        -------
+        :class:`CalibrationDisplay`
+            The calibration curve display.
+        """
         return CalibrationDisplay(
             calibration_report=pd.concat(
                 [

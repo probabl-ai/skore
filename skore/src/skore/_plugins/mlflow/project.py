@@ -195,7 +195,7 @@ class Project:
     @property
     def experiment_id(self) -> str:
         """The ID of the MLflow experiment."""
-        return self.__experiment_id
+        return cast(str, self.__experiment_id)
 
     def put(self, key: str, report: EstimatorReport | CrossValidationReport) -> None:
         """
