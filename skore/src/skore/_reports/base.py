@@ -92,6 +92,7 @@ class _BaseReport(ReportHelpMixin):
         """
         if not hasattr(self, "_check_results_cache"):
             self._check_results_cache: dict[CheckCode, CheckResult] = {}
+        self._ignored_codes = ignored_codes
 
         checks_to_run = [
             check
@@ -107,20 +108,7 @@ class _BaseReport(ReportHelpMixin):
             total=len(checks_to_run),
             disable=fast_mode,
         ):
-            try:
-                explanation = check.check_function(self)
-                section: CheckSection = (
-                    getattr(check, "severity", "issue") if explanation else "passed"
-                )
-            except CheckNotApplicable as exc:
-                explanation = exc.args[0] if exc.args else None
-                section = "not_applicable"
-            self._check_results_cache[check.code] = {
-                "title": check.title,
-                "docs_url": check.docs_url,
-                "explanation": explanation,
-                "section": section,
-            }
+            self._run_check(check)
 
         if "comparison" in self._report_type:
             return self._aggregate_checks(ignored_codes, fast_mode=fast_mode)
@@ -157,6 +145,40 @@ class _BaseReport(ReportHelpMixin):
                 summary[check.code] = self._check_results_cache[check.code]
 
         return summary
+
+    def _run_check(self, check):
+        if not hasattr(self, "_check_results_cache"):
+            self._check_results_cache: dict[CheckCode, CheckResult] = {}
+        if check.code in self._check_results_cache:
+            return self._check_results_cache[check.code]
+        try:
+            explanation = check.check_function(self)
+            section: CheckSection = (
+                getattr(check, "severity", "issue") if explanation else "passed"
+            )
+        except CheckNotApplicable as exc:
+            explanation = exc.args[0] if exc.args else None
+            section = "not_applicable"
+        self._check_results_cache[check.code] = {
+            "title": check.title,
+            "docs_url": check.docs_url,
+            "explanation": explanation,
+            "section": section,
+        }
+        return self._check_results_cache[check.code]
+
+    def _get_check_result(self, code: CheckCode) -> CheckResult | None:
+        if hasattr(self, "_check_results_cache") and code in self._check_results_cache:
+            return self._check_results_cache[code]
+
+        if code in getattr(self, "_ignored_codes", set()):
+            return None
+
+        for check in self._checks_registry:
+            if check.code == code and self._report_type in check.report_types:
+                return self._run_check(check)
+
+        return None
 
     def _checks_summary_html_fragment(self) -> str:
         """HTML snippet for the checks summary tab in report reprs."""

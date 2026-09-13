@@ -109,9 +109,6 @@ class CheckGoldenFeature(Check):
     slow = True
 
     def check_function(self, report: _BaseReport) -> str | None:
-        skd002_result = getattr(report, "_check_results_cache", {}).get("SKD002")
-        if skd002_result is not None and skd002_result["section"] == "issue":
-            raise CheckNotApplicable("Skipped because SKD002 detected underfitting.")
 
         if report._report_type == "cross-validation":
             report = cast("CrossValidationReport", report)
@@ -138,6 +135,9 @@ class CheckGoldenFeature(Check):
         preprocessor_, predictor_ = split_preprocessor_estimator(
             get_fitted_estimator(report)
         )
+        skd002_result = getattr(report, "_check_results_cache", {}).get("SKD002")
+        if skd002_result is not None and skd002_result["section"] == "issue":
+            raise CheckNotApplicable("Skipped because SKD002 detected underfitting.")
         feature_names = _get_feature_names(
             predictor_,
             transformer=preprocessor_,
