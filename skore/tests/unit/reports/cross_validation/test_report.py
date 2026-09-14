@@ -19,6 +19,7 @@ from sklearn.utils.validation import check_is_fitted
 from skore import CrossValidationReport, EstimatorReport, evaluate
 from skore._externals.sklearn_compat import convert_container
 from skore._reports.cross_validation.report import _generate_estimator_report
+from skore._utils.repr.paginated_metrics import METRICS_HTML_PAGE_SIZE
 from skore._utils.testing import MockEstimator
 
 
@@ -266,10 +267,11 @@ def test_metrics_summary_html_paginates_multiclass(
             verbose_name=True, flat_index=False
         )
     )
-    assert n_rows > 10
+    assert n_rows > METRICS_HTML_PAGE_SIZE
     assert "skore-metrics-pager" in html
-    first_tbody = html[html.find("<tbody>") : html.find("</tbody>")]
-    assert first_tbody.count("<tr") == 10
+    tbody = html[html.find("<tbody>") : html.find("</tbody>")]
+    assert tbody.count("<tr") == n_rows
+    assert 'data-page="1"' in html
     thead = html[html.find("<thead>") : html.find("</thead>")]
     assert thead.count("<tr") == 1
     assert "Estimator" not in html

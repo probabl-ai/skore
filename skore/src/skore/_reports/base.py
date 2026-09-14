@@ -31,7 +31,7 @@ from skore._utils.repr.base import (
     render_panel_to_plain_text,
 )
 from skore._utils.repr.data import MethodHelp
-from skore._utils.repr.paginated_table import paginated_dataframe_html
+from skore._utils.repr.paginated_metrics import metrics_summary_html
 from skore._utils.uuid import normalize_report_id, uuid7
 
 if TYPE_CHECKING:
@@ -424,7 +424,7 @@ class BaseMetricsAccessor(_BaseAccessor, Generic[ParentT]):
         frame = self.summarize().frame(verbose_name=True, flat_index=False)
         return (
             "<p>Metrics summary:</p>"
-            f"{paginated_dataframe_html(frame)}"
+            f"{metrics_summary_html(frame)}"
             '<p role="note">Explore available methods with '
             "<code>.help()</code>.</p>"
         )

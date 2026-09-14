@@ -27,7 +27,7 @@ from skore._utils.accessor import (
 from skore._utils.fixes import _validate_joblib_parallel_params
 from skore._utils.parallel import delayed
 from skore._utils.progress_bar import track
-from skore._utils.repr.paginated_table import paginated_dataframe_html
+from skore._utils.repr.paginated_metrics import metrics_summary_html
 
 DataSource = Literal["test", "train", "both"]
 
@@ -144,7 +144,7 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
         frame = self._formatted_summary_frame()
         return (
             "<p>Metrics summary:</p>"
-            f"{paginated_dataframe_html(frame)}"
+            f"{metrics_summary_html(frame)}"
             '<p role="note">Explore available methods with '
             "<code>.help()</code>.</p>"
         )

@@ -71,13 +71,13 @@ def _metrics_summary_frame_html(metrics_accessor):
     from skore._reports.comparison.metrics import (
         _MetricsAccessor as ComparisonMetricsAccessor,
     )
-    from skore._utils.repr.paginated_table import paginated_dataframe_html
+    from skore._utils.repr.paginated_metrics import metrics_summary_html
 
     if isinstance(metrics_accessor, ComparisonMetricsAccessor):
         frame = metrics_accessor._formatted_summary_frame()
     else:
         frame = metrics_accessor.summarize().frame(verbose_name=True, flat_index=False)
-    return paginated_dataframe_html(frame)
+    return metrics_summary_html(frame)
 
 
 def test_metrics_accessor_repr(report):
