@@ -254,6 +254,28 @@ def test_metrics_summary_html_is_compact(forest_binary_classification_data):
     assert "Aggregate" not in repr_str
 
 
+def test_metrics_summary_html_paginates_multiclass(
+    forest_multiclass_classification_data,
+):
+    """Multi-class default metrics exceed one page in the report Results tab."""
+    estimator, X, y = forest_multiclass_classification_data
+    report = CrossValidationReport(estimator, X=X, y=y, splitter=2)
+    html = report._html_repr_fragments()["metrics_summary"]
+    n_rows = len(
+        report.metrics.summarize(data_source="test").frame(
+            verbose_name=True, flat_index=False
+        )
+    )
+    assert n_rows > 10
+    assert "skore-metrics-pager" in html
+    first_tbody = html[html.find("<tbody>") : html.find("</tbody>")]
+    assert first_tbody.count("<tr") == 10
+    thead = html[html.find("<thead>") : html.find("</thead>")]
+    assert thead.count("<tr") == 1
+    assert "Estimator" not in html
+    assert "Aggregate" not in html
+
+
 def test_text_repr(forest_binary_classification_data):
     estimator, X, y = forest_binary_classification_data
     report = evaluate(estimator, X, y, splitter=2)

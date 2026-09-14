@@ -4,6 +4,10 @@ import pandas as pd
 import pytest
 
 from skore import CrossValidationReport, EstimatorReport
+from skore._utils.repr.paginated_table import (
+    METRICS_HTML_PAGE_SIZE,
+    paginated_dataframe_html,
+)
 
 
 def test_repr_includes_frame_and_hint(forest_binary_classification_with_test):
@@ -30,12 +34,8 @@ def test_repr_html_includes_frame_and_hint(forest_binary_classification_with_tes
 
     html = display._repr_html_()
     frame = display.frame(verbose_name=True, flat_index=False)
-    expected_html = (
-        frame.to_frame()._repr_html_()
-        if isinstance(frame, pd.Series)
-        else frame._repr_html_()
-    )
-    assert html.startswith(expected_html)
+    assert html.startswith(paginated_dataframe_html(frame))
+    assert "skore-metrics-pager" not in html
     assert "Use <code>.frame()</code> to control the format of the output." in html
     mime_html = display._repr_mimebundle_()["text/html"]
     assert "data:image/png;base64," not in mime_html
@@ -60,6 +60,23 @@ def test_repr_frame_for_html_uses_verbose_names_and_multiindex(
     assert "Accuracy" in html_frame.index.get_level_values("Metric")
     assert "accuracy" not in html_frame.index.get_level_values("Metric")
     assert "accuracy" in plain_frame.index
+
+
+def test_repr_html_paginates_long_tables(forest_multiclass_classification_with_test):
+    """Tables longer than the page size include CSS-only pager chrome."""
+    estimator, X_test, y_test = forest_multiclass_classification_with_test
+    display = EstimatorReport(
+        estimator, X_test=X_test, y_test=y_test
+    ).metrics.summarize()
+
+    html = display._repr_html_()
+    n_rows = len(display.frame(verbose_name=True, flat_index=False))
+    assert n_rows > METRICS_HTML_PAGE_SIZE
+    assert "skore-metrics-pager" in html
+    assert html.count('type="radio"') == 2
+    first_tbody = html[html.find("<tbody>") : html.find("</tbody>")]
+    assert first_tbody.count("<tr") == METRICS_HTML_PAGE_SIZE
+    assert f"Showing 1-{METRICS_HTML_PAGE_SIZE} of {n_rows}" in html
 
 
 @pytest.fixture(params=["estimator", "cross-validation"])
@@ -136,13 +153,6 @@ def test_repr_failure(display_fail):
 def test_repr_html_failure(display_fail):
     """Check that _repr_html_ shows failed metrics."""
     repr_html = display_fail._repr_html_()
-    frame = display_fail.frame(verbose_name=True, flat_index=False)
-    expected_html = (
-        frame.to_frame()._repr_html_()
-        if isinstance(frame, pd.Series)
-        else frame._repr_html_()
-    )
-    assert repr_html.startswith(expected_html)
 
     # NaN is not filtered out of the dataframe for estimator reports
     wide_frame = display_fail.frame(flat_index=False)

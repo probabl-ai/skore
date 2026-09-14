@@ -450,6 +450,26 @@ def test_prefit_no_train_data_repr_methods(prefit_regression_report_no_train_dat
 
     fragments = prefit_regression_report_no_train_data._html_repr_fragments()
     assert "R²" in fragments["metrics_summary"]
+    assert "skore-metrics-pager" not in fragments["metrics_summary"]
+
+
+def test_metrics_summary_html_paginates_multiclass(
+    forest_multiclass_classification_with_test,
+):
+    """Multi-class default metrics exceed one page in the report Results tab."""
+    estimator, X_test, y_test = forest_multiclass_classification_with_test
+    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
+    html = report._html_repr_fragments()["metrics_summary"]
+    n_rows = len(
+        report.metrics.summarize(data_source="test").frame(
+            verbose_name=True, flat_index=False
+        )
+    )
+    assert n_rows > 10
+    assert "skore-metrics-pager" in html
+    first_tbody = html[html.find("<tbody>") : html.find("</tbody>")]
+    assert first_tbody.count("<tr") == 10
+    assert html.count('type="radio"') == 2
 
 
 def test_text_repr(forest_binary_classification_data):

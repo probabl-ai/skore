@@ -545,3 +545,12 @@ def test_report_repr_html(comparison_fixture, request):
     assert "report-tabset" in html_out
     assert "ComparisonReport.metrics" in html_out
     assert "skore-comparison-report-select" in html_out
+
+
+def test_metrics_summary_html_paginates_multiclass(
+    comparison_estimator_reports_multiclass_classification,
+):
+    html = comparison_estimator_reports_multiclass_classification._repr_html_()
+    assert "skore-metrics-pager" in html
+    first_tbody = html[html.find("<tbody>") : html.find("</tbody>")]
+    assert first_tbody.count("<tr") == 10
