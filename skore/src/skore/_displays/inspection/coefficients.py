@@ -782,7 +782,9 @@ class CoefficientsDisplay(DisplayMixin):
                 _, variance = mean_variance_axis(X_transformed, axis=0)
                 std = np.sqrt(variance)
             else:
-                std = np.std(X_transformed, axis=0)
+                # ``np.std`` defers to the container's own ``std`` method, and a
+                # polars frame does not take ``axis``; reduce a plain array.
+                std = np.std(np.asarray(X_transformed), axis=0)
             # the intercept is given a unit standard deviation to leave it unscaled
             feature_std = np.concatenate([[1.0], std])
         else:
