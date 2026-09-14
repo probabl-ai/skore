@@ -174,6 +174,7 @@ class _MetricsAccessor(BaseMetricsAccessor[EstimatorReport], DirNamesMixin):
             except Exception as exception:
                 metric_rows = [
                     MetricRow(
+                        name=parsed_metric.name,
                         metric_verbose_name=parsed_metric.verbose_name,
                         greater_is_better=parsed_metric.greater_is_better,
                         label=None,
@@ -186,7 +187,7 @@ class _MetricsAccessor(BaseMetricsAccessor[EstimatorReport], DirNamesMixin):
 
             rows.extend(
                 {
-                    "name": parsed_metric.name,
+                    "name": row["name"],
                     "verbose_name": row["metric_verbose_name"],
                     "estimator": self._parent.estimator_name_,
                     "data_source": data_source,

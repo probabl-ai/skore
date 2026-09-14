@@ -497,9 +497,9 @@ class TestEstimatorReportPayload:
         custom = [m for m in payload.metrics if m.name.startswith("score_")]
         assert {m.name for m in custom} == {"score_a_1", "score_b_1", "score_c_1"}
         assert {m.verbose_name for m in custom} == {
-            "score_a_1",
-            "score_b_1",
-            "score_c_1",
+            "Score A 1",
+            "Score B 1",
+            "Score C 1",
         }
         # train + test for each submetric
         assert len(custom) == 6
