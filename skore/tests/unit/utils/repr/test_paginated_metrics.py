@@ -46,7 +46,6 @@ def test_long_frame_paginates():
     html = paginated_metrics_html(df)
     assert "skore-metrics-pager" in html
     assert "skore-metrics-pager-next" in html
-    assert f'data-page-size="{METRICS_HTML_PAGE_SIZE}"' in html
     assert 'type="radio"' not in html
     pages = _row_pages(html)
     assert len(pages) == len(df)
@@ -88,38 +87,10 @@ def test_numeric_format_matches_full_to_html():
     assert _td_texts(table) == _td_texts(df.to_html(index=False))
 
 
-def test_metric_groups_are_not_split_across_pages():
-    metrics = (
-        ["R²"] * 3
-        + ["RMSE"] * 3
-        + ["MAE"] * 3
-        + ["MAPE"] * 3
-        + ["Fit time (s)", "Predict time (s)"]
-    )
-    df = pd.DataFrame(
-        {
-            "Metric": metrics,
-            "Output": list(range(3)) * 4 + ["", ""],
-            "score": [1.0] * 14,
-        }
-    )
-    html = paginated_metrics_html(df)
-    pages = _row_pages(html)
-    assert len(pages) == 14
-    assert max(pages) >= 1
-    grouped = {}
-    for metric, page in zip(metrics, pages, strict=True):
-        grouped.setdefault(metric, set()).add(page)
-    assert all(len(page_set) == 1 for page_set in grouped.values())
-    mape_page = next(iter(grouped["MAPE"]))
-    assert grouped["R²"] != grouped["MAPE"]
-    assert mape_page == next(iter(grouped["Fit time (s)"]))
-
-
-def test_oversized_metric_group_stays_on_one_page():
-    df = pd.DataFrame({"Metric": ["R²"] * 12 + ["RMSE"], "score": [1.0] * 13})
+def test_pages_are_fixed_size():
+    df = _long_frame(n_extra=4)
     pages = _row_pages(paginated_metrics_html(df))
-    assert pages == [0] * 12 + [1]
+    assert pages == [0] * METRICS_HTML_PAGE_SIZE + [1] * 4
 
 
 def test_nameless_range_index_is_not_reset_again():

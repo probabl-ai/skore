@@ -30,25 +30,18 @@ def paginated_metrics_html(
 ) -> str:
     """Render ``frame`` as HTML, paginated when it has more than 10 rows.
 
-    Rows are packed by metric group so a metric is not split across pages.
-    A group larger than 10 rows occupies its own page (scroll inside a fixed
-    height). ``DataFrame.to_html`` is called once so numeric formatting is
-    consistent across pages.
+    ``DataFrame.to_html`` is called once so numeric formatting is consistent
+    across pages.
     """
     df = _prepare_metrics_html_frame(frame)
     table_html = df.to_html(index=False)
     if len(df) <= METRICS_HTML_PAGE_SIZE:
         return table_html
 
-    pages = _page_indices(df)
-    table_html = _annotate_tbody_rows(table_html, pages)
+    table_html = _annotate_tbody_rows(table_html, n_rows=len(df))
     return render_template(
         "common/paginated_metrics.html.j2",
-        {
-            "table_html": table_html,
-            "inline_assets": inline_assets,
-            "page_size": METRICS_HTML_PAGE_SIZE,
-        },
+        {"table_html": table_html, "inline_assets": inline_assets},
     )
 
 
@@ -66,35 +59,7 @@ def _prepare_metrics_html_frame(frame: pd.DataFrame | pd.Series) -> pd.DataFrame
     return df.reset_index()
 
 
-def _page_indices(df: pd.DataFrame) -> list[int]:
-    """Assign a page index to each row, packing metric groups up to 10 rows."""
-    for name in ("Metric", "metric"):
-        if name in df.columns:
-            keys = df[name].astype(str).tolist()
-            break
-    else:
-        keys = [str(i) for i in range(len(df))]
-
-    pages = [0] * len(df)
-    page = 0
-    used = 0
-    i = 0
-    while i < len(keys):
-        j = i + 1
-        while j < len(keys) and keys[j] == keys[i]:
-            j += 1
-        size = j - i
-        if used and used + size > METRICS_HTML_PAGE_SIZE:
-            page += 1
-            used = 0
-        for k in range(i, j):
-            pages[k] = page
-        used += size
-        i = j
-    return pages
-
-
-def _annotate_tbody_rows(table_html: str, pages: list[int]) -> str:
+def _annotate_tbody_rows(table_html: str, *, n_rows: int) -> str:
     tbody_start = table_html.find("<tbody>")
     tbody_end = table_html.find("</tbody>")
     head = table_html[: tbody_start + len("<tbody>")]
@@ -104,8 +69,8 @@ def _annotate_tbody_rows(table_html: str, pages: list[int]) -> str:
 
     def replace(match: re.Match[str]) -> str:
         nonlocal index
-        annotated = f'<tr data-page="{pages[index]}"'
+        annotated = f'<tr data-page="{index // METRICS_HTML_PAGE_SIZE}"'
         index += 1
         return annotated
 
-    return head + _TR_OPEN_RE.sub(replace, body, count=len(pages)) + tail
+    return head + _TR_OPEN_RE.sub(replace, body, count=n_rows) + tail

@@ -9,8 +9,6 @@ function skoreInitMetricsPager(pager) {
     }
 
     pager.classList.add("is-ready");
-    const wrap = pager.querySelector(".skore-metrics-table-wrap");
-    const pageSize = Number(pager.dataset.pageSize);
     let nPages = 0;
     rows.forEach((row) => {
         nPages = Math.max(nPages, Number(row.dataset.page) + 1);
@@ -34,10 +32,6 @@ function skoreInitMetricsPager(pager) {
                 end = Math.max(end, index + 1);
             }
         });
-        wrap.classList.toggle(
-            "is-scrollable",
-            Boolean(Math.max(0, end - start + 1 - pageSize))
-        );
         status.textContent = "Results: " + start + "-" + end + " of " + rows.length;
         const atStart = page === 0;
         const atEnd = page === nPages - 1;

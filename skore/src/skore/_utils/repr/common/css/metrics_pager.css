@@ -10,11 +10,6 @@
     display: table-row;
 }
 
-.skore-metrics-table-wrap.is-scrollable {
-    max-height: 18em;
-    overflow: auto;
-}
-
 .skore-metrics-table-wrap table {
     table-layout: fixed;
     width: 100%;
@@ -68,10 +63,5 @@
 
     .skore-metrics-pager-nav {
         display: none !important;
-    }
-
-    .skore-metrics-table-wrap.is-scrollable {
-        max-height: none;
-        overflow: visible;
     }
 }
