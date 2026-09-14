@@ -51,8 +51,7 @@ X, X_pool, y, y_pool = train_test_split(
     stratify=y_full,
     random_state=42,
 )
-y = pd.Series(y, name="class")
-y_pool = pd.Series(y_pool, name="class")
+y, y_pool = y.rename("class"), y_pool.rename("class")
 
 # %%
 # Let us inspect the feature matrix with :class:`~skrub.TableReport`.
@@ -75,7 +74,7 @@ TableReport(y)
 
 shares = y.value_counts(normalize=True).sort_index()
 counts = y.value_counts().sort_index()
-print(pd.DataFrame({"share": shares.round(4), "count": counts}))
+pd.concat([shares.round(4), counts], axis=1)
 
 # %%
 # Trigger SKD005: default classifier on imbalanced classes
@@ -98,6 +97,7 @@ report = skore.evaluate(
     y=y,
     splitter=splitter,
 )
+report
 
 # %%
 # SKD005 correctly flags classes 3, 4, 5, 6, and 7 as under 10 % of rows.
@@ -152,35 +152,45 @@ y_train_more = pd.concat([y_train, y_rare_extra])
 
 print("Rare labels added from the pool:", list(rare_labels))
 print("Extra rare-class rows added:", len(y_rare_extra))
+
+# %%
 print("\nBaseline train counts:")
-print(y_train.value_counts().sort_index())
+y_train.value_counts().sort_index()
+
+# %%
 print("\nEnriched train counts:")
-print(y_train_more.value_counts().sort_index())
+y_train_more.value_counts().sort_index()
 
 # %%
 # Let us now fit a model on the enriched train set and compare the results with the
 # original model. We can observe that the model on the enriched train set has a better
 # log-loss, accuracy and per-class precision on the common test set.
 #
-# The log-loss is the most importance metric to look at here, as it evaluates the model's
-# predicted probabilities, which give more robust estimate of the model's quality.
-# In contrast, accuracy and per-class precision are computed with hard class predictions,
-# obtained from the argmax of the predicted probabilities, which can hide uncalibrated predictions.
+# The log-loss is the most importance metric to look at here, as it evaluates
+# the model's predicted probabilities, which give more robust estimate of the
+# model's quality. In contrast, accuracy and per-class precision are computed
+# with hard class predictions, obtained from the argmax of the predicted
+# probabilities, which can hide uncalibrated predictions.
 
 model_less = HistGradientBoostingClassifier(random_state=42).fit(X_train, y_train)
 report_less = skore.evaluate(model_less, X_test, y_test, splitter="prefit")
+report_less
 
+# %%
 model_more = HistGradientBoostingClassifier(random_state=42).fit(
     X_train_more, y_train_more
 )
 report_more = skore.evaluate(model_more, X_test, y_test, splitter="prefit")
+report_more
 
-skore.compare(
+# %%
+comparison_report = skore.compare(
     {
         "baseline_train": report_less,
         "more_rare_class_rows": report_more,
     }
-).metrics.summarize(
+)
+comparison_report.metrics.summarize(
     metric=["accuracy", "precision", "log_loss"],
     data_source="test",
 ).frame(flat_index=False)
