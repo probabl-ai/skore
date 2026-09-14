@@ -86,9 +86,9 @@ report
 report.checks.summarize()
 
 # %%
-# Inspect coefficients with
-# :meth:`~skore.EstimatorReport.inspection.coefficients`.
-# Compare each coefficient's magnitude to the feature's typical range (or
+# Let us inspect coefficients with
+# :meth:`~skore.EstimatorReport.inspection.coefficients`, and
+# compare each coefficient's magnitude to the feature's typical range (or
 # standard deviation): a large coefficient on a small-scale column is not
 # necessarily more important than a small coefficient on a large-scale column
 # such as ``Population``.
@@ -142,7 +142,7 @@ _ = comparable.plot.barh()
 # %%
 # That rescaling erases the surprises from the side-by-side bars above. The
 # large raw ``AveBedrms`` coefficient shrinks once multiplied by its small
-# standard deviation, so it usually drops in the ranking. The tiny raw
+# standard deviation, so it drops in the ranking. The tiny raw
 # ``Population`` coefficient grows with that column's large std, and features
 # such as ``MedInc``, ``Latitude``, or ``Longitude`` move up when importance is
 # measured per one standard deviation rather than per original unit.
