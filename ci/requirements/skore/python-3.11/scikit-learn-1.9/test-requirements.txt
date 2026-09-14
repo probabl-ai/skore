@@ -21,6 +21,8 @@ asttokens==3.0.2
     # via stack-data
 attrs==26.1.0
     # via aiohttp
+backports-tarfile==1.2.0
+    # via jaraco-context
 blinker==1.9.0
     # via flask
 build==1.5.0
@@ -60,6 +62,7 @@ cryptography==50.0.1
     # via
     #   google-auth
     #   mlflow
+    #   secretstorage
 cycler==0.12.1
     # via matplotlib
 databricks-sdk==0.125.0
@@ -132,7 +135,9 @@ idna==3.18
     #   requests
     #   yarl
 importlib-metadata==9.0.0
-    # via mlflow-skinny
+    # via
+    #   keyring
+    #   mlflow-skinny
 iniconfig==2.3.0
     # via pytest
 ipython==9.16.1
@@ -145,10 +150,20 @@ ipywidgets==8.1.8
     # via rich
 itsdangerous==2.2.0
     # via flask
+jaraco-classes==3.4.0
+    # via keyring
+jaraco-context==6.1.2
+    # via keyring
+jaraco-functools==4.6.0
+    # via keyring
 jedi==0.20.0
     # via
     #   skore (skore/pyproject.toml)
     #   ipython
+jeepney==0.9.0
+    # via
+    #   keyring
+    #   secretstorage
 jinja2==3.1.6
     # via
     #   skore (skore/pyproject.toml)
@@ -161,6 +176,8 @@ joblib==1.6.0
     #   skrub
 jupyterlab-widgets==3.0.16
     # via ipywidgets
+keyring==25.7.0
+    # via skore (skore/pyproject.toml)
 kiwisolver==1.5.0
     # via matplotlib
 librt==0.13.0
@@ -191,6 +208,10 @@ mlflow-skinny==3.16.0
     # via mlflow
 mlflow-tracing==3.16.0
     # via mlflow
+more-itertools==11.1.0
+    # via
+    #   jaraco-classes
+    #   jaraco-functools
 multidict==6.7.1
     # via
     #   aiohttp
@@ -393,6 +414,8 @@ scipy-stubs==1.17.1.5
     # via skore (skore/pyproject.toml)
 seaborn==0.13.2
     # via skore (skore/pyproject.toml)
+secretstorage==3.5.0
+    # via keyring
 six==1.17.0
     # via python-dateutil
 skops==0.14.0
