@@ -162,7 +162,7 @@ class Registry:
 
         self.__save_on_disk(registry)
 
-    def get(self, *, uri: str | None = None, workspace: str) -> str:
+    def get(self, *, uri: str | None = None, workspace: str) -> str | None:
         """
         Return the API key for ``uri`` and ``workspace``.
 
@@ -177,11 +177,6 @@ class Registry:
         -------
         str
             The matching API key.
-
-        Raises
-        ------
-        APIKeyError
-            If no credential matches ``uri`` and ``workspace``.
         """
         uri = uri or URI()
 
@@ -191,14 +186,9 @@ class Registry:
         for credential in registry["keys"]:
             if credential["host"] == uri and credential["workspace"] == workspace:
                 if registry["type"] == "secret":
-                    if api_key := get_password(KEYRING_SERVICE, f"{uri}:{workspace}"):
-                        return api_key
-
-                    raise APIKeyError()
-
+                    return get_password(KEYRING_SERVICE, f"{uri}:{workspace}")
                 return cast(str, credential["key"])
-
-        raise APIKeyError()
+        return None
 
     @locked
     def delete(self, *, uri: str | None = None, workspace: str) -> None:
@@ -211,11 +201,6 @@ class Registry:
             URI associated with the API key. If omitted, :func:`URI` is used.
         workspace : str
             Workspace associated with the API key.
-
-        Raises
-        ------
-        APIKeyError
-            If no credential matches ``uri`` and ``workspace``.
         """
         uri = uri or URI()
 
@@ -229,7 +214,7 @@ class Registry:
         ]
 
         if len(keys) == len(registry["keys"]):
-            raise APIKeyError()
+            return
 
         if registry["type"] == "secret":
             with suppress(PasswordDeleteError):
