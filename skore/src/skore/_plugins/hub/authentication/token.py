@@ -275,3 +275,12 @@ class Token:
                 self.__expiration = datetime.fromisoformat(expiration)
 
             return {"Authorization": f"Bearer {self.__access}"}
+
+
+#
+# Global variable storing temporary token used for authentication by the ``HUBClient``.
+#
+# By default, it is empty and must be initialized by the user by calling explicitly the
+# function ``login``.
+#
+token: Callable[[], dict[str, str]] | None = None

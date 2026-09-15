@@ -26,16 +26,15 @@ P = ParamSpec("P")
 R = TypeVar("R")
 
 
-class APIKeyError(KeyError):
-    pass
-
-
-def API_key() -> Callable[[], dict[str, str]]:
+class API_key:
     """Retrieve the API key from the environment as an HTTP header."""
-    if ENV_VAR_NAME in environ:
-        return lambda: {"X-API-Key": environ[ENV_VAR_NAME]}
 
-    raise APIKeyError()
+    @staticmethod
+    def available() -> bool:
+        return ENV_VAR_NAME in environ
+
+    def __call__(self) -> Callable[[], dict[str, str]]:
+        return lambda: {"X-API-Key": environ[ENV_VAR_NAME]}
 
 
 def locked(method: Callable[P, R]) -> Callable[P, R]:
