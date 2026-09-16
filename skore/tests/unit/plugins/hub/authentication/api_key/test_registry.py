@@ -1,6 +1,6 @@
 from json import loads
 
-from pytest import fixture
+from pytest import fixture, mark
 
 from skore._plugins.hub.authentication.api_key import registry
 from skore._plugins.hub.authentication.uri import DEFAULT as DEFAULT_URI
@@ -59,11 +59,8 @@ def content():
     return loads(registry.setup().read_text())
 
 
+@mark.usefixtures("plaintext_keyring")
 class TestPlaintext:
-    @fixture(autouse=True)
-    def _plaintext_keyring(self, plaintext_keyring):
-        pass
-
     def test_setup_creates_empty_registry(self, tmp_path):
         filepath = registry.setup()
 
@@ -229,11 +226,8 @@ class TestPlaintext:
         }
 
 
+@mark.usefixtures("secret_keyring")
 class TestSecret:
-    @fixture(autouse=True)
-    def _secret_keyring(self, secret_keyring):
-        pass
-
     def test_setup_creates_empty_registry(self, tmp_path):
         filepath = registry.setup()
 
