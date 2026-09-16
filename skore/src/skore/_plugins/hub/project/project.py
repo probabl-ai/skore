@@ -333,7 +333,7 @@ class Project:
                 method="GET",
                 workspace=self.workspace,
                 project=self.name,
-                endpoint=f"{matched['type']}/{matched['id']}",
+                endpoint=f"{matched['type']}-reports/{matched['id']}",
             )
 
             metadata = response.json()
@@ -395,7 +395,6 @@ class Project:
                 "predict_time_std": metrics.get("predict_time_std"),
             }
 
-        endpoint: str = f"projects/{self.workspace}/{self.name}/reports/"
         cursor: int | None = None
         reports: list[Metadata] = []
 
@@ -406,8 +405,11 @@ class Project:
             # the ``id`` of the last item of the previous page as the cursor, rather
             # than a numeric page offset.
             while True:
-                response = client.get(
-                    endpoint,
+                response = client.request(
+                    method="GET",
+                    workspace=self.workspace,
+                    project=self.name,
+                    endpoint="reports",
                     params={
                         "cursor": cursor,
                         "limit": 500,

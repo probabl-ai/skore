@@ -27,8 +27,8 @@ from httpx import (
 from httpx import Client as HTTPXClient
 from httpx._types import HeaderTypes
 
-from skore._plugins.hub.authentication.api_key import ENV_VAR_NAME, registry
-from skore._plugins.hub.authentication.token import token
+from skore._plugins.hub.authentication import api_key as api_key_module
+from skore._plugins.hub.authentication import token as token_module
 from skore._plugins.hub.authentication.uri import URI
 
 logger = getLogger(__name__)
@@ -222,32 +222,38 @@ class HUBClient(Client):
         project: str | None = None,
         endpoint: str | None = None,
         headers: HeaderTypes | None = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> Response:
         """Execute request with authorization."""
         host = URI()
         headers = Headers(headers)
-        url = reduce(
-            urljoin,
-            [
-                host,
-                "project/",
-                (workspace and f"{workspace}/") or None,
-                (project and f"{project}/") or None,
-                (endpoint and f"{endpoint}/") or None,
-            ],
+        url = str.rstrip(
+            reduce(
+                urljoin,
+                filter(
+                    None,
+                    (
+                        host,
+                        "projects/",
+                        (workspace and f"{workspace}/") or workspace,
+                        (project and f"{project}/") or project,
+                        endpoint,
+                    ),
+                ),
+                "/",
+            )
         )
 
         if JUPYTERLITE:
             # User is authenticated via cookies
             pass
-        elif api_key := environ.get(ENV_VAR_NAME):
+        elif api_key := environ.get(api_key_module.ENV_VAR_NAME):
             # User is authenticated via API key from environment
             headers.update({"X-API-Key": api_key})
-        elif token is not None:
+        elif token_module.token is not None:
             # User is authenticated via bearer token from login
-            headers.update({"Authorization": f"Bearer {token.access}"})
-        elif api_key := registry.get(host=host, workspace=workspace):
+            headers.update({"Authorization": f"Bearer {token_module.token.access}"})
+        elif api_key := api_key_module.registry.get(host=host, workspace=workspace):
             # User is authenticated via API key from registry
             headers.update({"X-API-Key": api_key})
         else:
