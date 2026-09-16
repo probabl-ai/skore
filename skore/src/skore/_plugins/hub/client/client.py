@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+from os import environ
 from contextlib import suppress
+from functools import reduce
 from http import HTTPStatus
 from importlib.metadata import version
 from importlib.util import find_spec
@@ -13,7 +15,6 @@ from typing import Any, Final
 from urllib.parse import urljoin
 
 from httpx import (
-    URL,
     BaseTransport,
     Headers,
     HTTPError,
@@ -26,6 +27,8 @@ from httpx import (
 from httpx import Client as HTTPXClient
 from httpx._types import HeaderTypes
 
+from skore._plugins.hub.authentication.api_key import ENV_VAR_NAME, registry
+from skore._plugins.hub.authentication.token import token
 from skore._plugins.hub.authentication.uri import URI
 
 logger = getLogger(__name__)
@@ -164,7 +167,7 @@ PACKAGE_SEMVER = __semver(version("skore"))
 JUPYTERLITE = find_spec("pyodide") is not None
 
 
-class HUBClient(Client):
+class HUBClient:
     """Client exchanging with ``skore hub``."""
 
     def __init__(
@@ -204,7 +207,7 @@ class HUBClient(Client):
 
             transport = JupyterliteTransport()
 
-        super().__init__(
+        self.__client = Client(
             retry=retry,
             retry_total=retry_total,
             retry_backoff_factor=retry_backoff_factor,
@@ -215,20 +218,40 @@ class HUBClient(Client):
     def request(
         self,
         method: str,
-        url: URL | str,
+        workspace: str,
+        project: str | None = None,
+        endpoint: str | None = None,
         headers: HeaderTypes | None = None,
-        **kwargs: Any,
+        **kwargs,
     ) -> Response:
         """Execute request with authorization."""
-        from skore._plugins.hub.authentication.login import credentials
-
+        host = URI()
         headers = Headers(headers)
+        url = reduce(
+            urljoin,
+            [
+                host,
+                "project/",
+                (workspace and f"{workspace}/") or None,
+                (project and f"{project}/") or None,
+                (endpoint and f"{endpoint}/") or None,
+            ],
+        )
 
-        if credentials is not None:  # User is authenticated via API key or bearer token
-            headers.update(credentials())
-        elif JUPYTERLITE:  # User is authenticated via cookies
+        if JUPYTERLITE:
+            # User is authenticated via cookies
             pass
-        else:  # User is not authenticated
+        elif api_key := environ.get(ENV_VAR_NAME):
+            # User is authenticated via API key from environment
+            headers.update({"X-API-Key": api_key})
+        elif token is not None:
+            # User is authenticated via bearer token from login
+            headers.update({"Authorization": f"Bearer {token.access}"})
+        elif api_key := registry.get(host=host, workspace=workspace):
+            # User is authenticated via API key from registry
+            headers.update({"X-API-Key": api_key})
+        else:
+            # User is not authenticated
             raise RuntimeError(
                 "You are not logged in. "
                 "Please call the `skore.login()` function at the top of your script."
@@ -238,7 +261,4 @@ class HUBClient(Client):
         if PACKAGE_SEMVER:
             headers.update({"X-Skore-Client": f"skore/{PACKAGE_SEMVER}"})
 
-        # Prefix the request by the hub URI when ``url`` is not absolute
-        url = urljoin(URI(), str(url))
-
-        return super().request(method=method, url=url, headers=headers, **kwargs)
+        return self.__client.request(method=method, url=url, headers=headers, **kwargs)
