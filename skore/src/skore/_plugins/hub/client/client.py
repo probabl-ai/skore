@@ -245,8 +245,8 @@ class HUBClient(Client):
                         endpoint,
                     ),
                 ),
-                "/",
-            )
+            ),
+            "/",
         )
 
         # Overload headers with authorization - first non-null wins
