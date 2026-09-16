@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable
 from datetime import UTC, datetime
 from threading import RLock
 from time import sleep
@@ -235,7 +234,8 @@ class Token:
         self.__refreshment = refreshment
         self.__expiration = datetime.fromisoformat(expiration)
 
-    def __call__(self) -> dict[str, str]:  # noqa: D102
+    @property
+    def access(self) -> str:
         with self.__lock:
             if self.__expiration <= datetime.now(UTC):
                 access, refreshment, expiration = post_oauth_refresh_token(
@@ -246,13 +246,13 @@ class Token:
                 self.__refreshment = refreshment
                 self.__expiration = datetime.fromisoformat(expiration)
 
-            return {"Authorization": f"Bearer {self.__access}"}
+        return self.__access
 
 
 #
-# Global variable storing temporary token used for authentication by the ``HUBClient``.
+# Class variable storing temporary token used for authentication by the ``HUBClient``.
 #
 # By default, it is empty and must be initialized by the user by calling explicitly the
 # function ``login``.
 #
-token: Callable[[], dict[str, str]] | None = None
+token: Token | None = None

@@ -98,7 +98,7 @@ def ensure_workspace_is_valid(method: Callable[P, R]) -> Callable[P, R]:
 
         with HUBClient() as hub_client:
             try:
-                hub_client.get(f"/projects/{workspace}")
+                hub_client.request("GET", workspace)
             except HTTPStatusError as e:
                 if e.response.status_code == codes.NOT_FOUND:
                     raise NotFoundException(
@@ -212,7 +212,7 @@ class Project:
             The name of the project.
         """
         with HUBClient() as hub_client:
-            response = hub_client.post(f"projects/{workspace}/{name}")
+            response = hub_client.request("POST", workspace, name)
 
         self.__workspace = workspace
         self.__name = name
@@ -301,8 +301,11 @@ class Project:
             payload_json_bytes = dumps(payload_dict)
 
             with HUBClient() as hub_client:
-                response = hub_client.post(
-                    url=f"projects/{self.workspace}/{self.name}/{endpoint}",
+                response = hub_client.request(
+                    method="POST",
+                    workspace=self.workspace,
+                    project=self.name,
+                    endpoint=endpoint,
                     content=payload_json_bytes,
                     headers={
                         "Content-Length": str(len(payload_json_bytes)),
@@ -318,13 +321,7 @@ class Project:
 
     def get(self, id: str) -> EstimatorReport | CrossValidationReport:
         """Get a persisted report by its ID (hub URN)."""
-        if m := re.match(Project.__REPORT_URN_PATTERN, id):
-            workspace = self.workspace
-            name = self.name
-            type = m["type"]
-            report_id = m["id"]
-            url = f"projects/{workspace}/{name}/{type}-reports/{report_id}"
-        else:
+        if not (matched := re.match(Project.__REPORT_URN_PATTERN, id)):
             raise ValueError(
                 f"Report ID '{id}' format does not match "
                 f"'{Project.__REPORT_URN_PATTERN}'."
@@ -332,7 +329,13 @@ class Project:
 
         # Retrieve presigned URL
         with HUBClient() as hub_client:
-            response = hub_client.get(url=url)
+            response = hub_client.request(
+                method="GET",
+                workspace=self.workspace,
+                project=self.name,
+                endpoint=f'{matched["type"]}/{matched["id"]}',
+            )
+
             metadata = response.json()
             presigned_url = metadata["pickle"]["presigned_url"]
 
@@ -446,7 +449,7 @@ class Project:
         """
         with HUBClient() as hub_client:
             try:
-                hub_client.delete(f"projects/{workspace}/{name}")
+                hub_client.request("DELETE", workspace, name)
             except HTTPStatusError as e:
                 if e.response.status_code == codes.FORBIDDEN:
                     raise ForbiddenException(
