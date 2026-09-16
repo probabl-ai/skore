@@ -150,7 +150,7 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
 
             self.__sample_to_class_index = [
                 class_to_class_indice[sample]
-                for sample in cast(Iterable[Any], np.asarray(self.report.y).squeeze())
+                for sample in cast(Iterable[Any], np.asarray(self.report.y).ravel())
             ]
 
             assert len(self.__sample_to_class_index) == len(cast(Sized, self.report.X))
@@ -308,8 +308,8 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
         test_target_distributions_sample_count = []
 
         for train_indices, test_indices in self.report.split_indices:
-            train_y = np.asarray(_safe_indexing(self.report.y, train_indices)).squeeze()
-            test_y = np.asarray(_safe_indexing(self.report.y, test_indices)).squeeze()
+            train_y = np.asarray(_safe_indexing(self.report.y, train_indices))
+            test_y = np.asarray(_safe_indexing(self.report.y, test_indices))
             train_target_distribution: list[float] = []
             test_target_distribution: list[float] = []
 
