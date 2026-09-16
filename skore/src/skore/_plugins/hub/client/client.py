@@ -256,12 +256,12 @@ class HUBClient(Client):
         elif api_key := environ.get(api_key_module.ENV_VAR_NAME):
             # User is authenticated via API key from environment
             headers.update({"X-API-Key": api_key})
-        elif api_key := api_key_module.registry.get(host=host, workspace=workspace):
-            # User is authenticated via API key from registry
-            headers.update({"X-API-Key": api_key})
         elif token_module.token is not None:
             # User is authenticated via bearer token from login
             headers.update({"Authorization": f"Bearer {token_module.token.access}"})
+        elif api_key := api_key_module.registry.get(host=host, workspace=workspace):
+            # User is authenticated via API key from registry
+            headers.update({"X-API-Key": api_key})
         else:
             # User is not authenticated
             raise RuntimeError(
