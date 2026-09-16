@@ -215,7 +215,12 @@ class HUBClient(Client):
             transport=transport,
         )
 
-    def request(
+    # Ignore the type signature because we override the httpx `url` parameter with
+    # `workspace`, `project` and `endpoint`.
+    #
+    # As a consequence, helpers that call ``request`` with a URL (``get``, ``put``,
+    # ``post``, ``delete``) are not usable on ``HUBClient``.
+    def request(  # type: ignore[override]
         self,
         method: str,
         workspace: str,
@@ -244,6 +249,7 @@ class HUBClient(Client):
             )
         )
 
+        # Overload headers with authorization
         if JUPYTERLITE:
             # User is authenticated via cookies
             pass
