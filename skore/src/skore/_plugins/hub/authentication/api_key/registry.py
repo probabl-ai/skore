@@ -25,13 +25,14 @@ API keys are stored in ``~/.skore.hub/credentials.json`` as a JSON object:
     }
 
 The storage mode is chosen automatically when the registry file is created:
-``secret`` if a recommended `keyring <https://github.com/jaraco/keyring>`_
-backend is available, otherwise ``plaintext``. In ``secret`` mode the API key is stored
-in the system keyring rather than in the JSON file.
+``secret`` if a recommended `keyring <https://github.com/jaraco/keyring>`_ backend is
+is available, otherwise ``plaintext``. In ``secret`` mode the API key is stored in the
+system keyring rather than in the JSON file.
 
 Notes
 -----
 The registry is locked during write operations.
+
 When ``host`` is omitted on :meth:`set`, :meth:`get` or :meth:`delete`, its value is
 derived from :func:`URI`.
 """
@@ -135,19 +136,18 @@ def set(*, host: str | None = None, workspace: str, api_key: str) -> None:
     with filepath.open() as file:
         registry = load(file)
 
-    keys = [
-        credential
-        for credential in registry["keys"]
-        if credential["host"] != host or credential["workspace"] != workspace
-    ]
-
     if registry["type"] == "secret":
         set_password(KEYRING_SERVICE, f"{host}:{workspace}", api_key)
-        keys.append({"host": host, "workspace": workspace})
+        new = {"host": host, "workspace": workspace}
     else:
-        keys.append({"host": host, "workspace": workspace, "key": api_key})
+        new = {"host": host, "workspace": workspace, "key": api_key}
 
-    registry["keys"] = keys
+    for i, credential in enumerate(registry["keys"]):
+        if credential["host"] == host and credential["workspace"] == workspace:
+            registry["keys"][i] = new
+            break
+    else:
+        registry["keys"].append(new)
 
     save_on_disk(registry=registry, filepath=filepath)
 
@@ -178,7 +178,9 @@ def get(*, host: str | None = None, workspace: str) -> str | None:
         if credential["host"] == host and credential["workspace"] == workspace:
             if registry["type"] == "secret":
                 return get_password(KEYRING_SERVICE, f"{host}:{workspace}")
+
             return cast(str, credential["key"])
+
     return None
 
 
@@ -200,19 +202,14 @@ def delete(*, host: str | None = None, workspace: str) -> None:
     with filepath.open() as file:
         registry = load(file)
 
-    keys = [
-        credential
-        for credential in registry["keys"]
-        if credential["host"] != host or credential["workspace"] != workspace
-    ]
-
-    if len(keys) == len(registry["keys"]):
-        return
-
     if registry["type"] == "secret":
         with suppress(PasswordDeleteError):
             delete_password(KEYRING_SERVICE, f"{host}:{workspace}")
 
-    registry["keys"] = keys
+    registry["keys"] = [
+        credential
+        for credential in registry["keys"]
+        if credential["host"] != host or credential["workspace"] != workspace
+    ]
 
     save_on_disk(registry=registry, filepath=filepath)
