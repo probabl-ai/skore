@@ -6,7 +6,8 @@ from httpx import (
 )
 from pytest import mark, raises
 
-from skore._plugins.hub.authentication import login as login_module
+from skore._plugins.hub.authentication import token as token_module
+from skore._plugins.hub.authentication.login import login
 
 DATETIME_MIN = datetime.min.replace(tzinfo=UTC).isoformat()
 DATETIME_MAX = datetime.max.replace(tzinfo=UTC).isoformat()
@@ -19,15 +20,14 @@ TOKEN_URL = "identity/oauth/device/token"
 
 
 @mark.respx()
-def test_login_with_api_key(monkeypatch, respx_mock):
+def test_login_with_api_key_noop(monkeypatch, respx_mock):
     monkeypatch.setenv("SKORE_HUB_API_KEY", "<api-key>")
 
-    assert login_module.credentials is None
+    assert token_module.token is None
 
-    login_module.login()
+    login()
 
-    assert login_module.credentials is not None
-    assert login_module.credentials() == {"X-API-Key": "<api-key>"}
+    assert token_module.token is None
 
 
 @mark.respx()
@@ -61,12 +61,12 @@ def test_login_with_token(monkeypatch, respx_mock):
         )
     )
 
-    assert login_module.credentials is None
+    assert token_module.token is None
 
-    login_module.login()
+    login()
 
-    assert login_module.credentials is not None
-    assert login_module.credentials() == {"Authorization": "Bearer D"}
+    assert token_module.token is not None
+    assert token_module.token.access == "D"
 
 
 @mark.respx()
@@ -110,12 +110,12 @@ def test_login_with_expired_token(monkeypatch, respx_mock):
         )
     )
 
-    assert login_module.credentials is None
+    assert token_module.token is None
 
-    login_module.login()
+    login()
 
-    assert login_module.credentials is not None
-    assert login_module.credentials() == {"Authorization": "Bearer F"}
+    assert token_module.token is not None
+    assert token_module.token.access == "F"
 
 
 @mark.respx()
@@ -137,10 +137,10 @@ def test_login_with_token_timeout(monkeypatch, respx_mock):
     )
     respx_mock.get(PROBE_URL).mock(Response(400))
 
-    assert login_module.credentials is None
+    assert token_module.token is None
 
     # Simulate a user who does not complete the authentication process:
     # - the token can't be acknowledged by the hub until the user is logged in; 400
     # - the token can't be created; timeout
     with raises(TimeoutException):
-        login_module.login(timeout=0)
+        login(timeout=0)
