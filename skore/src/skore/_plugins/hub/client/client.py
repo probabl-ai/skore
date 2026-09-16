@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from os import environ
 from contextlib import suppress
 from functools import reduce
 from http import HTTPStatus
@@ -10,6 +9,7 @@ from importlib.metadata import version
 from importlib.util import find_spec
 from json import dumps
 from logging import getLogger
+from os import environ
 from time import sleep
 from typing import Any, Final
 from urllib.parse import urljoin
@@ -167,7 +167,7 @@ PACKAGE_SEMVER = __semver(version("skore"))
 JUPYTERLITE = find_spec("pyodide") is not None
 
 
-class HUBClient:
+class HUBClient(Client):
     """Client exchanging with ``skore hub``."""
 
     def __init__(
@@ -207,7 +207,7 @@ class HUBClient:
 
             transport = JupyterliteTransport()
 
-        self.__client = Client(
+        super().__init__(
             retry=retry,
             retry_total=retry_total,
             retry_backoff_factor=retry_backoff_factor,
@@ -261,4 +261,4 @@ class HUBClient:
         if PACKAGE_SEMVER:
             headers.update({"X-Skore-Client": f"skore/{PACKAGE_SEMVER}"})
 
-        return self.__client.request(method=method, url=url, headers=headers, **kwargs)
+        return super().request(method=method, url=url, headers=headers, **kwargs)

@@ -333,7 +333,7 @@ class Project:
                 method="GET",
                 workspace=self.workspace,
                 project=self.name,
-                endpoint=f'{matched["type"]}/{matched["id"]}',
+                endpoint=f"{matched['type']}/{matched['id']}",
             )
 
             metadata = response.json()

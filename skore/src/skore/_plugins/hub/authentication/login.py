@@ -7,7 +7,7 @@ from rich.live import Live
 from rich.panel import Panel
 
 from skore import console
-from skore._plugins.hub.authentication.api_key import API_key
+from skore._plugins.hub.authentication.api_key import ENV_VAR_NAME
 from skore._plugins.hub.authentication.token import Token, token
 
 
@@ -18,7 +18,7 @@ def login(*, timeout: int = 600) -> None:
     if (
         (environ.get("SKORE_HUB_JUPYTERLITE", "").lower() in ("1", "true", "yes"))
         or (token is not None)
-        or API_key.available()
+        or (ENV_VAR_NAME in environ)
     ):
         return
 

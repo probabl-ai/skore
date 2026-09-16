@@ -45,7 +45,7 @@ from json import dump, load
 from pathlib import Path
 from shutil import move
 from tempfile import NamedTemporaryFile, gettempdir
-from typing import Any, ParamSpec, TypeVar, cast, TYPE_CHECKING, Final
+from typing import TYPE_CHECKING, Any, Final, ParamSpec, TypeVar, cast
 
 from filelock import FileLock
 from keyring import delete_password, get_keyring, get_password, set_password
