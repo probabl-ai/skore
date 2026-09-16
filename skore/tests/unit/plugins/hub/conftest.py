@@ -338,7 +338,7 @@ def monkeypatch_rich(monkeypatch):
 @fixture
 def monkeypatch_global_variables(monkeypatch):
     """Reset global variables that can bias the tests."""
-    monkeypatch.setattr("skore._plugins.hub.authentication.login.credentials", None)
+    monkeypatch.setattr("skore._plugins.hub.authentication.token.token", None)
 
 
 @fixture(autouse=True)
