@@ -2,9 +2,8 @@ from datetime import UTC, datetime
 from functools import partial
 from importlib import reload
 from unittest.mock import Mock
-from urllib.parse import urljoin
 
-from httpx import Client, Response
+from httpx import Response
 from numpy import array
 from pytest import fixture
 from sklearn.datasets import make_classification, make_regression
@@ -13,6 +12,7 @@ from sklearn.linear_model import LogisticRegression, Ridge
 from sklearn.model_selection import train_test_split
 
 from skore import CrossValidationReport, EstimatorReport
+from skore._plugins.hub.client.client import HUBClient
 from skore._plugins.hub.project.project import Project
 
 
@@ -70,25 +70,10 @@ def monkeypatch_upload_routes(respx_mock):
         respx_mock.request(method=method, url=url).mock(response)
 
 
-class FakeClient(Client):
-    def __init__(self, *args, **kwargs):
-        super().__init__()
-
-    def request(self, method, url, **kwargs):
-        response = super().request(method, urljoin("http://localhost", url), **kwargs)
-        response.raise_for_status()
-
-        return response
-
-
 @fixture
-def monkeypatch_project_hub_client(monkeypatch):
-    monkeypatch.setattr("skore._plugins.hub.project.project.HUBClient", FakeClient)
-
-
-@fixture
-def monkeypatch_artifact_hub_client(monkeypatch):
-    monkeypatch.setattr("skore._plugins.hub.artifact.upload.HUBClient", FakeClient)
+def monkeypatch_hub_client(monkeypatch):
+    monkeypatch.setenv("SKORE_HUB_API_KEY", "<key>")
+    monkeypatch.setitem(HUBClient.__init__.__kwdefaults__, "retry", False)
 
 
 @fixture(scope="module")
@@ -300,13 +285,6 @@ def monkeypatch_matplotlib(monkeypatch):
 
 
 @fixture
-def monkeypatch_skore_hub_envars(monkeypatch):
-    """Delete environment variables that can bias the tests."""
-    monkeypatch.delenv("SKORE_HUB_API_KEY", raising=False)
-    monkeypatch.delenv("SKORE_HUB_URI", raising=False)
-
-
-@fixture
 def monkeypatch_sklearn_estimator_html_repr(monkeypatch):
     """
     Make `sklearn.utils.estimator_html_repr` reproducible.
@@ -346,7 +324,6 @@ def setup(
     monkeypatch_tmpdir,
     monkeypatch_matplotlib,
     monkeypatch_skrub,
-    monkeypatch_skore_hub_envars,
     monkeypatch_sklearn_estimator_html_repr,
     monkeypatch_rich,
     monkeypatch_global_variables,
