@@ -79,7 +79,6 @@ def test_repr_html_paginates_long_tables(forest_multiclass_classification_with_t
     assert n_rows > METRICS_HTML_PAGE_SIZE
     assert "skore-metrics-pager" in html
     assert "skore-metrics-pager-next" in html
-    assert 'type="radio"' not in html
     tbody = html[html.find("<tbody>") : html.find("</tbody>")]
     assert tbody.count("<tr") == n_rows
     assert 'data-page="1"' in html
@@ -160,7 +159,7 @@ def test_repr_html_failure(display_fail):
     """Check that _repr_html_ shows failed metrics."""
     repr_html = display_fail._repr_html_()
     frame = display_fail.frame(verbose_name=True, flat_index=False)
-    assert repr_html.startswith(metrics_summary_html(frame))
+    assert repr_html.startswith(metrics_summary_html(frame, inline_assets=True))
 
     # NaN is not filtered out of the dataframe for estimator reports
     wide_frame = display_fail.frame(flat_index=False)

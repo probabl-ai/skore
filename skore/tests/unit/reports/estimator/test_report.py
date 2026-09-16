@@ -472,7 +472,9 @@ def test_metrics_summary_html_paginates_multiclass(
     assert tbody.count("<tr") == n_rows
     assert 'data-page="1"' in html
     assert "skore-metrics-pager-next" in html
-    assert 'type="radio"' not in html
+    full = report._repr_html_()
+    assert "skoreInitMetricsPagers" in full
+    assert ".skore-metrics-pager.is-ready tbody tr" in full
 
 
 def test_non_html_reprs_have_no_pager(forest_multiclass_classification_with_test):

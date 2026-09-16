@@ -276,6 +276,9 @@ def test_metrics_summary_html_paginates_multiclass(
     assert thead.count("<tr") == 1
     assert "Estimator" not in html
     assert "Aggregate" not in html
+    full = report._repr_html_()
+    assert "skoreInitMetricsPagers" in full
+    assert ".skore-metrics-pager.is-ready tbody tr" in full
 
 
 def test_text_repr(forest_binary_classification_data):

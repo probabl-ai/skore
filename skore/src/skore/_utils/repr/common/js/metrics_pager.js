@@ -1,5 +1,7 @@
 function skoreInitMetricsPagers(root) {
-    root.querySelectorAll(".skore-metrics-pager").forEach(skoreInitMetricsPager);
+    root.querySelectorAll(".skore-metrics-pager:not(.is-ready)").forEach(
+        skoreInitMetricsPager
+    );
 }
 
 function skoreInitMetricsPager(pager) {
@@ -11,7 +13,7 @@ function skoreInitMetricsPager(pager) {
     pager.classList.add("is-ready");
     let nPages = 0;
     rows.forEach((row) => {
-        nPages = Math.max(nPages, Number(row.dataset.page) + 1);
+        nPages = Math.max(nPages, (Number(row.dataset.page) || 0) + 1);
     });
 
     const status = pager.querySelector(".skore-metrics-pager-status");
@@ -25,7 +27,7 @@ function skoreInitMetricsPager(pager) {
         let start = rows.length;
         let end = 0;
         rows.forEach((row, index) => {
-            const onPage = Number(row.dataset.page) === page;
+            const onPage = (Number(row.dataset.page) || 0) === page;
             row.classList.toggle("is-active", onPage);
             if (onPage) {
                 start = Math.min(start, index + 1);

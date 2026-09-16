@@ -526,7 +526,7 @@ class MetricsSummaryDisplay(DisplayMixin):
             flat_index=False,
         )
         lines = [
-            metrics_summary_html(frame),
+            metrics_summary_html(frame, inline_assets=True),
             (
                 '<p role="note">Use <code>.frame()</code> to control the format'
                 " of the output.</p>"

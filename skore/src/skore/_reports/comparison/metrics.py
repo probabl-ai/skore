@@ -144,7 +144,7 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
         frame = self._formatted_summary_frame()
         return (
             "<p>Metrics summary:</p>"
-            f"{metrics_summary_html(frame)}"
+            f"{metrics_summary_html(frame, inline_assets=True)}"
             '<p role="note">Explore available methods with '
             "<code>.help()</code>.</p>"
         )

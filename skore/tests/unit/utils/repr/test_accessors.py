@@ -77,7 +77,7 @@ def _metrics_summary_frame_html(metrics_accessor):
         frame = metrics_accessor._formatted_summary_frame()
     else:
         frame = metrics_accessor.summarize().frame(verbose_name=True, flat_index=False)
-    return metrics_summary_html(frame)
+    return metrics_summary_html(frame, inline_assets=True)
 
 
 def test_metrics_accessor_repr(report):

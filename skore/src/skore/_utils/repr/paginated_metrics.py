@@ -13,32 +13,28 @@ METRICS_HTML_PAGE_SIZE = 10
 _TR_OPEN_RE = re.compile(r"<tr\b")
 
 
-def metrics_summary_html(frame: pd.DataFrame | pd.Series) -> str:
-    """HTML for Jupyter display/accessor reprs.
-
-    Short tables keep pandas ``_repr_html_`` (MultiIndex rowspan). Longer tables
-    use :func:`paginated_metrics_html`.
-    """
-    if len(frame) <= METRICS_HTML_PAGE_SIZE:
-        html_frame = frame.to_frame() if isinstance(frame, pd.Series) else frame
-        return html_frame._repr_html_()
-    return paginated_metrics_html(frame, inline_assets=True)
-
-
-def paginated_metrics_html(
+def metrics_summary_html(
     frame: pd.DataFrame | pd.Series, *, inline_assets: bool = False
 ) -> str:
-    """Render ``frame`` as HTML, paginated when it has more than 10 rows.
+    """HTML for a metrics summary table.
 
-    ``DataFrame.to_html`` is called once so numeric formatting is consistent
-    across pages.
+    Report fragments use the default (``inline_assets=False``): short tables are
+    ``DataFrame.to_html``, long tables are paginated markup whose CSS/JS come
+    from the report shell.
+
+    Jupyter display/accessor reprs pass ``inline_assets=True``: short tables keep
+    pandas ``_repr_html_`` (MultiIndex rowspan), and long tables inline CSS/JS.
     """
+    if inline_assets and len(frame) <= METRICS_HTML_PAGE_SIZE:
+        html_frame = frame.to_frame() if isinstance(frame, pd.Series) else frame
+        return html_frame._repr_html_()
+
     df = _prepare_metrics_html_frame(frame)
     table_html = df.to_html(index=False)
     if len(df) <= METRICS_HTML_PAGE_SIZE:
         return table_html
 
-    table_html = _annotate_tbody_rows(table_html, n_rows=len(df))
+    table_html = _annotate_tbody_rows(table_html)
     return render_template(
         "common/paginated_metrics.html.j2",
         {"table_html": table_html, "inline_assets": inline_assets},
@@ -59,7 +55,7 @@ def _prepare_metrics_html_frame(frame: pd.DataFrame | pd.Series) -> pd.DataFrame
     return df.reset_index()
 
 
-def _annotate_tbody_rows(table_html: str, *, n_rows: int) -> str:
+def _annotate_tbody_rows(table_html: str) -> str:
     tbody_start = table_html.find("<tbody>")
     tbody_end = table_html.find("</tbody>")
     head = table_html[: tbody_start + len("<tbody>")]
@@ -73,4 +69,4 @@ def _annotate_tbody_rows(table_html: str, *, n_rows: int) -> str:
         index += 1
         return annotated
 
-    return head + _TR_OPEN_RE.sub(replace, body, count=n_rows) + tail
+    return head + _TR_OPEN_RE.sub(replace, body) + tail

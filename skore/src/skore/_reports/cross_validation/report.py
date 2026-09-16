@@ -23,7 +23,7 @@ from skore._utils.progress_bar import track
 from skore._utils.repr.data import get_documentation_url
 from skore._utils.repr.html_repr import render_template
 from skore._utils.repr.markdown import markdown_data_section, report_markdown_context
-from skore._utils.repr.paginated_metrics import paginated_metrics_html
+from skore._utils.repr.paginated_metrics import metrics_summary_html
 from skore._utils.repr.utils import repair_estimator_html_for_slotted_host
 from skore._utils.skrub import is_skrub_learner, to_estimator, to_learner
 
@@ -664,7 +664,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         Used by :meth:`_repr_html_` and by :class:`~skore.ComparisonReport` to embed
         one report's views in the comparison HTML repr.
         """
-        metrics_html = paginated_metrics_html(
+        metrics_html = metrics_summary_html(
             self.metrics.summarize(data_source="test")
             .frame(
                 aggregate=("mean", "std"),

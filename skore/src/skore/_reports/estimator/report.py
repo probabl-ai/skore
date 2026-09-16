@@ -27,7 +27,7 @@ from skore._utils.measure_time import MeasureTime
 from skore._utils.repr.data import get_documentation_url
 from skore._utils.repr.html_repr import render_template
 from skore._utils.repr.markdown import markdown_data_section, report_markdown_context
-from skore._utils.repr.paginated_metrics import paginated_metrics_html
+from skore._utils.repr.paginated_metrics import metrics_summary_html
 from skore._utils.repr.utils import repair_estimator_html_for_slotted_host
 from skore._utils.skrub import eval_X_y, is_skrub_learner, to_estimator, to_learner
 
@@ -802,7 +802,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         )
         table_report._set_minimal_mode()
         table_report_html = table_report.html_snippet()
-        metrics_html = paginated_metrics_html(
+        metrics_html = metrics_summary_html(
             self.metrics.summarize(data_source="test").frame(
                 verbose_name=True, flat_index=False
             )

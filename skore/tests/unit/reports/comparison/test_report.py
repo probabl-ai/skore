@@ -562,3 +562,5 @@ def test_metrics_summary_html_paginates_multiclass(
     )
     assert n_rows > METRICS_HTML_PAGE_SIZE
     assert tbody.count("<tr") == n_rows
+    assert "skoreInitMetricsPagers" in html
+    assert ".skore-metrics-pager.is-ready tbody tr" in html

@@ -19,7 +19,7 @@ from skore._utils.repr.markdown import (
     comparison_data_markdown_context,
     comparison_estimator_markdown_context,
 )
-from skore._utils.repr.paginated_metrics import paginated_metrics_html
+from skore._utils.repr.paginated_metrics import metrics_summary_html
 
 if TYPE_CHECKING:
     from numpy.typing import ArrayLike
@@ -636,7 +636,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
 
     def _repr_html_(self) -> str:
         """HTML representation with a selector to inspect one compared report."""
-        metrics_html = paginated_metrics_html(
+        metrics_html = metrics_summary_html(
             self.metrics._formatted_summary_frame(data_source="test")
         )
 
