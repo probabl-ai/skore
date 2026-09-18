@@ -1,6 +1,5 @@
 from datetime import UTC, datetime
 from functools import partial
-from importlib import reload
 from unittest.mock import Mock
 
 from httpx import Response
@@ -231,23 +230,6 @@ def pytest_configure(config):
 
 
 @fixture
-def monkeypatch_tmpdir(monkeypatch, tmp_path):
-    """
-    Change ``TMPDIR`` used by ``tempfile.gettempdir()`` to point to ``tmp_path``, so
-    that it is automatically deleted after use, with no impact on user's environment.
-
-    Force the reload of the ``tempfile`` module to change the cached return of
-    ``tempfile.gettempdir()``.
-
-    https://docs.python.org/3/library/tempfile.html#tempfile.gettempdir
-    """
-    import tempfile
-
-    monkeypatch.setenv("TMPDIR", str(tmp_path))
-    reload(tempfile)
-
-
-@fixture
 def monkeypatch_skrub(monkeypatch):
     """
     Make `skrub.TableReport.html_snippet()` reproducible.
@@ -315,7 +297,6 @@ def monkeypatch_rich(monkeypatch):
 
 @fixture(autouse=True)
 def setup(
-    monkeypatch_tmpdir,
     monkeypatch_matplotlib,
     monkeypatch_skrub,
     monkeypatch_sklearn_estimator_html_repr,
