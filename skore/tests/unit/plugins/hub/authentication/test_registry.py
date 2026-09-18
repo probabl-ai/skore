@@ -2,7 +2,7 @@ from json import loads
 
 from pytest import fixture, mark
 
-from skore._plugins.hub.authentication.api_key import registry
+from skore._plugins.hub.authentication import registry
 from skore._plugins.hub.authentication.uri import DEFAULT as DEFAULT_URI
 
 
@@ -11,7 +11,7 @@ def plaintext_keyring(monkeypatch):
     from keyring.backends.fail import Keyring as FailBackend
 
     monkeypatch.setattr(
-        "skore._plugins.hub.authentication.api_key.registry.get_keyring",
+        "skore._plugins.hub.authentication.registry.get_keyring",
         lambda: FailBackend(),
     )
 
@@ -21,21 +21,21 @@ def secret_keyring(monkeypatch):
     passwords = {}
 
     monkeypatch.setattr(
-        "skore._plugins.hub.authentication.api_key.registry.get_keyring",
+        "skore._plugins.hub.authentication.registry.get_keyring",
         lambda: object(),
     )
     monkeypatch.setattr(
-        "skore._plugins.hub.authentication.api_key.registry.recommended",
+        "skore._plugins.hub.authentication.registry.recommended",
         lambda backend: True,
     )
     monkeypatch.setattr(
-        "skore._plugins.hub.authentication.api_key.registry.set_password",
+        "skore._plugins.hub.authentication.registry.set_password",
         lambda service, username, password: passwords.__setitem__(
             (service, username), password
         ),
     )
     monkeypatch.setattr(
-        "skore._plugins.hub.authentication.api_key.registry.get_password",
+        "skore._plugins.hub.authentication.registry.get_password",
         lambda service, username: passwords.get((service, username)),
     )
 
@@ -48,7 +48,7 @@ def secret_keyring(monkeypatch):
             raise PasswordDeleteError() from None
 
     monkeypatch.setattr(
-        "skore._plugins.hub.authentication.api_key.registry.delete_password",
+        "skore._plugins.hub.authentication.registry.delete_password",
         delete_password,
     )
 
