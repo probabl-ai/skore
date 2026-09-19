@@ -15,6 +15,7 @@ from skore._utils.skrub import (
     is_tunable,
     iter_fitted_estimator_steps,
     resolve_fitted_predictor,
+    resolve_fitted_preprocessor_and_predictor,
 )
 
 
@@ -85,6 +86,40 @@ def test_resolve_fitted_predictor(case, regression_xy):
 
     predictor = resolve_fitted_predictor(learner)
     assert isinstance(predictor, Ridge)
+
+
+@pytest.mark.parametrize(
+    "case, expected_preprocessor",
+    [
+        (case_chained_applies, type(None)),
+        (case_tabular_pipeline, Pipeline),
+        (case_supervised_preprocessing, type(None)),
+    ],
+)
+def test_resolve_fitted_preprocessor_and_predictor_skrub(
+    case, expected_preprocessor, regression_xy
+):
+    """The Pipeline wrapped in the supervised apply step is split."""
+    df, y = regression_xy
+    learner = case()
+    learner.fit({"X": df, "y": y})
+
+    preprocessor, predictor = resolve_fitted_preprocessor_and_predictor(learner)
+    assert isinstance(preprocessor, expected_preprocessor)
+    assert isinstance(predictor, Ridge)
+
+
+def test_resolve_fitted_preprocessor_and_predictor_sklearn(regression_xy):
+    """Scikit-learn estimators and pipelines are split as before."""
+    df, y = regression_xy
+    ridge = Ridge().fit(df, y)
+    assert resolve_fitted_preprocessor_and_predictor(ridge) == (None, ridge)
+
+    pipeline = Pipeline([("scaler", StandardScaler()), ("ridge", Ridge())]).fit(df, y)
+    preprocessor, predictor = resolve_fitted_preprocessor_and_predictor(pipeline)
+    assert isinstance(preprocessor, Pipeline)
+    assert list(preprocessor.named_steps) == ["scaler"]
+    assert predictor is pipeline[-1]
 
 
 def test_get_predictor_and_input_matches_sklearn_pipeline_preprocessing(regression_xy):
