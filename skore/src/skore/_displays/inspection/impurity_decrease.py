@@ -5,7 +5,6 @@ from typing import TYPE_CHECKING, Any, Literal
 import numpy as np
 import pandas as pd
 import seaborn as sns
-from sklearn.pipeline import Pipeline
 
 from skore._displays.base import BOXPLOT_STYLE, DisplayMixin
 from skore._displays.inspection.utils import (
@@ -15,6 +14,7 @@ from skore._displays.inspection.utils import (
 )
 from skore._sklearn.feature_names import _get_feature_names
 from skore._utils.index import flatten_multi_index
+from skore._utils.skrub import resolve_fitted_preprocessor_and_predictor
 
 if TYPE_CHECKING:
     from matplotlib.figure import Figure
@@ -107,7 +107,8 @@ class ImpurityDecreaseDisplay(DisplayMixin):
         Parameters
         ----------
         estimator : estimator
-            The estimator to compute the data for.
+            The estimator to compute the data for. It can be a
+            :class:`~sklearn.pipeline.Pipeline` or a :class:`~skrub.SkrubLearner`.
 
         name : str
             The name of the estimator.
@@ -121,10 +122,7 @@ class ImpurityDecreaseDisplay(DisplayMixin):
         ImpurityDecreaseDisplay
             The data for the display.
         """
-        if isinstance(estimator, Pipeline):
-            preprocessor, predictor = estimator[:-1], estimator[-1]
-        else:
-            preprocessor, predictor = None, estimator
+        preprocessor, predictor = resolve_fitted_preprocessor_and_predictor(estimator)
 
         n_features = predictor.feature_importances_.shape[0]
         feature_names = _get_feature_names(

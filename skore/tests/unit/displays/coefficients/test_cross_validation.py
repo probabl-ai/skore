@@ -1,6 +1,14 @@
 import matplotlib as mpl
 import numpy as np
+import pandas as pd
 import pytest
+import skrub
+from sklearn.datasets import make_regression
+from sklearn.linear_model import Ridge
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import StandardScaler
+
+from skore import CrossValidationReport
 
 
 @pytest.mark.parametrize(
@@ -87,4 +95,26 @@ def test_scale_features(cross_validation_reports_regression):
     feature_std = display.coefficients.query("feature != 'Intercept'")["feature_std"]
     np.testing.assert_allclose(
         scaled["coefficient"], raw["coefficient"] * feature_std.to_numpy()
+    )
+
+
+def test_skrub_learner_matches_sklearn_pipeline():
+    """A skrub learner gives the same per-split coefficients as the equivalent
+    scikit-learn pipeline."""
+    X, y = make_regression(n_samples=60, n_features=3, random_state=0)
+    X = pd.DataFrame(X, columns=["a", "b", "c"])
+    data_op = skrub.X().skb.apply(StandardScaler()).skb.apply(Ridge(), y=skrub.y())
+    skrub_report = CrossValidationReport(
+        data_op.skb.make_learner(), data={"X": X, "y": y}, splitter=3
+    )
+    sklearn_report = CrossValidationReport(
+        make_pipeline(StandardScaler(), Ridge()), X, y, splitter=3
+    )
+    pd.testing.assert_frame_equal(
+        skrub_report.inspection.coefficients().frame(
+            aggregate=None, scale_features=True
+        ),
+        sklearn_report.inspection.coefficients().frame(
+            aggregate=None, scale_features=True
+        ),
     )
