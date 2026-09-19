@@ -1,6 +1,8 @@
 import matplotlib as mpl
 import numpy as np
+import pandas as pd
 import pytest
+import skrub
 from sklearn.datasets import make_regression
 from sklearn.linear_model import LinearRegression, Ridge
 from sklearn.pipeline import Pipeline, make_pipeline
@@ -212,3 +214,74 @@ def test_scale_features_plot_labels(regression_train_test_split):
     fig = report.inspection.coefficients().plot(scale_features=True)
     assert fig.axes[0].get_xlabel() == "Magnitude of scaled coefficient"
     assert fig.get_suptitle() == "Scaled coefficients of Ridge"
+
+
+def _skrub_regression_data():
+    X, y = make_regression(n_samples=60, n_features=3, random_state=0)
+    X = pd.DataFrame(X, columns=["a", "b", "c"])
+    return X.iloc[:40], X.iloc[40:], y[:40], y[40:]
+
+
+@pytest.mark.parametrize(
+    "data_op",
+    [
+        pytest.param(
+            lambda: (
+                skrub.X().skb.apply(StandardScaler()).skb.apply(Ridge(), y=skrub.y())
+            ),
+            id="chained_applies",
+        ),
+        pytest.param(
+            lambda: skrub.X().skb.apply(
+                make_pipeline(StandardScaler(), Ridge()), y=skrub.y()
+            ),
+            id="pipeline_in_apply",
+        ),
+    ],
+)
+def test_skrub_learner_matches_sklearn_pipeline(data_op):
+    """A skrub learner gives the same coefficients and feature stds as the
+    equivalent scikit-learn pipeline."""
+    X_train, X_test, y_train, y_test = _skrub_regression_data()
+    skrub_report = EstimatorReport(
+        data_op().skb.make_learner(),
+        train_data={"X": X_train, "y": y_train},
+        test_data={"X": X_test, "y": y_test},
+    )
+    sklearn_report = EstimatorReport(
+        make_pipeline(StandardScaler(), Ridge()),
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
+    )
+    skrub_display = skrub_report.inspection.coefficients()
+    sklearn_display = sklearn_report.inspection.coefficients()
+
+    pd.testing.assert_frame_equal(
+        skrub_display.frame(scale_features=True),
+        sklearn_display.frame(scale_features=True),
+    )
+    pd.testing.assert_frame_equal(skrub_display.frame(), sklearn_display.frame())
+
+
+def test_skrub_learner_feature_std_uses_predictor_input():
+    """Feature stds are computed on the features seen by the predictor, not on
+    the value of the ``X`` node."""
+    X_train, X_test, y_train, y_test = _skrub_regression_data()
+    X = skrub.X()
+    data_op = (
+        X.assign(d=X["a"] * 10).drop(columns=["c"]).skb.apply(Ridge(), y=skrub.y())
+    )
+    report = EstimatorReport(
+        data_op.skb.make_learner(),
+        train_data={"X": X_train, "y": y_train},
+        test_data={"X": X_test, "y": y_test},
+    )
+    coefficients = report.inspection.coefficients().coefficients
+    features = coefficients.query("feature != 'Intercept'")
+    assert features["feature"].tolist() == ["a", "b", "d"]
+    np.testing.assert_allclose(
+        features["feature_std"],
+        np.std(X_train.assign(d=X_train["a"] * 10)[["a", "b", "d"]], axis=0),
+    )

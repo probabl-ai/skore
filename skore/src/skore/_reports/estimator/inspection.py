@@ -23,6 +23,11 @@ from skore._utils.accessor import (
     _check_supported_ml_task,
 )
 from skore._utils.cache_key import make_cache_key
+from skore._utils.skrub import (
+    _XNodeEstimatorAdapter,
+    get_predictor_and_input,
+    resolve_fitted_estimator,
+)
 
 
 class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
@@ -33,6 +38,19 @@ class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
 
     def __init__(self, parent: EstimatorReport) -> None:
         super().__init__(parent)
+
+    def _get_estimator_input(self, data: dict | None):
+        """Return the input of the scikit-learn estimator behind the report.
+
+        For a skrub learner, this is the output of the DataOp graph upstream of the
+        supervised ``.skb.apply`` step, evaluated on ``data``.
+        """
+        if data is None:
+            return None
+        if self._parent._initialized_with_data_op:
+            X, _ = get_predictor_and_input(self._parent.estimator_, data)
+            return X
+        return data["_skrub_X"]
 
     @available_if(_check_estimator_has_coef())
     def coefficients(self) -> CoefficientsDisplay:
@@ -76,7 +94,7 @@ class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             estimator=self._parent.estimator_,
             name=self._parent.estimator_name_,
             report_type=self._parent._report_type,
-            X=self._parent.X_train,
+            X=self._get_estimator_input(self._parent.train_data),
         )
 
     @available_if(_check_estimator_has_feature_importances())
@@ -168,7 +186,12 @@ class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
 
             If a string, will be searched among the pipeline's `named_steps`.
 
-            Has no effect if the estimator is not a :class:`~sklearn.pipeline.Pipeline`.
+            Has no effect if the estimator is neither a
+            :class:`~sklearn.pipeline.Pipeline` nor a :class:`~skrub.SkrubLearner`.
+
+            If the estimator is a :class:`~skrub.SkrubLearner`, only 0 (the
+            importance of the ``X`` node features) and -1 (the importance of the
+            features seen by the final predictor) are supported.
 
         metric : str, callable, scorer, or list of such instances or dict of such \
                 instances, default=None
@@ -294,10 +317,6 @@ class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         -----
         Even if pipeline components output sparse arrays, these will be made dense.
         """
-        if self._parent._initialized_with_data_op:
-            raise TypeError(
-                "Permutation importance is not yet supported for skrub dataops."
-            )
         data_, y_true = self._parent._get_data_and_y_true(data_source=data_source)
 
         # NOTE: to temporary improve the `project.put` UX, we always store the
@@ -329,11 +348,26 @@ class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         # earlier.
         display = None if seed is None else self._parent._cache.get(cache_key)
         if display is None:
+            if not self._parent._initialized_with_data_op:
+                estimator, X = self._parent.estimator_, data_["_skrub_X"]
+            elif at_step == 0:
+                # permute the value of the `X` node, predicting with the whole learner
+                estimator = _XNodeEstimatorAdapter(self._parent.estimator_, data_)
+                X = data_["_skrub_X"]
+            elif at_step == -1:
+                # permute the input of the final predictor
+                estimator = resolve_fitted_estimator(self._parent.estimator_)
+                X = self._get_estimator_input(data_)
+            else:
+                raise ValueError(
+                    "at_step must be 0 or -1 when the estimator is a skrub learner; "
+                    f"got {at_step!r}"
+                )
             display = PermutationImportanceDisplay._compute_data_for_display(
                 data_source=data_source,
-                estimator=self._parent.estimator_,
+                estimator=estimator,
                 name=self._parent.estimator_name_,
-                X=data_["_skrub_X"],
+                X=X,
                 y=y_true,
                 at_step=at_step,
                 metric=metric,

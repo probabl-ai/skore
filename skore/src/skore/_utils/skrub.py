@@ -97,14 +97,19 @@ def ensure_single_supervised_apply(data_op: DataOp) -> None:
         )
 
 
-def fitted_predictor_from_apply(apply_node: Apply) -> BaseEstimator:
+def fitted_estimator_from_apply(apply_node: Apply) -> BaseEstimator:
+    """Return the estimator fitted in ``apply_node``, as is (possibly a Pipeline)."""
     impl = apply_node._skrub_impl
     if not hasattr(impl, "estimator_"):
         raise NotFittedError(
             "The skrub learner has not been fitted. Call fit() before inspecting "
             "fitted sub-estimators."
         )
-    predictor = impl.estimator_
+    return impl.estimator_
+
+
+def fitted_predictor_from_apply(apply_node: Apply) -> BaseEstimator:
+    predictor = fitted_estimator_from_apply(apply_node)
     if isinstance(predictor, Pipeline):
         return predictor.steps[-1][1]
     return predictor
@@ -202,6 +207,36 @@ def iter_fitted_estimator_steps(
             yield type(fitted).__name__, fitted
 
 
+def resolve_fitted_estimator(estimator: EstimatorLike) -> BaseEstimator:
+    """Return the fitted scikit-learn estimator behind ``estimator``.
+
+    For :class:`~skrub.SkrubLearner`, returns the estimator fitted in the supervised
+    ``.skb.apply(estimator, y=...)`` step, as is (possibly a
+    :class:`~sklearn.pipeline.Pipeline`). Its input is the output of the DataOp
+    graph upstream of that step, see :func:`get_predictor_and_input`.
+    """
+    if is_skrub_learner(estimator):
+        return fitted_estimator_from_apply(supervised_apply_node(estimator.data_op))
+    return estimator
+
+
+def resolve_fitted_preprocessor_and_predictor(
+    estimator: EstimatorLike,
+) -> tuple[Pipeline | None, BaseEstimator]:
+    """Return ``(preprocessor, predictor)`` behind ``estimator``.
+
+    The estimator is first resolved with :func:`resolve_fitted_estimator`. When it
+    is a :class:`~sklearn.pipeline.Pipeline` (e.g. :func:`~skrub.tabular_pipeline`),
+    it is split into its leading steps and its final step. For
+    :class:`~skrub.SkrubLearner`, the DataOp graph upstream of the supervised
+    ``.skb.apply(estimator, y=...)`` step is not part of the returned preprocessor.
+    """
+    estimator = resolve_fitted_estimator(estimator)
+    if isinstance(estimator, Pipeline):
+        return estimator[:-1] or None, estimator[-1]
+    return None, estimator
+
+
 def resolve_fitted_predictor(estimator: EstimatorLike) -> BaseEstimator:
     """Return the fitted predictor behind ``estimator``.
 
@@ -209,11 +244,7 @@ def resolve_fitted_predictor(estimator: EstimatorLike) -> BaseEstimator:
     ``.skb.apply(estimator, y=...)`` step, or the last step when that object is a
     :class:`~sklearn.pipeline.Pipeline` (e.g. :func:`~skrub.tabular_pipeline`).
     """
-    if is_skrub_learner(estimator):
-        return fitted_predictor_from_apply(supervised_apply_node(estimator.data_op))
-    if isinstance(estimator, Pipeline):
-        return estimator.steps[-1][1]
-    return estimator
+    return resolve_fitted_preprocessor_and_predictor(estimator)[1]
 
 
 class _LearnerAdapter(BaseEstimator):
@@ -251,6 +282,49 @@ class _LearnerAdapter(BaseEstimator):
 
     def __sklearn_tags__(self):
         return self.estimator.__sklearn_tags__()
+
+
+class _XNodeEstimatorAdapter(BaseEstimator):
+    """Wrap a fitted skrub learner to accept the value of the ``X`` node directly.
+
+    Every other variable of the environment is kept from ``environment``, so that
+    ``X`` can be permuted, for instance in
+    :func:`~sklearn.inspection.permutation_importance`.
+    """
+
+    def __init__(self, learner, environment):
+        self.learner = learner
+        self.environment = environment
+
+    def fit(self, X, y=None):
+        # the learner is already fitted; defined to satisfy scikit-learn validation
+        return self
+
+    def __getattr__(self, name):
+        if name not in ["predict", "decision_function", "predict_proba", "score"]:
+            raise AttributeError(
+                f"{type(self).__name__!r} object has no attribute {name!r}"
+            )
+        learner_method = getattr(self.learner, name)
+
+        @functools.wraps(learner_method)
+        def estimator_method(X, y=None):
+            environment = self.environment | {"_skrub_X": X}
+            if name == "score":
+                environment["_skrub_y"] = y
+            return learner_method(environment)
+
+        return estimator_method
+
+    @property
+    def classes_(self):
+        return self.learner.classes_
+
+    def __sklearn_is_fitted__(self):
+        return True
+
+    def __sklearn_tags__(self):
+        return self.learner.__sklearn_tags__()
 
 
 def to_learner(estimator: EstimatorLike) -> _LearnerAdapter:
