@@ -9,8 +9,21 @@ Storing data science artifacts
 `skore` provides a :class:`Project` class to store data science artifacts. The storage
 is either local or remote, based on the value passed to the parameter `mode` at
 initialization. When `mode` is set to `hub`, the project is configured to communicate
-with `skore hub`. Refer to the documentation of :class:`Project` for the detailed API
-and take a look on the `example <example-getting-started_>`_.
+with `skore hub`. Authentication uses an API key stored in the local credentials
+registry:
+
+.. code-block:: bash
+
+    $ skore hub api-key generate --workspace <workspace>
+
+or
+
+.. code-block:: bash
+
+    $ skore hub api-key add <api-key> --workspace <workspace>
+
+Refer to the documentation of :class:`Project` for the detailed API and take a look on
+the `example <example-getting-started_>`_.
 
 Creating a project
 ------------------
@@ -26,7 +39,7 @@ mode-specific keyword arguments.
    # Local persistence
    project_local = Project(name="my-xp", mode="local", workspace=Path("/tmp/skore"))
 
-   # Skore Hub (requires skore.login() first)
+   # Skore Hub (requires an API key in the local credentials registry)
    project_hub = Project(name="my-xp", mode="hub", workspace="my-workspace")
 
    # MLflow experiment

@@ -46,8 +46,18 @@ class Project:
     independently within the system.
 
     Note: Using Project in ``hub`` mode requires an account on ``skore hub``, with
-    access rights to the specified workspace. Authentication to ``skore hub`` is done by
-    running ``skore.login()`` before instantiating the Project.
+    access rights to the specified workspace. Authentication uses an API key stored in
+    the local credentials registry:
+
+    .. code-block:: bash
+
+        $ skore hub api-key generate --workspace <workspace>
+
+    or
+
+    .. code-block:: bash
+
+        $ skore hub api-key add <api-key> --workspace <workspace>
 
     .. rubric:: Local mode
 

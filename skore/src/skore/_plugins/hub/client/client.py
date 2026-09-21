@@ -27,9 +27,7 @@ from httpx import (
 from httpx import Client as HTTPXClient
 from httpx._types import HeaderTypes
 
-from skore._plugins.hub.authentication import api_key as api_key_module
-from skore._plugins.hub.authentication import token as token_module
-from skore._plugins.hub.authentication.uri import URI
+from skore._plugins.hub.authentication import ENV_VAR_NAME, URI, registry
 
 logger = getLogger(__name__)
 
@@ -249,25 +247,18 @@ class HUBClient(Client):
             "/",
         )
 
-        # Overload headers with authorization - first non-null wins
-        if JUPYTERLITE:
-            # User is authenticated via cookies
-            pass
-        elif api_key := environ.get(api_key_module.ENV_VAR_NAME):
-            # User is authenticated via API key from environment
-            headers.update({"X-API-Key": api_key})
-        elif token_module.token is not None:
-            # User is authenticated via bearer token from login
-            headers.update({"Authorization": f"Bearer {token_module.token.access}"})
-        elif api_key := api_key_module.registry.get(host=host, workspace=workspace):
-            # User is authenticated via API key from registry
-            headers.update({"X-API-Key": api_key})
-        else:
-            # User is not authenticated
-            raise RuntimeError(
-                "You are not logged in. "
-                "Please call the `skore.login()` function at the top of your script."
-            )
+        # if JUPYTERLITE, user is authenticated via cookies
+        if not JUPYTERLITE:
+            if not (
+                key := environ.get(ENV_VAR_NAME)
+                or registry.get(host=host, workspace=workspace)
+            ):
+                raise RuntimeError(
+                    "No API key found; please generate an API key via "
+                    "`$ skore hub api-key generate --workspace <workspace>`."
+                )
+
+            headers.update({"X-API-Key": key})
 
         # Overload headers with package semantic versioning
         if PACKAGE_SEMVER:
