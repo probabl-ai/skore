@@ -33,7 +33,12 @@ workspace.
 # retrieving any reports that you created and a user-friendly interface for you to
 # explore and compare models.
 #
-# Authentication uses an API key stored in the local credentials registry:
+# Authentication uses an API key, in this order:
+#
+# - the ``SKORE_HUB_API_KEY`` environment variable, which always wins. The
+#   key is bound to a workspace; using it against another workspace fails at
+#   runtime.
+# - otherwise the local credentials registry for the hub host and workspace:
 #
 # .. code-block:: bash
 #
