@@ -274,7 +274,7 @@ class TestToken:
             Token(timeout=0)
 
     @mark.respx()
-    def test_call(self, monkeypatch, respx_mock):
+    def test_access(self, monkeypatch, respx_mock):
         monkeypatch.setattr(
             "skore._plugins.hub.authentication.token.open_webbrowser",
             lambda _: True,
@@ -305,10 +305,10 @@ class TestToken:
             )
         )
 
-        assert Token()() == {"Authorization": "Bearer D"}
+        assert Token().access == "D"
 
     @mark.respx()
-    def test_call_with_expired_token(self, monkeypatch, respx_mock):
+    def test_access_with_expired_token(self, monkeypatch, respx_mock):
         monkeypatch.setattr(
             "skore._plugins.hub.authentication.token.open_webbrowser",
             lambda _: True,
@@ -355,7 +355,7 @@ class TestToken:
         assert token._Token__refreshment == "E"
         assert token._Token__expiration == datetime.fromisoformat(DATETIME_MIN)
 
-        assert token() == {"Authorization": "Bearer F"}
+        assert token.access == "F"
 
         assert token._Token__access == "F"
         assert token._Token__refreshment == "G"

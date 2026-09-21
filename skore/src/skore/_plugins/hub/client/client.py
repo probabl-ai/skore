@@ -3,17 +3,18 @@
 from __future__ import annotations
 
 from contextlib import suppress
+from functools import reduce
 from http import HTTPStatus
 from importlib.metadata import version
 from importlib.util import find_spec
 from json import dumps
 from logging import getLogger
+from os import environ
 from time import sleep
 from typing import Any, Final
 from urllib.parse import urljoin
 
 from httpx import (
-    URL,
     BaseTransport,
     Headers,
     HTTPError,
@@ -26,6 +27,8 @@ from httpx import (
 from httpx import Client as HTTPXClient
 from httpx._types import HeaderTypes
 
+from skore._plugins.hub.authentication import api_key as api_key_module
+from skore._plugins.hub.authentication import token as token_module
 from skore._plugins.hub.authentication.uri import URI
 
 logger = getLogger(__name__)
@@ -212,23 +215,55 @@ class HUBClient(Client):
             transport=transport,
         )
 
-    def request(
+    # Ignore the type signature because we override the httpx `url` parameter with
+    # `workspace`, `project` and `endpoint`.
+    #
+    # As a consequence, helpers that call ``request`` with a URL (``get``, ``put``,
+    # ``post``, ``delete``) are not usable on ``HUBClient``.
+    def request(  # type: ignore[override]
         self,
         method: str,
-        url: URL | str,
+        workspace: str,
+        project: str | None = None,
+        endpoint: str | None = None,
         headers: HeaderTypes | None = None,
         **kwargs: Any,
     ) -> Response:
         """Execute request with authorization."""
-        from skore._plugins.hub.authentication.login import credentials
-
+        host = URI()
         headers = Headers(headers)
+        url = str.rstrip(
+            reduce(
+                urljoin,
+                filter(
+                    None,
+                    (
+                        host,
+                        "projects/",
+                        (workspace and f"{workspace}/") or workspace,
+                        (project and f"{project}/") or project,
+                        endpoint,
+                    ),
+                ),
+            ),
+            "/",
+        )
 
-        if credentials is not None:  # User is authenticated via API key or bearer token
-            headers.update(credentials())
-        elif JUPYTERLITE:  # User is authenticated via cookies
+        # Overload headers with authorization - first non-null wins
+        if JUPYTERLITE:
+            # User is authenticated via cookies
             pass
-        else:  # User is not authenticated
+        elif api_key := environ.get(api_key_module.ENV_VAR_NAME):
+            # User is authenticated via API key from environment
+            headers.update({"X-API-Key": api_key})
+        elif token_module.token is not None:
+            # User is authenticated via bearer token from login
+            headers.update({"Authorization": f"Bearer {token_module.token.access}"})
+        elif api_key := api_key_module.registry.get(host=host, workspace=workspace):
+            # User is authenticated via API key from registry
+            headers.update({"X-API-Key": api_key})
+        else:
+            # User is not authenticated
             raise RuntimeError(
                 "You are not logged in. "
                 "Please call the `skore.login()` function at the top of your script."
@@ -237,8 +272,5 @@ class HUBClient(Client):
         # Overload headers with package semantic versioning
         if PACKAGE_SEMVER:
             headers.update({"X-Skore-Client": f"skore/{PACKAGE_SEMVER}"})
-
-        # Prefix the request by the hub URI when ``url`` is not absolute
-        url = urljoin(URI(), str(url))
 
         return super().request(method=method, url=url, headers=headers, **kwargs)
