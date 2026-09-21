@@ -313,12 +313,6 @@ def monkeypatch_rich(monkeypatch):
     monkeypatch.setattr("skore.console.quiet", True)
 
 
-@fixture
-def monkeypatch_global_variables(monkeypatch):
-    """Reset global variables that can bias the tests."""
-    monkeypatch.setattr("skore._plugins.hub.authentication.token.token", None)
-
-
 @fixture(autouse=True)
 def setup(
     monkeypatch_tmpdir,
@@ -326,5 +320,4 @@ def setup(
     monkeypatch_skrub,
     monkeypatch_sklearn_estimator_html_repr,
     monkeypatch_rich,
-    monkeypatch_global_variables,
 ): ...

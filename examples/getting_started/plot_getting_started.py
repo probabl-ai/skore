@@ -351,14 +351,26 @@ _ = cv_coefficients.plot(select_k=15, sorting_order="descending")
 #
 # .. note::
 #    Here, we are using Skore Hub to store and analyze the reports that we computed.
-#    Note that you can store reports as well locally using `mode="local"` when creating
-#    or loading projects via `skore.Project`.
+#    Authentication uses an API key stored in the local credentials registry:
+#
+#    .. code-block:: bash
+#
+#        $ skore hub api-key generate --workspace <workspace>
+#
+#    or
+#
+#    .. code-block:: bash
+#
+#        $ skore hub api-key add <api-key> --workspace <workspace>
+#
+#    You can also store reports locally using `mode="local"` when creating or loading
+#    projects via `skore.Project`.
 
 # sphinx_gallery_start_ignore
 #
 # Configure the context variables and ensure that the example is run with sufficient
-# credentials. This is a useful consistency check for CI where you can't have
-# interactive login.
+# credentials. This is a useful consistency check for CI where an API key must
+# be provided non-interactively.
 import os
 
 if os.environ.get("SPHINX_BUILD"):
@@ -376,10 +388,6 @@ else:
     assert (WORKSPACE := os.environ.get("WORKSPACE")), "`WORKSPACE` must be defined."
     assert (PROJECT := os.environ.get("PROJECT")), "`PROJECT` must be defined."
 # sphinx_gallery_end_ignore
-
-from skore import login
-
-login()
 
 # sphinx_gallery_start_ignore
 #
