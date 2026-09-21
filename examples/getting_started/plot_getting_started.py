@@ -351,7 +351,12 @@ _ = cv_coefficients.plot(select_k=15, sorting_order="descending")
 #
 # .. note::
 #    Here, we are using Skore Hub to store and analyze the reports that we computed.
-#    Authentication uses an API key stored in the local credentials registry:
+#    Authentication uses an API key, in this order:
+#
+#    - the ``SKORE_HUB_API_KEY`` environment variable, which always wins. The
+#      key is bound to a workspace; using it against another workspace fails at
+#      runtime.
+#    - otherwise the local credentials registry for the hub host and workspace:
 #
 #    .. code-block:: bash
 #

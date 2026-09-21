@@ -46,8 +46,13 @@ class Project:
     independently within the system.
 
     Note: Using Project in ``hub`` mode requires an account on ``skore hub``, with
-    access rights to the specified workspace. Authentication uses an API key stored in
-    the local credentials registry:
+    access rights to the specified workspace. Authentication uses an API key, in
+    this order:
+
+    - the ``SKORE_HUB_API_KEY`` environment variable, which always wins. The key
+      is bound to a workspace; using it against another workspace fails at
+      runtime.
+    - otherwise the local credentials registry for the hub host and workspace:
 
     .. code-block:: bash
 

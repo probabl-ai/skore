@@ -254,8 +254,10 @@ class HUBClient(Client):
                 or registry.get(host=host, workspace=workspace)
             ):
                 raise RuntimeError(
-                    "No API key found; please generate an API key via "
-                    "`$ skore hub api-key generate --workspace <workspace>`."
+                    "No API key found for this workspace; store one with "
+                    "`$ skore hub api-key generate --workspace <workspace>` "
+                    "or `$ skore hub api-key add <api-key> --workspace <workspace>`, "
+                    "or set the SKORE_HUB_API_KEY environment variable."
                 )
 
             headers.update({"X-API-Key": key})
