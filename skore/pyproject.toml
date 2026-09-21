@@ -29,7 +29,6 @@ classifiers = [
 dependencies = [
   "jinja2",
   "joblib>=1.4",
-  "keyring>=25.7.0",
   "matplotlib",
   "narwhals>=2.0.1",
   "numpy",
@@ -86,12 +85,14 @@ sphinx = ["mlflow", "polars", "skore[sphinx-base, hub, mlflow]"]
 sphinx-lts-cpu = ["mlflow", "polars-lts-cpu", "skore[sphinx-base, hub, mlflow]"]
 dev = ["ipykernel", "nbformat"]
 hub = [
-  "httpx",
   "filelock",
+  "httpx",
+  "keyring>=25.7",
   "orjson",
   "pydantic",
   "rich[jupyter]>=14.2",
   "scipy",
+  # "skore-cli>=0.5",
 ]
 mlflow = ["mlflow>=2.20.4"]
 
