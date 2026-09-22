@@ -29,8 +29,8 @@ The storage mode is chosen automatically when the registry file is created:
 available, otherwise ``plaintext``. In ``secret`` mode the API key is stored in the
 system keyring rather than in the JSON file.
 
-The credentials directory is created with mode ``0o700``. The JSON file is created with
-mode ``0o600``; later writes keep the file's existing mode.
+The credentials directory is created with mode ``0o700`` and the JSON file with mode
+``0o600``; later operations keep existing modes.
 
 Notes
 -----
@@ -86,8 +86,10 @@ def lock(function: Callable[P, R]) -> Callable[P, R]:
 
 def setup() -> Path:
     directory = Path.home() / ".skore.hub"
-    directory.mkdir(mode=DIRECTORY_MODE, exist_ok=True)
-    directory.chmod(DIRECTORY_MODE)
+
+    if not directory.exists():
+        directory.mkdir()
+        directory.chmod(DIRECTORY_MODE)
 
     filepath = directory / "credentials.json"
 
