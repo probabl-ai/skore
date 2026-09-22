@@ -1,11 +1,11 @@
 from json import loads
+from os import environ
 from stat import S_IMODE
 from sys import platform
 
-from pytest import fixture, mark
+from pytest import fixture, mark, raises
 
 from skore._plugins.hub.authentication import registry
-from skore._plugins.hub.authentication.uri import DEFAULT as DEFAULT_URI
 
 
 def assert_credentials_permissions(filepath):
@@ -179,21 +179,11 @@ class TestPlaintext:
             ],
         }
 
-    def test_set_without_host_uses_default_uri(self, monkeypatch):
-        monkeypatch.delenv("SKORE_HUB_URI", raising=False)
+    def test_set_without_host_requires_environment_uri(self, monkeypatch):
+        assert "SKORE_HUB_URI" not in environ
 
-        registry.set(workspace="workspace", api_key="k1")
-
-        assert content() == {
-            "type": "plaintext",
-            "keys": [
-                {
-                    "host": DEFAULT_URI,
-                    "workspace": "workspace",
-                    "key": "k1",
-                }
-            ],
-        }
+        with raises(ValueError, match="You must provide an host"):
+            registry.set(workspace="workspace", api_key="k1")
 
     def test_set_without_host_uses_environment_uri(self, monkeypatch):
         monkeypatch.setenv("SKORE_HUB_URI", "https://custom.example")

@@ -44,7 +44,12 @@ mode-specific keyword arguments.
    project_local = Project(name="my-xp", mode="local", workspace=Path("/tmp/skore"))
 
    # Skore Hub (requires an API key in the registry or SKORE_HUB_API_KEY)
-   project_hub = Project(name="my-xp", mode="hub", workspace="my-workspace")
+   project_hub = Project(
+       name="my-xp",
+       mode="hub",
+       workspace="my-workspace",
+       host="my-host",
+   )
 
    # MLflow experiment
    project_mlflow = Project(
@@ -95,6 +100,7 @@ method is called is the source.
        name=project_local.name,
        mode="hub",
        workspace="my-workspace",
+       host="my-host",
    )
    result = project_local.sync(project_hub)
 
@@ -106,7 +112,7 @@ destination is built with the caller's name and the supplied mode-specific argum
 
 .. code-block:: python
 
-   result = project_local.sync("hub", workspace="my-workspace")
+   result = project_local.sync("hub", workspace="my-workspace", host="my-host")
 
 Reports are matched using the ``report_id`` column returned by
 ``Project.summarize().frame()`` and copied with their keys. Existing IDs are skipped;

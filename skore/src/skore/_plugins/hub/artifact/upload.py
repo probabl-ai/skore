@@ -104,6 +104,7 @@ def upload(project: Project, content: str | bytes, content_type: str) -> str:
         # Ask for upload urls.
         response = hub_client.request(
             method="POST",
+            host=project.host,
             workspace=project.workspace,
             project=project.name,
             endpoint="artifacts",
@@ -163,6 +164,7 @@ def upload(project: Project, content: str | bytes, content_type: str) -> str:
             # Acknowledge the upload, to let the hub/storage rebuild the whole.
             hub_client.request(
                 method="POST",
+                host=project.host,
                 workspace=project.workspace,
                 project=project.name,
                 endpoint="artifacts/complete",

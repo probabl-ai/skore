@@ -16,8 +16,13 @@ from skore._plugins.hub.project.project import Project
 
 
 @fixture
-def project():
-    return Project(name="name", workspace="workspace")
+def host():
+    return "http://localhost"
+
+
+@fixture
+def project(host):
+    return Project(name="name", workspace="workspace", host=host)
 
 
 @fixture

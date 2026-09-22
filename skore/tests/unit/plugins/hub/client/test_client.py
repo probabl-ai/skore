@@ -10,7 +10,6 @@ from httpx import (
 from pytest import mark, raises
 
 from skore._plugins.hub.authentication import registry
-from skore._plugins.hub.authentication.uri import URI
 from skore._plugins.hub.client.client import Client, HUBClient, __semver
 
 
@@ -126,51 +125,53 @@ def test___semver():
 
 class TestHUBClient:
     @mark.respx()
-    def test_request_with_api_key(self, monkeypatch, respx_mock):
+    def test_request_with_api_key(self, monkeypatch, respx_mock, host):
         monkeypatch.setenv("SKORE_HUB_API_KEY", "<api-key>")
-        respx_mock.get(urljoin(URI(), "projects/workspace")).mock(Response(200))
+        respx_mock.get(urljoin(host, "projects/workspace")).mock(Response(200))
 
         with HUBClient() as client:
-            client.request("GET", "workspace")
+            client.request("GET", host, "workspace")
 
         assert respx_mock.calls.last.request.headers["X-API-Key"] == "<api-key>"
 
     @mark.respx()
-    def test_request_with_registry_api_key(self, respx_mock):
-        registry.set(host=URI(), workspace="workspace", api_key="<registry-key>")
-        respx_mock.get(urljoin(URI(), "projects/workspace")).mock(Response(200))
+    def test_request_with_registry_api_key(self, respx_mock, host):
+        registry.set(host=host, workspace="workspace", api_key="<registry-key>")
+        respx_mock.get(urljoin(host, "projects/workspace")).mock(Response(200))
 
         with HUBClient() as client:
-            client.request("GET", "workspace")
+            client.request("GET", host, "workspace")
 
         assert respx_mock.calls.last.request.headers["X-API-Key"] == "<registry-key>"
 
     @mark.respx()
-    def test_request_prefers_environment_over_registry(self, monkeypatch, respx_mock):
+    def test_request_prefers_environment_over_registry(
+        self, monkeypatch, respx_mock, host
+    ):
         monkeypatch.setenv("SKORE_HUB_API_KEY", "<env-key>")
-        registry.set(host=URI(), workspace="workspace", api_key="<registry-key>")
-        respx_mock.get(urljoin(URI(), "projects/workspace")).mock(Response(200))
+        registry.set(host=host, workspace="workspace", api_key="<registry-key>")
+        respx_mock.get(urljoin(host, "projects/workspace")).mock(Response(200))
 
         with HUBClient() as client:
-            client.request("GET", "workspace")
+            client.request("GET", host, "workspace")
 
         assert respx_mock.calls.last.request.headers["X-API-Key"] == "<env-key>"
 
     @mark.respx()
-    def test_request_without_credentials(self):
+    def test_request_without_credentials(self, host):
         with raises(RuntimeError, match="No API key found"), HUBClient() as client:
-            client.request("GET", "workspace")
+            client.request("GET", host, "workspace")
 
     @mark.respx()
-    def test_request_raises(self, monkeypatch, respx_mock):
+    def test_request_raises(self, monkeypatch, respx_mock, host):
         monkeypatch.setenv("SKORE_HUB_API_KEY", "<api-key>")
-        respx_mock.get(urljoin(URI(), "projects/workspace")).mock(Response(404))
+        respx_mock.get(urljoin(host, "projects/workspace")).mock(Response(404))
 
         with raises(HTTPStatusError), HUBClient() as client:
-            client.request("GET", "workspace")
+            client.request("GET", host, "workspace")
 
     @mark.respx()
-    def test_request_without_package_semver(self, monkeypatch, respx_mock):
+    def test_request_without_package_semver(self, monkeypatch, respx_mock, host):
         from importlib.metadata import version
 
         from skore._plugins.hub.client.client import PACKAGE_SEMVER
@@ -179,21 +180,21 @@ class TestHUBClient:
         assert PACKAGE_SEMVER is None
 
         monkeypatch.setenv("SKORE_HUB_API_KEY", "<api-key>")
-        respx_mock.get(urljoin(URI(), "projects/workspace")).mock(Response(200))
+        respx_mock.get(urljoin(host, "projects/workspace")).mock(Response(200))
 
         with HUBClient() as client:
-            client.request("GET", "workspace")
+            client.request("GET", host, "workspace")
 
         assert "X-Skore-Client" not in respx_mock.calls.last.request.headers
 
     @mark.respx()
-    def test_request_with_package_semver(self, monkeypatch, respx_mock):
+    def test_request_with_package_semver(self, monkeypatch, respx_mock, host):
         monkeypatch.setenv("SKORE_HUB_API_KEY", "<api-key>")
         monkeypatch.setattr("skore._plugins.hub.client.client.PACKAGE_SEMVER", "1.0.0")
-        respx_mock.get(urljoin(URI(), "projects/workspace")).mock(Response(200))
+        respx_mock.get(urljoin(host, "projects/workspace")).mock(Response(200))
 
         with HUBClient() as client:
-            client.request("GET", "workspace")
+            client.request("GET", host, "workspace")
 
         assert respx_mock.calls.last.request.headers["X-Skore-Client"] == "skore/1.0.0"
 

@@ -37,8 +37,9 @@ Notes
 The registry is locked during write operations.
 
 When ``host`` is omitted on :meth:`set`, :meth:`get` or :meth:`delete`, its value is
-derived from :func:`URI`. Hosts are compared after :func:`normalize`, so a trailing
-slash or differences in scheme/host case do not create a distinct credential.
+taken from the ``SKORE_HUB_URI`` environment variable. Hosts are compared after
+:func:`normalize`, so a trailing slash or differences in scheme/host case do not
+create a distinct credential.
 """
 
 from __future__ import annotations
@@ -59,7 +60,7 @@ from keyring.backends.fail import Keyring as FailBackend
 from keyring.core import recommended
 from keyring.errors import PasswordDeleteError
 
-from skore._plugins.hub.authentication.uri import URI, normalize
+from skore._plugins.hub.authentication.host import ensure_host_is_valid, normalize
 
 if TYPE_CHECKING:
     P = ParamSpec("P")
@@ -131,6 +132,7 @@ def keys() -> Generator[tuple[str, str]]:
 
 
 @lock
+@ensure_host_is_valid
 def set(*, host: str | None = None, workspace: str, api_key: str) -> None:
     """
     Insert or replace the API key for ``host`` and ``workspace``.
@@ -138,14 +140,16 @@ def set(*, host: str | None = None, workspace: str, api_key: str) -> None:
     Parameters
     ----------
     host : str, optional
-        URI associated with the API key. If omitted, :func:`URI` is used.
+        Backend address associated with the API key. If omitted,
+        ``SKORE_HUB_URI`` is used.
     workspace : str
         Workspace associated with the API key.
     api_key : str
         API key to persist.
     """
+    assert host is not None
+
     filepath = setup()
-    host = normalize(host or URI())
     mode = S_IMODE(filepath.stat().st_mode)
 
     with filepath.open() as file:
@@ -170,6 +174,7 @@ def set(*, host: str | None = None, workspace: str, api_key: str) -> None:
     save_on_disk(registry=registry, filepath=filepath, mode=mode)
 
 
+@ensure_host_is_valid
 def get(*, host: str | None = None, workspace: str) -> str | None:
     """
     Return the API key for ``host`` and ``workspace``.
@@ -177,7 +182,8 @@ def get(*, host: str | None = None, workspace: str) -> str | None:
     Parameters
     ----------
     host : str, optional
-        URI associated with the API key. If omitted, :func:`URI` is used.
+        Backend address associated with the API key. If omitted,
+        ``SKORE_HUB_URI`` is used.
     workspace : str
         Workspace associated with the API Key.
 
@@ -186,8 +192,9 @@ def get(*, host: str | None = None, workspace: str) -> str | None:
     str or None
         The matching API key, or ``None`` if none is stored.
     """
+    assert host is not None
+
     filepath = setup()
-    host = normalize(host or URI())
 
     with filepath.open() as file:
         registry = load(file)
@@ -206,6 +213,7 @@ def get(*, host: str | None = None, workspace: str) -> str | None:
 
 
 @lock
+@ensure_host_is_valid
 def delete(*, host: str | None = None, workspace: str) -> None:
     """
     Remove the API key for ``host`` and ``workspace``.
@@ -213,12 +221,14 @@ def delete(*, host: str | None = None, workspace: str) -> None:
     Parameters
     ----------
     host : str, optional
-        URI associated with the API key. If omitted, :func:`URI` is used.
+        Backend address associated with the API key. If omitted,
+        ``SKORE_HUB_URI`` is used.
     workspace : str
         Workspace associated with the API key.
     """
+    assert host is not None
+
     filepath = setup()
-    host = normalize(host or URI())
     mode = S_IMODE(filepath.stat().st_mode)
 
     with filepath.open() as file:

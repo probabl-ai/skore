@@ -87,10 +87,10 @@ def monkeypatch_keyring(monkeypatch):
 @pytest.fixture(autouse=True)
 def monkeypatch_skore_hub_envars(monkeypatch):
     """
-    Change environment variables that can be used to reach the production's or user's
+    Delete environment variables that can be used to reach the production's or user's
     HUB instance, disabling potential impacts on user's environment.
     """
-    monkeypatch.setenv("SKORE_HUB_URI", "http://localhost")
+    monkeypatch.delenv("SKORE_HUB_URI", raising=False)
     monkeypatch.delenv("SKORE_HUB_API_KEY", raising=False)
 
 
