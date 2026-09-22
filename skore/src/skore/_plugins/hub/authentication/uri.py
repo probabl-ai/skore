@@ -12,11 +12,21 @@ When debugging with a local instance of the hub, the backend is usually served o
 
 from os import environ
 from typing import Final
+from urllib.parse import urlsplit, urlunsplit
 
 DEFAULT: Final[str] = "https://api.skore.probabl.ai"
 ENV_VAR_NAME: Final[str] = "SKORE_HUB_URI"
 
 
+def normalize(uri: str) -> str:
+    """Return ``uri`` with a stable scheme, host and path for credential lookup."""
+    parts = urlsplit(uri.strip())
+
+    return urlunsplit(
+        (parts.scheme.lower(), parts.netloc.lower(), parts.path.rstrip("/"), "", "")
+    )
+
+
 def URI() -> str:
     """Hub backend URI used for ``skore hub`` authentication."""
-    return environ.get(ENV_VAR_NAME, DEFAULT)
+    return normalize(environ.get(ENV_VAR_NAME, DEFAULT))
