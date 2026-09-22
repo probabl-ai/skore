@@ -90,13 +90,15 @@ class TestPlaintext:
         }
 
     @mark.skipif(platform == "win32", reason="POSIX permission bits")
-    def test_setup_does_not_change_existing_file_mode(self, tmp_path):
+    def test_setup_does_not_change_existing_modes(self, tmp_path):
         filepath = registry.setup()
         filepath.chmod(0o660)
+        filepath.parent.chmod(0o770)
 
         registry.setup()
 
         assert S_IMODE(filepath.stat().st_mode) == 0o660
+        assert S_IMODE(filepath.parent.stat().st_mode) == 0o770
 
     @mark.skipif(platform == "win32", reason="POSIX permission bits")
     @mark.parametrize("operation", ["set", "delete"])
