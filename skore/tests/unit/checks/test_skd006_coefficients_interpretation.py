@@ -139,4 +139,4 @@ def test_tabular_pipeline_predictor():
     report = evaluate(learner, data={"df": df}, splitter=3)
     explanation = CheckCoefficientsInterpretation().check_function(report)
     assert explanation is not None
-    assert "Features appear to be standardized" in explanation
+    assert "Features are not on the same scale" in explanation

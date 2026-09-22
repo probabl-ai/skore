@@ -43,13 +43,7 @@ class CheckCoefficientsInterpretation(Check):
 
         X = get_preprocessed_X(report, data_source="both")
 
-        std_values = (
-            nw.from_native(X)
-            .select(nw.selectors.numeric())
-            .select(nw.all().std())
-            .to_numpy()
-            .ravel()
-        )
+        std_values = nw.from_native(X).select(nw.all().std()).to_numpy().ravel()
         if not np.allclose(std_values, std_values[0], atol=0.05):
             return (
                 "Features are not on the same scale: coefficient magnitudes "
