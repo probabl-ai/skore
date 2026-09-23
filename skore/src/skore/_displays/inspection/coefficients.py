@@ -785,9 +785,12 @@ class CoefficientsDisplay(DisplayMixin):
             elif isinstance(X_transformed, np.ndarray):
                 std = np.std(X_transformed, axis=0)
             else:
+                # ddof=0, the population std the two branches above compute:
+                # narwhals defaults to the sample std, and the scaled coefficients
+                # must not depend on the container the training data came in.
                 std = (
                     nw.from_native(X_transformed)
-                    .select(nw.all().std())
+                    .select(nw.all().std(ddof=0))
                     .to_numpy()
                     .ravel()
                 )
