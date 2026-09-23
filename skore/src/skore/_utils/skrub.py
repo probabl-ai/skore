@@ -130,6 +130,10 @@ def get_predictor_and_input(
         lambda node, target=predictor_input_node: node is target
     )
     input_value = truncated.transform(env)
+    applied = impl.estimator_
+    if isinstance(applied, Pipeline) and len(applied) > 1:
+        input_value = applied[:-1].transform(input_value)
+
     return input_value, fitted_predictor_from_apply(apply_node)
 
 
