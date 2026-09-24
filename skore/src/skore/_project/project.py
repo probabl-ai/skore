@@ -58,12 +58,6 @@ class Project:
 
         $ skore hub api-key generate --workspace <workspace>
 
-    or
-
-    .. code-block:: bash
-
-        $ skore hub api-key add <api-key> --workspace <workspace>
-
     .. rubric:: Local mode
 
     Otherwise, the project is configured to the ``local`` mode to be persisted on

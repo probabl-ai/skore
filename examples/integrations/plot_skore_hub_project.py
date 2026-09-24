@@ -43,12 +43,6 @@ workspace.
 # .. code-block:: bash
 #
 #     $ skore hub api-key generate --workspace <workspace>
-#
-# or
-#
-# .. code-block:: bash
-#
-#     $ skore hub api-key add <api-key> --workspace <workspace>
 
 # sphinx_gallery_start_ignore
 #
