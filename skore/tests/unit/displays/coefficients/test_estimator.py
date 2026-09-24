@@ -186,6 +186,39 @@ def test_scale_features_sparse_preprocessor(regression_train_test_split):
     )
 
 
+@pytest.mark.parametrize("frame_library", ["pandas", "polars"])
+def test_scale_features_std_of_a_dataframe_matches_standard_scaler(
+    regression_train_test_split, frame_library
+):
+    """A dataframe's feature std is the one StandardScaler divides by.
+
+    Multiplying a coefficient by the feature std is meant to match fitting on
+    standardized features, so the std must be StandardScaler's (``ddof=0``)
+    whatever container the training data came in.
+    """
+    X_train, X_test, y_train, y_test = regression_train_test_split
+    columns = [f"x{i}" for i in range(X_train.shape[1])]
+    if frame_library == "pandas":
+        pd = pytest.importorskip("pandas")
+        frames = [pd.DataFrame(X, columns=columns) for X in (X_train, X_test)]
+    else:
+        pl = pytest.importorskip("polars")
+        frames = [pl.DataFrame(X, schema=columns) for X in (X_train, X_test)]
+    report = EstimatorReport(
+        Ridge(),
+        X_train=frames[0],
+        y_train=y_train,
+        X_test=frames[1],
+        y_test=y_test,
+    )
+    display = report.inspection.coefficients()
+
+    np.testing.assert_allclose(
+        display.coefficients.query("feature != 'Intercept'")["feature_std"],
+        StandardScaler().fit(X_train).scale_,
+    )
+
+
 def test_scale_features_prefit_without_train_data_raises():
     """Prefit reports without X_train cannot use scale_features."""
     X, y = make_regression(n_samples=50, n_features=4, random_state=0)
