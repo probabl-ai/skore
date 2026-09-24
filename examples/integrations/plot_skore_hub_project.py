@@ -33,13 +33,22 @@ workspace.
 # retrieving any reports that you created and a user-friendly interface for you to
 # explore and compare models.
 #
-# First, we need to login to Skore Hub such that later we can push our reports to it.
+# Authentication uses an API key, in this order:
+#
+# - the ``SKORE_HUB_API_KEY`` environment variable, which always wins. The
+#   key is bound to a workspace; using it against another workspace fails at
+#   runtime.
+# - otherwise the local credentials registry for the hub host and workspace:
+#
+# .. code-block:: bash
+#
+#     $ skore hub api-key generate --workspace <workspace>
 
 # sphinx_gallery_start_ignore
 #
 # Configure the context variables and ensure that the example is run with sufficient
-# credentials. This is a useful consistency check for CI where you can't have
-# interactive login.
+# credentials. This is a useful consistency check for CI where an API key must
+# be provided non-interactively.
 import os
 
 if os.environ.get("SPHINX_BUILD"):
@@ -57,10 +66,6 @@ else:
     assert (WORKSPACE := os.environ.get("WORKSPACE")), "`WORKSPACE` must be defined."
     assert (PROJECT := os.environ.get("PROJECT")), "`PROJECT` must be defined."
 # sphinx_gallery_end_ignore
-
-from skore import login
-
-login(mode="hub")
 
 # sphinx_gallery_start_ignore
 #

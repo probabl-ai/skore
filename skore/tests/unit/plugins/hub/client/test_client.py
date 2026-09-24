@@ -1,4 +1,3 @@
-from datetime import UTC, datetime
 from urllib.parse import urljoin
 
 from httpx import (
@@ -10,16 +9,9 @@ from httpx import (
 )
 from pytest import mark, raises
 
-from skore._plugins.hub.authentication.login import login
+from skore._plugins.hub.authentication import registry
 from skore._plugins.hub.authentication.uri import URI
 from skore._plugins.hub.client.client import Client, HUBClient, __semver
-
-DATETIME_MAX = datetime.max.replace(tzinfo=UTC).isoformat()
-
-LOGIN_URL = "identity/oauth/device/login"
-PROBE_URL = "identity/oauth/device/code-probe"
-CALLBACK_URL = "identity/oauth/device/callback"
-TOKEN_URL = "identity/oauth/device/token"
 
 
 class TestClient:
@@ -136,67 +128,46 @@ class TestHUBClient:
     @mark.respx()
     def test_request_with_api_key(self, monkeypatch, respx_mock):
         monkeypatch.setenv("SKORE_HUB_API_KEY", "<api-key>")
-        respx_mock.get(urljoin(URI(), "foo")).mock(Response(200))
-        login()
+        respx_mock.get(urljoin(URI(), "projects/workspace")).mock(Response(200))
 
         with HUBClient() as client:
-            client.get("foo")
+            client.request("GET", "workspace")
 
-        assert "authorization" not in respx_mock.calls.last.request.headers
         assert respx_mock.calls.last.request.headers["X-API-Key"] == "<api-key>"
 
     @mark.respx()
-    def test_request_with_token(self, monkeypatch, respx_mock):
-        monkeypatch.setattr(
-            "skore._plugins.hub.authentication.token.open_webbrowser",
-            lambda _: True,
-        )
-        respx_mock.get(LOGIN_URL).mock(
-            Response(
-                200,
-                json={
-                    "authorization_url": "<url>",
-                    "device_code": "<device>",
-                    "user_code": "<user>",
-                },
-            )
-        )
-        respx_mock.get(PROBE_URL).mock(Response(200))
-        respx_mock.post(CALLBACK_URL).mock(Response(200))
-        respx_mock.get(TOKEN_URL).mock(
-            Response(
-                200,
-                json={
-                    "token": {
-                        "access_token": "D",
-                        "refresh_token": "E",
-                        "expires_at": DATETIME_MAX,
-                    }
-                },
-            )
-        )
-        respx_mock.get(urljoin(URI(), "foo")).mock(Response(200))
-        login()
+    def test_request_with_registry_api_key(self, respx_mock):
+        registry.set(host=URI(), workspace="workspace", api_key="<registry-key>")
+        respx_mock.get(urljoin(URI(), "projects/workspace")).mock(Response(200))
 
         with HUBClient() as client:
-            client.get("foo")
+            client.request("GET", "workspace")
 
-        assert "X-API-Key" not in respx_mock.calls.last.request.headers
-        assert respx_mock.calls.last.request.headers["authorization"] == "Bearer D"
+        assert respx_mock.calls.last.request.headers["X-API-Key"] == "<registry-key>"
+
+    @mark.respx()
+    def test_request_prefers_environment_over_registry(self, monkeypatch, respx_mock):
+        monkeypatch.setenv("SKORE_HUB_API_KEY", "<env-key>")
+        registry.set(host=URI(), workspace="workspace", api_key="<registry-key>")
+        respx_mock.get(urljoin(URI(), "projects/workspace")).mock(Response(200))
+
+        with HUBClient() as client:
+            client.request("GET", "workspace")
+
+        assert respx_mock.calls.last.request.headers["X-API-Key"] == "<env-key>"
 
     @mark.respx()
     def test_request_without_credentials(self):
-        with raises(RuntimeError, match="not logged in"), HUBClient() as client:
-            client.get("foo")
+        with raises(RuntimeError, match="No API key found"), HUBClient() as client:
+            client.request("GET", "workspace")
 
     @mark.respx()
     def test_request_raises(self, monkeypatch, respx_mock):
         monkeypatch.setenv("SKORE_HUB_API_KEY", "<api-key>")
-        respx_mock.get(urljoin(URI(), "foo")).mock(Response(404))
-        login()
+        respx_mock.get(urljoin(URI(), "projects/workspace")).mock(Response(404))
 
         with raises(HTTPStatusError), HUBClient() as client:
-            client.get("foo")
+            client.request("GET", "workspace")
 
     @mark.respx()
     def test_request_without_package_semver(self, monkeypatch, respx_mock):
@@ -208,11 +179,10 @@ class TestHUBClient:
         assert PACKAGE_SEMVER is None
 
         monkeypatch.setenv("SKORE_HUB_API_KEY", "<api-key>")
-        respx_mock.get(urljoin(URI(), "foo")).mock(Response(200))
-        login()
+        respx_mock.get(urljoin(URI(), "projects/workspace")).mock(Response(200))
 
         with HUBClient() as client:
-            client.get("foo")
+            client.request("GET", "workspace")
 
         assert "X-Skore-Client" not in respx_mock.calls.last.request.headers
 
@@ -220,11 +190,10 @@ class TestHUBClient:
     def test_request_with_package_semver(self, monkeypatch, respx_mock):
         monkeypatch.setenv("SKORE_HUB_API_KEY", "<api-key>")
         monkeypatch.setattr("skore._plugins.hub.client.client.PACKAGE_SEMVER", "1.0.0")
-        respx_mock.get(urljoin(URI(), "foo")).mock(Response(200))
-        login()
+        respx_mock.get(urljoin(URI(), "projects/workspace")).mock(Response(200))
 
         with HUBClient() as client:
-            client.get("foo")
+            client.request("GET", "workspace")
 
         assert respx_mock.calls.last.request.headers["X-Skore-Client"] == "skore/1.0.0"
 

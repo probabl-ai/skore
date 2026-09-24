@@ -1,7 +1,7 @@
 from typing import Literal, TypedDict
 
 ProjectMode = Literal["hub", "local", "mlflow"]
-PluginGroup = Literal["skore.plugins.project", "skore.plugins.login"]
+PluginGroup = Literal["skore.plugins.project"]
 
 
 class ReportMetadata(TypedDict):
