@@ -187,14 +187,14 @@ def test_scale_features_sparse_preprocessor(regression_train_test_split):
 
 
 @pytest.mark.parametrize("frame_library", ["pandas", "polars"])
-def test_scale_features_std_of_a_dataframe_matches_numpy(
+def test_scale_features_std_of_a_dataframe_matches_standard_scaler(
     regression_train_test_split, frame_library
 ):
-    """A dataframe gets the same feature std as the same values in an array.
+    """A dataframe's feature std is the one StandardScaler divides by.
 
-    The numpy and sparse paths compute the population std (``ddof=0``); a
-    dataframe on the sample std would make the scaled coefficients depend on
-    the container the training data came in.
+    Multiplying a coefficient by the feature std is meant to match fitting on
+    standardized features, so the std must be StandardScaler's (``ddof=0``)
+    whatever container the training data came in.
     """
     X_train, X_test, y_train, y_test = regression_train_test_split
     columns = [f"x{i}" for i in range(X_train.shape[1])]
@@ -215,7 +215,7 @@ def test_scale_features_std_of_a_dataframe_matches_numpy(
 
     np.testing.assert_allclose(
         display.coefficients.query("feature != 'Intercept'")["feature_std"],
-        np.std(X_train, axis=0),
+        StandardScaler().fit(X_train).scale_,
     )
 
 
