@@ -362,12 +362,6 @@ _ = cv_coefficients.plot(select_k=15, sorting_order="descending")
 #
 #        $ skore hub api-key generate --workspace <workspace>
 #
-#    or
-#
-#    .. code-block:: bash
-#
-#        $ skore hub api-key add <api-key> --workspace <workspace>
-#
 #    You can also store reports locally using `mode="local"` when creating or loading
 #    projects via `skore.Project`.
 

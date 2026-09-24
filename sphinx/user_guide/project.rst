@@ -20,12 +20,6 @@ with `skore hub`. Authentication uses an API key, in this order:
 
     $ skore hub api-key generate --workspace <workspace>
 
-or
-
-.. code-block:: bash
-
-    $ skore hub api-key add <api-key> --workspace <workspace>
-
 Refer to the documentation of :class:`Project` for the detailed API and take a look on
 the `example <example-getting-started_>`_.
 
