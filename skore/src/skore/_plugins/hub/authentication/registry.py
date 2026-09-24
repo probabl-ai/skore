@@ -9,6 +9,7 @@ API keys are stored in ``~/.skore.hub/credentials.json`` as a JSON object:
             {
                 "host": "<host>",
                 "workspace": "<workspace>",
+                "api_key_id": 42,
                 "key": "<key>"
             }
         ]
@@ -19,7 +20,8 @@ API keys are stored in ``~/.skore.hub/credentials.json`` as a JSON object:
         "keys": [
             {
                 "host": "<host>",
-                "workspace": "<workspace>"
+                "workspace": "<workspace>",
+                "api_key_id": 42
             }
         ]
     }
@@ -36,9 +38,10 @@ Notes
 -----
 The registry is locked during write operations.
 
-When ``host`` is omitted on :meth:`set`, :meth:`get` or :meth:`delete`, its value is
-derived from :func:`URI`. Hosts are compared after :func:`normalize`, so a trailing
-slash or differences in scheme/host case do not create a distinct credential.
+When ``host`` is omitted on :meth:`set`, :meth:`get`, :meth:`get_api_key_id` or
+:meth:`delete`, its value is derived from :func:`URI`. Hosts are compared after
+:func:`normalize`, so a trailing slash or differences in scheme/host case do not
+create a distinct credential.
 """
 
 from __future__ import annotations
@@ -131,7 +134,9 @@ def keys() -> Generator[tuple[str, str]]:
 
 
 @lock
-def set(*, host: str | None = None, workspace: str, api_key: str) -> None:
+def set(
+    *, host: str | None = None, workspace: str, api_key: str, api_key_id: int
+) -> None:
     """
     Insert or replace the API key for ``host`` and ``workspace``.
 
@@ -143,6 +148,8 @@ def set(*, host: str | None = None, workspace: str, api_key: str) -> None:
         Workspace associated with the API key.
     api_key : str
         API key to persist.
+    api_key_id : int
+        Hub id of this API key, used to revoke it later.
     """
     filepath = setup()
     host = normalize(host or URI())
@@ -153,9 +160,14 @@ def set(*, host: str | None = None, workspace: str, api_key: str) -> None:
 
     if registry["type"] == "secret":
         set_password(KEYRING_SERVICE, f"{host}:{workspace}", api_key)
-        new = {"host": host, "workspace": workspace}
+        new = {"host": host, "workspace": workspace, "api_key_id": api_key_id}
     else:
-        new = {"host": host, "workspace": workspace, "key": api_key}
+        new = {
+            "host": host,
+            "workspace": workspace,
+            "api_key_id": api_key_id,
+            "key": api_key,
+        }
 
     for i, credential in enumerate(registry["keys"]):
         if (
@@ -201,6 +213,39 @@ def get(*, host: str | None = None, workspace: str) -> str | None:
                 return get_password(KEYRING_SERVICE, f"{host}:{workspace}")
 
             return cast(str, credential["key"])
+
+    return None
+
+
+def get_api_key_id(*, host: str | None = None, workspace: str) -> int | None:
+    """
+    Return the Hub API key id for ``host`` and ``workspace``.
+
+    Parameters
+    ----------
+    host : str, optional
+        URI associated with the API key. If omitted, :func:`URI` is used.
+    workspace : str
+        Workspace associated with the API key.
+
+    Returns
+    -------
+    int or None
+        The matching Hub id, or ``None`` if none is stored.
+    """
+    filepath = setup()
+    host = normalize(host or URI())
+
+    with filepath.open() as file:
+        registry = load(file)
+
+    for credential in registry["keys"]:
+        if (
+            normalize(credential["host"]) == host
+            and credential["workspace"] == workspace
+        ):
+            api_key_id = credential.get("api_key_id")
+            return int(api_key_id) if api_key_id is not None else None
 
     return None
 

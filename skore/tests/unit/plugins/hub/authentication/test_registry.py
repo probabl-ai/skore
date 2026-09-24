@@ -107,7 +107,9 @@ class TestPlaintext:
         filepath.chmod(0o660)
 
         if operation == "set":
-            registry.set(host="https://a.example", workspace="w1", api_key="k1")
+            registry.set(
+                host="https://a.example", workspace="w1", api_key="k1", api_key_id=1
+            )
         else:
             registry.delete(host="https://a.example", workspace="w1")
 
@@ -117,8 +119,12 @@ class TestPlaintext:
         assert list(registry.keys()) == []
 
     def test_keys(self):
-        registry.set(host="https://a.example", workspace="w1", api_key="k1")
-        registry.set(host="https://b.example", workspace="w2", api_key="k2")
+        registry.set(
+            host="https://a.example", workspace="w1", api_key="k1", api_key_id=1
+        )
+        registry.set(
+            host="https://b.example", workspace="w2", api_key="k2", api_key_id=2
+        )
 
         assert list(registry.keys()) == [
             ("https://a.example", "w1"),
@@ -126,20 +132,28 @@ class TestPlaintext:
         ]
 
     def test_get(self):
-        registry.set(host="https://a.example", workspace="w1", api_key="k1")
-        registry.set(host="https://a.example", workspace="w2", api_key="k2")
+        registry.set(
+            host="https://a.example", workspace="w1", api_key="k1", api_key_id=1
+        )
+        registry.set(
+            host="https://a.example", workspace="w2", api_key="k2", api_key_id=2
+        )
 
         assert registry.get(host="https://a.example", workspace="w1") == "k1"
         assert registry.get(host="https://a.example", workspace="w2") == "k2"
 
     def test_get_missing(self):
-        registry.set(host="https://a.example", workspace="w1", api_key="k1")
+        registry.set(
+            host="https://a.example", workspace="w1", api_key="k1", api_key_id=1
+        )
 
         assert registry.get(host="https://a.example", workspace="missing") is None
         assert registry.get(host="https://missing.example", workspace="w1") is None
 
     def test_set(self):
-        registry.set(host="https://a.example", workspace="workspace", api_key="k1")
+        registry.set(
+            host="https://a.example", workspace="workspace", api_key="k1", api_key_id=1
+        )
 
         assert content() == {
             "type": "plaintext",
@@ -147,16 +161,28 @@ class TestPlaintext:
                 {
                     "host": "https://a.example",
                     "workspace": "workspace",
+                    "api_key_id": 1,
                     "key": "k1",
                 }
             ],
         }
 
     def test_set_replaces_matching_credential(self):
-        registry.set(host="https://a.example", workspace="w1", api_key="k1")
-        registry.set(host="https://b.example", workspace="w1", api_key="k2")
-        registry.set(host="https://c.example", workspace="w2", api_key="k3")
-        registry.set(host="https://a.example", workspace="w1", api_key="k1-updated")
+        registry.set(
+            host="https://a.example", workspace="w1", api_key="k1", api_key_id=1
+        )
+        registry.set(
+            host="https://b.example", workspace="w1", api_key="k2", api_key_id=2
+        )
+        registry.set(
+            host="https://c.example", workspace="w2", api_key="k3", api_key_id=3
+        )
+        registry.set(
+            host="https://a.example",
+            workspace="w1",
+            api_key="k1-updated",
+            api_key_id=11,
+        )
 
         assert content() == {
             "type": "plaintext",
@@ -164,16 +190,19 @@ class TestPlaintext:
                 {
                     "host": "https://a.example",
                     "workspace": "w1",
+                    "api_key_id": 11,
                     "key": "k1-updated",
                 },
                 {
                     "host": "https://b.example",
                     "workspace": "w1",
+                    "api_key_id": 2,
                     "key": "k2",
                 },
                 {
                     "host": "https://c.example",
                     "workspace": "w2",
+                    "api_key_id": 3,
                     "key": "k3",
                 },
             ],
@@ -182,7 +211,7 @@ class TestPlaintext:
     def test_set_without_host_uses_default_uri(self, monkeypatch):
         monkeypatch.delenv("SKORE_HUB_URI", raising=False)
 
-        registry.set(workspace="workspace", api_key="k1")
+        registry.set(workspace="workspace", api_key="k1", api_key_id=1)
 
         assert content() == {
             "type": "plaintext",
@@ -190,6 +219,7 @@ class TestPlaintext:
                 {
                     "host": DEFAULT_URI,
                     "workspace": "workspace",
+                    "api_key_id": 1,
                     "key": "k1",
                 }
             ],
@@ -198,7 +228,7 @@ class TestPlaintext:
     def test_set_without_host_uses_environment_uri(self, monkeypatch):
         monkeypatch.setenv("SKORE_HUB_URI", "https://custom.example")
 
-        registry.set(workspace="workspace", api_key="k1")
+        registry.set(workspace="workspace", api_key="k1", api_key_id=1)
 
         assert (
             registry.get(host="https://custom.example", workspace="workspace") == "k1"
@@ -207,13 +237,22 @@ class TestPlaintext:
     def test_get_without_host_uses_environment_uri(self, monkeypatch):
         monkeypatch.setenv("SKORE_HUB_URI", "https://custom.example")
 
-        registry.set(host="https://custom.example", workspace="workspace", api_key="k1")
+        registry.set(
+            host="https://custom.example",
+            workspace="workspace",
+            api_key="k1",
+            api_key_id=1,
+        )
 
         assert registry.get(workspace="workspace") == "k1"
 
     def test_delete(self):
-        registry.set(host="https://a.example", workspace="w1", api_key="k1")
-        registry.set(host="https://b.example", workspace="w2", api_key="k2")
+        registry.set(
+            host="https://a.example", workspace="w1", api_key="k1", api_key_id=1
+        )
+        registry.set(
+            host="https://b.example", workspace="w2", api_key="k2", api_key_id=2
+        )
         registry.delete(host="https://a.example", workspace="w1")
 
         assert content() == {
@@ -222,6 +261,7 @@ class TestPlaintext:
                 {
                     "host": "https://b.example",
                     "workspace": "w2",
+                    "api_key_id": 2,
                     "key": "k2",
                 }
             ],
@@ -230,8 +270,12 @@ class TestPlaintext:
     def test_delete_without_host_uses_environment_uri(self, monkeypatch):
         monkeypatch.setenv("SKORE_HUB_URI", "https://custom.example")
 
-        registry.set(host="https://custom.example", workspace="w1", api_key="k1")
-        registry.set(host="https://other.example", workspace="w2", api_key="k2")
+        registry.set(
+            host="https://custom.example", workspace="w1", api_key="k1", api_key_id=1
+        )
+        registry.set(
+            host="https://other.example", workspace="w2", api_key="k2", api_key_id=2
+        )
         registry.delete(workspace="w1")
 
         assert content() == {
@@ -240,20 +284,28 @@ class TestPlaintext:
                 {
                     "host": "https://other.example",
                     "workspace": "w2",
+                    "api_key_id": 2,
                     "key": "k2",
                 }
             ],
         }
 
     def test_host_trailing_slash_and_case_are_the_same_credential(self):
-        registry.set(host="HTTPS://A.example/", workspace="w1", api_key="k1")
+        registry.set(
+            host="HTTPS://A.example/", workspace="w1", api_key="k1", api_key_id=1
+        )
 
         assert registry.get(host="https://a.example", workspace="w1") == "k1"
         assert registry.get(host="https://a.example/", workspace="w1") == "k1"
         assert list(registry.keys()) == [("https://a.example", "w1")]
         assert content()["keys"][0]["host"] == "https://a.example"
 
-        registry.set(host="https://a.example/", workspace="w1", api_key="k1-updated")
+        registry.set(
+            host="https://a.example/",
+            workspace="w1",
+            api_key="k1-updated",
+            api_key_id=11,
+        )
 
         assert content() == {
             "type": "plaintext",
@@ -261,6 +313,7 @@ class TestPlaintext:
                 {
                     "host": "https://a.example",
                     "workspace": "w1",
+                    "api_key_id": 11,
                     "key": "k1-updated",
                 }
             ],
@@ -278,7 +331,9 @@ class TestPlaintext:
         registry.delete(host="https://a.example/", workspace="w1")
 
         assert content() == {"type": "plaintext", "keys": []}
-        registry.set(host="https://a.example", workspace="w1", api_key="k1")
+        registry.set(
+            host="https://a.example", workspace="w1", api_key="k1", api_key_id=1
+        )
         registry.delete(host="https://a.example", workspace="missing")
 
         assert content() == {
@@ -287,10 +342,26 @@ class TestPlaintext:
                 {
                     "host": "https://a.example",
                     "workspace": "w1",
+                    "api_key_id": 1,
                     "key": "k1",
                 }
             ],
         }
+
+    def test_get_api_key_id(self):
+        registry.set(
+            host="https://a.example", workspace="w1", api_key="k1", api_key_id=1
+        )
+        registry.set(
+            host="https://b.example", workspace="w2", api_key="k2", api_key_id=2
+        )
+
+        assert registry.get_api_key_id(host="https://a.example", workspace="w1") == 1
+        assert registry.get_api_key_id(host="https://b.example", workspace="w2") == 2
+        assert (
+            registry.get_api_key_id(host="https://a.example", workspace="missing")
+            is None
+        )
 
 
 @mark.usefixtures("secret_keyring")
@@ -303,68 +374,116 @@ class TestSecret:
         assert_credentials_permissions(filepath)
 
     def test_set_does_not_store_key_on_disk(self, secret_keyring):
-        registry.set(host="https://a.example", workspace="w1", api_key="k1")
+        registry.set(
+            host="https://a.example", workspace="w1", api_key="k1", api_key_id=1
+        )
 
         assert content() == {
             "type": "secret",
-            "keys": [{"host": "https://a.example", "workspace": "w1"}],
+            "keys": [
+                {
+                    "host": "https://a.example",
+                    "workspace": "w1",
+                    "api_key_id": 1,
+                }
+            ],
         }
         assert secret_keyring[("skore", "https://a.example:w1")] == "k1"
 
     def test_get(self):
-        registry.set(host="https://a.example", workspace="w1", api_key="k1")
-        registry.set(host="https://a.example", workspace="w2", api_key="k2")
+        registry.set(
+            host="https://a.example", workspace="w1", api_key="k1", api_key_id=1
+        )
+        registry.set(
+            host="https://a.example", workspace="w2", api_key="k2", api_key_id=2
+        )
 
         assert registry.get(host="https://a.example", workspace="w1") == "k1"
         assert registry.get(host="https://a.example", workspace="w2") == "k2"
 
     def test_get_missing_in_keyring(self, secret_keyring):
-        registry.set(host="https://a.example", workspace="w1", api_key="k1")
+        registry.set(
+            host="https://a.example", workspace="w1", api_key="k1", api_key_id=1
+        )
         secret_keyring.clear()
 
         assert registry.get(host="https://a.example", workspace="w1") is None
 
     def test_set_replaces_matching_credential(self, secret_keyring):
-        registry.set(host="https://a.example", workspace="w1", api_key="k1")
-        registry.set(host="https://b.example", workspace="w2", api_key="k2")
-        registry.set(host="https://a.example", workspace="w1", api_key="k1-updated")
+        registry.set(
+            host="https://a.example", workspace="w1", api_key="k1", api_key_id=1
+        )
+        registry.set(
+            host="https://b.example", workspace="w2", api_key="k2", api_key_id=2
+        )
+        registry.set(
+            host="https://a.example",
+            workspace="w1",
+            api_key="k1-updated",
+            api_key_id=11,
+        )
 
         assert content() == {
             "type": "secret",
             "keys": [
-                {"host": "https://a.example", "workspace": "w1"},
-                {"host": "https://b.example", "workspace": "w2"},
+                {"host": "https://a.example", "workspace": "w1", "api_key_id": 11},
+                {"host": "https://b.example", "workspace": "w2", "api_key_id": 2},
             ],
         }
         assert secret_keyring[("skore", "https://a.example:w1")] == "k1-updated"
         assert secret_keyring[("skore", "https://b.example:w2")] == "k2"
 
     def test_delete(self, secret_keyring):
-        registry.set(host="https://a.example", workspace="w1", api_key="k1")
-        registry.set(host="https://b.example", workspace="w2", api_key="k2")
+        registry.set(
+            host="https://a.example", workspace="w1", api_key="k1", api_key_id=1
+        )
+        registry.set(
+            host="https://b.example", workspace="w2", api_key="k2", api_key_id=2
+        )
         registry.delete(host="https://a.example", workspace="w1")
 
         assert content() == {
             "type": "secret",
-            "keys": [{"host": "https://b.example", "workspace": "w2"}],
+            "keys": [{"host": "https://b.example", "workspace": "w2", "api_key_id": 2}],
         }
         assert ("skore", "https://a.example:w1") not in secret_keyring
         assert secret_keyring[("skore", "https://b.example:w2")] == "k2"
 
     def test_host_trailing_slash_uses_same_keyring_entry(self, secret_keyring):
-        registry.set(host="https://a.example/", workspace="w1", api_key="k1")
+        registry.set(
+            host="https://a.example/", workspace="w1", api_key="k1", api_key_id=1
+        )
 
         assert registry.get(host="https://a.example", workspace="w1") == "k1"
         assert content() == {
             "type": "secret",
-            "keys": [{"host": "https://a.example", "workspace": "w1"}],
+            "keys": [
+                {
+                    "host": "https://a.example",
+                    "workspace": "w1",
+                    "api_key_id": 1,
+                }
+            ],
         }
         assert secret_keyring[("skore", "https://a.example:w1")] == "k1"
 
     def test_delete_missing_in_keyring(self, secret_keyring):
-        registry.set(host="https://a.example", workspace="w1", api_key="k1")
+        registry.set(
+            host="https://a.example", workspace="w1", api_key="k1", api_key_id=1
+        )
         secret_keyring.clear()
 
         registry.delete(host="https://a.example", workspace="w1")
 
         assert content() == {"type": "secret", "keys": []}
+
+    def test_get_api_key_id(self):
+        registry.set(
+            host="https://a.example", workspace="w1", api_key="k1", api_key_id=1
+        )
+
+        assert registry.get_api_key_id(host="https://a.example", workspace="w1") == 1
+        assert (
+            registry.get_api_key_id(host="https://a.example", workspace="missing")
+            is None
+        )
