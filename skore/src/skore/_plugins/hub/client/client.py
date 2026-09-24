@@ -27,7 +27,7 @@ from httpx import (
 from httpx import Client as HTTPXClient
 from httpx._types import HeaderTypes
 
-from skore._plugins.hub.authentication import ENV_VAR_NAME, URI, registry
+from skore._plugins.hub.authentication import API_KEY_ENV_VAR_NAME, registry
 
 logger = getLogger(__name__)
 
@@ -221,6 +221,7 @@ class HUBClient(Client):
     def request(  # type: ignore[override]
         self,
         method: str,
+        host: str,
         workspace: str,
         project: str | None = None,
         endpoint: str | None = None,
@@ -228,7 +229,6 @@ class HUBClient(Client):
         **kwargs: Any,
     ) -> Response:
         """Execute request with authorization."""
-        host = URI()
         headers = Headers(headers)
         url = str.rstrip(
             reduce(
@@ -250,7 +250,7 @@ class HUBClient(Client):
         # if JUPYTERLITE, user is authenticated via cookies
         if not JUPYTERLITE:
             if not (
-                key := environ.get(ENV_VAR_NAME)
+                key := environ.get(API_KEY_ENV_VAR_NAME)
                 or registry.get(host=host, workspace=workspace)
             ):
                 raise RuntimeError(

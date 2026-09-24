@@ -2,9 +2,10 @@
 
 from typing import Final
 
-from skore._plugins.hub.authentication import registry
-from skore._plugins.hub.authentication.uri import URI
+__all__ = [
+    "API_KEY_ENV_VAR_NAME",
+    "HOST_ENV_VAR_NAME",
+]
 
-__all__ = ["ENV_VAR_NAME", "URI", "registry"]
-
-ENV_VAR_NAME: Final[str] = "SKORE_HUB_API_KEY"
+API_KEY_ENV_VAR_NAME: Final[str] = "SKORE_HUB_API_KEY"
+HOST_ENV_VAR_NAME: Final[str] = "SKORE_HUB_URI"

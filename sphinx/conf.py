@@ -135,6 +135,7 @@ if not (
     os.environ.get("GITHUB_ACTIONS")
     and os.environ.get("SPHINX_EXAMPLE_API_KEY")
     and os.environ.get("SPHINX_EXAMPLE_WORKSPACE")
+    and os.environ.get("SPHINX_EXAMPLE_HOST")
 ):
     sphinx_gallery_conf["ignore_pattern"] = (
         r"plot_getting_started\.py|plot_skore_hub_project\.py"
