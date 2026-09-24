@@ -137,7 +137,9 @@ class TestHUBClient:
 
     @mark.respx()
     def test_request_with_registry_api_key(self, respx_mock):
-        registry.set(host=URI(), workspace="workspace", api_key="<registry-key>")
+        registry.set(
+            host=URI(), workspace="workspace", api_key="<registry-key>", api_key_id=1
+        )
         respx_mock.get(urljoin(URI(), "projects/workspace")).mock(Response(200))
 
         with HUBClient() as client:
@@ -148,7 +150,9 @@ class TestHUBClient:
     @mark.respx()
     def test_request_prefers_environment_over_registry(self, monkeypatch, respx_mock):
         monkeypatch.setenv("SKORE_HUB_API_KEY", "<env-key>")
-        registry.set(host=URI(), workspace="workspace", api_key="<registry-key>")
+        registry.set(
+            host=URI(), workspace="workspace", api_key="<registry-key>", api_key_id=1
+        )
         respx_mock.get(urljoin(URI(), "projects/workspace")).mock(Response(200))
 
         with HUBClient() as client:
