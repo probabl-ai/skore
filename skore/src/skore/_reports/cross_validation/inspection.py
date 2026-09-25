@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+from typing import Literal
+
 import pandas as pd
 from sklearn.utils.metaestimators import available_if
 
+from skore._displays.inspection.calibration_curve import CalibrationDisplay
 from skore._displays.inspection.coefficients import CoefficientsDisplay
 from skore._displays.inspection.impurity_decrease import ImpurityDecreaseDisplay
 from skore._displays.inspection.permutation_importance import (
@@ -16,6 +19,7 @@ from skore._sklearn.types import DataSource
 from skore._utils.accessor import (
     _check_cross_validation_sub_estimator_has_coef,
     _check_cross_validation_sub_estimator_has_feature_importances,
+    _check_estimator_report_has_method,
 )
 
 
@@ -321,4 +325,48 @@ class _InspectionAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
                 ignore_index=True,
             ),
             report_type=self._parent._report_type,
+        )
+
+    @available_if(_check_estimator_report_has_method("inspection", "calibration_curve"))
+    def calibration_curve(
+        self,
+        *,
+        data_source: DataSource = "test",
+        n_bins: int | Literal["auto"] = "auto",
+        strategy: Literal["uniform", "quantile"] = "quantile",
+    ) -> CalibrationDisplay:
+        """Display calibration curves across cross-validation splits.
+
+        Parameters
+        ----------
+        data_source : {"test", "train"}, default="test"
+            The data source for the calibration curve.
+
+        n_bins : int or "auto", default="auto"
+            The number of bins to use for the calibration curve.
+
+        strategy : {"uniform", "quantile"}, default="quantile"
+            The strategy to use for binning.
+
+        Returns
+        -------
+        :class:`CalibrationDisplay`
+            The calibration curve display.
+        """
+        return CalibrationDisplay(
+            calibration_report=pd.concat(
+                [
+                    report.inspection.calibration_curve(
+                        data_source=data_source,
+                        n_bins=n_bins,
+                        strategy=strategy,
+                    )
+                    .calibration_report.copy()
+                    .assign(split=split_idx)
+                    for split_idx, report in enumerate(self._parent.reports_)
+                ],
+                ignore_index=True,
+            ),
+            report_type=self._parent._report_type,
+            report_pos_label=self._parent.pos_label,
         )
