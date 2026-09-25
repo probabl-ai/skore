@@ -2,6 +2,7 @@ const SKORE_SUMMARY_ELLIPSIS_COLUMNS = new Set(["id", "dataset"]);
 
 function setupTable(ctx) {
     const { shadowRoot, tbody, dataRows } = ctx;
+    const tableWrap = shadowRoot.querySelector(".summary-table-wrap");
 
     shadowRoot.querySelectorAll(".summary-sortable").forEach((th) => {
         const columnKey = th.dataset.columnKey;
@@ -229,6 +230,16 @@ function setupTable(ctx) {
         });
     }
 
+    function syncScrollContainment() {
+        if (!tableWrap) {
+            return;
+        }
+        tableWrap.classList.toggle(
+            "summary-table-wrap--scrollable",
+            tableWrap.scrollHeight > tableWrap.clientHeight
+        );
+    }
+
     function refresh() {
         const term = currentSearchTerm();
         const activeByField = collectCheckboxFilters();
@@ -298,6 +309,7 @@ function setupTable(ctx) {
         }
 
         updateSortIndicators();
+        syncScrollContainment();
     }
 
     ctx.filterValues.forEach((checkbox) => {
