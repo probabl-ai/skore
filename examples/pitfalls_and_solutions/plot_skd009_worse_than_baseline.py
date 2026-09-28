@@ -75,19 +75,14 @@ from sklearn.linear_model import Ridge
 from skore import evaluate
 from skrub import tabular_pipeline
 
-report_ridge = evaluate(
-    tabular_pipeline(Ridge()),
-    X=X,
-    y=y,
-    splitter=splitter,
-)
+report_ridge = evaluate(tabular_pipeline(Ridge()), X=X, y=y, splitter=splitter)
 report_ridge
 
 # %%
 # Find ``SKD009`` in the Tips tab below: the Ridge pipeline should report
 # worse-than-baseline performance on a majority of metrics.
 
-report_ridge.checks.summarize()
+report_ridge.checks.summarize(fast_mode=True)
 
 # %%
 report_ridge.metrics.summarize(data_source="both").frame()
@@ -106,7 +101,9 @@ report_ridge.metrics.summarize(data_source="both").frame()
 #   payment levels.
 #
 # Keep everything inside a pipeline so the same transforms run at predict time
-# on new data.
+# on new data. Since this transformation is stateless, i.e., no information
+# needs to be computed and stored during training, we can safely use a
+# :class:`~sklearn.preprocessing.FunctionTransformer`.
 
 import numpy as np
 from sklearn.pipeline import make_pipeline
@@ -114,6 +111,7 @@ from sklearn.preprocessing import FunctionTransformer
 
 
 def engineer_features(X):
+    """Stateless feature engineering."""
     drg = X["DRG_Definition"].str.upper()
     return X.drop(columns=["Total_Discharges"]).assign(
         log_Total_Discharges=np.log1p(X["Total_Discharges"]),
@@ -129,30 +127,26 @@ def engineer_features(X):
 
 
 ridge_with_fe = make_pipeline(
-    FunctionTransformer(engineer_features),
-    tabular_pipeline(Ridge()),
+    FunctionTransformer(engineer_features), tabular_pipeline(Ridge())
 )
 
-report_ridge_fe = evaluate(
-    ridge_with_fe,
-    X=X,
-    y=y,
-    splitter=splitter,
-)
+report_ridge_fe = evaluate(ridge_with_fe, X=X, y=y, splitter=splitter)
 report_ridge_fe
 
 # %%
-# Feature engineering may improve metrics while SKD009 still flags a linear
-# model that cannot match the HGB baseline on every score.
+# With this feature engineering, we improved the test score.
 
-report_ridge_fe.checks.summarize(fast_mode=True)
-
-# %%
 report_ridge_fe.metrics.summarize(data_source="both").frame()
 
 # %%
-# Check model family with a random forest
-# =======================================
+# However, SKD009 still flags a linear model that cannot match the HGB baseline
+# on every score.
+
+report_ridge_fe.checks.summarize()
+
+# %%
+# Check model family with of tree-based model
+# ===========================================
 #
 # If nonlinearity and interactions matter, trees should close much of the gap.
 # Compare a :class:`~sklearn.ensemble.RandomForestRegressor` pipeline to the
@@ -186,7 +180,10 @@ comparison_families = compare(
 comparison_families.metrics.summarize(data_source="both").frame()
 
 # %%
-report_rf.checks.summarize(fast_mode=True)
+# In this case, we see that we get closer to the gradient boosting baseline but we still
+# have a small gap.
+
+report_rf.checks.summarize()
 
 # %%
 # Switch to HistGradientBoostingRegressor
@@ -195,7 +192,7 @@ report_rf.checks.summarize(fast_mode=True)
 # skore's SKD009 performance baseline is itself an HGB pipeline. Matching that
 # family is the natural next step once trees look promising, but defaults are
 # not guaranteed to clear the check, because SKD009 asks whether you are
-# *significantly* better than a strong HGB baseline.
+# *significantly* worse than a strong HGB baseline.
 
 from sklearn.ensemble import HistGradientBoostingRegressor
 
@@ -208,22 +205,20 @@ report_hgb = evaluate(
 report_hgb
 
 # %%
-report_hgb.checks.summarize(fast_mode=True)
-
-# %%
 report_hgb.metrics.summarize(data_source="both").frame()
 
 # %%
 # Combine levers: features, HGB, and a log target
 # ===============================================
 #
-# In practice you would usually tune these knobs with RandomizedSearchCV or
-# GridSearchCV from scikit-learn. To keep the example short and reproducible, we
-# pin one search outcome that clears SKD009 on this split by stacking the
-# earlier levers:
+# In practice you would usually tune these knobs with
+# :class:`~sklearn.model_selection.RandomizedSearchCV` or
+# :class:`~sklearn.model_selection.GridSearchCV` from scikit-learn. To keep the
+# example short and reproducible, we pin one search outcome that clears SKD009
+# on this split by stacking the earlier levers:
 #
 # - the engineered features,
-# - an HGB with moderated capacity (learning rate, leaf size, ``l2``),
+# - an HGB with moderate capacity (learning rate, leaf size, ``l2``),
 # - :class:`~sklearn.compose.TransformedTargetRegressor` with ``log1p`` /
 #   ``expm1``, because payment totals are heavy-tailed.
 #
@@ -255,7 +250,7 @@ report_tuned = evaluate(tuned, X=X, y=y, splitter=splitter)
 report_tuned
 
 # %%
-# SKD009 should clear.
+# SKD009 will now mention that our model is better than an HGB baseline.
 
 report_tuned.checks.summarize()
 
