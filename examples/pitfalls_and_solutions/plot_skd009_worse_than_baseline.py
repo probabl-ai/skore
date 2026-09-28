@@ -145,8 +145,6 @@ report_ridge_fe.metrics.summarize(data_source="both").frame()
 report_ridge_fe.checks.summarize()
 
 # %%
-# Check model family with of tree-based model
-# ===========================================
 # Change model family: try a tree-based model
 # ===========================================
 # If nonlinearity and interactions matter, trees should close much of the gap.
