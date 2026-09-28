@@ -147,6 +147,7 @@ report_ridge_fe.checks.summarize()
 # %%
 # Change model family: try a tree-based model
 # ===========================================
+
 # If nonlinearity and interactions matter, trees should close much of the gap.
 # Compare a :class:`~sklearn.ensemble.RandomForestRegressor` pipeline to the
 # engineered Ridge on the same split.
