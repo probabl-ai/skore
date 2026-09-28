@@ -2,13 +2,16 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import mlflow
+import pandas as pd
 import pytest
+from mlflow.exceptions import MlflowException
 from sklearn.linear_model import LinearRegression
 
 from skore._plugins.mlflow import Project
 from skore._plugins.mlflow import project as project_module
 from skore._plugins.mlflow.project import (
     _log_artifact,
+    _storage_experiment_name,
     format_date,
     report_type,
 )
@@ -17,6 +20,47 @@ from skore._plugins.mlflow.project import (
 def test_format_date() -> None:
     assert format_date(0) == "1970-01-01T00:00:00+00:00"
     assert format_date(None) == ""
+
+
+def test_storage_experiment_name_outside_databricks() -> None:
+    assert _storage_experiment_name("sqlite:///mlflow.db") == "__skore-storage__"
+
+
+@pytest.mark.parametrize("tracking_uri", ["databricks", "databricks://profile"])
+def test_storage_experiment_name_on_databricks(monkeypatch, tracking_uri) -> None:
+    request = {}
+
+    def fake_http_request_safe(host_creds, endpoint, method):
+        request.update(host_creds=host_creds, endpoint=endpoint, method=method)
+        return SimpleNamespace(json=lambda: {"userName": "user@example.com"})
+
+    monkeypatch.setattr(
+        project_module, "get_databricks_host_creds", lambda uri: f"<creds:{uri}>"
+    )
+    monkeypatch.setattr(project_module, "http_request_safe", fake_http_request_safe)
+
+    assert (
+        _storage_experiment_name(tracking_uri)
+        == "/Users/user@example.com/__skore-storage__"
+    )
+    assert request == {
+        "host_creds": f"<creds:{tracking_uri}>",
+        "endpoint": "/api/2.0/preview/scim/v2/Me",
+        "method": "GET",
+    }
+
+
+def test_storage_experiment_name_reports_identity_lookup_failure(monkeypatch) -> None:
+    def fake_http_request_safe(host_creds, endpoint, method):
+        raise MlflowException("PERMISSION_DENIED")
+
+    monkeypatch.setattr(project_module, "get_databricks_host_creds", lambda uri: None)
+    monkeypatch.setattr(project_module, "http_request_safe", fake_http_request_safe)
+
+    with pytest.raises(
+        MlflowException, match="Failed to resolve the Databricks workspace user"
+    ):
+        _storage_experiment_name("databricks")
 
 
 def test_report_type_invalid_report() -> None:
@@ -93,9 +137,24 @@ def test_log_artifact_raises_on_unsupported_payload() -> None:
         _log_artifact(project_module.Artifact("bad", 123))
 
 
-@pytest.mark.filterwarnings(
-    r"ignore:codecs\.open\(\) is deprecated:DeprecationWarning:mlflow"
-)
+def test_log_artifact_logs_series_metrics_as_csv(monkeypatch) -> None:
+    logged: list[tuple[str, str]] = []
+
+    def fake_log_text(text: str, artifact_file: str) -> None:
+        logged.append((text, artifact_file))
+
+    monkeypatch.setattr(mlflow, "log_text", fake_log_text)
+
+    metrics = pd.Series({"accuracy": 0.9, "rmse": 1.2}, name="test")
+    _log_artifact(project_module.Artifact("metrics", metrics))
+
+    assert len(logged) == 1
+    csv_text, artifact_file = logged[0]
+    assert artifact_file == "metrics.csv"
+    assert "accuracy" in csv_text
+    assert "0.9" in csv_text
+
+
 class TestProject:
     CLF_ARTIFACTS = [
         "metrics.confusion_matrix.png",
@@ -106,8 +165,8 @@ class TestProject:
         "metrics.roc.png",
     ]
 
-    def test_init_with_explicit_tracking_uri(self, tmp_path):
-        tracking_uri = f"sqlite:///{tmp_path}/custom-mlflow.db"
+    def test_init_with_explicit_tracking_uri(self, mlflow_tracking_uri):
+        tracking_uri = mlflow_tracking_uri()
 
         project = Project("<project>", tracking_uri=tracking_uri)
 
@@ -115,6 +174,44 @@ class TestProject:
         assert project.tracking_uri == tracking_uri
         assert repr(project) == (
             f"Project(name='<project>', mode='mlflow', tracking_uri='{tracking_uri}')"
+        )
+
+    def test_init_reuses_existing_storage_experiment(self, mlflow_tracking_uri):
+        tracking_uri = mlflow_tracking_uri()
+
+        first = Project("first", tracking_uri=tracking_uri)
+        second = Project("second", tracking_uri=tracking_uri)
+
+        assert (
+            first._Project__storage_experiment_id
+            == second._Project__storage_experiment_id
+        )
+
+    def test_init_stores_in_databricks_home_directory(
+        self, monkeypatch, mlflow_tracking_uri
+    ):
+        monkeypatch.setattr(project_module, "is_databricks_uri", lambda uri: True)
+        monkeypatch.setattr(
+            project_module, "_databricks_user_name", lambda uri: "user@example.com"
+        )
+
+        project = Project("<project>", tracking_uri=mlflow_tracking_uri())
+        storage_experiment = mlflow.get_experiment(
+            project._Project__storage_experiment_id
+        )
+
+        assert storage_experiment.name == "/Users/user@example.com/__skore-storage__"
+
+    def test_init_reuses_existing_project(self, mlflow_tracking_uri):
+        tracking_uri = mlflow_tracking_uri()
+
+        first = Project("<project>", tracking_uri=tracking_uri)
+        second = Project("<project>", tracking_uri=tracking_uri)
+
+        assert first.experiment_id == second.experiment_id
+        assert (
+            first._Project__storage_experiment_id
+            == second._Project__storage_experiment_id
         )
 
     @pytest.mark.parametrize(
@@ -179,6 +276,7 @@ class TestProject:
         project.put("<key>", reg_report)
 
         summary = project.summarize()
+        assert summary[0]["report_id"] == str(reg_report.id)
         report = project.get(summary[0]["id"])
         predictions = report.estimator_.predict(reg_report.X_test)
         expected_predictions = reg_report.estimator_.predict(reg_report.X_test)
@@ -240,15 +338,15 @@ class TestProject:
             assert (report_dir / artifact).exists()
         assert (report_dir / "metrics_details" / "per_split.csv").exists()
 
-    def test_get_unknown_id_with_explicit_tracking_uri(self, tmp_path):
-        tracking_uri = f"sqlite:///{tmp_path}/missing-id.db"
+    def test_get_unknown_id_with_explicit_tracking_uri(self, mlflow_tracking_uri):
+        tracking_uri = mlflow_tracking_uri()
         project = Project("<project>", tracking_uri=tracking_uri)
 
         with pytest.raises(KeyError):
             project.get("missing-run-id")
 
-    def test_delete(self, tmp_path, reg_report):
-        tracking_uri = f"sqlite:///{tmp_path}/mlflow.db"
+    def test_delete(self, reg_report, mlflow_tracking_uri):
+        tracking_uri = mlflow_tracking_uri()
         project = Project("project", tracking_uri=tracking_uri)
         project.put("<key>", reg_report)
 

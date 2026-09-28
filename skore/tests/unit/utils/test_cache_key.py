@@ -1,7 +1,7 @@
 import joblib
 import numpy as np
 
-from skore._utils._cache_key import deep_key_sanitize
+from skore._utils.cache_key import deep_key_sanitize
 
 
 def test_deep_key_sanitize_hashes_numpy_array():

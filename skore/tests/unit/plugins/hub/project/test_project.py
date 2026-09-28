@@ -208,6 +208,7 @@ class TestProject:
 
         # Compare content with the desired output
         assert content == desired
+        assert all("position" not in metric for metric in content["metrics"])
 
     @mark.filterwarnings(
         # ignore precision warning due to the low number of labels in
@@ -257,6 +258,7 @@ class TestProject:
 
         # Compare content with the desired output
         assert content == desired
+        assert all("position" not in metric for metric in content["metrics"])
 
     @mark.respx()
     def test_put_estimator_report_string_labels_with_pos_label(
@@ -506,76 +508,84 @@ class TestProject:
             ),
             (
                 "get",
-                "projects/workspace/name/estimator-reports/",
+                "projects/workspace/name/reports/",
                 Response(
                     200,
-                    json=[
-                        {
-                            "urn": "skore:report:estimator:<report_id_0>",
-                            "id": "<report_id_0>",
-                            "key": "<key>",
-                            "ml_task": "<ml_task>",
-                            "estimator_class_name": "<estimator_class_name>",
-                            "dataset_fingerprint": "<dataset_fingerprint>",
-                            "created_at": nowstr,
-                            "metrics": [
-                                {"name": "rmse", "value": 0, "data_source": "train"},
-                                {"name": "rmse", "value": 1, "data_source": "test"},
-                            ],
-                        },
-                        {
-                            "urn": "skore:report:estimator:<report_id_1>",
-                            "id": "<report_id_1>",
-                            "key": "<key>",
-                            "ml_task": "<ml_task>",
-                            "estimator_class_name": "<estimator_class_name>",
-                            "dataset_fingerprint": "<dataset_fingerprint>",
-                            "created_at": nowstr,
-                            "metrics": [
-                                {
-                                    "name": "log_loss",
-                                    "value": 0,
-                                    "data_source": "train",
-                                },
-                                {"name": "log_loss", "value": 2, "data_source": "test"},
-                            ],
-                        },
-                    ],
-                ),
-            ),
-            (
-                "get",
-                "projects/workspace/name/cross-validation-reports/",
-                Response(
-                    200,
-                    json=[
-                        {
-                            "urn": "skore:report:cross-validation:<report_id_2>",
-                            "id": "<report_id_2>",
-                            "key": "<key>",
-                            "ml_task": "<ml_task>",
-                            "estimator_class_name": "<estimator_class_name>",
-                            "dataset_fingerprint": "<dataset_fingerprint>",
-                            "created_at": nowstr,
-                            "metrics": [
-                                {
-                                    "name": "rmse_mean",
-                                    "value": 0,
-                                    "data_source": "train",
-                                },
-                                {
-                                    "name": "rmse_mean",
-                                    "value": 3,
-                                    "data_source": "test",
-                                },
-                                {
-                                    "name": "rmse_std",
-                                    "value": 0.5,
-                                    "data_source": "test",
-                                },
-                            ],
-                        },
-                    ],
+                    json={
+                        "next_cursor": None,
+                        "items": [
+                            {
+                                "urn": "skore:report:estimator:<report_id_0>",
+                                "type": "estimator",
+                                "id": "<report_id_0>",
+                                "canonical_report_id": "<report_id_0>",
+                                "key": "<key>",
+                                "ml_task": "<ml_task>",
+                                "estimator_class_name": "<estimator_class_name>",
+                                "dataset_fingerprint": "<dataset_fingerprint>",
+                                "created_at": nowstr,
+                                "metrics": [
+                                    {
+                                        "name": "rmse",
+                                        "value": 0,
+                                        "data_source": "train",
+                                    },
+                                    {"name": "rmse", "value": 1, "data_source": "test"},
+                                ],
+                            },
+                            {
+                                "urn": "skore:report:estimator:<report_id_1>",
+                                "type": "estimator",
+                                "id": "<report_id_1>",
+                                "canonical_report_id": "<report_id_1>",
+                                "key": "<key>",
+                                "ml_task": "<ml_task>",
+                                "estimator_class_name": "<estimator_class_name>",
+                                "dataset_fingerprint": "<dataset_fingerprint>",
+                                "created_at": nowstr,
+                                "metrics": [
+                                    {
+                                        "name": "log_loss",
+                                        "value": 0,
+                                        "data_source": "train",
+                                    },
+                                    {
+                                        "name": "log_loss",
+                                        "value": 2,
+                                        "data_source": "test",
+                                    },
+                                ],
+                            },
+                            {
+                                "urn": "skore:report:cross-validation:<report_id_2>",
+                                "type": "cross-validation",
+                                "id": "<report_id_2>",
+                                "canonical_report_id": "<report_id_2>",
+                                "key": "<key>",
+                                "ml_task": "<ml_task>",
+                                "estimator_class_name": "<estimator_class_name>",
+                                "dataset_fingerprint": "<dataset_fingerprint>",
+                                "created_at": nowstr,
+                                "metrics": [
+                                    {
+                                        "name": "rmse_mean",
+                                        "value": 0,
+                                        "data_source": "train",
+                                    },
+                                    {
+                                        "name": "rmse_mean",
+                                        "value": 3,
+                                        "data_source": "test",
+                                    },
+                                    {
+                                        "name": "rmse_std",
+                                        "value": 0.5,
+                                        "data_source": "test",
+                                    },
+                                ],
+                            },
+                        ],
+                    },
                 ),
             ),
         ]
@@ -589,6 +599,7 @@ class TestProject:
         assert summary == [
             {
                 "id": "skore:report:estimator:<report_id_0>",
+                "report_id": "<report_id_0>",
                 "key": "<key>",
                 "date": nowstr,
                 "learner": "<estimator_class_name>",
@@ -613,6 +624,7 @@ class TestProject:
             },
             {
                 "id": "skore:report:estimator:<report_id_1>",
+                "report_id": "<report_id_1>",
                 "key": "<key>",
                 "date": nowstr,
                 "learner": "<estimator_class_name>",
@@ -637,6 +649,7 @@ class TestProject:
             },
             {
                 "id": "skore:report:cross-validation:<report_id_2>",
+                "report_id": "<report_id_2>",
                 "key": "<key>",
                 "date": nowstr,
                 "learner": "<estimator_class_name>",
@@ -664,60 +677,15 @@ class TestProject:
     @mark.respx()
     def test_summarize_with_pagination(self, nowstr, respx_mock):
         # non-regression test for https://github.com/probabl-ai/skore/pull/3125
-        mocks = [
-            ("get", "/projects/workspace", Response(200)),
-            (
-                "post",
-                "/projects/workspace/name",
-                Response(
-                    201,
-                    json={"id": 42, "url": "http://domain/myworkspace/myname"},
-                ),
-            ),
-            (
-                "get",
-                "projects/workspace/name/cross-validation-reports/",
-                Response(
-                    200,
-                    json=[
-                        {
-                            "urn": "skore:report:cross-validation:<report_id_2>",
-                            "id": "<report_id_2>",
-                            "key": "<key>",
-                            "ml_task": "<ml_task>",
-                            "estimator_class_name": "<estimator_class_name>",
-                            "dataset_fingerprint": "<dataset_fingerprint>",
-                            "created_at": nowstr,
-                            "metrics": [
-                                {
-                                    "name": "rmse_mean",
-                                    "value": 0,
-                                    "data_source": "train",
-                                },
-                                {
-                                    "name": "rmse_mean",
-                                    "value": 3,
-                                    "data_source": "test",
-                                },
-                                {
-                                    "name": "rmse_std",
-                                    "value": 0.5,
-                                    "data_source": "test",
-                                },
-                            ],
-                        },
-                    ],
-                ),
-            ),
-        ]
-
-        for method, url, response in mocks:
-            respx_mock.request(method=method, url=url).mock(response)
-
+        #
+        # The reports endpoint is paginated with a limit of 500: the first page is full
+        # (500 items) so a second page is requested, which returns the remaining item.
+        # All 501 estimator reports must be retrieved.
         def estimator_report(i):
             return {
-                "urn": f"skore:report:estimator:<report_id_{i}>",
-                "id": f"<report_id_{i}>",
+                "urn": f"skore:report:estimator:{i}",
+                "type": "estimator",
+                "id": i,
                 "key": "<key>",
                 "ml_task": "<ml_task>",
                 "estimator_class_name": "<estimator_class_name>",
@@ -728,26 +696,52 @@ class TestProject:
                 ],
             }
 
-        # The estimator-reports endpoint is paginated with a limit of 500: the first
-        # page is full (500 items) so a second page is requested, which returns the
-        # remaining item. All 501 estimator reports must be retrieved.
-        respx_mock.request(
-            method="get",
-            url="projects/workspace/name/estimator-reports/",
-        ).mock(
-            side_effect=[
-                Response(200, json=[estimator_report(i) for i in range(500)]),
-                Response(200, json=[estimator_report(500)]),
-            ]
-        )
+        mocks = [
+            ("get", "/projects/workspace", {}, Response(200)),
+            (
+                "post",
+                "/projects/workspace/name",
+                {},
+                Response(
+                    201,
+                    json={"id": 42, "url": "http://domain/myworkspace/myname"},
+                ),
+            ),
+            (
+                "get",
+                "projects/workspace/name/reports/",
+                {"cursor": None},
+                Response(
+                    200,
+                    json={
+                        "next_cursor": 499,
+                        "items": [estimator_report(i) for i in range(500)],
+                    },
+                ),
+            ),
+            (
+                "get",
+                "projects/workspace/name/reports/",
+                {"cursor": 499},
+                Response(
+                    200,
+                    json={
+                        "next_cursor": None,
+                        "items": [estimator_report(500)],
+                    },
+                ),
+            ),
+        ]
+
+        for method, url, params, response in mocks:
+            respx_mock.request(method=method, url=url, params=params).mock(response)
 
         project = Project(name="name", workspace="workspace")
         summary = project.summarize()
 
-        assert len(summary) == 502
+        assert len(summary) == 501
         assert [report["id"] for report in summary] == [
-            *(f"skore:report:estimator:<report_id_{i}>" for i in range(501)),
-            "skore:report:cross-validation:<report_id_2>",
+            f"skore:report:estimator:{i}" for i in range(501)
         ]
 
     @mark.respx

@@ -32,9 +32,7 @@ report_ridge = skore.evaluate(model, df, y, splitter=5)
 report_ridge"""
 
 SUMMARIZE_FRAME_CODE = """\
-report_ridge.metrics.summarize().frame(
-    aggregate=None
-)"""
+report_ridge.metrics.summarize().frame(aggregate=None)"""
 
 PLOT_CODE = """\
 error = report_ridge.metrics.prediction_error()
@@ -44,7 +42,7 @@ PROJECT_CODE = """\
 import numpy as np
 
 project = skore.Project(
-    name="adult_census_survey", mode="local"
+    name="adult_census_survey", mode="local", workspace="skore_data"
 )
 for alpha in np.logspace(-5, 5, 11):
     model = skrub.tabular_pipeline(
@@ -52,8 +50,7 @@ for alpha in np.logspace(-5, 5, 11):
     )
     project.put(
         f"ridge-{alpha:g}",
-        skore.evaluate(model, df, y, splitter=3),
-    )"""
+        skore.evaluate(model, df, y, splitter=3))"""
 
 
 def _code_block(app: Sphinx, code: str) -> str:
@@ -95,8 +92,7 @@ def generate_landing_page(app: Sphinx) -> None:
         plot_error=_code_block(app, PLOT_CODE),
         summarize=_code_block(app, SUMMARIZE_FRAME_CODE),
         put_in_project=_code_block(app, PROJECT_CODE),
-        project_summary_html=project_summary_html,
-    )
+        project_summary_html=project_summary_html)
 
     (template_dir / "generated_landing.html").write_text(output)
 

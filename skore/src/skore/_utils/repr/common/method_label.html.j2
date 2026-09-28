@@ -1,0 +1,4 @@
+{# Shared label for a help-tree method: docs link when available, tooltip always. #}
+{% macro method_label(method) -%}
+.<{% if method.doc_url %}a href="{{ method.doc_url }}" target="_blank" class="method-tooltip"{% else %}span class="method-tooltip"{% endif %}>{{ method.name }}<span class="tooltip-text">{{ method.description|e }}{% if method.favorability %} {{ method.favorability|safe }}{% endif %}</span></{% if method.doc_url %}a{% else %}span{% endif %}>{{ method.parameters }}
+{%- endmacro %}

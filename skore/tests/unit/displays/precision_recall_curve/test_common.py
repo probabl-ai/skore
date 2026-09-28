@@ -4,8 +4,8 @@ import seaborn as sns
 from sklearn.linear_model import LogisticRegression
 
 from skore import EstimatorReport
-from skore._sklearn._plot import PrecisionRecallCurveDisplay
-from skore._utils._testing import check_frame_structure
+from skore._displays import PrecisionRecallCurveDisplay
+from skore._utils.testing import check_frame_structure
 
 
 @pytest.mark.parametrize(
@@ -164,9 +164,8 @@ def test_pos_label(binary_classification_train_test_split):
     labels = np.array(["A", "B"], dtype=object)
     y_train = labels[y_train]
     y_test = labels[y_test]
-    estimator = LogisticRegression().fit(X_train, y_train)
     report = EstimatorReport(
-        estimator,
+        LogisticRegression(),
         X_train=X_train,
         y_train=y_train,
         X_test=X_test,

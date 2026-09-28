@@ -12,7 +12,7 @@ from sklearn.datasets import make_regression
 from sklearn.linear_model import LinearRegression, Ridge
 
 from skore import EstimatorReport, Project, evaluate
-from skore._project._summary import Summary
+from skore._project.summary import Summary
 
 
 class FakeClient(Client):
@@ -80,10 +80,10 @@ class TestLocalProjectContract:
 
 class TestMlflowProjectContract:
     @pytest.fixture(autouse=True)
-    def isolated_mlflow_tracking(self, tmp_path, monkeypatch):
+    def isolated_mlflow_tracking(self, tmp_path, monkeypatch, mlflow_tracking_uri):
         monkeypatch.chdir(tmp_path)
         previous_tracking_uri = mlflow.get_tracking_uri()
-        tracking_uri = f"sqlite:///{tmp_path}/mlflow.db"
+        tracking_uri = mlflow_tracking_uri()
         mlflow.set_tracking_uri(tracking_uri)
         try:
             yield tracking_uri
@@ -92,9 +92,6 @@ class TestMlflowProjectContract:
                 mlflow.end_run()
             mlflow.set_tracking_uri(previous_tracking_uri)
 
-    @pytest.mark.filterwarnings(
-        r"ignore:codecs\.open\(\) is deprecated:DeprecationWarning:mlflow"
-    )
     def test_api_contract(
         self, regression_report, second_regression_report, isolated_mlflow_tracking
     ):
@@ -167,13 +164,8 @@ class TestHubProjectContract:
             ),
             (
                 "get",
-                "projects/workspace/contract-hub/estimator-reports/",
-                Response(200, json=[]),
-            ),
-            (
-                "get",
-                "projects/workspace/contract-hub/cross-validation-reports/",
-                Response(200, json=[]),
+                "projects/workspace/contract-hub/reports/",
+                Response(200, json={"next_cursor": None, "items": []}),
             ),
             ("delete", "/projects/workspace/contract-hub", Response(204)),
         ]

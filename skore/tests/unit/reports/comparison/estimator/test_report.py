@@ -22,7 +22,10 @@ def test_init_wrong_parameters(estimator_reports_binary_classification):
 
 def test_different_test_data(logistic_binary_classification_with_train_test):
     """Raise an error if the passed estimators do not have the same testing targets."""
-    estimator, _, X_test, _, y_test = logistic_binary_classification_with_train_test
+    estimator, X_train, X_test, y_train, y_test = (
+        logistic_binary_classification_with_train_test
+    )
+    estimator = estimator.fit(X_train, y_train)
 
     # The estimators that have testing data need to have the same testing targets
     with pytest.raises(

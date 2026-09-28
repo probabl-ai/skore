@@ -1,6 +1,7 @@
 import functools
 import shutil
 import subprocess
+from pathlib import Path
 
 
 def git_available() -> bool:
@@ -92,3 +93,14 @@ def git_commit() -> str | None:
     if working_tree_clean():
         return commit_hash
     return f"{commit_hash} (working tree dirty)"
+
+
+@functools.cache
+def git_repo_root() -> Path | None:
+    """Get the root of the repository if we are in one, otherwise None."""
+    cmd = subprocess.run(
+        ["git", "rev-parse", "--show-toplevel"],
+        capture_output=True,
+        text=True,
+    )
+    return ((not cmd.returncode) and Path(cmd.stdout.strip())) or None

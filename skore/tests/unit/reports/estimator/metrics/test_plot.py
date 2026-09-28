@@ -1,6 +1,7 @@
 import numpy as np
 import pytest
 from pandas.testing import assert_frame_equal
+from sklearn.base import clone
 from sklearn.datasets import make_classification
 from sklearn.linear_model import LogisticRegression
 from sklearn.svm import LinearSVC
@@ -150,7 +151,11 @@ def test_display_binary_classification_switching_data_source(
     """Check that we don't hit the cache when switching the data source."""
     estimator, X_test, y_test = forest_binary_classification_with_test
     report = EstimatorReport(
-        estimator, X_train=X_test, y_train=y_test, X_test=X_test, y_test=y_test
+        clone(estimator),
+        X_train=X_test,
+        y_train=y_test,
+        X_test=X_test,
+        y_test=y_test,
     )
     assert hasattr(report.metrics, display)
     display_first_call = getattr(report.metrics, display)(data_source="test")
@@ -164,7 +169,11 @@ def test_display_regression_switching_data_source(linear_regression_with_test, d
     """Check that we don't hit the cache when switching the data source."""
     estimator, X_test, y_test = linear_regression_with_test
     report = EstimatorReport(
-        estimator, X_train=X_test, y_train=y_test, X_test=X_test, y_test=y_test
+        clone(estimator),
+        X_train=X_test,
+        y_train=y_test,
+        X_test=X_test,
+        y_test=y_test,
     )
     assert hasattr(report.metrics, display)
     display_first_call = getattr(report.metrics, display)(data_source="test", seed=0)

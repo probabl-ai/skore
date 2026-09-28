@@ -195,10 +195,9 @@ fig
 # %%
 from sklearn.linear_model import Ridge
 from sklearn.pipeline import make_pipeline
-from sklearn.preprocessing import StandardScaler
 from skore import evaluate
 
-ridge_report = evaluate(make_pipeline(StandardScaler(), Ridge()), X, y, splitter=0.2)
+ridge_report = evaluate(Ridge(), X, y, splitter=0.2)
 ridge_report.metrics.summarize().frame()
 
 # %%
@@ -255,7 +254,7 @@ ridge_report.inspection.coefficients().frame()
 #   (if they are highly correlated), so they would actually be unimportant.
 
 # %%
-# We can plot this pandas datafame:
+# We can plot this pandas dataframe:
 
 # %%
 _ = ridge_report.inspection.coefficients().plot()
@@ -271,11 +270,17 @@ _ = ridge_report.inspection.coefficients().plot()
 #   holds a ``coef_`` attribute (after being fitted).
 
 # %%
-# Since we have included scaling in the pipeline, the resulting coefficients are all on
-# the same scale, making them directly comparable to each other.
-# Without this scaling step, the coefficients in a linear model would be influenced by
-# the original scale of the feature values, which would prevent meaningful comparisons
-# between them.
+# These raw coefficients are expressed in the original feature units: they answer
+# "if I change this feature by one unit, how much does the prediction change?"
+# For example, according to our model, on average, having one additional bedroom
+# (an increase of :math:`1` of ``AveBedrms``), with all other features being constant,
+# changes the *predicted* house value by the corresponding coefficient in $100,000.
+#
+# They are **not** directly comparable across features when columns have different
+# dynamic ranges (income in 10k USD blocks vs. population in head counts). Passing
+# ``scale_features=True`` multiplies each coefficient by the training-set feature
+# standard deviation, which yields an effect per one standard deviation and makes
+# magnitudes comparable without refitting on standardized inputs.
 #
 # .. seealso::
 #
@@ -283,51 +288,18 @@ _ = ridge_report.inspection.coefficients().plot()
 #   see scikit-learn's example on
 #   `Common pitfalls in the interpretation of coefficients of linear models
 #   <https://scikit-learn.org/stable/auto_examples/inspection/plot_linear_model_coefficient_interpretation.html>`_.
-#
+
+# %%
+ridge_report.inspection.coefficients().frame(scale_features=True)
+
+# %%
+_ = ridge_report.inspection.coefficients().plot(scale_features=True)
+
+# %%
 # Here, it appears that the ``MedInc``, ``Latitude``, and ``Longitude`` features are
-# the most important, with regards to the absolute value of other coefficients.
+# among the most important with regards to the absolute scaled coefficients.
 # This finding is consistent with our previous observations from the *Associations*
 # tab of the table report.
-#
-# However, due to the scaling, we can not interpret the coefficient values
-# with regards to the original unit of the feature.
-# Let us unscale the coefficients, without forgetting the intercept, so that the
-# coefficients can be interpreted using the original units:
-
-# %%
-import numpy as np
-
-# retrieve the mean and standard deviation used to standardize the feature values
-feature_mean = ridge_report.estimator_[0].mean_
-feature_std = ridge_report.estimator_[0].scale_
-
-
-def unscale_coefficients(df, feature_mean, feature_std):
-    df = df.set_index("feature")
-    mask_intercept_column = df.index == "Intercept"
-    # rescale the intercept
-    df.loc[mask_intercept_column] = df.loc[mask_intercept_column] - np.sum(
-        df.loc[~mask_intercept_column, "coefficient"] * feature_mean / feature_std
-    )
-    # rescale the other coefficients
-    df.loc[~mask_intercept_column, "coefficient"] = (
-        df.loc[~mask_intercept_column, "coefficient"] / feature_std
-    )
-    return df.reset_index()
-
-
-df_ridge_report_coef_unscaled = unscale_coefficients(
-    ridge_report.inspection.coefficients().frame(), feature_mean, feature_std
-)
-df_ridge_report_coef_unscaled
-
-# %%
-# Now, we can interpret each coefficient values with regards to the original units.
-# We can interpret a coefficient as follows: according to our model, on average,
-# having one additional bedroom (a increase of :math:`1` of ``AveBedrms``),
-# with all other features being constant,
-# increases the *predicted* house value of :math:`0.62` in $100,000, hence of $62,000.
-# Note that we have not dealt with any potential outlier in this iteration.
 
 # %%
 # .. warning::
@@ -617,6 +589,7 @@ fig
 # number of features.
 
 # %%
+import numpy as np
 from sklearn.feature_selection import SelectKBest, VarianceThreshold, f_regression
 from sklearn.linear_model import RidgeCV
 
