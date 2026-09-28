@@ -34,8 +34,6 @@ interpret effect sizes without mistaking scale differences for importance.
 # Median income is measured in 10k USD blocks, latitude in degrees, and
 # population in head counts. Fitting Ridge on these raw columns produces
 # coefficients whose magnitudes reflect units as much as predictive strength.
-# We load the table via skrub so Sphinx CI does not depend on scikit-learn's
-# ``cal_housing.tgz`` download cache.
 
 from skrub.datasets import fetch_california_housing
 
@@ -100,12 +98,10 @@ coef_display = report.inspection.coefficients()
 coef_display.frame()
 
 # %%
-# One figure under another, the raw coefficient magnitudes and the feature standard
-# deviations tell different stories. ``AveBedrms`` often carries one of the
-# largest absolute coefficients while having a small standard deviation, so its
-# "per unit bedroom" effect looks large. ``Population`` has a tiny coefficient
-# because a one-person change is negligible on a head-count scale, even though
-# the column varies a lot across districts.
+# Side by side, the raw coefficient magnitudes and the feature standard deviations tell
+# different stories. For instance, ``Population`` has a tiny coefficient because a
+# one-person change is negligible on a head-count scale, even though the column varies a
+# lot across districts.
 import pandas as pd
 
 coef = coef_display.frame(include_intercept=False).set_index("feature")
@@ -121,7 +117,7 @@ axes = df.plot.barh(
     figsize=(10, 4),
 )
 axes[0, 0].set_xlabel("coefficient")
-_ = axes[0, 1].set_xlabel("feature std. dev. (train)")
+_ = axes[0, 1].set_xlabel("std. dev.")
 
 # %%
 # Scale coefficients by feature standard deviation
@@ -136,16 +132,14 @@ _ = axes[0, 1].set_xlabel("feature std. dev. (train)")
 # <https://scikit-learn.org/stable/auto_examples/inspection/plot_linear_model_coefficient_interpretation.html#interpreting-coefficients-scale-matters>`_.
 
 comparable = coef.copy()
-comparable["effect_per_std"] = comparable["coefficient"] * feature_std
+comparable["effect per std. dev."] = comparable["coefficient"] * feature_std
 _ = comparable.plot.barh()
 
 # %%
 # That rescaling erases the surprises from the side-by-side bars above. The
 # large raw ``AveBedrms`` coefficient shrinks once multiplied by its small
-# standard deviation, so it drops in the ranking. The tiny raw
-# ``Population`` coefficient grows with that column's large std, and features
-# such as ``MedInc``, ``Latitude``, or ``Longitude`` move up when importance is
-# measured per one standard deviation rather than per original unit.
+# standard deviation, so it drops in the ranking while other features become, in
+# comparison, more important.
 
 # %%
 # Standardize inputs in a pipeline
@@ -155,11 +149,7 @@ _ = comparable.plot.barh()
 # :class:`~sklearn.pipeline.Pipeline` puts every feature on a common scale at
 # fit time, so coefficients become directly comparable as "effect per one
 # standard deviation." That is useful for ranking features, but you lose
-# statements in original units (for example, "one extra year of age"). SKD006
-# then tips that the coefficients are comparable but no longer in the original
-# feature units: the other side of the same interpretation trade-off. See again
-# `scale matters
-# <https://scikit-learn.org/stable/auto_examples/inspection/plot_linear_model_coefficient_interpretation.html#interpreting-coefficients-scale-matters>`_.
+# statements in original units (for example, "one extra year of age").
 
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
@@ -190,7 +180,15 @@ report_scaled.checks.summarize()
 # scaler's internal mean/std and ``X_train.std()`` are not bit-identical, but the
 # ranking and interpretation should match.
 
-report_scaled.inspection.coefficients().frame()
+pd.concat(
+    [
+        report_scaled.inspection.coefficients()
+        .frame(include_intercept=False)
+        .set_index("feature"),
+        comparable["effect per std. dev."],
+    ],
+    axis=1,
+)
 
 # %%
 # Permutation importance (scale-invariant)
@@ -204,9 +202,9 @@ report_scaled.inspection.coefficients().frame()
 # rather than a linear effect size.
 #
 # Correlated features can distort both coefficient rankings and permutation
-# importance (credit is shared or shifted between partners). See
-# :ref:`SKD008 <skd008-correlated-features>` and scikit-learn's note on
-# `misleading values on strongly correlated features
+# importance (credit is shared or shifted between partners). See the
+# :ref:`SKD008 example <example_skd008_correlated_features>` and scikit-learn's
+# note on `misleading values on strongly correlated features
 # <https://scikit-learn.org/stable/modules/permutation_importance.html#misleading-values-on-strongly-correlated-features>`_.
 
 display = report.inspection.permutation_importance(
