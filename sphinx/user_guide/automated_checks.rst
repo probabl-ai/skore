@@ -229,21 +229,31 @@ Why it matters
 
 When some classes are severely underrepresented, the model may never learn to
 distinguish them reliably. Overall accuracy can look acceptable while per-class
-performance on the rare classes remains poor.
+performance on the rare classes remains poor. The check flags that situation so
+you handle rarity deliberately; clearing SKD005 by changing the class mix is not
+the main goal when natural prevalence matters.
 
 How to reduce the risk
 ^^^^^^^^^^^^^^^^^^^^^^
 
-- use per-class metrics (precision, recall, F1 per class) to monitor all classes,
-- resample the dataset (oversampling rare classes or undersampling frequent ones),
-- use class weights in the estimator,
-- collect more data for the underrepresented classes if possible.
+- report absolute class counts as well as percentages,
+- evaluate metrics based on predicted probabilities (such as log-loss) before
+  metrics based on hard class predictions (such as accuracy, precision, recall and F1),
+- collect more rare-class labels when possible, without treating a cleared
+  SKD005 as the success criterion,
+- if you collect extra rare-class data, correct for prevalence shift relative to
+  production.
+
+For binary rare-event threshold tuning and when ``class_weight`` is a risky
+shortcut, see :ref:`SKD004 <skd004-high-class-imbalance>`.
+
+Check out the :ref:`example for this check <example_skd005_underrepresented_classes>`.
 
 
 .. _skd006-unscaled-coefficients:
 
 SKD006 - Coefficient interpretation
-------------------------------------
+-----------------------------------
 
 How it is detected
 ^^^^^^^^^^^^^^^^^^
@@ -275,19 +285,28 @@ standard deviation rather than per original unit. Statements like "an increase o
 natural units have been scaled away.
 
 Read more about this in `the scikit-learn documentation
-<https://scikit-learn.org/dev/auto_examples/inspection/plot_linear_model_coefficient_interpretation.html#interpreting-coefficients-scale-matters>`__.
+<https://scikit-learn.org/stable/auto_examples/inspection/plot_linear_model_coefficient_interpretation.html#interpreting-coefficients-scale-matters>`__.
 
-How to reduce the risk
-^^^^^^^^^^^^^^^^^^^^^^
+How to interpret the tip
+^^^^^^^^^^^^^^^^^^^^^^^^
 
-- standardize the inputs (e.g. wrap the estimator in a pipeline with
+:ref:`SKD006 <skd006-unscaled-coefficients>` is a tip about interpretation, not a
+sign that the model failed: other issues may still exist. Depending on whether
+you want coefficients that are comparable across features or effects in original
+units, think of:
+
+- standardizing the inputs (e.g. wrap the estimator in a pipeline with
   :class:`~sklearn.preprocessing.StandardScaler`) to make coefficients
-  comparable,
-- when features are not standardized, multiply each coefficient by the feature's
-  standard deviation to make them comparable,
-- otherwise, interpret coefficient magnitudes only relative to the feature's own
-  scale, or rely on scale-invariant feature-importance methods such as
+  comparable (see `scale matters
+  <https://scikit-learn.org/stable/auto_examples/inspection/plot_linear_model_coefficient_interpretation.html#interpreting-coefficients-scale-matters>`_),
+- when features are not standardized, multiplying each coefficient by the
+  feature's standard deviation to make them comparable,
+- otherwise, interpreting coefficient magnitudes only relative to the feature's
+  own scale, or relying on scale-invariant feature-importance methods such as
   :class:`~skore.PermutationImportanceDisplay`.
+
+
+Check out the :ref:`example for this check <example_skd006_coefficient_interpretation>`.
 
 
 .. _skd007-mdi-cardinality-bias:
@@ -423,6 +442,8 @@ How to reduce the risk
   :class:`~sklearn.ensemble.HistGradientBoostingClassifier` /
   :class:`~sklearn.ensemble.HistGradientBoostingRegressor`.
 
+Check out the :ref:`example for this check <example_skd009_worse_than_baseline>`.
+
 
 .. _skd010-slower-than-baseline:
 
@@ -466,6 +487,8 @@ How to reduce the risk
 - profile fit time to understand the dominant cost,
 - check that the input pipeline (encoding, scaling) is not the actual bottleneck.
 
+Check out the :ref:`example for this check <example_skd010_slower_than_baseline>`.
+
 
 .. _skd011-golden-feature:
 
@@ -478,12 +501,21 @@ This check is *slow*: it requires fitting one model per feature. Skip it with
 How it is detected
 ^^^^^^^^^^^^^^^^^^
 
+The check does not run when :ref:`SKD002 <skd002-underfitting>` has already
+flagged underfitting on the same report: an underfit model performs similarly
+with any single feature, which would otherwise produce false golden-feature tips.
+
 For each input feature, `skore` clones the report's estimator, refits it on
 that single feature, and scores it on the test set. A feature is considered as
 *golden* when its single-feature scores are close to the full model's scores within
 an adaptive threshold (``max(0.03, 0.10 * |full_score|)``) on a **strict
 majority** of the report's default predictive metrics (timing metrics
 excluded).
+
+When golden features are found, `skore` also refits the estimator using the
+target as the only feature. Golden features whose scores are close to that
+oracle (same adaptive threshold) are described as likely copies of the target;
+the others are described as features the model relies on almost exclusively.
 
 The check only runs when the report has at least two features.
 

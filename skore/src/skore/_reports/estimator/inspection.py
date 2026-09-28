@@ -368,7 +368,7 @@ class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         self,
         *,
         data_source: DataSource = "test",
-        n_bins: int = 5,
+        n_bins: int | Literal["auto"] = "auto",
         strategy: Literal["uniform", "quantile"] = "quantile",
     ) -> CalibrationDisplay:
         """Display the calibration curve.
@@ -383,7 +383,7 @@ class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             The data source for the calibration curve. If None, the default data
             source is used.
 
-        n_bins : int, default=5
+        n_bins : int or "auto", default="auto"
             The number of bins to use for the calibration curve. Default is 5.
 
         strategy : {"uniform", "quantile"}, default="quantile"

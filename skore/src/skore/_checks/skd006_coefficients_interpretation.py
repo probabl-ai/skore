@@ -41,7 +41,7 @@ class CheckCoefficientsInterpretation(Check):
                 "Estimator is not a linear model: it does not have a `coef_` attribute."
             )
 
-        X = get_preprocessed_X(report, data_source="both")
+        X = get_preprocessed_X(report, data_source="train")
 
         std_values = nw.from_native(X).select(nw.all().std()).to_numpy().ravel()
         if not np.allclose(std_values, std_values[0], atol=0.05):

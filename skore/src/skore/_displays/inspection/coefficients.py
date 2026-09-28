@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Literal
 
+import narwhals as nw
 import numpy as np
 import pandas as pd
 import seaborn as sns
@@ -781,8 +782,15 @@ class CoefficientsDisplay(DisplayMixin):
             if issparse(X_transformed):
                 _, variance = mean_variance_axis(X_transformed, axis=0)
                 std = np.sqrt(variance)
-            else:
+            elif isinstance(X_transformed, np.ndarray):
                 std = np.std(X_transformed, axis=0)
+            else:
+                std = (
+                    nw.from_native(X_transformed)
+                    .select(nw.all().std())
+                    .to_numpy()
+                    .ravel()
+                )
             # the intercept is given a unit standard deviation to leave it unscaled
             feature_std = np.concatenate([[1.0], std])
         else:

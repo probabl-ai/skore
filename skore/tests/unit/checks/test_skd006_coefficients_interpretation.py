@@ -1,12 +1,14 @@
+import numpy as np
+import pandas as pd
 import pytest
 import skrub
-from sklearn.linear_model import LinearRegression
+from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
 from sklearn.tree import DecisionTreeRegressor
 from skrub import SkrubLearner, tabular_pipeline
 
-from skore import evaluate
+from skore import TrainTestSplit, evaluate
 from skore._checks.skd006_coefficients_interpretation import (
     CheckCoefficientsInterpretation,
 )
@@ -118,3 +120,48 @@ def test_pipeline_coefficient_interpretation(
     explanation = CheckCoefficientsInterpretation().check_function(report)
     assert explanation is not None
     assert expected_message in explanation
+
+
+def test_standardized_pipeline_ignores_test_set_variance():
+    """SKD006 judges a scaled pipeline on the training split only."""
+    rng = np.random.default_rng(0)
+    n_train, n_test = 80, 40
+    X_train = rng.normal(size=(n_train, 2))
+    X_test = np.column_stack(
+        [
+            rng.normal(size=n_test),
+            rng.normal(scale=10, size=n_test),
+        ]
+    )
+    X = np.vstack([X_train, X_test])
+    y = rng.normal(size=n_train + n_test)
+    report = evaluate(
+        make_pipeline(StandardScaler(), LinearRegression()),
+        X,
+        y,
+        splitter=TrainTestSplit(test_size=n_test, shuffle=False),
+    )
+    explanation = CheckCoefficientsInterpretation().check_function(report)
+    assert explanation is not None
+    assert "Features appear to be standardized" in explanation
+
+
+def test_tabular_pipeline_predictor():
+    """SKD006 does not crash when predictor input has string categoricals."""
+    df = pd.DataFrame(
+        {
+            "cat": ["a", "b", "c", "d"] * 50,
+            "num": [float(i % 7) for i in range(200)],
+            "y": [int(i % 7 < 2) for i in range(200)],
+        }
+    )
+    data = skrub.var("df", df)
+    X = data[["cat", "num"]].skb.mark_as_X()
+    y = data["y"].skb.mark_as_y()
+    learner = X.skb.apply(
+        tabular_pipeline(LogisticRegression()), y=y
+    ).skb.make_learner()
+    report = evaluate(learner, data={"df": df}, splitter=3)
+    explanation = CheckCoefficientsInterpretation().check_function(report)
+    assert explanation is not None
+    assert "Features are not on the same scale" in explanation
