@@ -163,10 +163,12 @@ distributions across splits, or a model that is sensitive to specific data split
 How to reduce the risk
 ^^^^^^^^^^^^^^^^^^^^^^
 
-- use stratified or grouped cross-validation to ensure a more even split,
+- use grouped cross-validation when observations share a group structure,
 - investigate whether the outlier split contains a different data distribution,
 - check for data leakage or temporal effects,
 - increase the size of the dataset to improve stability.
+
+Check out the :ref:`example for this check <example_skd003_inconsistent_performance>`.
 
 
 .. _skd004-high-class-imbalance:
@@ -227,15 +229,25 @@ Why it matters
 
 When some classes are severely underrepresented, the model may never learn to
 distinguish them reliably. Overall accuracy can look acceptable while per-class
-performance on the rare classes remains poor.
+performance on the rare classes remains poor. The check flags that situation so
+you handle rarity deliberately; clearing SKD005 by changing the class mix is not
+the main goal when natural prevalence matters.
 
 How to reduce the risk
 ^^^^^^^^^^^^^^^^^^^^^^
 
-- use per-class metrics (precision, recall, F1 per class) to monitor all classes,
-- resample the dataset (oversampling rare classes or undersampling frequent ones),
-- use class weights in the estimator,
-- collect more data for the underrepresented classes if possible.
+- report absolute class counts as well as percentages,
+- evaluate metrics based on predicted probabilities (such as log-loss) before
+  metrics based on hard class predictions (such as accuracy, precision, recall and F1),
+- collect more rare-class labels when possible, without treating a cleared
+  SKD005 as the success criterion,
+- if you collect extra rare-class data, correct for prevalence shift relative to
+  production.
+
+For binary rare-event threshold tuning and when ``class_weight`` is a risky
+shortcut, see :ref:`SKD004 <skd004-high-class-imbalance>`.
+
+Check out the :ref:`example for this check <example_skd005_underrepresented_classes>`.
 
 
 .. _skd006-unscaled-coefficients:
@@ -326,6 +338,9 @@ How to reduce the risk
   permutation importance or drop-column importance.
 
 
+Check out the :ref:`example for this check <example_skd007_mdi_cardinality_bias>`.
+
+
 .. _skd008-correlated-features:
 
 SKD008 - Highly correlated input features
@@ -370,10 +385,13 @@ How to reduce the risk
   correlated features,
 - group correlated features together before inspecting feature importance.
 
+Check out the :ref:`example for this check <example_skd008_correlated_features>`.
+
+
 .. _skd009-worse-than-baseline:
 
-SKD009 - Model worse than baseline
-----------------------------------
+SKD009 - Model performance vs. baseline
+----------------------------------------
 
 How it is detected
 ^^^^^^^^^^^^^^^^^^
@@ -385,18 +403,23 @@ is trained on the same train data as the report's estimator and is evaluated on 
 test set.
 
 For each of the report's default predictive metrics (timing metrics are excluded), a
-metric votes for the issue when the report is **not significantly better** than the
-baseline. A score is considered significantly better only when its gap to the baseline
-exceeds ``max(0.01, 0.05 * |baseline|)``.
+metric votes when the baseline is **significantly better** than the report. A baseline
+score is considered significantly better only when its gap to the report exceeds
+``max(0.01, 0.05 * |report score|)``.
 
-The check detects an issue when a **strict majority** of comparable metrics vote.
+This check always reports the baseline's performance on the test set. When a **strict
+majority** of comparable metrics vote, the tip warns that the model is significantly
+worse than the baseline; otherwise it reports that the model is on par with or better
+than the baseline, along with the baseline's scores for reference.
 
 Why it matters
 ^^^^^^^^^^^^^^
 
 If the model does not match or beat a sensible off-the-shelf baseline, the modeling
 effort may not be worth its complexity: a simpler, well-tuned default could deliver the
-same quality with less risk of overfitting or maintenance burden.
+same quality with less risk of overfitting or maintenance burden. Even when the model
+does beat the baseline, seeing the baseline's scores helps calibrate how large that
+improvement actually is.
 
 How to reduce the risk
 ^^^^^^^^^^^^^^^^^^^^^^
@@ -426,9 +449,11 @@ around :class:`~sklearn.linear_model.LogisticRegression` for classification task
 :class:`~sklearn.linear_model.RidgeCV` for regression tasks. The baseline is trained on
 the same train data as the report's estimator and is evaluated on the same test set.
 
-The check first compares fit times: it triggers only when the report's ``fit_time_`` is
-at least **2x** the baseline's fit time and the absolute gap is at least 0.05 seconds
-(the floor avoids spurious results on very fast fits).
+The check first compares timings: it computes the report-to-baseline ratio for both fit
+time and predict time on the test set, and keeps the larger of the two. The slowness
+gate triggers only when that ratio is at least **2x** and the absolute gap on the
+winning dimension is at least **1 second**. Below that, the difference is negligible
+in practice regardless of the ratio.
 
 Then, like :ref:`SKD009 <skd009-worse-than-baseline>`, each default predictive metric
 votes for the issue when the report is **not significantly better** than the baseline on
@@ -465,12 +490,21 @@ This check is *slow*: it requires fitting one model per feature. Skip it with
 How it is detected
 ^^^^^^^^^^^^^^^^^^
 
+The check does not run when :ref:`SKD002 <skd002-underfitting>` has already
+flagged underfitting on the same report: an underfit model performs similarly
+with any single feature, which would otherwise produce false golden-feature tips.
+
 For each input feature, `skore` clones the report's estimator, refits it on
 that single feature, and scores it on the test set. A feature is considered as
 *golden* when its single-feature scores are close to the full model's scores within
 an adaptive threshold (``max(0.03, 0.10 * |full_score|)``) on a **strict
 majority** of the report's default predictive metrics (timing metrics
 excluded).
+
+When golden features are found, `skore` also refits the estimator using the
+target as the only feature. Golden features whose scores are close to that
+oracle (same adaptive threshold) are described as likely copies of the target;
+the others are described as features the model relies on almost exclusively.
 
 The check only runs when the report has at least two features.
 

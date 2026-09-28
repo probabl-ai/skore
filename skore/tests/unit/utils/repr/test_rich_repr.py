@@ -8,12 +8,12 @@ import pytest
 from rich.console import Console
 from sklearn.linear_model import LogisticRegression
 
-from skore._utils._testing import MockAccessor, MockDisplay, MockReport
 from skore._utils.repr.rich_repr import (
     _RichAccessorHelpMixin,
     _RichHelpDisplayMixin,
     _RichReportHelpMixin,
 )
+from skore._utils.testing import MockAccessor, MockDisplay, MockReport
 
 
 def _render_panel(panel):

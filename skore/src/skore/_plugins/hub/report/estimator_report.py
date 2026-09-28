@@ -8,6 +8,7 @@ from pydantic import computed_field
 
 from skore import EstimatorReport
 from skore._plugins.hub.artifact.media import (
+    ChecksSummary,
     Coefficients,
     ConfusionMatrixDataFrameTestAll,
     ConfusionMatrixDataFrameTestNone,
@@ -54,6 +55,7 @@ class EstimatorReportPayload(ReportPayload[EstimatorReport]):
     """
 
     MEDIAS: ClassVar[tuple[type[Media[EstimatorReport]], ...]] = (
+        ChecksSummary,
         Coefficients,
         ConfusionMatrixDataFrameTestAll,
         ConfusionMatrixDataFrameTestNone,

@@ -1,7 +1,7 @@
 import pandas as pd
 import pytest
 
-from skore._utils._index import flatten_multi_index, squeeze_single_column
+from skore._utils.index import flatten_multi_index, squeeze_single_column
 
 
 @pytest.mark.parametrize(

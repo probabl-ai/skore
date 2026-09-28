@@ -14,7 +14,7 @@ import pandas as pd
 
 from skore import CrossValidationReport, EstimatorReport
 from skore._project.git import git_repo_root
-from skore._utils._cache_key import deep_key_sanitize
+from skore._utils.cache_key import deep_key_sanitize
 
 
 def _check_name(name: Any) -> str:
@@ -111,7 +111,7 @@ def _write_report(
     with contextlib.suppress(FileNotFoundError):
         symlink.unlink()
     with contextlib.suppress(OSError):
-        symlink.symlink_to(output_dir)
+        symlink.symlink_to(filename)
 
     if isinstance(report, EstimatorReport):
         _write_estimator_report(report, workspace, output_dir, name=name)
@@ -481,12 +481,10 @@ class Project:
 
     def get(self, report_id: str) -> EstimatorReport | CrossValidationReport:
         """Get a persisted report by its ID."""
-        report_path = next(
-            iter((self.path / "reports").glob(f"*__id_{report_id}__*")), None
-        )
-        if report_path is None:
+        report_paths = sorted((self.path / "reports").glob(f"*__id_{report_id}__*"))
+        if not report_paths:
             raise KeyError(report_id)
-        return read_report(report_path)
+        return read_report(report_paths[-1])
 
     def summarize(self) -> list[dict[str, Any]]:
         """Obtain metadata/metrics for all persisted reports."""

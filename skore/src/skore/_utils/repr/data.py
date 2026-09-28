@@ -10,7 +10,7 @@ from importlib.metadata import version
 from typing import Any, ClassVar
 from urllib.parse import quote
 
-from skore._externals._sklearn_compat import parse_version
+from skore._externals.sklearn_compat import parse_version
 
 
 @dataclass
@@ -256,7 +256,7 @@ def get_public_attributes(obj: Any) -> list[str]:
     list of str
         Sorted attribute names to display in help.
     """
-    from skore._sklearn._base import _BaseAccessor  # avoid circular import
+    from skore._reports.base import _BaseAccessor  # avoid circular import
 
     return sorted(
         name

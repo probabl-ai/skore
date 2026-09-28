@@ -9,7 +9,6 @@ import pytest
 from sklearn.linear_model import LogisticRegression
 
 import skore._utils.repr.data as data_module
-from skore._utils._testing import MockAccessor, MockDisplay, MockReport
 from skore._utils.repr.data import (
     AccessorHelpData,
     DisplayHelpData,
@@ -28,6 +27,7 @@ from skore._utils.repr.data import (
     get_public_attributes,
     get_public_methods,
 )
+from skore._utils.testing import MockAccessor, MockDisplay, MockReport
 
 
 class _ClassWithNumpydocAttrs:

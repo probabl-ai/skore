@@ -123,6 +123,22 @@ def test_put_get_summarize(tmp_path, regression, regression_dummy, cv_regression
     assert Path(next(iter(summary))["local_path"]).is_relative_to(tmp_path)
 
 
+def test_get_uses_last_summary_entry_for_duplicate_id(tmp_path, monkeypatch):
+    project = Project(name="regression", workspace=tmp_path)
+    reports_path = project.path / "reports"
+    first = reports_path / "2026-01-01__id_shared__estimator__first"
+    last = reports_path / "2026-01-01__id_shared__estimator__last"
+    first.mkdir()
+    last.mkdir()
+    monkeypatch.setattr(
+        skore._plugins.local.project,
+        "read_report",
+        lambda path: Path(path).name,
+    )
+
+    assert project.get("shared") == last.name
+
+
 def test_permutation_importances(tmp_path, regression_dummy):
     project = Project(name="regression", workspace=tmp_path)
     importances = regression_dummy.inspection.permutation_importance().frame()

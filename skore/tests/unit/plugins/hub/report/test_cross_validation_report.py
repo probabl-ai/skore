@@ -1,5 +1,7 @@
 from io import BytesIO
+from itertools import chain, repeat
 
+import polars as pl
 import skrub
 from joblib import dump, hash
 from numpy import array
@@ -24,6 +26,7 @@ from sklearn.model_selection import (
 
 from skore import CrossValidationReport, EstimatorReport, evaluate
 from skore._plugins.hub.artifact.media import (
+    ChecksSummary,
     ConfusionMatrixDataFrameTestAll,
     ConfusionMatrixDataFrameTestNone,
     ConfusionMatrixDataFrameTrainAll,
@@ -49,12 +52,28 @@ from skore._plugins.hub.report.cross_validation_report import (
 )
 
 
+def unique(iterable):
+    seen = set()
+
+    for x in iterable:
+        if x not in seen:
+            seen.add(x)
+            yield x
+
+
 def serialize(object: EstimatorReport | CrossValidationReport) -> tuple[bytes, str]:
     reports = [object] + getattr(object, "reports_", [])
     reports_with_cache = [
         (report, report._cache) for report in reports if hasattr(report, "_cache")
     ]
+    reports_with_check_results_cache = [
+        (report, report._check_results_cache)
+        for report in reports
+        if hasattr(report, "_check_results_cache")
+    ]
     object._clear_cache()
+    for report, _ in reports_with_check_results_cache:
+        del report._check_results_cache
 
     try:
         with BytesIO() as stream:
@@ -63,6 +82,8 @@ def serialize(object: EstimatorReport | CrossValidationReport) -> tuple[bytes, s
     finally:
         for report, cache in reports_with_cache:
             report._cache = cache
+        for report, check_results_cache in reports_with_check_results_cache:
+            report._check_results_cache = check_results_cache
 
     with Serializer(pickle_bytes) as serializer:
         checksum = serializer.checksum
@@ -85,6 +106,21 @@ def payload(project, small_cv_binary_classification):
         report=small_cv_binary_classification,
         key="<key>",
     )
+
+
+def test_y_is_a_polars_series(project):
+    # non-regression test for 3263
+    X = pl.DataFrame(
+        {
+            "a": [0.0, 1.0, 0.5, 1.5, 2.0, 0.2, 0.9, 1.1, 0.3, 1.8],
+            "b": [1.0, 0.0, 1.0, 0.0, 1.0, 1.0, 0.0, 0.5, 0.8, 0.1],
+        }
+    )
+    y = pl.Series("class", ["A", "B", "A", "B", "B", "A", "B", "A", "B", "A"])
+    report = CrossValidationReport(LogisticRegression(max_iter=100), X, y, splitter=3)
+    CrossValidationReportPayload(
+        project=project, report=report, key="<key>"
+    ).model_dump()
 
 
 class TestCrossValidationReportPayload:
@@ -372,6 +408,26 @@ class TestCrossValidationReportPayload:
         assert report.ml_task == "multioutput-regression"
         assert payload.target_range is None
 
+    def test_splitting_strategy_time_series_split_rescales_gap_and_sizes(self, project):
+        X, y = make_regression(n_samples=1000, random_state=0)
+        splitter = TimeSeriesSplit(
+            n_splits=2, gap=200, max_train_size=400, test_size=100
+        )
+
+        report = CrossValidationReport(DummyRegressor(), X, y, splitter=splitter)
+        payload = CrossValidationReportPayload(project=project, report=report, key="-")
+
+        splits = payload.splitting_strategy["splits"]
+
+        # scale = SPLITTING_STRATEGY_REPR_SAMPLE_COUNT / n_samples = 100 / 1000 = 0.1
+        for split in splits:
+            last_train = max(i for i, flag in enumerate(split) if flag == 0)
+            first_test = min(i for i, flag in enumerate(split) if flag == 1)
+
+            assert split.count(0) == 40  # max_train_size=400 * scale
+            assert split.count(1) == 10  # test_size=100 * scale
+            assert first_test - last_train - 1 == 20  # gap=200 * scale
+
     def test_splitting_do_not_call_get_n_splits(self, project):
         # non-regression test for https://github.com/probabl-ai/skore/pull/3011
         X = array([0, 1, 2, 3, 4])
@@ -550,8 +606,9 @@ class TestCrossValidationReportPayload:
         "ignore:Precision is ill-defined*:sklearn.exceptions.UndefinedMetricWarning"
     )
     @mark.respx()
-    def test_estimators(self, project, payload, upload_mock):
+    def test_estimators(self, project, payload):
         payload.report._cache_predictions()
+
         assert len(payload.estimators) == len(payload.report.reports_)
 
         for i, estimator in enumerate(payload.estimators):
@@ -560,20 +617,7 @@ class TestCrossValidationReportPayload:
             assert estimator.project == project
             assert estimator.report == payload.report.reports_[i]
 
-            # ensure `upload` is well called
-            pickle, _ = serialize(payload.report.reports_[i])
-
             estimator.model_dump()
-
-            assert upload_mock.called
-            assert not upload_mock.call_args.args
-            assert upload_mock.call_args.kwargs == {
-                "project": project,
-                "content": pickle,
-                "content_type": "application/octet-stream",
-            }
-
-            upload_mock.reset_mock()
 
     @mark.respx()
     def test_pickle(
@@ -584,13 +628,54 @@ class TestCrossValidationReportPayload:
         # Ensure payload is well constructed
         assert payload.pickle.checksum == checksum
 
-        # ensure `upload` is well called
+        # Ensure `upload` is well called
         assert upload_mock.called
         assert not upload_mock.call_args.args
         assert upload_mock.call_args.kwargs == {
             "project": project,
             "content": pickle,
             "content_type": "application/octet-stream",
+        }
+
+    @mark.respx()
+    def test_environment(self, project, payload, upload_mock, monkeypatch):
+        from platform import python_version
+
+        import numpy
+        import numpy.linalg
+        import sklearn
+        import sklearn.base
+
+        from skore._plugins import requirements
+
+        monkeypatch.setattr(
+            requirements.sys,
+            "modules",
+            {
+                "numpy": numpy,
+                "numpy.linalg": numpy.linalg,
+                "sklearn": sklearn,
+                "sklearn.base": sklearn.base,
+            },
+        )
+
+        content = f"numpy=={numpy.__version__}\nscikit-learn=={sklearn.__version__}"
+
+        with Serializer(content) as serializer:
+            checksum = serializer.checksum
+
+        # Ensure payload is well constructed
+        assert payload.environment.checksum == checksum
+        assert payload.environment.content_type == "text/plain"
+        assert payload.environment.python_version == python_version()
+
+        # Ensure `upload` is well called
+        assert upload_mock.called
+        assert not upload_mock.call_args.args
+        assert upload_mock.call_args.kwargs == {
+            "project": project,
+            "content": content,
+            "content_type": "text/plain",
         }
 
     @mark.filterwarnings(
@@ -614,7 +699,6 @@ class TestCrossValidationReportPayload:
                 "label": None,
                 "output": None,
                 "average": None,
-                "position": None,
             },
             {
                 "name": "accuracy_std",
@@ -625,7 +709,6 @@ class TestCrossValidationReportPayload:
                 "label": None,
                 "output": None,
                 "average": None,
-                "position": None,
             },
             {
                 "name": "accuracy_mean",
@@ -636,7 +719,6 @@ class TestCrossValidationReportPayload:
                 "label": None,
                 "output": None,
                 "average": None,
-                "position": None,
             },
             {
                 "name": "accuracy_std",
@@ -647,7 +729,6 @@ class TestCrossValidationReportPayload:
                 "label": None,
                 "output": None,
                 "average": None,
-                "position": None,
             },
             {
                 "name": "brier_score_mean",
@@ -658,7 +739,6 @@ class TestCrossValidationReportPayload:
                 "label": None,
                 "output": None,
                 "average": None,
-                "position": None,
             },
             {
                 "name": "brier_score_std",
@@ -669,7 +749,6 @@ class TestCrossValidationReportPayload:
                 "label": None,
                 "output": None,
                 "average": None,
-                "position": None,
             },
             {
                 "name": "brier_score_mean",
@@ -680,7 +759,6 @@ class TestCrossValidationReportPayload:
                 "label": None,
                 "output": None,
                 "average": None,
-                "position": None,
             },
             {
                 "name": "brier_score_std",
@@ -691,7 +769,6 @@ class TestCrossValidationReportPayload:
                 "label": None,
                 "output": None,
                 "average": None,
-                "position": None,
             },
             {
                 "name": "fit_time_mean",
@@ -702,7 +779,6 @@ class TestCrossValidationReportPayload:
                 "label": None,
                 "output": None,
                 "average": None,
-                "position": None,
             },
             {
                 "name": "fit_time_std",
@@ -713,7 +789,6 @@ class TestCrossValidationReportPayload:
                 "label": None,
                 "output": None,
                 "average": None,
-                "position": None,
             },
             {
                 "name": "fit_time_mean",
@@ -724,7 +799,6 @@ class TestCrossValidationReportPayload:
                 "label": None,
                 "output": None,
                 "average": None,
-                "position": None,
             },
             {
                 "name": "fit_time_std",
@@ -735,7 +809,6 @@ class TestCrossValidationReportPayload:
                 "label": None,
                 "output": None,
                 "average": None,
-                "position": None,
             },
             {
                 "name": "log_loss_mean",
@@ -746,7 +819,6 @@ class TestCrossValidationReportPayload:
                 "label": None,
                 "output": None,
                 "average": None,
-                "position": None,
             },
             {
                 "name": "log_loss_std",
@@ -757,7 +829,6 @@ class TestCrossValidationReportPayload:
                 "label": None,
                 "output": None,
                 "average": None,
-                "position": None,
             },
             {
                 "name": "log_loss_mean",
@@ -768,7 +839,6 @@ class TestCrossValidationReportPayload:
                 "label": None,
                 "output": None,
                 "average": None,
-                "position": None,
             },
             {
                 "name": "log_loss_std",
@@ -779,7 +849,6 @@ class TestCrossValidationReportPayload:
                 "label": None,
                 "output": None,
                 "average": None,
-                "position": None,
             },
             {
                 "name": "precision_mean",
@@ -790,7 +859,6 @@ class TestCrossValidationReportPayload:
                 "label": "0",
                 "output": None,
                 "average": None,
-                "position": None,
             },
             {
                 "name": "precision_std",
@@ -801,7 +869,6 @@ class TestCrossValidationReportPayload:
                 "label": "0",
                 "output": None,
                 "average": None,
-                "position": None,
             },
             {
                 "name": "precision_mean",
@@ -812,7 +879,6 @@ class TestCrossValidationReportPayload:
                 "label": "1",
                 "output": None,
                 "average": None,
-                "position": None,
             },
             {
                 "name": "precision_std",
@@ -823,7 +889,6 @@ class TestCrossValidationReportPayload:
                 "label": "1",
                 "output": None,
                 "average": None,
-                "position": None,
             },
             {
                 "name": "precision_mean",
@@ -834,7 +899,6 @@ class TestCrossValidationReportPayload:
                 "label": "0",
                 "output": None,
                 "average": None,
-                "position": None,
             },
             {
                 "name": "precision_std",
@@ -845,7 +909,6 @@ class TestCrossValidationReportPayload:
                 "label": "0",
                 "output": None,
                 "average": None,
-                "position": None,
             },
             {
                 "name": "precision_mean",
@@ -856,7 +919,6 @@ class TestCrossValidationReportPayload:
                 "label": "1",
                 "output": None,
                 "average": None,
-                "position": None,
             },
             {
                 "name": "precision_std",
@@ -867,7 +929,6 @@ class TestCrossValidationReportPayload:
                 "label": "1",
                 "output": None,
                 "average": None,
-                "position": None,
             },
             {
                 "name": "predict_time_mean",
@@ -878,7 +939,6 @@ class TestCrossValidationReportPayload:
                 "label": None,
                 "output": None,
                 "average": None,
-                "position": None,
             },
             {
                 "name": "predict_time_std",
@@ -889,7 +949,6 @@ class TestCrossValidationReportPayload:
                 "label": None,
                 "output": None,
                 "average": None,
-                "position": None,
             },
             {
                 "name": "predict_time_mean",
@@ -900,7 +959,6 @@ class TestCrossValidationReportPayload:
                 "label": None,
                 "output": None,
                 "average": None,
-                "position": None,
             },
             {
                 "name": "predict_time_std",
@@ -911,7 +969,6 @@ class TestCrossValidationReportPayload:
                 "label": None,
                 "output": None,
                 "average": None,
-                "position": None,
             },
             {
                 "name": "recall_mean",
@@ -922,7 +979,6 @@ class TestCrossValidationReportPayload:
                 "label": "0",
                 "output": None,
                 "average": None,
-                "position": None,
             },
             {
                 "name": "recall_std",
@@ -933,7 +989,6 @@ class TestCrossValidationReportPayload:
                 "label": "0",
                 "output": None,
                 "average": None,
-                "position": None,
             },
             {
                 "name": "recall_mean",
@@ -944,7 +999,6 @@ class TestCrossValidationReportPayload:
                 "label": "1",
                 "output": None,
                 "average": None,
-                "position": None,
             },
             {
                 "name": "recall_std",
@@ -955,7 +1009,6 @@ class TestCrossValidationReportPayload:
                 "label": "1",
                 "output": None,
                 "average": None,
-                "position": None,
             },
             {
                 "name": "recall_mean",
@@ -966,7 +1019,6 @@ class TestCrossValidationReportPayload:
                 "label": "0",
                 "output": None,
                 "average": None,
-                "position": None,
             },
             {
                 "name": "recall_std",
@@ -977,7 +1029,6 @@ class TestCrossValidationReportPayload:
                 "label": "0",
                 "output": None,
                 "average": None,
-                "position": None,
             },
             {
                 "name": "recall_mean",
@@ -988,7 +1039,6 @@ class TestCrossValidationReportPayload:
                 "label": "1",
                 "output": None,
                 "average": None,
-                "position": None,
             },
             {
                 "name": "recall_std",
@@ -999,7 +1049,6 @@ class TestCrossValidationReportPayload:
                 "label": "1",
                 "output": None,
                 "average": None,
-                "position": None,
             },
             {
                 "name": "roc_auc_mean",
@@ -1010,7 +1059,6 @@ class TestCrossValidationReportPayload:
                 "label": None,
                 "output": None,
                 "average": None,
-                "position": None,
             },
             {
                 "name": "roc_auc_std",
@@ -1021,7 +1069,6 @@ class TestCrossValidationReportPayload:
                 "label": None,
                 "output": None,
                 "average": None,
-                "position": None,
             },
             {
                 "name": "roc_auc_mean",
@@ -1032,7 +1079,6 @@ class TestCrossValidationReportPayload:
                 "label": None,
                 "output": None,
                 "average": None,
-                "position": None,
             },
             {
                 "name": "roc_auc_std",
@@ -1043,7 +1089,6 @@ class TestCrossValidationReportPayload:
                 "label": None,
                 "output": None,
                 "average": None,
-                "position": None,
             },
         ]
 
@@ -1206,6 +1251,7 @@ class TestCrossValidationReportPayload:
     @mark.respx()
     def test_medias(self, payload):
         assert list(map(type, payload.medias)) == [
+            ChecksSummary,
             ConfusionMatrixDataFrameTestAll,
             ConfusionMatrixDataFrameTestNone,
             ConfusionMatrixDataFrameTrainAll,
@@ -1241,6 +1287,7 @@ class TestCrossValidationReportPayload:
         payload_dict.pop("metrics")
         payload_dict.pop("medias")
         payload_dict.pop("splitting_strategy")
+        payload_dict.pop("environment")
 
         assert payload_dict == {
             "key": "<key>",
@@ -1259,6 +1306,75 @@ class TestCrossValidationReportPayload:
             "target_names": None,
             "target_ranges": None,
         }
+
+    @mark.respx()
+    def test_model_dump_classification_environment_is_evaluated_last(
+        self, project, small_cv_binary_classification, monkeypatch
+    ):
+        calls = []
+
+        # wrap each computed field to mark calls
+        for cls, field in chain(
+            zip(
+                repeat(EstimatorReportPayload),
+                EstimatorReportPayload.model_computed_fields,
+            ),
+            zip(
+                repeat(CrossValidationReportPayload),
+                CrossValidationReportPayload.model_computed_fields,
+            ),
+        ):
+            original = getattr(cls, field)
+
+            def mark(self, field=field, original=original):
+                calls.append((self.report.id, field))
+                return original.__get__(self, type(self))
+
+            monkeypatch.setattr(cls, field, property(mark))
+
+        payload = CrossValidationReportPayload(
+            project=project, report=small_cv_binary_classification, key="<key>"
+        )
+
+        payload.model_dump()
+
+        # filter properties that have been called multiple times: only keep first call
+        assert list(unique(calls)) == [
+            (small_cv_binary_classification.id, "ml_task"),
+            (small_cv_binary_classification.id, "canonical_report_id"),
+            (small_cv_binary_classification.id, "estimator_class_name"),
+            (small_cv_binary_classification.id, "dataset_fingerprint"),
+            (small_cv_binary_classification.id, "metrics"),
+            (small_cv_binary_classification.id, "medias"),
+            (small_cv_binary_classification.id, "pickle"),
+            (small_cv_binary_classification.id, "dataset_size"),
+            (small_cv_binary_classification.id, "splitting_strategy"),
+            (small_cv_binary_classification.id, "class_names"),
+            (small_cv_binary_classification.id, "target_names"),
+            (small_cv_binary_classification.id, "target_ranges"),
+            (small_cv_binary_classification.id, "target_range"),
+            (small_cv_binary_classification.id, "estimators"),
+            # First fold estimator
+            (small_cv_binary_classification.reports_[0].id, "canonical_report_id"),
+            (small_cv_binary_classification.reports_[0].id, "estimator_class_name"),
+            (small_cv_binary_classification.reports_[0].id, "dataset_fingerprint"),
+            (small_cv_binary_classification.reports_[0].id, "ml_task"),
+            (small_cv_binary_classification.reports_[0].id, "metrics"),
+            (small_cv_binary_classification.reports_[0].id, "medias"),
+            (small_cv_binary_classification.reports_[0].id, "pickle"),
+            (small_cv_binary_classification.reports_[0].id, "environment"),  # <- last
+            # Second fold estimator
+            (small_cv_binary_classification.reports_[1].id, "canonical_report_id"),
+            (small_cv_binary_classification.reports_[1].id, "estimator_class_name"),
+            (small_cv_binary_classification.reports_[1].id, "dataset_fingerprint"),
+            (small_cv_binary_classification.reports_[1].id, "ml_task"),
+            (small_cv_binary_classification.reports_[1].id, "metrics"),
+            (small_cv_binary_classification.reports_[1].id, "medias"),
+            (small_cv_binary_classification.reports_[1].id, "pickle"),
+            (small_cv_binary_classification.reports_[1].id, "environment"),  # <- last
+            #
+            (small_cv_binary_classification.id, "environment"),  # <- last
+        ]
 
     @mark.respx(assert_all_called=False)
     def test_exception(self, project):

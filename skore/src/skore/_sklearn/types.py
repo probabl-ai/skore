@@ -1,11 +1,16 @@
 """Types between parts of the sklearn module."""
 
-from collections.abc import Iterator, Sequence
-from typing import Any, Literal, Protocol, TypedDict
+from __future__ import annotations
 
-from numpy.typing import ArrayLike
-from sklearn.base import BaseEstimator
-from skrub import DataOp, SkrubLearner
+from collections.abc import Sequence
+from typing import TYPE_CHECKING, Any, Literal, Protocol, TypedDict
+
+if TYPE_CHECKING:
+    from collections.abc import Iterator
+
+    from numpy.typing import ArrayLike
+    from sklearn.base import BaseEstimator
+    from skrub import DataOp, SkrubLearner
 
 PlotBackend = Literal["matplotlib", "plotly"]
 
@@ -42,7 +47,10 @@ ReportType = Literal[
     "comparison-cross-validation",
 ]
 
-EstimatorLike = BaseEstimator | DataOp | SkrubLearner
+if TYPE_CHECKING:
+    EstimatorLike = BaseEstimator | DataOp | SkrubLearner
+else:
+    EstimatorLike = Any
 
 
 class SKLearnCrossValidator(Protocol):

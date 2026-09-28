@@ -208,6 +208,7 @@ class TestProject:
 
         # Compare content with the desired output
         assert content == desired
+        assert all("position" not in metric for metric in content["metrics"])
 
     @mark.filterwarnings(
         # ignore precision warning due to the low number of labels in
@@ -257,6 +258,7 @@ class TestProject:
 
         # Compare content with the desired output
         assert content == desired
+        assert all("position" not in metric for metric in content["metrics"])
 
     @mark.respx()
     def test_put_estimator_report_string_labels_with_pos_label(

@@ -5,7 +5,7 @@ import pytest
 import sklearn.metrics
 
 import skore._utils.repr.data as data_module
-from skore._sklearn.metrics import Metric
+from skore._metrics import Metric
 from skore._utils.docscrape import docstring_summary
 
 
