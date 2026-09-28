@@ -6,9 +6,8 @@ SKD009 - Model worse than baseline
 
 This example walks through mitigations when check
 :ref:`SKD009 <skd009-worse-than-baseline>` fires. The check trains a strong
-:func:`~skrub.tabular_pipeline` baseline (gradient boosting on mixed tabular
-data) and flags estimators that are not significantly better on default
-metrics.
+:func:`~skrub.tabular_pipeline` baseline (gradient boosting on vectorized
+data) and flags estimators that are significantly worse on default metrics.
 
 Mitigations from the :ref:`automated_checks` user guide, in the order we try
 them here:
@@ -19,7 +18,8 @@ them here:
 - tune the model (here: moderated HGB capacity plus a log target).
 
 We use the medical charge dataset with provider IDs and leakage columns removed.
-The goal is to beat skore's HGB baseline on held-out payment totals.
+We will see how applying these recommendations leads to a model that improves on the
+baseline.
 """
 
 # %%
@@ -85,9 +85,6 @@ report_ridge
 report_ridge.checks.summarize()
 
 # %%
-report_ridge.metrics.summarize(data_source="both").frame()
-
-# %%
 # Revisit feature engineering
 # ===========================
 #
@@ -104,10 +101,15 @@ report_ridge.metrics.summarize(data_source="both").frame()
 # on new data. Since this transformation is stateless, i.e., no information
 # needs to be computed and stored during training, we can safely use a
 # :class:`~sklearn.preprocessing.FunctionTransformer`.
+#
+# We also break down the `tabular_pipeline` into its components (vectorization of data,
+# missing value imputation and scaling) to keep the `Pipeline` flat.
 
 import numpy as np
+from sklearn.impute import SimpleImputer
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import FunctionTransformer
+from skrub import SquashingScaler, TableVectorizer
 
 
 def engineer_features(X):
@@ -127,7 +129,11 @@ def engineer_features(X):
 
 
 ridge_with_fe = make_pipeline(
-    FunctionTransformer(engineer_features), tabular_pipeline(Ridge())
+    FunctionTransformer(engineer_features),
+    TableVectorizer(),
+    SimpleImputer(add_indicator=True),
+    SquashingScaler(max_absolute_value=5),
+    Ridge(),
 )
 
 report_ridge_fe = evaluate(ridge_with_fe, X=X, y=y, splitter=splitter)
@@ -135,12 +141,9 @@ report_ridge_fe
 
 # %%
 # With this feature engineering, we improved the test score.
-
-report_ridge_fe.metrics.summarize(data_source="both").frame()
-
-# %%
-# However, SKD009 still flags a linear model that cannot match the HGB baseline
-# on every score.
+#
+# However, SKD009 still flags the model because it cannot beat the HGB baseline
+# on a majority of scores.
 
 report_ridge_fe.checks.summarize()
 
@@ -177,11 +180,11 @@ comparison_families = compare(
         "random_forest": report_rf,
     }
 )
-comparison_families.metrics.summarize(data_source="both").frame()
+comparison_families.metrics.summarize().frame()
 
 # %%
 # In this case, we see that we get closer to the gradient boosting baseline but we still
-# have a small gap.
+# have a small gap (SKD009 reports an r2 of around 0.88 for the baseline).
 
 report_rf.checks.summarize()
 
@@ -190,9 +193,8 @@ report_rf.checks.summarize()
 # =======================================
 #
 # skore's SKD009 performance baseline is itself an HGB pipeline. Matching that
-# family is the natural next step once trees look promising, but defaults are
-# not guaranteed to clear the check, because SKD009 asks whether you are
-# *significantly* worse than a strong HGB baseline.
+# family is the natural next step once trees look promising, and we find that we are
+# on par with skore's baseline.
 
 from sklearn.ensemble import HistGradientBoostingRegressor
 
@@ -202,44 +204,44 @@ report_hgb = evaluate(
     y=y,
     splitter=splitter,
 )
-report_hgb
+report_hgb.checks.summarize()
 
 # %%
-report_hgb.metrics.summarize(data_source="both").frame()
+report_hgb.metrics.summarize().frame()
 
 # %%
 # Combine levers: features, HGB, and a log target
 # ===============================================
 #
-# In practice you would usually tune these knobs with
-# :class:`~sklearn.model_selection.RandomizedSearchCV` or
-# :class:`~sklearn.model_selection.GridSearchCV` from scikit-learn. To keep the
-# example short and reproducible, we pin one search outcome that clears SKD009
-# on this split by stacking the earlier levers:
+# Let's go a little further in our modelling efforts in order to beat that performant
+# baseline. For that, let us stack the previous techniques we used:
 #
 # - the engineered features,
-# - an HGB with moderate capacity (learning rate, leaf size, ``l2``),
+# - an HGB with tuned parameters,
 # - :class:`~sklearn.compose.TransformedTargetRegressor` with ``log1p`` /
 #   ``expm1``, because payment totals are heavy-tailed.
 #
-# SKD009 needs a *significant* win over default HGB, not merely matching it, so
-# representation, family, and this tuned setup matter together.
+# In practice you would usually tune these knobs with
+# :class:`~sklearn.model_selection.RandomizedSearchCV` or
+# :class:`~sklearn.model_selection.GridSearchCV` from scikit-learn. To keep the
+# example short and reproducible, we pin one search outcome that beats the baseline
+# on this split.
 
 from sklearn.compose import TransformedTargetRegressor
+from skrub import ToCategorical
 
 tuned = TransformedTargetRegressor(
     regressor=make_pipeline(
         FunctionTransformer(engineer_features),
-        tabular_pipeline(
-            HistGradientBoostingRegressor(
-                learning_rate=0.05,
-                max_iter=500,
-                max_depth=5,
-                max_leaf_nodes=63,
-                min_samples_leaf=10,
-                l2_regularization=0.1,
-                random_state=42,
-            )
+        TableVectorizer(low_cardinality=ToCategorical()),
+        HistGradientBoostingRegressor(
+            learning_rate=0.05,
+            max_iter=500,
+            max_depth=5,
+            max_leaf_nodes=63,
+            min_samples_leaf=10,
+            l2_regularization=0.1,
+            random_state=42,
         ),
     ),
     func=np.log1p,
@@ -250,20 +252,16 @@ report_tuned = evaluate(tuned, X=X, y=y, splitter=splitter)
 report_tuned
 
 # %%
-# SKD009 will now mention that our model is better than an HGB baseline.
+# Our model is now significantly better than an HGB baseline, and SKD009 is still
+# reporting baseline scores for reference.
 
 report_tuned.checks.summarize()
-
-# %%
-report_tuned.metrics.summarize(data_source="both").frame()
 
 # %%
 # Conclusion
 # ==========
 #
-# SKD009 guards against estimators that underperform a strong tabular baseline.
-# Clearing it was not a single knob: feature engineering, a tree family,
-# matching HGB, *and* a tuned setup (including a log target for skewed payments)
-# together pushed past the check. Prefer starting from skrub's
-# :func:`~skrub.tabular_pipeline`, then combine features, family, and
-# hyperparameters until checks and business metrics align.
+# SKD009 informs you when your model is beaten by a simple but strong baseline.
+# We showed different approaches to address it: feature and target engineering,
+# changing model family and tuning hyperparameters to finally clear well past
+# the baseline.
