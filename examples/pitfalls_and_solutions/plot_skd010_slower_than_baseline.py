@@ -167,18 +167,6 @@ compare(
         "full_depth": report_full,
         "ridge": report_linear,
     }
-).metrics.summarize(
-    metric=["fit_time", "predict_time"],
-    data_source="test",
-).frame()
-
-# %%
-compare(
-    {
-        "large_leaves": report_constrained,
-        "full_depth": report_full,
-        "ridge": report_linear,
-    }
 ).metrics.summarize(data_source="test").frame()
 
 # %%
@@ -222,21 +210,13 @@ report_ordinal
 # %%
 compare(
     {"full_depth": report_full, "ordinal_encoder": report_ordinal}
-).metrics.summarize(
-    metric=["fit_time", "predict_time"],
-    data_source="test",
-).frame()
+).metrics.summarize(data_source="test").frame()
 
 # %%
 # The :class:`~sklearn.preprocessing.OrdinalEncoder` cuts fit time and predict
 # time. Test R² shows what that speed costs relative to the
 # :class:`~skrub.StringEncoder`.
-
-compare(
-    {"full_depth": report_full, "ordinal_encoder": report_ordinal}
-).metrics.summarize(metric=["r2"], data_source="test").frame()
-
-# %%
+#
 # Reduce model complexity
 # =======================
 #
@@ -272,15 +252,17 @@ report_leaf.metrics.summarize(
 ).frame()
 
 # %%
-# Compare fit and predict times
-# =============================
+# Compare the pipelines
+# =====================
 #
-# Fit time and test predict time for every pipeline above. Large leaves are the
-# case that raises SKD010. Full depth is slower and justified. The
-# :class:`~sklearn.preprocessing.OrdinalEncoder` and a moderate leaf limit spend
-# less time. :class:`~sklearn.linear_model.RidgeCV` is the speed reference.
+# Fit time, test predict time, and test scores for every pipeline above. Large
+# leaves are the case that raises SKD010. Full depth is slower and justified.
+# The :class:`~sklearn.preprocessing.OrdinalEncoder` and a moderate leaf limit
+# spend less time. :class:`~sklearn.linear_model.RidgeCV` is the speed
+# reference: SKD010 asks whether extra seconds buy a significant score gain
+# over that baseline.
 
-compare(
+comparison = compare(
     {
         "large_leaves": report_constrained,
         "full_depth": report_full,
@@ -288,30 +270,9 @@ compare(
         "moderate_leaves": report_leaf,
         "ridge": report_linear,
     }
-).metrics.summarize(
-    metric=["fit_time", "predict_time"],
-    data_source="test",
-).frame()
+)
+comparison.metrics.summarize(data_source="test").frame()
 
-# %%
-# Compare predictive metrics
-# ==========================
-#
-# Test scores next to the timings above. SKD010 asks whether extra seconds buy
-# a significant score gain over :class:`~sklearn.linear_model.RidgeCV`.
-
-compare(
-    {
-        "large_leaves": report_constrained,
-        "full_depth": report_full,
-        "ordinal_encoder": report_ordinal,
-        "moderate_leaves": report_leaf,
-        "ridge": report_linear,
-    }
-).metrics.summarize(
-    metric=["r2", "rmse", "mae"],
-    data_source="test",
-).frame()
 
 # %%
 # Conclusion
