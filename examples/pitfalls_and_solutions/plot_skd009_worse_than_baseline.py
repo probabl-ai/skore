@@ -9,8 +9,8 @@ This example walks through mitigations when check
 :func:`~skrub.tabular_pipeline` baseline (gradient boosting on vectorized
 data) and flags estimators that are significantly worse on default metrics.
 
-Mitigations from the :ref:`automated_checks` user guide, in the order we try
-them here:
+Mitigations from the :ref:`user guide <skd009-worse-than-baseline>`, in the order
+we try them here:
 
 - revisit feature engineering and preprocessing,
 - check whether the model family is appropriate,
@@ -79,8 +79,8 @@ report_ridge = evaluate(tabular_pipeline(Ridge()), X=X, y=y, splitter=splitter)
 report_ridge
 
 # %%
-# Find ``SKD009`` in the Tips tab below: the Ridge pipeline should report
-# worse-than-baseline performance on a majority of metrics.
+# Find ``SKD009`` in the Tips tab below: the Ridge pipeline reports worse-than-baseline
+# performance on a majority of metrics.
 
 report_ridge.checks.summarize()
 
@@ -102,8 +102,8 @@ report_ridge.checks.summarize()
 # needs to be computed and stored during training, we can safely use a
 # :class:`~sklearn.preprocessing.FunctionTransformer`.
 #
-# We also break down the `tabular_pipeline` into its components (vectorization of data,
-# missing value imputation and scaling) to keep the `Pipeline` flat.
+# We also break down the :func:`~skrub.tabular_pipeline` into its components (vectorization of data,
+# missing value imputation and scaling) to keep the :class:`~sklearn.pipeline.Pipeline` flat.
 
 import numpy as np
 from sklearn.impute import SimpleImputer
@@ -150,9 +150,9 @@ report_ridge_fe.checks.summarize()
 # %%
 # Change model family: try a tree-based model
 # ===========================================
-
+#
 # If nonlinearity and interactions matter, trees should close much of the gap.
-# Compare a :class:`~sklearn.ensemble.RandomForestRegressor` pipeline to the
+# Let's compare a :class:`~sklearn.ensemble.RandomForestRegressor` pipeline to the
 # engineered Ridge on the same split.
 
 from sklearn.ensemble import RandomForestRegressor
@@ -204,10 +204,10 @@ report_hgb = evaluate(
     y=y,
     splitter=splitter,
 )
-report_hgb.checks.summarize()
+report_hgb
 
 # %%
-report_hgb.metrics.summarize().frame()
+report_hgb.checks.summarize()
 
 # %%
 # Combine levers: features, HGB, and a log target
