@@ -1,10 +1,11 @@
 import pytest
 from sklearn.datasets import make_classification
-from sklearn.linear_model import LogisticRegression
+from sklearn.linear_model import LogisticRegression, Ridge
 
 from skore import evaluate
-from skore._externals._sklearn_compat import convert_container
-from skore._sklearn._checks.model_checks import CheckUnderrepresentedClasses
+from skore._checks.skd005_underrepresented_classes import CheckUnderrepresentedClasses
+from skore._checks.utils import CheckNotApplicable
+from skore._externals.sklearn_compat import convert_container
 
 
 @pytest.mark.parametrize("report_type", ["estimator", "cross-validation"])
@@ -55,3 +56,14 @@ def test_detects_underrepresented_classes(report_type, x_container, y_container)
     explanation = CheckUnderrepresentedClasses().check_function(report)
     assert explanation is not None
     assert "Accuracy should not be used alone" in explanation
+
+
+@pytest.mark.parametrize("report_type", ["estimator", "cross-validation"])
+def test_not_applicable_for_non_multiclass_task(report_type, regression_data):
+    """SKD005 raises CheckNotApplicable when ML task is not multiclass."""
+    X, y = regression_data
+    report = evaluate(Ridge(), X, y, splitter=0.2 if report_type == "estimator" else 3)
+    with pytest.raises(
+        CheckNotApplicable, match="ML task is not multiclass classification"
+    ):
+        CheckUnderrepresentedClasses().check_function(report)

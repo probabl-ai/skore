@@ -27,6 +27,7 @@ if TYPE_CHECKING:
 
     class Metadata(TypedDict):  # noqa: D101
         id: str
+        report_id: str | None
         key: str
         date: str
         learner: str
@@ -294,6 +295,7 @@ class Project:
             # - `metrics`: computes the metrics
             # - `medias`: computes and uploads displays/artifacts to artifact storage
             # - `pickle`: pickles and uploads the report to artifact storage
+            # - `environment`: snapshots inferred requirements (forced last)
             # `payload_dict` does not contain artifact bytes; it contains artifact
             # metadata including the bytes' checksum, which is used as identifier.
             payload_json_bytes = dumps(payload_dict)
@@ -366,6 +368,7 @@ class Project:
 
             return {
                 "id": summary["urn"],
+                "report_id": summary.get("canonical_report_id"),
                 "key": summary["key"],
                 "date": summary["created_at"],
                 "learner": summary["estimator_class_name"],

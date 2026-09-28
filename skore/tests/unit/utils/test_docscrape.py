@@ -2,7 +2,7 @@
 
 import functools
 
-from skore._externals._docscrape import Parameter
+from skore._externals.docscrape import Parameter
 from skore._utils.docscrape import (
     build_numpy_docstring,
     callable_docstring,

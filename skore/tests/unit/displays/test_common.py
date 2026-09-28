@@ -5,7 +5,7 @@ from sklearn.model_selection import train_test_split
 
 import skore
 from skore import EstimatorReport
-from skore._sklearn._plot.base import Display, DisplayMixin
+from skore._displays.base import Display, DisplayMixin
 
 DISPLAY_CLASSES = [
     getattr(skore, name)

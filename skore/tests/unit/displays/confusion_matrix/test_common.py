@@ -6,7 +6,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.svm import SVC
 
 from skore import evaluate
-from skore._sklearn._plot import ConfusionMatrixDisplay
+from skore._displays import ConfusionMatrixDisplay
 
 _NORMALIZED_COLUMNS = [
     "normalized_by_true",

@@ -18,12 +18,12 @@ from sklearn.datasets import make_classification
 from sklearn.decomposition import PCA
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import precision_score, recall_score
+from sklearn.metrics import make_scorer, precision_score, r2_score, recall_score
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import make_pipeline
 
 from skore import EstimatorReport, MetricsSummaryDisplay
-from skore._utils._testing import check_cache_changed, check_cache_unchanged
+from skore._utils.testing import check_cache_changed, check_cache_unchanged
 
 
 def check_display_structure(
@@ -132,7 +132,7 @@ def test_default_multiclass_classification_forest(
         expected_average={"macro"},
     )
 
-    assert "precision_macro" in report.metrics.available()
+    assert "precision_avg" in report.metrics.available()
 
     assert display.summary["output"].isna().all()
     data = display.summary.set_index("verbose_name")
@@ -140,6 +140,22 @@ def test_default_multiclass_classification_forest(
     assert len(per_label) == 3
     assert len(data.loc["Recall"].dropna(subset=["label"])) == 3
     assert set(per_label["label"]) == {0, 1, 2}
+
+
+def test_name_is_registry_key(forest_multiclass_classification_with_test):
+    """Rows are named after the registry key, for built-in and custom metrics alike."""
+    estimator, X_test, y_test = forest_multiclass_classification_with_test
+    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
+    report.metrics.add(
+        make_scorer(precision_score, average="weighted"), name="precision_weighted"
+    )
+
+    names = set(report.metrics.summarize().summary["name"])
+
+    # `score` is the only registered metric that `summarize` skips here, because
+    # RandomForestClassifier uses the default `ClassifierMixin.score`.
+    assert names == set(report.metrics.available()) - {"score"}
+    assert {"precision", "precision_avg", "precision_weighted"} <= names
 
 
 def test_default_multiclass_classification_svc(svc_multiclass_classification_with_test):
@@ -215,6 +231,36 @@ def test_default_multioutput_regression(linear_regression_multioutput_with_test)
     assert len(data.loc["R²", "output"]) == 2
     assert len(data.loc["RMSE", "output"]) == 2
     assert set(data.loc["R²", "output"]) == {0, 1}
+
+
+@pytest.mark.parametrize(
+    "multioutput, expected_average",
+    [
+        ("raw_values", None),
+        ("uniform_average", "uniform_average"),
+        ("variance_weighted", "variance_weighted"),
+        ([0.3, 0.7], "weighted"),
+        (np.array([0.3, 0.7]), "weighted"),
+    ],
+)
+def test_multioutput_regression_average(
+    linear_regression_multioutput_with_test, multioutput, expected_average
+):
+    """`multioutput` aggregation modes are reported in the `average` column."""
+    estimator, X_test, y_test = linear_regression_multioutput_with_test
+    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
+    report.metrics.add(make_scorer(r2_score, multioutput=multioutput), name="r2_custom")
+
+    data = report.metrics.summarize().summary
+    rows = data[data["name"] == "r2_custom"]
+
+    if expected_average is None:
+        assert set(rows["output"]) == {0, 1}
+        assert rows["average"].isna().all()
+    else:
+        assert len(rows) == 1
+        assert rows["output"].isna().all()
+        assert rows["average"].iloc[0] == expected_average
 
 
 def test_default_without_predict_proba(custom_classifier_no_predict_proba_with_test):

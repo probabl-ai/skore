@@ -4,7 +4,8 @@ from functools import partial
 import pytest
 import sklearn.metrics
 
-from skore._sklearn.metrics import Metric
+import skore._utils.repr.data as data_module
+from skore._metrics import Metric
 from skore._utils.docscrape import docstring_summary
 
 
@@ -55,6 +56,77 @@ def test_help_custom_metric(report, capsys):
     # "Custom metric." was the previous hardcoded help fallback; ensure it does not
     # reappear when a docstring-derived description is available.
     assert "Custom metric." not in stdout
+    # Registry callables are separated from registry management and displays.
+    assert "Registry" in stdout
+    assert "Metrics" in stdout
+    assert "Displays" in stdout
+
+
+def test_help_groups_separate_registry_metrics_displays(report):
+    """Help data partitions methods into Registry / Metrics / Displays groups.
+
+    Registry callables (and custom metrics) land in Metrics; management helpers
+    in Registry; ordered display helpers in Displays.
+    """
+
+    def custom(e, X, y):
+        """Custom score used in groups."""
+        return 1
+
+    report.metrics.add(custom)
+
+    help_data = report.metrics._build_help_data()
+    assert help_data.groups is not None
+    by_name = {
+        group.name: [m.name for m in group.methods] for group in help_data.groups
+    }
+    assert list(by_name) == ["Registry", "Metrics", "Displays"]
+
+    assert by_name["Registry"] == ["available", "add", "remove", "get"]
+    assert "custom" in by_name["Metrics"]
+    assert "r2" in by_name["Metrics"]
+    assert by_name["Displays"][0] == "summarize"
+    assert "custom" not in by_name["Displays"]
+    assert "available" not in by_name["Displays"]
+    # Registry callables come before static score helpers in Metrics.
+    assert by_name["Metrics"].index("custom") < by_name["Metrics"].index("timings")
+
+
+def test_help_groups_cover_every_method(report):
+    """Every method shown in the metrics help belongs to exactly one group."""
+
+    def custom(e, X, y):
+        """Custom score used in groups."""
+        return 1
+
+    report.metrics.add(custom)
+
+    help_data = report.metrics._build_help_data()
+    grouped_names = [m.name for group in help_data.groups for m in group.methods]
+
+    assert sorted(grouped_names) == sorted(m.name for m in help_data.methods)
+    assert len(grouped_names) == len(set(grouped_names))
+
+
+def test_help_groups_computed_once(report, monkeypatch):
+    """Registry metrics are grouped in a single pass, not grouped then regrouped."""
+    calls = []
+    original = data_module._build_method_groups
+
+    def counting(*args, **kwargs):
+        calls.append(args)
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr(data_module, "_build_method_groups", counting)
+    report.metrics._build_help_data()
+
+    assert len(calls) == 1
+
+
+def test_help_groups_are_expanded_by_default(report):
+    """HTML help unfolds Registry / Metrics / Displays without an extra click."""
+    html = report.metrics._create_help_html()
+    assert html.count('<input type="checkbox" class="toggle" checked>') >= 3
 
 
 def test_help_builtin_metric_description(report):

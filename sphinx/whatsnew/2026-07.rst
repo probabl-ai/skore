@@ -1,0 +1,148 @@
+What's new in skore — July 2026
+================================
+
+`summarize().frame()` is now a long-format table
+--------------------------------------------------
+
+The default format of :meth:`~skore.EstimatorReport.metrics.summarize`'s :meth:`~skore.Summary.frame` is now long-format rather than wide-format. It is now easier to retrieve data from the default DataFrame since its index is no longer a :class:`pandas.MultiIndex`. See :pr:`3094` by :user:`glemaitre`.
+
+.. code-block:: python
+
+    metrics = report.metrics.summarize().frame()
+
+    # before
+    metrics.loc["Accuracy"].iloc[0, 0]
+
+    # after
+    metrics.loc["accuracy"]
+
+`metrics.summarize()` now catches failing metrics
+--------------------------------------------------
+
+:meth:`~skore.EstimatorReport.metrics.summarize` no longer aborts the whole computation if one of the
+metrics raised (e.g. if a custom scorer encounters an edge case). Instead, exceptions are
+caught and shown as warnings, and the output DataFrame has `NaN` for failed metrics. See
+:pr:`3124` by :user:`auguste-probabl`.
+
+.. code-block:: python
+
+    def fail(y_true, y_pred):
+        return 1 / 0
+
+    report.metrics.add(fail)
+    report.metrics.summarize().frame()
+    # # before
+    # ZeroDivisionError: division by zero
+    #
+    # # after
+    # UserWarning: Metric 'fail' has failed: ZeroDivisionError('division by zero')
+    # fail                 NaN
+    # accuracy        0.925000
+    # precision_0     1.000000
+    # ...
+
+Custom metric methods are now shown in `.help()`
+--------------------------------------------------
+
+Metrics added via :meth:`~skore.EstimatorReport.metrics.add` were invisible to :meth:`~skore.EstimatorReport.metrics.help`, since they are defined dynamically. They are now listed alongside the built-ins. See :pr:`3139` by :user:`auguste-probabl`.
+
+.. code-block:: python
+
+    report.metrics.add(lambda estimator, X, y: 1, name="custom")
+    report.metrics.help()
+    # ╭────────────────────────────────── Metrics accessor ──────────────────────────────────╮
+    # │ EstimatorReport                                                                      │
+    # │ └── .metrics                                                                         │
+    # │     ├── .accuracy(...)             - Accuracy classification score.                  │
+    # │     ...                                                                              │
+    # │     ├── .custom(...)               - Custom                                          │
+    # │     ...                                                                              │
+
+Pipelines no longer get a spurious `score` metric in the summary
+--------------------------------------------------------------------
+
+skore used to always include a `score` metric in the summary sklearn :class:`~sklearn.pipeline.Pipeline` estimators.
+It now inspects the Pipeline's last step to recover the default `score`. See :pr:`3110` by :user:`jeromedockes`.
+
+.. code-block:: python
+
+    report = skore.evaluate(make_pipeline(PCA(), RandomForestClassifier()), X, y)
+    report.metrics.summarize().frame(flat_index=False, verbose_name=True)
+    # # before
+    # Score        ...
+    # Accuracy     ...
+    # ...
+    #
+    # # after
+    # Accuracy     ...
+    # ...
+
+`prediction_error(data_source="both")` is now officially supported
+------------------------------------------------------------------------
+
+:meth:`~skore.CrossValidationReport.metrics.prediction_error` with ``data_source="both"`` has worked for a long time, but it was not documented, and in fact its legend was broken. This is now fixed. See :pr:`3154` by :user:`direkkakkar319-ops`.
+
+`CrossValidationReport.metrics.summarize()` no longer crashes with `n_jobs` set
+------------------------------------------------------------------------------------
+
+Computing a summary with process-based parallelism (`n_jobs > 1`) used to trigger infinite recursion in :meth:`~skore.CrossValidationReport.metrics.summarize`. See :pr:`3178` by :user:`glemaitre`.
+
+Baseline checks now support multi-output regression
+--------------------------------------------------------
+
+Appropriate dummy/fast/performance baselines have been added to support this ML task. See :pr:`3116` by :user:`GaetandeCast`.
+
+.. code-block:: python
+
+    report = skore.evaluate(DummyRegressor(), X, y_multioutput, splitter=3)
+    report.checks.summarize().frame(section="issue")["code"]
+    # # before
+    # CheckNotApplicable: Unsupported ML task. Supported tasks are: binary-classification,
+    # multiclass-classification, regression. Got multioutput-regression.
+    #
+    # # after
+    # 1    SKD002   # underfits vs. baseline
+    # 8    SKD009   # worse than baseline
+
+`report.checks` no longer loses column names after preprocessing
+--------------------------------------------------------------------
+
+When a sklearn :class:`~sklearn.pipeline.Pipeline`'s preprocessing output a plain numpy array, the data-quality checks used generic column labels in their explanations. Column names are now retrieved from the pipeline's final step, so check explanations are clearer. See :pr:`3155` by :user:`GaetandeCast`.
+
+.. code-block:: python
+
+    report = skore.evaluate(
+        make_pipeline(StandardScaler(), LinearRegression()),
+        pd.DataFrame(X, columns=["col_0", "col_1", "col_2"]),
+        y,
+    )
+    report.checks.summarize()
+    # # before
+    # "A model trained on feature(s) ['Feature 0', 'Feature 1'] alone has similar
+    # performance to a model trained on all the features..."
+    #
+    # # after
+    # "A model trained on feature(s) ['col_0', 'col_1'] alone has similar
+    # performance to a model trained on all the features..."
+
+`project.put()` is now faster for reports with plots
+----------------------------------------------------------
+
+:meth:`~skore.Project.put` no longer computes SVGs for skrub `TableReport` plots, thanks to improvements in skrub 0.10. This makes it up to 35% faster. Note that the minimum supported version of skrub is now 0.10. See :pr:`3138` by :user:`auguste-probabl`.
+
+`project.summarize()` no longer silently truncates the list of reports
+----------------------------------------------------------------------------
+
+Listing reports from the Hub now returns all reports, rather than the 500 first ones, via :meth:`~skore.Project.summarize`. See :pr:`3125` and :pr:`3164` by :user:`thomass-dev`.
+
+----
+
+Thanks to the following contributors for their work this month (in no particular order):
+
+- :user:`glemaitre`
+- :user:`thomass-dev`
+- :user:`GaetandeCast`
+- :user:`auguste-probabl`
+- :user:`jeromedockes`
+- :user:`direkkakkar319-ops`
+- :user:`rouk1`

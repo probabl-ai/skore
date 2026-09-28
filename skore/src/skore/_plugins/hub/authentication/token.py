@@ -3,10 +3,11 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
+from os import close, devnull, dup, dup2
 from threading import RLock
 from time import sleep
 from urllib.parse import urljoin
-from webbrowser import open as open_webbrowser
+from webbrowser import open as _open_webbrowser
 
 from httpx import HTTPStatusError, TimeoutException
 from rich.align import Align
@@ -15,6 +16,34 @@ from rich.panel import Panel
 
 from skore import console
 from skore._plugins.hub.authentication.uri import URI
+
+
+def open_webbrowser(url: str) -> None:
+    """
+    Open ``url`` in a browser, keeping the browser's own output off the terminal.
+
+    ``webbrowser`` launches some browsers, such as ``xdg-open``, without redirecting the
+    child's stdio. Messages like ``Gtk-Message`` then land in the middle of a ``rich``
+    ``Live`` region and desynchronize its cursor bookkeeping, which leaves a stale panel
+    border behind on the next refresh.
+
+    Point the file descriptors the child inherits at ``os.devnull`` for the duration of
+    the call, rather than spawning the browser here, so that ``BROWSER`` and the
+    standard ``webbrowser`` resolution order keep working.
+    """
+    with open(devnull, "wb") as null:
+        stdout, stderr = dup(1), dup(2)
+
+        try:
+            dup2(null.fileno(), 1)
+            dup2(null.fileno(), 2)
+
+            _open_webbrowser(url)
+        finally:
+            dup2(stdout, 1)
+            dup2(stderr, 2)
+            close(stdout)
+            close(stderr)
 
 
 def get_oauth_device_login(success_uri: str | None = None) -> tuple[str, str, str]:

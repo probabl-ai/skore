@@ -12,7 +12,7 @@ from sklearn.datasets import make_regression
 from sklearn.linear_model import LinearRegression, Ridge
 
 from skore import EstimatorReport, Project, evaluate
-from skore._project._summary import Summary
+from skore._project.summary import Summary
 
 
 class FakeClient(Client):

@@ -1,12 +1,14 @@
 import numpy as np
+import pandas as pd
 import pytest
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.linear_model import LinearRegression
-from sklearn.pipeline import Pipeline
+from sklearn.pipeline import make_pipeline
+from skrub import tabular_pipeline
 
 from skore import evaluate
-from skore._sklearn._checks._utils import CheckNotApplicable
-from skore._sklearn._checks.model_checks import CheckMDIHighCardinalityBias
+from skore._checks.skd007_mdi_high_cardinality_bias import CheckMDIHighCardinalityBias
+from skore._checks.utils import CheckNotApplicable
 
 
 @pytest.mark.parametrize("report_type", ["estimator", "cross-validation"])
@@ -14,12 +16,14 @@ from skore._sklearn._checks.model_checks import CheckMDIHighCardinalityBias
     "estimator",
     [
         RandomForestRegressor(n_estimators=5, random_state=0),
-        Pipeline([("rf", RandomForestRegressor(n_estimators=5, random_state=0))]),
+        make_pipeline(RandomForestRegressor(n_estimators=5, random_state=0)),
+        tabular_pipeline(RandomForestRegressor(n_estimators=5, random_state=0)),
     ],
 )
 def test_mdi_bias_with_high_cardinality(report_type, regression_data, estimator):
     """SKD007 tip is emitted with continuous features and tree importances."""
     X, y = regression_data
+    X = pd.DataFrame(X, columns=[f"Feature {i}" for i in range(X.shape[1])])
     report = evaluate(
         estimator, X, y, splitter=0.2 if report_type == "estimator" else 3
     )
