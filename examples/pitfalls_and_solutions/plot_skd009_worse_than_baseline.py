@@ -82,7 +82,7 @@ report_ridge
 # Find ``SKD009`` in the Tips tab below: the Ridge pipeline should report
 # worse-than-baseline performance on a majority of metrics.
 
-report_ridge.checks.summarize(fast_mode=True)
+report_ridge.checks.summarize()
 
 # %%
 report_ridge.metrics.summarize(data_source="both").frame()
