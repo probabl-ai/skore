@@ -27,6 +27,7 @@ from skore._utils.accessor import (
 from skore._utils.fixes import _validate_joblib_parallel_params
 from skore._utils.parallel import delayed
 from skore._utils.progress_bar import track
+from skore._utils.repr.paginated_metrics import metrics_summary_html
 
 DataSource = Literal["test", "train", "both"]
 
@@ -141,14 +142,9 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
 
     def _repr_html_(self) -> str:
         frame = self._formatted_summary_frame()
-        html = (
-            frame.to_frame()._repr_html_()
-            if isinstance(frame, pd.Series)
-            else frame._repr_html_()
-        )
         return (
             "<p>Metrics summary:</p>"
-            f"{html}"
+            f"{metrics_summary_html(frame, inline_assets=True)}"
             '<p role="note">Explore available methods with '
             "<code>.help()</code>.</p>"
         )

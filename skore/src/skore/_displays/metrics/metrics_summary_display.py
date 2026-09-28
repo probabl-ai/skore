@@ -11,6 +11,7 @@ from skore._displays.base import DisplayMixin
 from skore._metrics.metrics import _to_verbose
 from skore._sklearn.types import Aggregate
 from skore._utils.index import flatten_multi_index, squeeze_single_column
+from skore._utils.repr.paginated_metrics import metrics_summary_html
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -524,13 +525,8 @@ class MetricsSummaryDisplay(DisplayMixin):
             verbose_name=True,
             flat_index=False,
         )
-        html = (
-            frame.to_frame()._repr_html_()
-            if isinstance(frame, pd.Series)
-            else frame._repr_html_()
-        )
         lines = [
-            html,
+            metrics_summary_html(frame, inline_assets=True),
             (
                 '<p role="note">Use <code>.frame()</code> to control the format'
                 " of the output.</p>"
