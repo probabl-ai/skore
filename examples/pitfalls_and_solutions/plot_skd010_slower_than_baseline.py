@@ -18,8 +18,8 @@ following hold:
   default predictive metrics.
 
 The issue is paying for latency without a significant quality premium. A clear
-quality gain over RidgeCV keeps the check quiet. So does a model that is
-already about as fast as the baseline.
+quality gain over :class:`~sklearn.linear_model.RidgeCV` keeps the check quiet.
+So does a model that is already about as fast as the baseline.
 
 Responses tried below, in order:
 
@@ -28,19 +28,23 @@ Responses tried below, in order:
 - switch to the fast linear baseline when quality is sufficient,
 - profile fit time to understand the dominant cost.
 
-We use the employee salaries dataset with a heavy random forest inside
-:func:`~skrub.tabular_pipeline`. The goal is either to match RidgeCV quality at
-lower cost, or to shrink fit time until the speed gap is no longer unjustified.
+We use the employee salaries dataset with a heavy
+:class:`~sklearn.ensemble.RandomForestRegressor` inside
+:func:`~skrub.tabular_pipeline`. The goal is either to match
+:class:`~sklearn.linear_model.RidgeCV` quality at lower cost, or to shrink fit
+time until the speed gap is no longer unjustified.
 """
 
 # %%
 # Load the employee salaries dataset
 # ==================================
 #
-# :func:`skrub.datasets.fetch_employee_salaries` returns human-resources records
-# with mixed categorical and numeric fields. A 200-tree random forest inside
-# ``tabular_pipeline`` trains slowly yet often fails to beat the fast RidgeCV
-# baseline on test scores. SKD010 is a slow check.
+# :func:`~skrub.datasets.fetch_employee_salaries` returns human-resources
+# records with mixed categorical and numeric fields. A 200-tree
+# :class:`~sklearn.ensemble.RandomForestRegressor` inside
+# :func:`~skrub.tabular_pipeline` trains slowly yet often fails to beat
+# the fast :class:`~sklearn.linear_model.RidgeCV` baseline on test scores.
+# SKD010 is a slow check.
 
 from skrub.datasets import fetch_employee_salaries
 
@@ -72,7 +76,8 @@ splitter = TrainTestSplit(test_size=0.2, random_state=42)
 #
 # One hundred trees that must keep 100 training rows in every leaf barely
 # split. :func:`~skrub.tabular_pipeline` still encodes the high-cardinality
-# strings, so the fit stays much slower than RidgeCV, and the test scores lose
+# strings, so the fit stays much slower than :class:`~sklearn.linear_model.RidgeCV`,
+# and the test scores lose
 # the quality premium a forest can have on this table.
 
 from sklearn.ensemble import RandomForestRegressor
@@ -95,14 +100,20 @@ report_constrained = evaluate(
 report_constrained
 
 # %%
-# ``SKD010`` is in the issues below: fit time is several times the RidgeCV
-# baseline, and the test scores are not significantly better.
+# ``SKD010`` is in the issues below: fit time is several times the
+# :class:`~sklearn.linear_model.RidgeCV` baseline, and the test scores are not
+# significantly better.
 
 report_constrained.checks.summarize()
 
 # %%
-# Fit the fast linear baseline on the same split. The next two tables are the
-# two gates: fit time and test predict time, then the predictive scores.
+# Fit the fast linear baseline
+# ============================
+#
+# :class:`~sklearn.linear_model.RidgeCV` inside :func:`~skrub.tabular_pipeline`
+# is the reference skore uses for regression speed. This pipeline is the baseline
+# SKD010 compares against, fit on the same split as the forest above.
+
 from sklearn.linear_model import RidgeCV
 
 report_linear = evaluate(
@@ -121,7 +132,8 @@ compare({"large_leaves": report_constrained, "ridge": report_linear}).metrics.su
 ).frame()
 
 # %%
-# Fit time clears the 2x / 1s gate. R², RMSE, and MAE stay close to RidgeCV,
+# Fit time clears the 2x / 1s gate. R², RMSE, and MAE stay close to
+# :class:`~sklearn.linear_model.RidgeCV`,
 # short of ``max(0.01, 0.05 * |baseline|)`` on a majority of the default
 # predictive metrics. That is the warning.
 
@@ -130,7 +142,8 @@ compare({"large_leaves": report_constrained, "ridge": report_linear}).metrics.su
 # ============================
 #
 # Drop the leaf limit and keep the same 100 trees. The fit gets slower. The
-# test scores move far enough ahead of RidgeCV that SKD010 passes.
+# test scores move far enough ahead of :class:`~sklearn.linear_model.RidgeCV`
+# that SKD010 passes.
 
 report_full = evaluate(
     tabular_pipeline(
@@ -177,8 +190,9 @@ compare(
 # =====================
 #
 # Sometimes you can spend less time before touching the forest. Drop a column you do not
-# need: ``date_first_hired`` repeats ``year_first_hired``, and a string encoder still
-# has to run on its thousands of distinct dates. Or keep the columns and pick a cheaper
+# need: ``date_first_hired`` repeats ``year_first_hired``, and a
+# :class:`~skrub.StringEncoder` still has to run on its thousands of distinct
+# dates. Or keep the columns and pick a cheaper
 # encoder. A tree can split on category codes, so an
 # :class:`~sklearn.preprocessing.OrdinalEncoder` is enough for the high-cardinality
 # strings that :func:`~skrub.tabular_pipeline` otherwise sends to
@@ -214,8 +228,9 @@ compare(
 ).frame()
 
 # %%
-# The ordinal encoder cuts fit time and predict time. Test R² shows what that
-# speed costs relative to the string encoder.
+# The :class:`~sklearn.preprocessing.OrdinalEncoder` cuts fit time and predict
+# time. Test R² shows what that speed costs relative to the
+# :class:`~skrub.StringEncoder`.
 
 compare(
     {"full_depth": report_full, "ordinal_encoder": report_ordinal}
@@ -227,7 +242,8 @@ compare(
 #
 # Keep the 100 trees and the full depth, and stop splits that would leave a
 # leaf with fewer than 20 training rows. ``min_samples_leaf`` shortens each
-# tree, which cuts fit time and predict time on the string-encoder pipeline.
+# tree, which cuts fit time and predict time on the
+# :class:`~skrub.StringEncoder` pipeline.
 
 report_leaf = evaluate(
     tabular_pipeline(
@@ -260,9 +276,9 @@ report_leaf.metrics.summarize(
 # =============================
 #
 # Fit time and test predict time for every pipeline above. Large leaves are the
-# case that raises SKD010. Full depth is slower and justified. The ordinal
-# encoder and a moderate leaf limit spend less time. RidgeCV is the speed
-# reference.
+# case that raises SKD010. Full depth is slower and justified. The
+# :class:`~sklearn.preprocessing.OrdinalEncoder` and a moderate leaf limit spend
+# less time. :class:`~sklearn.linear_model.RidgeCV` is the speed reference.
 
 compare(
     {
@@ -282,7 +298,7 @@ compare(
 # ==========================
 #
 # Test scores next to the timings above. SKD010 asks whether extra seconds buy
-# a significant score gain over RidgeCV.
+# a significant score gain over :class:`~sklearn.linear_model.RidgeCV`.
 
 compare(
     {
@@ -301,8 +317,10 @@ compare(
 # Conclusion
 # ==========
 #
-# A usual forest can be slower than RidgeCV and still pass SKD010 when test
-# scores are significantly better. A cheaper high-cardinality encoder, or
-# dropping a redundant column such as ``date_first_hired``, cuts that cost.
+# A usual forest can be slower than :class:`~sklearn.linear_model.RidgeCV` and
+# still pass SKD010 when test scores are significantly better. A cheaper
+# high-cardinality encoder, such as :class:`~sklearn.preprocessing.OrdinalEncoder`,
+# or dropping a redundant column such as ``date_first_hired``, cuts that cost.
 # ``min_samples_leaf`` shrinks the trees while keeping the same number of
-# trees. RidgeCV remains the speed reference when a linear model is enough.
+# trees. :class:`~sklearn.linear_model.RidgeCV` remains the speed reference when
+# a linear model is enough.
