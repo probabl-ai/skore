@@ -111,10 +111,6 @@ def test_skrub_learner_matches_sklearn_pipeline():
         make_pipeline(StandardScaler(), Ridge()), X, y, splitter=3
     )
     pd.testing.assert_frame_equal(
-        skrub_report.inspection.coefficients().frame(
-            aggregate=None, scale_features=True
-        ),
-        sklearn_report.inspection.coefficients().frame(
-            aggregate=None, scale_features=True
-        ),
+        skrub_report.inspection.coefficients().frame(aggregate=None),
+        sklearn_report.inspection.coefficients().frame(aggregate=None),
     )

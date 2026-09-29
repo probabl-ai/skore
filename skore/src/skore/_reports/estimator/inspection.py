@@ -26,7 +26,7 @@ from skore._utils.cache_key import make_cache_key
 from skore._utils.skrub import (
     _XNodeEstimatorAdapter,
     get_predictor_and_input,
-    resolve_fitted_estimator,
+    resolve_fitted_predictor,
 )
 
 
@@ -39,18 +39,18 @@ class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
     def __init__(self, parent: EstimatorReport) -> None:
         super().__init__(parent)
 
-    def _get_estimator_input(self, data: dict | None):
-        """Return the input of the scikit-learn estimator behind the report.
+    def _get_estimator_and_input(self, data: dict | None):
+        """Return the scikit-learn estimator to inspect and its input on ``data``.
 
-        For a skrub learner, this is the output of the DataOp graph upstream of the
-        supervised ``.skb.apply`` step, evaluated on ``data``.
+        For a skrub learner, this is the final predictor and the features it sees.
         """
+        estimator = self._parent.estimator_
+        if not self._parent._initialized_with_data_op:
+            return estimator, None if data is None else data["_skrub_X"]
         if data is None:
-            return None
-        if self._parent._initialized_with_data_op:
-            X, _ = get_predictor_and_input(self._parent.estimator_, data)
-            return X
-        return data["_skrub_X"]
+            return resolve_fitted_predictor(estimator), None
+        X, predictor = get_predictor_and_input(estimator, data)
+        return predictor, X
 
     @available_if(_check_estimator_has_coef())
     def coefficients(self) -> CoefficientsDisplay:
@@ -90,11 +90,12 @@ class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         10  Feature #9      102.2...
         >>> display.plot() # shows plot
         """
+        estimator, X = self._get_estimator_and_input(self._parent.train_data)
         return CoefficientsDisplay._compute_data_for_display(
-            estimator=self._parent.estimator_,
+            estimator=estimator,
             name=self._parent.estimator_name_,
             report_type=self._parent._report_type,
-            X=self._get_estimator_input(self._parent.train_data),
+            X=X,
         )
 
     @available_if(_check_estimator_has_feature_importances())
@@ -134,10 +135,12 @@ class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         3  Feature #3     0.48...
         4  Feature #4     0.00...
         """
+        estimator, X = self._get_estimator_and_input(self._parent.train_data)
         return ImpurityDecreaseDisplay._compute_data_for_display(
-            estimator=self._parent.estimator_,
+            estimator=estimator,
             name=self._parent.estimator_name_,
             report_type=self._parent._report_type,
+            X=X,
         )
 
     def permutation_importance(
@@ -186,12 +189,10 @@ class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
 
             If a string, will be searched among the pipeline's `named_steps`.
 
-            Has no effect if the estimator is neither a
-            :class:`~sklearn.pipeline.Pipeline` nor a :class:`~skrub.SkrubLearner`.
-
-            If the estimator is a :class:`~skrub.SkrubLearner`, only 0 (the
-            importance of the ``X`` node features) and -1 (the importance of the
-            features seen by the final predictor) are supported.
+            For a :class:`~skrub.SkrubLearner`, only 0 (the importance of the ``X``
+            node features) and -1 (the importance of the features seen by the final
+            predictor) are supported. Has no effect for any other estimator that
+            is not a :class:`~sklearn.pipeline.Pipeline`.
 
         metric : str, callable, scorer, or list of such instances or dict of such \
                 instances, default=None
@@ -348,6 +349,7 @@ class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         # earlier.
         display = None if seed is None else self._parent._cache.get(cache_key)
         if display is None:
+            display_at_step = at_step
             if not self._parent._initialized_with_data_op:
                 estimator, X = self._parent.estimator_, data_["_skrub_X"]
             elif at_step == 0:
@@ -355,9 +357,9 @@ class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
                 estimator = _XNodeEstimatorAdapter(self._parent.estimator_, data_)
                 X = data_["_skrub_X"]
             elif at_step == -1:
-                # permute the input of the final predictor
-                estimator = resolve_fitted_estimator(self._parent.estimator_)
-                X = self._get_estimator_input(data_)
+                # the predictor input is already preprocessed
+                estimator, X = self._get_estimator_and_input(data_)
+                display_at_step = 0
             else:
                 raise ValueError(
                     "at_step must be 0 or -1 when the estimator is a skrub learner; "
@@ -369,7 +371,7 @@ class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
                 name=self._parent.estimator_name_,
                 X=X,
                 y=y_true,
-                at_step=at_step,
+                at_step=display_at_step,
                 metric=metric,
                 n_repeats=n_repeats,
                 max_samples=max_samples,

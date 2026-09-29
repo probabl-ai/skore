@@ -3,12 +3,18 @@ from __future__ import annotations
 import functools
 from typing import TYPE_CHECKING, Any, TypeGuard
 
+import narwhals as nw
+import numpy as np
+import pandas as pd
+import scipy.sparse as sp
 from sklearn.base import BaseEstimator
 from sklearn.pipeline import Pipeline
 from sklearn.utils.validation import NotFittedError, check_is_fitted
 from skrub import DataOp, as_data_op
 from skrub._data_ops._data_ops import Apply
 from skrub._data_ops._evaluation import _DataOpTraversal, find_first_apply
+
+from skore._sklearn.feature_names import _get_feature_names
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -97,19 +103,14 @@ def ensure_single_supervised_apply(data_op: DataOp) -> None:
         )
 
 
-def fitted_estimator_from_apply(apply_node: Apply) -> BaseEstimator:
-    """Return the estimator fitted in ``apply_node``, as is (possibly a Pipeline)."""
+def fitted_predictor_from_apply(apply_node: Apply) -> BaseEstimator:
     impl = apply_node._skrub_impl
     if not hasattr(impl, "estimator_"):
         raise NotFittedError(
             "The skrub learner has not been fitted. Call fit() before inspecting "
             "fitted sub-estimators."
         )
-    return impl.estimator_
-
-
-def fitted_predictor_from_apply(apply_node: Apply) -> BaseEstimator:
-    predictor = fitted_estimator_from_apply(apply_node)
+    predictor = impl.estimator_
     if isinstance(predictor, Pipeline):
         return predictor.steps[-1][1]
     return predictor
@@ -126,7 +127,9 @@ def get_predictor_and_input(
     ``CrossValidationReport.input_data``), not a reconstructed X/y-only dict.
 
     The returned input is the value seen by the fitted predictor after all
-    upstream graph steps have been evaluated on ``env``.
+    upstream graph steps have been evaluated on ``env``. When the leading steps
+    of a pipeline in the supervised apply output an array, it is returned as a
+    dataframe named after their output features.
     """
     apply_node = supervised_apply_node(learner.data_op)
     impl = apply_node._skrub_impl
@@ -136,10 +139,23 @@ def get_predictor_and_input(
     )
     input_value = truncated.transform(env)
     applied = impl.estimator_
+    predictor = fitted_predictor_from_apply(apply_node)
     if isinstance(applied, Pipeline) and len(applied) > 1:
-        input_value = applied[:-1].transform(input_value)
+        preprocessor = applied[:-1]
+        input_value = preprocessor.transform(input_value)
+        if not nw.dependencies.is_into_dataframe(input_value) and not sp.issparse(
+            input_value
+        ):
+            input_value = pd.DataFrame(
+                input_value,
+                columns=_get_feature_names(
+                    predictor,
+                    transformer=preprocessor,
+                    n_features=np.shape(input_value)[1],
+                ),
+            )
 
-    return input_value, fitted_predictor_from_apply(apply_node)
+    return input_value, predictor
 
 
 def find_fitted_estimators(learner: SkrubLearner) -> list[BaseEstimator]:
@@ -207,36 +223,6 @@ def iter_fitted_estimator_steps(
             yield type(fitted).__name__, fitted
 
 
-def resolve_fitted_estimator(estimator: EstimatorLike) -> BaseEstimator:
-    """Return the fitted scikit-learn estimator behind ``estimator``.
-
-    For :class:`~skrub.SkrubLearner`, returns the estimator fitted in the supervised
-    ``.skb.apply(estimator, y=...)`` step, as is (possibly a
-    :class:`~sklearn.pipeline.Pipeline`). Its input is the output of the DataOp
-    graph upstream of that step, see :func:`get_predictor_and_input`.
-    """
-    if is_skrub_learner(estimator):
-        return fitted_estimator_from_apply(supervised_apply_node(estimator.data_op))
-    return estimator
-
-
-def resolve_fitted_preprocessor_and_predictor(
-    estimator: EstimatorLike,
-) -> tuple[Pipeline | None, BaseEstimator]:
-    """Return ``(preprocessor, predictor)`` behind ``estimator``.
-
-    The estimator is first resolved with :func:`resolve_fitted_estimator`. When it
-    is a :class:`~sklearn.pipeline.Pipeline` (e.g. :func:`~skrub.tabular_pipeline`),
-    it is split into its leading steps and its final step. For
-    :class:`~skrub.SkrubLearner`, the DataOp graph upstream of the supervised
-    ``.skb.apply(estimator, y=...)`` step is not part of the returned preprocessor.
-    """
-    estimator = resolve_fitted_estimator(estimator)
-    if isinstance(estimator, Pipeline):
-        return estimator[:-1] or None, estimator[-1]
-    return None, estimator
-
-
 def resolve_fitted_predictor(estimator: EstimatorLike) -> BaseEstimator:
     """Return the fitted predictor behind ``estimator``.
 
@@ -244,7 +230,11 @@ def resolve_fitted_predictor(estimator: EstimatorLike) -> BaseEstimator:
     ``.skb.apply(estimator, y=...)`` step, or the last step when that object is a
     :class:`~sklearn.pipeline.Pipeline` (e.g. :func:`~skrub.tabular_pipeline`).
     """
-    return resolve_fitted_preprocessor_and_predictor(estimator)[1]
+    if is_skrub_learner(estimator):
+        return fitted_predictor_from_apply(supervised_apply_node(estimator.data_op))
+    if isinstance(estimator, Pipeline):
+        return estimator.steps[-1][1]
+    return estimator
 
 
 class _LearnerAdapter(BaseEstimator):

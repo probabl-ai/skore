@@ -9,6 +9,7 @@ import seaborn as sns
 from scipy.sparse import issparse
 from sklearn.base import is_classifier
 from sklearn.compose import TransformedTargetRegressor
+from sklearn.pipeline import Pipeline
 from sklearn.utils.sparsefuncs import mean_variance_axis
 
 from skore._displays.base import BOXPLOT_STYLE, DisplayMixin
@@ -19,7 +20,6 @@ from skore._displays.inspection.utils import (
 )
 from skore._sklearn.feature_names import _get_feature_names
 from skore._utils.index import flatten_multi_index
-from skore._utils.skrub import resolve_fitted_preprocessor_and_predictor
 
 if TYPE_CHECKING:
     from matplotlib.figure import Figure
@@ -732,8 +732,7 @@ class CoefficientsDisplay(DisplayMixin):
         Parameters
         ----------
         estimator : estimator
-            The estimator to compute the data for. It can be a
-            :class:`~sklearn.pipeline.Pipeline` or a :class:`~skrub.SkrubLearner`.
+            The estimator to compute the data for.
 
         name : str
             The name of the estimator.
@@ -743,17 +742,18 @@ class CoefficientsDisplay(DisplayMixin):
             The type of report to compute the data for.
 
         X : array-like or None, default=None
-            Training features used to compute :attr:`feature_std`. For a
-            :class:`~skrub.SkrubLearner`, the output of the DataOp graph upstream
-            of the supervised ``.skb.apply`` step. When `None`, feature standard
-            deviations are left unavailable.
+            Training features used to compute :attr:`feature_std`. When `None`,
+            feature standard deviations are left unavailable.
 
         Returns
         -------
         CoefficientsDisplay
             The data for the display.
         """
-        preprocessor, predictor = resolve_fitted_preprocessor_and_predictor(estimator)
+        if isinstance(estimator, Pipeline):
+            preprocessor, predictor = estimator[:-1], estimator[-1]
+        else:
+            preprocessor, predictor = None, estimator
 
         if isinstance(predictor, TransformedTargetRegressor):
             predictor = predictor.regressor_
@@ -769,7 +769,10 @@ class CoefficientsDisplay(DisplayMixin):
         coef_data = np.concatenate([intercept, coef])
 
         feature_names = ["Intercept"] + _get_feature_names(
-            predictor, transformer=preprocessor, n_features=coef.shape[0]
+            predictor,
+            transformer=preprocessor,
+            X=X if preprocessor is None else None,
+            n_features=coef.shape[0],
         )
         n_features = len(feature_names)
 

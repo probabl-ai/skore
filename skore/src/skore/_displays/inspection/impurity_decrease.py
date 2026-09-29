@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, Any, Literal
 import numpy as np
 import pandas as pd
 import seaborn as sns
+from sklearn.pipeline import Pipeline
 
 from skore._displays.base import BOXPLOT_STYLE, DisplayMixin
 from skore._displays.inspection.utils import (
@@ -14,10 +15,10 @@ from skore._displays.inspection.utils import (
 )
 from skore._sklearn.feature_names import _get_feature_names
 from skore._utils.index import flatten_multi_index
-from skore._utils.skrub import resolve_fitted_preprocessor_and_predictor
 
 if TYPE_CHECKING:
     from matplotlib.figure import Figure
+    from numpy.typing import ArrayLike
     from sklearn.base import BaseEstimator
 
     from skore._sklearn.types import Aggregate, ReportType
@@ -101,14 +102,14 @@ class ImpurityDecreaseDisplay(DisplayMixin):
         estimator: BaseEstimator,
         name: str,
         report_type: ReportType,
+        X: ArrayLike | None = None,
     ) -> ImpurityDecreaseDisplay:
         """Compute the data for the display from a single estimator.
 
         Parameters
         ----------
         estimator : estimator
-            The estimator to compute the data for. It can be a
-            :class:`~sklearn.pipeline.Pipeline` or a :class:`~skrub.SkrubLearner`.
+            The estimator to compute the data for.
 
         name : str
             The name of the estimator.
@@ -117,16 +118,26 @@ class ImpurityDecreaseDisplay(DisplayMixin):
                 "comparison-cross-validation"}
             The type of report to compute the data for.
 
+        X : array-like or None, default=None
+            Features seen by `estimator`, used to name them when the estimator
+            does not expose feature names.
+
         Returns
         -------
         ImpurityDecreaseDisplay
             The data for the display.
         """
-        preprocessor, predictor = resolve_fitted_preprocessor_and_predictor(estimator)
+        if isinstance(estimator, Pipeline):
+            preprocessor, predictor = estimator[:-1], estimator[-1]
+        else:
+            preprocessor, predictor = None, estimator
 
         n_features = predictor.feature_importances_.shape[0]
         feature_names = _get_feature_names(
-            predictor, transformer=preprocessor, n_features=n_features
+            predictor,
+            transformer=preprocessor,
+            X=X if preprocessor is None else None,
+            n_features=n_features,
         )
 
         importances = pd.DataFrame(
