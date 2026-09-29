@@ -3,6 +3,7 @@ import pandas as pd
 import pytest
 import skrub
 from matplotlib.figure import Figure
+from sklearn.base import clone
 from sklearn.datasets import make_regression
 from sklearn.linear_model import Ridge
 from sklearn.metrics import (
@@ -13,7 +14,7 @@ from sklearn.metrics import (
     recall_score,
 )
 from sklearn.pipeline import make_pipeline
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import PolynomialFeatures, StandardScaler
 
 from skore import CrossValidationReport, EstimatorReport
 from skore._utils.testing import custom_r2_score
@@ -236,17 +237,45 @@ def test_data_source(estimator_reports_binary_classification, data_source):
     assert set(display.importances["data_source"]) == {data_source}
 
 
-def _skrub_and_sklearn_reports():
+def _skrub_data_op(steps, predictor, *, chained):
+    """Build a DataOp equivalent to ``make_pipeline(*steps, predictor)``."""
+    X = skrub.X()
+    if chained:
+        for step in steps:
+            X = X.skb.apply(clone(step))
+        return X.skb.apply(clone(predictor), y=skrub.y())
+    return X.skb.apply(
+        make_pipeline(*[clone(s) for s in steps], clone(predictor)), y=skrub.y()
+    )
+
+
+def _sklearn_estimator(steps, predictor):
+    if not steps:
+        return clone(predictor)
+    return make_pipeline(*[clone(s) for s in steps], clone(predictor))
+
+
+SKRUB_CASES = [
+    pytest.param(steps, chained, id=f"{name}-{'chained' if chained else 'pipeline'}")
+    for name, steps in [
+        ("no_step", []),
+        ("scaler", [StandardScaler()]),
+        ("poly", [PolynomialFeatures(degree=2, include_bias=False)]),
+    ]
+    for chained in [True, False]
+]
+
+
+def _skrub_and_sklearn_reports(steps=(), chained=True):
     X, y = make_regression(n_samples=60, n_features=3, random_state=0)
     X = pd.DataFrame(X, columns=["a", "b", "c"])
-    data_op = skrub.X().skb.apply(StandardScaler()).skb.apply(Ridge(), y=skrub.y())
     skrub_report = EstimatorReport(
-        data_op.skb.make_learner(),
+        _skrub_data_op(steps, Ridge(), chained=chained).skb.make_learner(),
         train_data={"X": X[:40], "y": y[:40]},
         test_data={"X": X[40:], "y": y[40:]},
     )
     sklearn_report = EstimatorReport(
-        make_pipeline(StandardScaler(), Ridge()),
+        _sklearn_estimator(steps, Ridge()),
         X_train=X[:40],
         y_train=y[:40],
         X_test=X[40:],
@@ -255,21 +284,31 @@ def _skrub_and_sklearn_reports():
     return skrub_report, sklearn_report
 
 
+@pytest.mark.parametrize("steps, chained", SKRUB_CASES)
 @pytest.mark.parametrize("at_step", [0, -1])
 @pytest.mark.parametrize("data_source", ["train", "test"])
-@pytest.mark.parametrize("metric", [None, "neg_mean_squared_error"])
-def test_skrub_learner_matches_sklearn_pipeline(at_step, data_source, metric):
+def test_skrub_learner_matches_sklearn_pipeline(steps, chained, at_step, data_source):
     """A skrub learner gives the same importances as the equivalent scikit-learn
     pipeline, both on the ``X`` node features and on the predictor input."""
-    skrub_report, sklearn_report = _skrub_and_sklearn_reports()
+    skrub_report, sklearn_report = _skrub_and_sklearn_reports(steps, chained)
     kwargs = {
         "at_step": at_step,
         "data_source": data_source,
-        "metric": metric,
         "n_repeats": 2,
         "max_samples": 0.8,
         "seed": 0,
     }
+    pd.testing.assert_frame_equal(
+        skrub_report.inspection.permutation_importance(**kwargs).frame(),
+        sklearn_report.inspection.permutation_importance(**kwargs).frame(),
+    )
+
+
+@pytest.mark.parametrize("metric", [None, "neg_mean_squared_error", "r2"])
+def test_skrub_learner_metric(metric):
+    """Metrics are forwarded to the skrub learner."""
+    skrub_report, sklearn_report = _skrub_and_sklearn_reports([StandardScaler()])
+    kwargs = {"metric": metric, "n_repeats": 2, "seed": 0}
     pd.testing.assert_frame_equal(
         skrub_report.inspection.permutation_importance(**kwargs).frame(),
         sklearn_report.inspection.permutation_importance(**kwargs).frame(),

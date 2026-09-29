@@ -185,6 +185,12 @@ class PermutationImportanceDisplay(DisplayMixin):
         if issparse(X_transformed):
             X_transformed = cast(spmatrix, X_transformed)
             X_transformed = np.asarray(X_transformed.todense())
+        elif hasattr(estimator, "n_features_in_") and not hasattr(
+            estimator, "feature_names_in_"
+        ):
+            # the estimator was fitted without feature names, e.g. as the final
+            # step of a pipeline
+            X_transformed = np.asarray(X_transformed)
 
         scores = permutation_importance(
             estimator=estimator,
