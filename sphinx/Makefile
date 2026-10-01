@@ -22,20 +22,14 @@ SPHINX_APIDOC_OPTIONS = members,show-inheritance
 
 # Build the docs without the examples, which can take a long time to run
 # From https://sphinx-gallery.github.io/stable/advanced.html#id4
-html-noplot: fetch-python-inv
+html-noplot:
 	@$(SPHINXBUILD) --builder html --define plot_gallery=0 "$(SOURCEDIR)" "$(BUILDDIR)/html" $(SPHINXOPTS) $(O)
-
-# docs.python.org sometimes fails to serve objects.inv. Fall back to the FTP archive.
-html: fetch-python-inv
-
-fetch-python-inv:
-	python fetch_python_objects_inv.py
 
 # Put it first so that "make" without argument is like "make help".
 help:
 	@$(SPHINXBUILD) -M help "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
 
-.PHONY: help Makefile fetch-python-inv
+.PHONY: help Makefile
 
 # Catch-all target: route all unknown targets to Sphinx using the new
 # "make mode" option.  $(O) is meant as a shortcut for $(SPHINXOPTS).

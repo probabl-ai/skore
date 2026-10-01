@@ -152,12 +152,8 @@ html_context = {
     "skore_hub_example_url": f"{example_base_url}/example-getting-started-{version}/cross-validations/",
 }
 # intersphinx configuration
-_python_objects_inv = pathlib.Path(__file__).parent / "_intersphinx" / "python-objects.inv"
 intersphinx_mapping = {
-    "python": (
-        "https://docs.python.org/3",
-        str(_python_objects_inv) if _python_objects_inv.is_file() else None,
-    ),
+    "python": ("https://docs.python.org/3", None),
     "numpy": ("https://numpy.org/doc/stable", None),
     "scipy": ("https://docs.scipy.org/doc/scipy", None),
     "matplotlib": ("https://matplotlib.org/stable", None),
