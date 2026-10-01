@@ -184,6 +184,7 @@ tramp
 
 # Sphinx documentation
 sphinx/build/
+sphinx/_intersphinx/
 sphinx/auto_examples/
 sphinx/reference/api/
 sphinx/sg_execution_times.rst
