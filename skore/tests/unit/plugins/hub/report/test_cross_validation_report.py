@@ -1180,28 +1180,28 @@ class TestCrossValidationReportPayload:
         assert [m for m in payload.metrics if "hello" in m.name] == [
             Metric(
                 name="hello_mean",
-                verbose_name="Hello - MEAN",
+                verbose_name="hello - MEAN",
                 data_source="test",
                 greater_is_better=True,
                 value=1.0,
             ),
             Metric(
                 name="hello_std",
-                verbose_name="Hello - STD",
+                verbose_name="hello - STD",
                 data_source="test",
                 greater_is_better=False,
                 value=0.0,
             ),
             Metric(
                 name="hello_mean",
-                verbose_name="Hello - MEAN",
+                verbose_name="hello - MEAN",
                 data_source="train",
                 greater_is_better=True,
                 value=1.0,
             ),
             Metric(
                 name="hello_std",
-                verbose_name="Hello - STD",
+                verbose_name="hello - STD",
                 data_source="train",
                 greater_is_better=False,
                 value=0.0,

@@ -8,7 +8,6 @@ import pandas as pd
 from sklearn.utils.validation import _is_arraylike
 
 from skore._displays.base import DisplayMixin
-from skore._metrics.metrics import _to_verbose
 from skore._sklearn.types import Aggregate
 from skore._utils.index import flatten_multi_index, squeeze_single_column
 from skore._utils.repr.paginated_metrics import metrics_summary_html
@@ -28,6 +27,11 @@ METRIC_INDEX_KEYS: tuple[MetricIndexKey, ...] = ("metric", "label", "output", "a
 METRIC_DIMENSION_KEYS = METRIC_INDEX_KEYS[1:]
 PIVOT_VALUE_COLUMN = "score"
 PIVOT_META_COLUMN = "greater_is_better"
+
+
+def _to_verbose(name: str) -> str:
+    """Title-case an axis level name for ``frame(verbose_name=True)``."""
+    return name.replace("_", " ").title()
 
 
 class MetricsSummaryRow(TypedDict):
@@ -356,7 +360,7 @@ class MetricsSummaryDisplay(DisplayMixin):
             if isinstance(table.columns, pd.MultiIndex):
                 table.columns = flatten_multi_index(table.columns, lowercase=True)
             if isinstance(table.index, pd.MultiIndex):
-                table.index = flatten_multi_index(table.index, lowercase=True)
+                table.index = flatten_multi_index(table.index, lowercase=False)
         elif isinstance(table.index, pd.MultiIndex):
             levels = list(table.index.levels)
             for level_index, name in enumerate(table.index.names):
