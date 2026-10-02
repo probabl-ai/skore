@@ -24,6 +24,7 @@ from skore._displays.utils import (
     _rotate_ticklabels,
     _validate_style_kwargs,
 )
+from skore._externals.sklearn_compat import parse_version
 from skore._utils.dataframe import UserDataFrame
 
 
@@ -116,14 +117,15 @@ def _compute_contingency_table(
     top_x_values = sorted({pair[0] for pair in top_pairs})
     top_y_values = sorted({pair[1] for pair in top_pairs})
 
-    # As stated by a pandas warning, we call explicitly `infer_objects` to downcast
-    # the contingency table and silence the warning using the context manager.
-    with pd.option_context("future.no_silent_downcasting", True):
-        return (
-            contingency_table.fillna(0)
-            .infer_objects(copy=False)
-            .reindex(index=top_y_values, columns=top_x_values, fill_value=0)
-        )
+    # pandas 2.2 warns when ``fillna`` silently downcasts an object column, and
+    # asks for ``infer_objects(copy=False)`` under ``future.no_silent_downcasting``.
+    # pandas >= 3 makes that the default and deprecates both the option and ``copy``.
+    if parse_version(pd.__version__) < parse_version("3"):
+        with pd.option_context("future.no_silent_downcasting", True):
+            filled = contingency_table.fillna(0).infer_objects(copy=False)
+    else:
+        filled = contingency_table.fillna(0).infer_objects()
+    return filled.reindex(index=top_y_values, columns=top_x_values, fill_value=0)
 
 
 def _resize_categorical_axis(

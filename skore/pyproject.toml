@@ -150,6 +150,9 @@ filterwarnings = [
   # mlflow writes its YAML and requirement files through `codecs.open()`, which
   # Python 3.14 deprecates. Reached by every test that logs a report.
   'ignore:codecs\.open\(\) is deprecated:DeprecationWarning:mlflow',
+  # mlflow calls ``DataFrame.all(0)``, but pandas (>=3) warns that the arguments of
+  # ``all`` become keyword-only in pandas 4.
+  'ignore:Starting with pandas version 4\.0 all arguments of all will be keyword-only::mlflow',
   # sklearn (<=1.9) still passes ``iprint``/``disp`` to scipy's L-BFGS-B.
   # SciPy (<=1.17) emits a DeprecationWarning; SciPy (>=1.18) treats them as
   # unknown options (OptimizeWarning). Do not pin module to ``scipy``: the

@@ -250,7 +250,7 @@ packaging==26.3
     #   plotly
     #   pytest
     #   skops
-pandas==2.3.3
+pandas==3.0.6
     # via
     #   skore (skore/pyproject.toml)
     #   mlflow
@@ -356,8 +356,6 @@ python-discovery==1.6.1
     # via virtualenv
 python-dotenv==1.2.3
     # via mlflow-skinny
-pytz==2026.4
-    # via pandas
 pyyaml==6.0.3
     # via
     #   mlflow-skinny
@@ -440,8 +438,6 @@ typing-inspection==0.4.4
     # via
     #   fastapi
     #   pydantic
-tzdata==2026.4
-    # via pandas
 urllib3==2.8.0
     # via
     #   databricks-sdk
