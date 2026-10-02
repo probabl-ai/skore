@@ -100,7 +100,7 @@ frozenlist==1.8.0
     #   aiosignal
 gitdb==4.0.12
     # via gitpython
-gitpython==3.1.58
+gitpython==3.1.62
     # via mlflow-skinny
 google-auth==2.56.3
     # via databricks-sdk
@@ -466,7 +466,7 @@ typing-inspection==0.4.2
     #   pydantic
 tzdata==2026.3
     # via pandas
-urllib3==2.7.0
+urllib3==2.8.0
     # via
     #   databricks-sdk
     #   docker
