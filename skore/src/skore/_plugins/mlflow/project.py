@@ -9,6 +9,7 @@ from collections.abc import Iterable, Iterator
 from contextlib import contextmanager, redirect_stderr, redirect_stdout
 from datetime import UTC, datetime
 from importlib.metadata import version
+from inspect import signature
 from io import StringIO
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -468,9 +469,22 @@ class Project:
 
 ## Helpers for logging in MLFlow:
 
+# Since ``skops==0.15`` (https://github.com/skops-dev/skops/pull/535), ``Tree`` and
+# ``TreePredictor`` are no longer trusted by default. Trust them again so tree-based
+# estimators keep serializing with skops.
+SKOPS_TRUSTED_TYPES = [
+    "sklearn.ensemble._hist_gradient_boosting.predictor.TreePredictor",
+    "sklearn.tree._tree.Tree",
+]
+
 
 def _log_model(model: BaseEstimator, input_example: Any, **kwargs: Any) -> None:
     """Log a model using skops first, then cloudpickle as fallback."""
+    if ("skops_trusted_types" in signature(mlflow.sklearn.log_model).parameters) and (
+        "skops_trusted_types" not in kwargs
+    ):
+        kwargs["skops_trusted_types"] = SKOPS_TRUSTED_TYPES
+
     try:
         with (
             _filterwarnings(UserWarning, ".*Any type hint is inferred as AnyType.*"),
