@@ -21,7 +21,11 @@ def estimator_report():
     X["gender"] = X["gender"].astype("category")
     X["date_first_hired"] = pd.to_datetime(X["date_first_hired"])
     X["timedelta_hired"] = np.array(
-        (pd.Timestamp.now() - X["date_first_hired"]).dt.to_pytimedelta()
+        [
+            delta.to_pytimedelta()
+            for delta in (pd.Timestamp.now() - X["date_first_hired"])
+        ],
+        dtype=object,
     )
     X["cents"] = 100 * y
     X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0)
