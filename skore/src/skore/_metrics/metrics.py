@@ -52,10 +52,6 @@ _METRIC_ALIASES: dict[str, str] = {
 }
 
 
-def _to_verbose(name: str) -> str:
-    return name.replace("_", " ").title()
-
-
 class MetricRow(TypedDict):
     """A single row of a metric output.
 
@@ -181,7 +177,7 @@ class Metric:
             return
 
         self.name = name
-        self.verbose_name = verbose_name or _to_verbose(name)
+        self.verbose_name = name if verbose_name is None else verbose_name
         self.greater_is_better = greater_is_better
         self.response_method = response_method
         self.function = function
@@ -222,7 +218,7 @@ class Metric:
 
         verbose_name : str, optional
             Custom verbose name for the metric which will be used for display purposes.
-            If not provided, will be inferred from the metric name.
+            If not provided, the verbose name is the name unchanged.
 
         greater_is_better : bool, default=True
             Whether a higher score is better. Only used when *metric* is a
@@ -246,7 +242,7 @@ class Metric:
 
             if name is not None:
                 result.name = name
-                result.verbose_name = _to_verbose(name)
+                result.verbose_name = name
 
             if verbose_name is not None:
                 result.verbose_name = verbose_name
@@ -275,7 +271,7 @@ class Metric:
                     f"{sklearn.metrics.get_scorer_names()}."
                 ) from None
             name = name if name is not None else metric
-            return Metric.new(scorer, name=name)
+            return Metric.new(scorer, name=name, verbose_name=verbose_name)
         elif callable(metric):
             # Fail fast if metric is (y_true, y_pred) -> score
             params = list(inspect.signature(metric).parameters.values())
@@ -465,7 +461,7 @@ class Metric:
                 rows = self._to_rows(submetric_value, report=report, **kwargs)
                 for r in rows:
                     r["name"] = submetric_name
-                    r["metric_verbose_name"] = _to_verbose(submetric_name)
+                    r["metric_verbose_name"] = submetric_name
                 result.extend(rows)
             return result
 

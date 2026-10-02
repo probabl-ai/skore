@@ -240,8 +240,7 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
 
         verbose_name : str or None, default=None
             Custom verbose name for the metric which will be used for display
-            purposes. If ``None``, the verbose name is inferred from the metric
-            name.
+            purposes. If ``None``, the verbose name is the name unchanged.
 
         greater_is_better : bool, default=True
             Whether higher values are better (only for callables).
@@ -265,7 +264,8 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
         >>> estimator_2 = LogisticRegression(max_iter=10_000, C=2)
         >>> report = evaluate([estimator_1, estimator_2], X, y, splitter=0.2)
         >>> report.metrics.add(
-        ...     make_scorer(mean_absolute_error, response_method="predict")
+        ...     make_scorer(mean_absolute_error, response_method="predict"),
+        ...     verbose_name="Mean Absolute Error",
         ... )
         >>> report.metrics.summarize(metric="mean_absolute_error").frame(
         ...     verbose_name=True, flat_index=False
