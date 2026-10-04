@@ -9,6 +9,7 @@ from collections.abc import Iterable, Iterator
 from contextlib import contextmanager, redirect_stderr, redirect_stdout
 from datetime import UTC, datetime
 from importlib.metadata import version
+from inspect import signature
 from io import StringIO
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -117,7 +118,7 @@ def _databricks_user_name(tracking_uri: str) -> str:
     try:
         return cast(str, body["userName"])
     except KeyError:
-        raise MlflowException(  # type: ignore[no-untyped-call]
+        raise MlflowException(
             "Databricks SCIM 'Me' response has no 'userName' field; this can happen "
             "when authenticating as a service principal, which is identified by "
             "'applicationId' rather than 'userName'."
@@ -137,7 +138,7 @@ def _storage_experiment_name(tracking_uri: str) -> str:
     try:
         user_name = _databricks_user_name(tracking_uri)
     except MlflowException as exc:
-        raise MlflowException(  # type: ignore[no-untyped-call]
+        raise MlflowException(
             "Failed to resolve the Databricks workspace user needed to create the "
             f"{STORAGE_EXPERIMENT_NAME!r} experiment. Make sure the credentials used "
             f"for '{tracking_uri}' can read the current user."
@@ -195,7 +196,7 @@ class Project:
     @property
     def experiment_id(self) -> str:
         """The ID of the MLflow experiment."""
-        return cast(str, self.__experiment_id)
+        return self.__experiment_id
 
     def put(self, key: str, report: EstimatorReport | CrossValidationReport) -> None:
         """
@@ -468,9 +469,22 @@ class Project:
 
 ## Helpers for logging in MLFlow:
 
+# Since ``skops==0.15`` (https://github.com/skops-dev/skops/pull/535), ``Tree`` and
+# ``TreePredictor`` are no longer trusted by default. Trust them again so tree-based
+# estimators keep serializing with skops.
+SKOPS_TRUSTED_TYPES = [
+    "sklearn.ensemble._hist_gradient_boosting.predictor.TreePredictor",
+    "sklearn.tree._tree.Tree",
+]
+
 
 def _log_model(model: BaseEstimator, input_example: Any, **kwargs: Any) -> None:
     """Log a model using skops first, then cloudpickle as fallback."""
+    if ("skops_trusted_types" in signature(mlflow.sklearn.log_model).parameters) and (
+        "skops_trusted_types" not in kwargs
+    ):
+        kwargs["skops_trusted_types"] = SKOPS_TRUSTED_TYPES
+
     try:
         with (
             _filterwarnings(UserWarning, ".*Any type hint is inferred as AnyType.*"),

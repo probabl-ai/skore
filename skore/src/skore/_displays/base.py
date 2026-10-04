@@ -13,9 +13,7 @@ if TYPE_CHECKING:
     import pandas as pd
 
     try:
-        from matplotlib.typing import (  # type: ignore[attr-defined]
-            RcKeyType as MatplotlibRcKeyType,
-        )
+        from matplotlib.typing import RcKeyType as MatplotlibRcKeyType
     except ImportError:
         MatplotlibRcKeyType = str  # type: ignore[misc]
 
