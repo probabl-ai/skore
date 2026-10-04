@@ -19,6 +19,7 @@ from sklearn.utils.validation import check_is_fitted
 from skore import CrossValidationReport, EstimatorReport, evaluate
 from skore._externals.sklearn_compat import convert_container
 from skore._reports.cross_validation.report import _generate_estimator_report
+from skore._utils.repr.paginated_metrics import METRICS_HTML_PAGE_SIZE
 from skore._utils.testing import MockEstimator
 
 
@@ -252,6 +253,32 @@ def test_metrics_summary_html_is_compact(forest_binary_classification_data):
     repr_str = repr(report)
     assert "Estimator" not in repr_str
     assert "Aggregate" not in repr_str
+
+
+def test_metrics_summary_html_paginates_multiclass(
+    forest_multiclass_classification_data,
+):
+    """Multi-class default metrics exceed one page in the report Results tab."""
+    estimator, X, y = forest_multiclass_classification_data
+    report = CrossValidationReport(estimator, X=X, y=y, splitter=2)
+    html = report._html_repr_fragments()["metrics_summary"]
+    n_rows = len(
+        report.metrics.summarize(data_source="test").frame(
+            verbose_name=True, flat_index=False
+        )
+    )
+    assert n_rows > METRICS_HTML_PAGE_SIZE
+    assert "skore-metrics-pager" in html
+    tbody = html[html.find("<tbody>") : html.find("</tbody>")]
+    assert tbody.count("<tr") == n_rows
+    assert 'data-page="1"' in html
+    thead = html[html.find("<thead>") : html.find("</thead>")]
+    assert thead.count("<tr") == 1
+    assert "Estimator" not in html
+    assert "Aggregate" not in html
+    full = report._repr_html_()
+    assert "skoreInitMetricsPagers" in full
+    assert ".skore-metrics-pager.is-ready tbody tr" in full
 
 
 def test_text_repr(forest_binary_classification_data):

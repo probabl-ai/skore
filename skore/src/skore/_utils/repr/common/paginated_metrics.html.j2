@@ -1,0 +1,21 @@
+<div class="skore-metrics-pager">
+{%- if inline_assets %}
+    <style>
+{% include "common/css/metrics_pager.css" %}
+    </style>
+{%- endif %}
+    <div class="skore-metrics-table-wrap">{{ table_html | safe }}</div>
+    <nav class="skore-metrics-pager-nav" aria-label="Metrics pages">
+        <button type="button" class="skore-metrics-pager-first" aria-label="First page">&lt;&lt;</button>
+        <button type="button" class="skore-metrics-pager-prev" aria-label="Previous page">&lt;</button>
+        <button type="button" class="skore-metrics-pager-next" aria-label="Next page">&gt;</button>
+        <button type="button" class="skore-metrics-pager-last" aria-label="Last page">&gt;&gt;</button>
+        <span class="skore-metrics-pager-status" aria-live="polite"></span>
+    </nav>
+{%- if inline_assets %}
+    <script>
+{% include "common/js/metrics_pager.js" %}
+skoreInitMetricsPagers(document);
+    </script>
+{%- endif %}
+</div>

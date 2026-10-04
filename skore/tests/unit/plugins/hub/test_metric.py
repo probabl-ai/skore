@@ -5,6 +5,7 @@ from types import SimpleNamespace
 import pandas as pd
 import pytest
 
+from skore._plugins.hub.json import dumps
 from skore._plugins.hub.metric import (
     cast_to_str_or_none,
     find_multimetric_scalar_names,
@@ -73,7 +74,7 @@ def test_binary_keeps_averaged_rows() -> None:
     selected = select_exportable_metrics(report)
 
     assert len(selected) == 3
-    assert selected["average"].tolist() == [None, None, "macro"]
+    assert dumps(selected["average"].tolist()) == dumps([None, None, "macro"])
 
 
 def test_multiclass_keeps_averaged_rows() -> None:
@@ -88,7 +89,7 @@ def test_multiclass_keeps_averaged_rows() -> None:
     selected = select_exportable_metrics(report)
 
     assert len(selected) == 2
-    assert selected["average"].tolist() == [None, "macro"]
+    assert dumps(selected["average"].tolist()) == dumps([None, "macro"])
 
 
 def test_find_multimetric_scalar_names_detects_dict_submetrics() -> None:

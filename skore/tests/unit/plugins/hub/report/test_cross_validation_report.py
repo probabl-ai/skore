@@ -1,6 +1,7 @@
 from io import BytesIO
 from itertools import chain, repeat
 
+import polars as pl
 import skrub
 from joblib import dump, hash
 from numpy import array
@@ -105,6 +106,21 @@ def payload(project, small_cv_binary_classification):
         report=small_cv_binary_classification,
         key="<key>",
     )
+
+
+def test_y_is_a_polars_series(project):
+    # non-regression test for 3263
+    X = pl.DataFrame(
+        {
+            "a": [0.0, 1.0, 0.5, 1.5, 2.0, 0.2, 0.9, 1.1, 0.3, 1.8],
+            "b": [1.0, 0.0, 1.0, 0.0, 1.0, 1.0, 0.0, 0.5, 0.8, 0.1],
+        }
+    )
+    y = pl.Series("class", ["A", "B", "A", "B", "B", "A", "B", "A", "B", "A"])
+    report = CrossValidationReport(LogisticRegression(max_iter=100), X, y, splitter=3)
+    CrossValidationReportPayload(
+        project=project, report=report, key="<key>"
+    ).model_dump()
 
 
 class TestCrossValidationReportPayload:
