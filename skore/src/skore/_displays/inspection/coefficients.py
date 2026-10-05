@@ -785,8 +785,6 @@ class CoefficientsDisplay(DisplayMixin):
             elif isinstance(X_transformed, np.ndarray):
                 std = np.std(X_transformed, axis=0)
             else:
-                # ddof=0, the std StandardScaler divides by (as do the two
-                # branches above); narwhals defaults to the sample std.
                 std = (
                     nw.from_native(X_transformed)
                     .select(nw.all().std(ddof=0))

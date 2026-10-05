@@ -7,6 +7,7 @@ from sklearn.pipeline import Pipeline, make_pipeline
 from sklearn.preprocessing import SplineTransformer, StandardScaler
 
 from skore import EstimatorReport
+from skore._externals.sklearn_compat import convert_container
 
 
 @pytest.mark.parametrize(
@@ -186,36 +187,27 @@ def test_scale_features_sparse_preprocessor(regression_train_test_split):
     )
 
 
-@pytest.mark.parametrize("frame_library", ["pandas", "polars"])
-def test_scale_features_std_of_a_dataframe_matches_standard_scaler(
-    regression_train_test_split, frame_library
+@pytest.mark.parametrize("container", ["pandas", "polars"])
+def test_scale_features_std_of_a_dataframe_matches_an_array(
+    regression_train_test_split, container
 ):
-    """A dataframe's feature std is the one StandardScaler divides by.
-
-    Multiplying a coefficient by the feature std is meant to match fitting on
-    standardized features, so the std must be StandardScaler's (``ddof=0``)
-    whatever container the training data came in.
-    """
+    """A dataframe gives the same feature std as the same data in an array."""
     X_train, X_test, y_train, y_test = regression_train_test_split
-    columns = [f"x{i}" for i in range(X_train.shape[1])]
-    if frame_library == "pandas":
-        pd = pytest.importorskip("pandas")
-        frames = [pd.DataFrame(X, columns=columns) for X in (X_train, X_test)]
-    else:
-        pl = pytest.importorskip("polars")
-        frames = [pl.DataFrame(X, schema=columns) for X in (X_train, X_test)]
-    report = EstimatorReport(
-        Ridge(),
-        X_train=frames[0],
-        y_train=y_train,
-        X_test=frames[1],
-        y_test=y_test,
-    )
-    display = report.inspection.coefficients()
+    column_names = [f"x{i}" for i in range(X_train.shape[1])]
+
+    def feature_std(X_train, X_test):
+        report = EstimatorReport(
+            Ridge(), X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+        )
+        display = report.inspection.coefficients()
+        return display.coefficients.query("feature != 'Intercept'")["feature_std"]
 
     np.testing.assert_allclose(
-        display.coefficients.query("feature != 'Intercept'")["feature_std"],
-        StandardScaler().fit(X_train).scale_,
+        feature_std(
+            convert_container(X_train, container, column_names=column_names),
+            convert_container(X_test, container, column_names=column_names),
+        ),
+        feature_std(X_train, X_test),
     )
 
 
