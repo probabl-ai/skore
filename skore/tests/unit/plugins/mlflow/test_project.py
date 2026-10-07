@@ -1,12 +1,19 @@
+import warnings
 from pathlib import Path
 from types import SimpleNamespace
 
 import mlflow
+import numpy as np
 import pandas as pd
 import pytest
+import skrub
 from mlflow.exceptions import MlflowException
+from sklearn.datasets import make_regression
+from sklearn.dummy import DummyRegressor
 from sklearn.linear_model import LinearRegression
+from sklearn.model_selection import KFold
 
+from skore import CrossValidationReport
 from skore._plugins.mlflow import Project
 from skore._plugins.mlflow import project as project_module
 from skore._plugins.mlflow.project import (
@@ -120,6 +127,47 @@ def test_log_model_falls_back_for_mlflow_2(monkeypatch) -> None:
     project_module._log_model(LinearRegression(), input_example=None, name="test")
 
     assert len(calls) == 2
+
+
+def test_log_model_encodes_environment_input_example(monkeypatch) -> None:
+    import polars as pl
+    from mlflow.models.utils import _Example
+
+    calls = []
+
+    def _log_model(*args, **kwargs):
+        calls.append(kwargs)
+
+    monkeypatch.setattr(mlflow.sklearn, "log_model", _log_model)
+
+    project_module._log_model(
+        LinearRegression(),
+        input_example={
+            "polars": pl.DataFrame({"a": [1, 2]}),
+            "pandas": pd.DataFrame({"b": [3, 4]}),
+            "_skrub_X": np.arange(2),
+            "path": "data.csv",
+        },
+        name="model",
+    )
+    encoded = calls[-1]["input_example"]
+    assert encoded == {
+        "polars": {"columns": ["a"], "data": [(1,), (2,)]},
+        "pandas": {"columns": ["b"], "data": [[3], [4]]},
+        "_skrub_X": [0, 1],
+        "path": "data.csv",
+    }
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore",
+            message=".*Any type hint is inferred as AnyType.*",
+            category=UserWarning,
+        )
+        _Example(encoded)
+
+    arrays = {"X": np.arange(3)}
+    project_module._log_model(LinearRegression(), input_example=arrays, name="model")
+    assert calls[-1]["input_example"] is arrays
 
 
 def test_log_model_reraises_unexpected_typeerror(monkeypatch) -> None:
@@ -337,6 +385,29 @@ class TestProject:
         for artifact in self.CLF_ARTIFACTS:
             assert (report_dir / artifact).exists()
         assert (report_dir / "metrics_details" / "per_split.csv").exists()
+
+    def test_put_get_skrub_cross_validation(self) -> None:
+        X, y = make_regression(n_samples=40, n_features=3, random_state=0)
+        learner = (
+            skrub.X(X).skb.apply(DummyRegressor(), y=skrub.y(y)).skb.make_learner()
+        )
+        report = CrossValidationReport(
+            learner,
+            data={"_skrub_X": X, "_skrub_y": y},
+            splitter=KFold(n_splits=2),
+        )
+        project = Project("<project>")
+        project.put("<key>", report)
+
+        (metadata,) = project.summarize()
+        run = mlflow.get_run(metadata["id"])
+        assert run.data.tags["skore_status"] == "completed"
+
+        restored = project.get(metadata["id"])
+        assert isinstance(restored, CrossValidationReport)
+        assert restored.metrics.rmse(aggregate="mean").iloc[0] == pytest.approx(
+            report.metrics.rmse(aggregate="mean").iloc[0]
+        )
 
     def test_get_unknown_id_with_explicit_tracking_uri(self, mlflow_tracking_uri):
         tracking_uri = mlflow_tracking_uri()

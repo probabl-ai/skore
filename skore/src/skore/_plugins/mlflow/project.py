@@ -18,6 +18,8 @@ from typing import Any, TypedDict, cast
 import joblib
 import mlflow
 import mlflow.sklearn
+import narwhals as nw
+import numpy as np
 import pandas as pd
 from mlflow.entities import Run as MLFlowRun
 from mlflow.exceptions import MlflowException
@@ -478,8 +480,45 @@ SKOPS_TRUSTED_TYPES = [
 ]
 
 
+def _mlflow_input_example(example: Any) -> Any:
+    """Return an input example MLflow can store.
+
+    A pandas frame, a numpy array, or a dict of only arrays is passed through.
+    Any other dict is a DataOp environment. Frames become ``columns``/``data``,
+    arrays become lists, and scalars such as filenames stay unchanged.
+    """
+    if isinstance(example, pd.DataFrame | np.ndarray):
+        return example
+    if not isinstance(example, dict):
+        return None
+    if example and all(isinstance(value, np.ndarray) for value in example.values()):
+        return example
+    return {key: _mlflow_example_value(value) for key, value in example.items()}
+
+
+def _mlflow_example_value(value: Any) -> Any:
+    if isinstance(value, dict):
+        return {key: _mlflow_example_value(item) for key, item in value.items()}
+    if isinstance(value, pd.DataFrame):
+        payload = value.to_dict(orient="split")
+        payload.pop("index", None)
+        return payload
+    if isinstance(value, pd.Series):
+        name = "0" if value.name is None else str(value.name)
+        return {"columns": [name], "data": [[item] for item in value.tolist()]}
+    if isinstance(value, np.ndarray):
+        return value.tolist()
+    if nw.dependencies.is_polars_dataframe(value):
+        return {"columns": list(value.columns), "data": value.rows()}
+    if nw.dependencies.is_polars_series(value):
+        name = value.name if value.name else "0"
+        return {"columns": [name], "data": [[item] for item in value.to_list()]}
+    return value
+
+
 def _log_model(model: BaseEstimator, input_example: Any, **kwargs: Any) -> None:
     """Log a model using skops first, then cloudpickle as fallback."""
+    input_example = _mlflow_input_example(input_example)
     if ("skops_trusted_types" in signature(mlflow.sklearn.log_model).parameters) and (
         "skops_trusted_types" not in kwargs
     ):

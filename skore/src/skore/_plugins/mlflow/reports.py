@@ -9,6 +9,7 @@ from typing import Any, TypeAlias
 
 import matplotlib.pyplot as plt
 import mlflow.data
+import narwhals as nw
 import numpy as np
 import pandas as pd
 from mlflow.data.dataset import Dataset as MlFlowDatasetType
@@ -17,8 +18,10 @@ from sklearn.base import BaseEstimator, clone
 
 from skore import CrossValidationReport, EstimatorReport
 from skore._plugins import switch_plt_backend
+from skore._utils.skrub import is_skrub_learner
 
 ArrayLike: TypeAlias = pd.DataFrame | NDArray[np.generic]
+InputExample: TypeAlias = ArrayLike | dict[str, Any]
 
 
 @dataclass
@@ -65,7 +68,7 @@ class Model:
     """Model payload."""
 
     model: BaseEstimator
-    input_example: ArrayLike
+    input_example: InputExample
 
 
 CLF_METRICS = {
@@ -190,9 +193,15 @@ def iter_cv(report: CrossValidationReport) -> Generator[NestedLogItem, None, Non
     """Yield loggable objects for a cross-validation report."""
     yield from iter_cv_metrics(report)
 
-    estimator = clone(report.estimator).fit(report.X, report.y)
+    estimator = clone(report.estimator_)
+    if is_skrub_learner(estimator):
+        estimator.fit(report.input_data)
+        input_example: InputExample = _sample_environment(report.input_data)
+    else:
+        estimator.fit(report.X, report.y)
+        input_example = _sample_input_example(report.X)
     yield Params(estimator.get_params())
-    yield Model(estimator, _sample_input_example(report.X))
+    yield Model(estimator, input_example)
 
     yield Artifact("data.summarize", _data_analyze_html(report))
 
@@ -222,8 +231,14 @@ def iter_estimator(report: EstimatorReport) -> Generator[LogItem, None, None]:
     yield from iter_estimator_metrics(report)
 
     estimator = report.estimator_
+    if is_skrub_learner(estimator):
+        test_data = report.test_data
+        assert test_data is not None
+        input_example: InputExample = _sample_environment(test_data)
+    else:
+        input_example = _sample_input_example(report.X_test)
     yield Params(estimator.get_params())
-    yield Model(estimator, _sample_input_example(report.X_test))
+    yield Model(estimator, input_example)
 
     yield Artifact("data.summarize", _data_analyze_html(report))
 
@@ -237,6 +252,33 @@ def _data_analyze_html(report: CrossValidationReport | EstimatorReport) -> Any:
             return report.data.summarize()._repr_html_()
         finally:
             plt.close("all")
+
+
+def _sample_environment(
+    environment: dict[str, Any], *, max_samples: int = 5
+) -> dict[str, Any]:
+    """Row-sample an evaluation environment for an MLflow input example.
+
+    Each value stays in its own dataframe library. Scalars are left unchanged.
+    """
+    return {
+        key: _sample_environment_value(value, max_samples=max_samples)
+        for key, value in environment.items()
+    }
+
+
+def _sample_environment_value(value: Any, *, max_samples: int) -> Any:
+    if isinstance(value, dict):
+        return _sample_environment(value, max_samples=max_samples)
+    if nw.dependencies.is_polars_dataframe(value) or nw.dependencies.is_polars_series(
+        value
+    ):
+        return value.head(max_samples)
+    if isinstance(value, pd.DataFrame | np.ndarray):
+        return _sample_input_example(value, max_samples=max_samples)
+    if isinstance(value, pd.Series):
+        return value.head(max_samples)
+    return value
 
 
 def _sample_input_example(X: ArrayLike, *, max_samples: int = 5) -> ArrayLike:
@@ -254,11 +296,69 @@ def _sample_input_example(X: ArrayLike, *, max_samples: int = 5) -> ArrayLike:
         return X[:max_samples]
 
 
+def _dataset_from_polars(X: Any, y: Any, context: str | None) -> Dataset:
+    """Log a polars feature frame with ``mlflow.data.from_polars``.
+
+    ``from_polars`` records a single target column. Several targets fall back to
+    the numpy dataset path.
+    """
+    import polars as pl
+
+    if isinstance(y, dict) or (
+        isinstance(y, np.ndarray) and y.ndim == 2 and y.shape[1] != 1
+    ):
+        if isinstance(y, dict):
+            targets = y
+        else:
+            targets = {f"target_{idx}": y[:, idx] for idx in range(y.shape[1])}
+        return _dataset_from_Xy(X.to_numpy(), targets, context=context)
+
+    if isinstance(y, pl.Series):
+        name = y.name if y.name else "target"
+        target_frame = y.alias(name).to_frame()
+    elif isinstance(y, pl.DataFrame):
+        if y.width != 1:
+            return _dataset_from_Xy(
+                X.to_numpy(),
+                {column: y.get_column(column).to_numpy() for column in y.columns},
+                context=context,
+            )
+        name = str(y.columns[0])
+        target_frame = y
+    elif isinstance(y, pd.Series):
+        name = str(y.name) if y.name is not None else "target"
+        target_frame = pl.Series(name, y.to_numpy()).to_frame()
+    elif isinstance(y, pd.DataFrame):
+        if len(y.columns) != 1:
+            return _dataset_from_Xy(
+                X.to_numpy(),
+                {column: y[column].to_numpy() for column in y.columns},
+                context=context,
+            )
+        name = str(y.columns[0])
+        target_frame = pl.from_pandas(y)
+    elif isinstance(y, np.ndarray):
+        name = "target"
+        values = y.ravel() if y.ndim == 2 else y
+        target_frame = pl.Series(name, values).to_frame()
+    else:
+        raise TypeError(f"Unsupported target type for a polars dataset: {type(y)}")
+
+    frame = pl.concat([X, target_frame], how="horizontal")
+    return Dataset(
+        dataset=mlflow.data.from_polars(frame, targets=name),  # type: ignore[attr-defined]
+        context=context,
+    )
+
+
 def _dataset_from_Xy(
     X: pd.DataFrame | NDArray[np.generic],
     y: pd.DataFrame | pd.Series | NDArray[np.generic] | dict[str, NDArray[np.generic]],
     context: str | None = None,
 ) -> Dataset:
+    if nw.dependencies.is_polars_dataframe(X):
+        return _dataset_from_polars(X, y, context)
+
     if isinstance(X, np.ndarray):
         if isinstance(y, pd.Series):
             y = y.to_numpy()
@@ -285,7 +385,7 @@ def _dataset_from_Xy(
         targets = name
         y = pd.DataFrame({name: y})
     elif len(y.columns) == 1:
-        (targets) = y.columns
+        targets = y.columns[0]
     else:
         # mlflow.data.from_pandas doesn't support multiple targets
         # use mlflow.data.from_numpy instead

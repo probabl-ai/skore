@@ -91,7 +91,7 @@ hub = [
   "rich[jupyter]>=14.2",
   "scipy",
 ]
-mlflow = ["mlflow>=2.20.4"]
+mlflow = ["mlflow>=3.2.0"]
 
 [project.entry-points."skore.plugins.login"]
 hub = "skore._plugins.hub.authentication.login:login"

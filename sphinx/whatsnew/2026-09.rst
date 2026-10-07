@@ -109,6 +109,11 @@ Running checks on skrub DataOps
 
 Running checks on skrub DataOps is now supported. See :pr:`3086` by :user:`glemaitre` and :user:`auguste-probabl`.
 
+Syncing skrub cross-validation reports to MLflow
+------------------------------------------------
+
+Syncing a :class:`~skore.CrossValidationReport` built from a skrub learner to an MLflow project no longer fails while logging the model. The learner is fitted on its data environment. Polars features and targets are stored with MLflow's polars dataset. The ``mlflow`` extra now requires MLflow 3.2.
+
 -----
 
 Thanks to the following contributors for their work this month (in no particular order):
