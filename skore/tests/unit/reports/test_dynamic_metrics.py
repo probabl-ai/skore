@@ -225,7 +225,7 @@ def test_dynamic_custom_metric_docstring_from_partial(report):
 
     report.metrics.add(partial(business_loss, cost=10), name="loss")
 
-    assert docstring_summary(report.metrics.loss.__doc__) == "Loss"
+    assert docstring_summary(report.metrics.loss.__doc__) == "loss"
     assert "partial application" not in report.metrics.loss.__doc__
 
 
