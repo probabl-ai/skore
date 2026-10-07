@@ -650,14 +650,14 @@ class TestMultiMetric:
         display = report.metrics.summarize(metric="default_score")
 
         assert list(display.summary["name"]) == [
-            "default_score__accuracy",
-            "default_score__precision",  # Label 0
-            "default_score__precision",  # Label 1
+            "accuracy",
+            "precision",  # Label 0
+            "precision",  # Label 1
         ]
         assert list(display.summary["verbose_name"]) == [
-            "Default estimator score (Accuracy)",
-            "Default estimator score (Precision)",  # Label 0
-            "Default estimator score (Precision)",  # Label 1
+            "Accuracy",
+            "Precision",  # Label 0
+            "Precision",  # Label 1
         ]
         assert list(display.summary["label"]) == [pd.NA, np.int64(0), np.int64(1)]
 

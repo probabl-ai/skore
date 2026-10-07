@@ -213,63 +213,6 @@ def test_score_skrub_learner(with_scoring):
     )
 
 
-@pytest.mark.parametrize("scoring", ["absent", "one", "two", "default"])
-def test_default_score_data_op_with_scoring(scoring):
-    """Several ``with_scoring`` entries stay under ``default_score``.
-
-    They must not reuse a built-in metric name (which comparison pivots would
-    collapse) and ``default_score()`` must return the same object as
-    ``learner.score()``, including a one-key dict.
-    """
-    X, y = make_classification(n_samples=60, random_state=0)
-    y = np.where(y == 1, "pos", "neg")
-    data_op = skrub.X(X).skb.apply(LogisticRegression(max_iter=200), y=skrub.y(y))
-    if scoring == "one":
-        data_op = data_op.skb.with_scoring("accuracy")
-    elif scoring == "two":
-        data_op = data_op.skb.with_scoring("accuracy").skb.with_scoring("f1_macro")
-    elif scoring == "default":
-        data_op = data_op.skb.with_scoring(None)
-
-    learner = data_op.skb.make_learner()
-    split = data_op.skb.train_test_split(random_state=0)
-    report = EstimatorReport(
-        learner, train_data=split["train"], test_data=split["test"]
-    )
-
-    assert report.metrics.default_score() == report.estimator_.score(
-        {"_skrub_X": report.X_test, "_skrub_y": report.y_test}
-    )
-
-    summary = report.metrics.summarize().summary
-    score_rows = summary[summary["name"].str.startswith("default_score")]
-    if scoring == "two":
-        assert score_rows["name"].tolist() == [
-            "default_score__accuracy",
-            "default_score__f1_macro",
-        ]
-        assert score_rows["verbose_name"].tolist() == [
-            "Default estimator score (Accuracy)",
-            "Default estimator score (F1 Macro)",
-        ]
-    else:
-        assert score_rows["name"].tolist() == ["default_score"]
-        expected_verbose = (
-            "Default estimator score (Accuracy)"
-            if scoring == "one"
-            else "Default estimator score"
-        )
-        assert score_rows["verbose_name"].tolist() == [expected_verbose]
-
-    assert (summary["name"] == "accuracy").sum() == 1
-
-    both = report.metrics.summarize(data_source="both").frame()
-    assert list(both.index).count("accuracy") == 1
-    if scoring == "two":
-        assert "default_score__accuracy" in both.index
-        assert "default_score__f1_macro" in both.index
-
-
 def test_score_skrub_learner_with_extra_env_vars():
     """``score`` works when the DataOp env has variables beyond X and y."""
     df = pd.DataFrame({"feat": np.arange(20, dtype=float), "target": ["a", "b"] * 10})

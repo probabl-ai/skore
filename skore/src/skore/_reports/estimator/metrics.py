@@ -486,8 +486,7 @@ class _MetricsAccessor(BaseMetricsAccessor[EstimatorReport], DirNamesMixin):
 
         Returns
         -------
-        The default score of the estimator. A float for a single score, or a
-        dict when several scorings are registered.
+        The default score of the estimator.
 
         Examples
         --------
