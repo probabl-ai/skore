@@ -109,6 +109,11 @@ Running checks on skrub DataOps
 
 Running checks on skrub DataOps is now supported. See :pr:`3086` by :user:`glemaitre` and :user:`auguste-probabl`.
 
+Default estimator score
+-----------------------
+
+Metric summaries always include the estimator's own ``score``, including when the estimator is a nested :class:`~sklearn.pipeline.Pipeline`. The row is named ``default_score`` ("Default estimator score"), so it lines up across estimators even when it duplicates accuracy or R². Several scorings registered with ``DataOp.skb.with_scoring`` stay under that metric instead of reusing built-in metric names. Call it with ``report.metrics.default_score()``.
+
 -----
 
 Thanks to the following contributors for their work this month (in no particular order):

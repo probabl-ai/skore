@@ -166,11 +166,11 @@ def test_r2_returns_float(linear_regression_with_test):
     assert isinstance(report.metrics.r2(), float)
 
 
-# report.metrics.score
+# report.metrics.default_score
 
 
 def test_score_matches_sklearn_score(logistic_binary_classification_with_train_test):
-    """For a plain sklearn estimator, ``score`` returns ``estimator.score(X, y)``."""
+    """For a plain sklearn estimator, ``default_score`` matches ``estimator.score``."""
     estimator, X_train, X_test, y_train, y_test = (
         logistic_binary_classification_with_train_test
     )
@@ -178,7 +178,7 @@ def test_score_matches_sklearn_score(logistic_binary_classification_with_train_t
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
 
-    assert report.metrics.score() == report.estimator_.score(X_test, y_test)
+    assert report.metrics.default_score() == report.estimator_.score(X_test, y_test)
 
 
 def skrub_report(*, with_scoring):
@@ -201,17 +201,73 @@ def skrub_report(*, with_scoring):
 
 @pytest.mark.parametrize("with_scoring", [False, True])
 def test_score_skrub_learner(with_scoring):
-    """``score`` on a report containing a SkrubLearner returns the same result
-    as ``score`` on the learner directly.
+    """``default_score`` on a SkrubLearner matches ``score`` on the learner.
 
     Non-regression test: previously ``SkrubLearner.score`` was called as
     ``score(X, y)`` but it expects an environment dict.
     """
     report = skrub_report(with_scoring=with_scoring)
 
-    assert report.metrics.score() == report.estimator_.score(
+    assert report.metrics.default_score() == report.estimator_.score(
         {"_skrub_X": report.X_test, "_skrub_y": report.y_test}
     )
+
+
+@pytest.mark.parametrize("scoring", ["absent", "one", "two", "default"])
+def test_default_score_data_op_with_scoring(scoring):
+    """Several ``with_scoring`` entries stay under ``default_score``.
+
+    They must not reuse a built-in metric name (which comparison pivots would
+    collapse) and ``default_score()`` must return the same object as
+    ``learner.score()``, including a one-key dict.
+    """
+    X, y = make_classification(n_samples=60, random_state=0)
+    y = np.where(y == 1, "pos", "neg")
+    data_op = skrub.X(X).skb.apply(LogisticRegression(max_iter=200), y=skrub.y(y))
+    if scoring == "one":
+        data_op = data_op.skb.with_scoring("accuracy")
+    elif scoring == "two":
+        data_op = data_op.skb.with_scoring("accuracy").skb.with_scoring("f1_macro")
+    elif scoring == "default":
+        data_op = data_op.skb.with_scoring(None)
+
+    learner = data_op.skb.make_learner()
+    split = data_op.skb.train_test_split(random_state=0)
+    report = EstimatorReport(
+        learner, train_data=split["train"], test_data=split["test"]
+    )
+
+    assert report.metrics.default_score() == report.estimator_.score(
+        {"_skrub_X": report.X_test, "_skrub_y": report.y_test}
+    )
+
+    summary = report.metrics.summarize().summary
+    score_rows = summary[summary["name"].str.startswith("default_score")]
+    if scoring == "two":
+        assert score_rows["name"].tolist() == [
+            "default_score__accuracy",
+            "default_score__f1_macro",
+        ]
+        assert score_rows["verbose_name"].tolist() == [
+            "Default estimator score (Accuracy)",
+            "Default estimator score (F1 Macro)",
+        ]
+    else:
+        assert score_rows["name"].tolist() == ["default_score"]
+        expected_verbose = (
+            "Default estimator score (Accuracy)"
+            if scoring == "one"
+            else "Default estimator score"
+        )
+        assert score_rows["verbose_name"].tolist() == [expected_verbose]
+
+    assert (summary["name"] == "accuracy").sum() == 1
+
+    both = report.metrics.summarize(data_source="both").frame()
+    assert list(both.index).count("accuracy") == 1
+    if scoring == "two":
+        assert "default_score__accuracy" in both.index
+        assert "default_score__f1_macro" in both.index
 
 
 def test_score_skrub_learner_with_extra_env_vars():
@@ -231,7 +287,7 @@ def test_score_skrub_learner_with_extra_env_vars():
         learner, train_data=split["train"], test_data=split["test"]
     )
 
-    assert isinstance(report.metrics.score(), float)
+    assert isinstance(report.metrics.default_score(), float)
 
 
 def test_score_skrub_learner_reuses_cached_predictions():
@@ -239,7 +295,7 @@ def test_score_skrub_learner_reuses_cached_predictions():
     instead of letting it recompute them."""
     report = skrub_report(with_scoring=True)
 
-    assert report.metrics.score()["accuracy"] != 1.0
+    assert report.metrics.default_score()["accuracy"] != 1.0
 
     # Replace the cached predictions with the ground truth, i.e. pretend that
     # the model predictions are perfect: if ``score`` reads from the cache,
@@ -247,7 +303,7 @@ def test_score_skrub_learner_reuses_cached_predictions():
     report._clear_cache()
     report._cache[("report", "test", "predict", None)] = report.y_test
 
-    assert report.metrics.score()["accuracy"] == 1.0
+    assert report.metrics.default_score()["accuracy"] == 1.0
 
 
 # report.metrics.get

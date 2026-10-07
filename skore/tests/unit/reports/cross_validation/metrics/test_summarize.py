@@ -79,6 +79,7 @@ def test_binary_classification_forest(forest_binary_classification_data):
     check_display_structure(
         display,
         expected_metrics={
+            "Default estimator score",
             "Accuracy",
             "Precision",
             "Recall",
@@ -115,6 +116,7 @@ def test_binary_classification_svc(svc_binary_classification_data):
     check_display_structure(
         display,
         expected_metrics={
+            "Default estimator score",
             "Accuracy",
             "Precision",
             "Recall",
@@ -138,6 +140,7 @@ def test_multiclass_classification_forest(forest_multiclass_classification_data)
     check_display_structure(
         display,
         expected_metrics={
+            "Default estimator score",
             "Accuracy",
             "Log loss",
             "Precision",
@@ -171,6 +174,7 @@ def test_multiclass_classification_svc(svc_multiclass_classification_data):
     check_display_structure(
         display,
         expected_metrics={
+            "Default estimator score",
             "Accuracy",
             "Precision",
             "Recall",
@@ -196,6 +200,7 @@ def test_regression(linear_regression_data):
     check_display_structure(
         display,
         expected_metrics={
+            "Default estimator score",
             "R²",
             "RMSE",
             "MAE",
@@ -219,6 +224,7 @@ def test_multioutput_regression(linear_regression_multioutput_data):
     check_display_structure(
         display,
         expected_metrics={
+            "Default estimator score",
             "R²",
             "RMSE",
             "MAE",
@@ -245,6 +251,7 @@ def test_without_predict_proba(custom_classifier_no_predict_proba_data):
     check_display_structure(
         display,
         expected_metrics={
+            "Default estimator score",
             "Precision",
             "Accuracy",
             "Recall",

@@ -4,8 +4,6 @@ from collections.abc import Iterable
 from typing import Any, Literal, cast
 
 import pandas as pd
-from sklearn.base import ClassifierMixin, RegressorMixin
-from sklearn.pipeline import Pipeline
 from sklearn.utils.metaestimators import available_if
 
 from skore._displays import (
@@ -86,6 +84,7 @@ class _MetricsAccessor(BaseMetricsAccessor[EstimatorReport], DirNamesMixin):
         >>> summary[~summary.index.isin(["fit_time", "predict_time"])]
                      LogisticRegression favorability
         metric
+        default_score          0.94...         (↗︎)
         accuracy               0.94...         (↗︎)
         precision              0.98...         (↗︎)
         recall                 0.92...         (↗︎)
@@ -99,16 +98,17 @@ class _MetricsAccessor(BaseMetricsAccessor[EstimatorReport], DirNamesMixin):
         log_loss            0.11...         (↘︎)
         >>> summary = report.metrics.summarize(
         ...    data_source="both"
-        ... ).frame(favorability=True)
+        ... ).frame()
         >>> summary[~summary.index.isin(["fit_time", "predict_time"])]
-                     LogisticRegression (train)  LogisticRegression (test) favorability
+                       LogisticRegression (train)  LogisticRegression (test)
         metric
-        accuracy                       0.96...                    0.94...         (↗︎)
-        precision                      0.96...                    0.98...         (↗︎)
-        recall                         0.97...                    0.92...         (↗︎)
-        roc_auc                        0.99...                    0.99...         (↗︎)
-        log_loss                       0.08...                    0.11...         (↘︎)
-        brier_score                    0.02...                    0.03...         (↘︎)
+        default_score                    0.96...                   0.94...
+        accuracy                         0.96...                   0.94...
+        precision                        0.96...                   0.98...
+        recall                           0.97...                   0.92...
+        roc_auc                          0.99...                   0.99...
+        log_loss                         0.08...                   0.11...
+        brier_score                      0.02...                   0.03...
         """
         if data_source == "both":
             train_summary = self._summarize_display(data_source="train", metric=metric)
@@ -150,17 +150,7 @@ class _MetricsAccessor(BaseMetricsAccessor[EstimatorReport], DirNamesMixin):
         elif isinstance(metric, Iterable) and metric:
             parsed_metrics = [registry[m] for m in metric]
         else:
-            predictor = self._parent.estimator_
-            if isinstance(predictor, Pipeline):
-                predictor = predictor.steps[-1][1]
-            has_default_score = getattr(type(predictor), "score", None) in (
-                ClassifierMixin.score,
-                RegressorMixin.score,
-            )
-            if has_default_score:
-                parsed_metrics = [s for s in registry.values() if s.name != "score"]
-            else:
-                parsed_metrics = list(registry.values())
+            parsed_metrics = list(registry.values())
 
         rows: list[MetricsSummaryRow] = []
         errors = []
@@ -475,7 +465,7 @@ class _MetricsAccessor(BaseMetricsAccessor[EstimatorReport], DirNamesMixin):
         return {k: v for k, v in times.items() if v is not None}
 
     @available_if(lambda self: Score.available(self._parent))
-    def score(
+    def default_score(
         self,
         *,
         data_source: DataSource = "test",
@@ -496,7 +486,8 @@ class _MetricsAccessor(BaseMetricsAccessor[EstimatorReport], DirNamesMixin):
 
         Returns
         -------
-        The default score of the estimator.
+        The default score of the estimator. A float for a single score, or a
+        dict when several scorings are registered.
 
         Examples
         --------
@@ -506,7 +497,7 @@ class _MetricsAccessor(BaseMetricsAccessor[EstimatorReport], DirNamesMixin):
         >>> X, y = load_breast_cancer(return_X_y=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
         >>> report = evaluate(classifier, X, y, splitter=0.2)
-        >>> report.metrics.score()
+        >>> report.metrics.default_score()
         0.94...
         """
         return Score().pretty(report=self._parent, data_source=data_source)

@@ -829,8 +829,8 @@ class Mape(Metric):
 
 
 class Score(Metric):
-    name = "score"
-    verbose_name = "Score"
+    name = "default_score"
+    verbose_name = "Default estimator score"
     greater_is_better = True
     function = None
     function_kind = None
@@ -838,6 +838,56 @@ class Score(Metric):
     @staticmethod
     def available(report: EstimatorReport) -> bool:
         return hasattr(report.estimator_, "score")
+
+    def _to_rows(
+        self,
+        score,
+        *,
+        report: EstimatorReport,
+        **kwargs: Any,
+    ) -> list[MetricRow]:
+        """Convert ``estimator.score`` into summary rows.
+
+        A scalar stays one ``default_score`` row. A dict — several
+        :meth:`skrub.DataOp.skb.with_scoring` entries, or a multimetric
+        ``score`` method — stays owned by this metric. One key keeps the name
+        ``default_score`` so it lines up with other estimators; several keys
+        use ``default_score__{key}`` so they do not collapse into each other
+        or into a built-in metric of the same name.
+        """
+        if not isinstance(score, dict):
+            return super()._to_rows(score, report=report, **kwargs)
+
+        single = len(score) == 1
+        rows: list[MetricRow] = []
+        for key, value in score.items():
+            child_rows = super()._to_rows(value, report=report, **kwargs)
+            if single:
+                row_name = self.name
+                verbose = (
+                    self.verbose_name
+                    if key == "score"
+                    else f"{self.verbose_name} ({_to_verbose(key)})"
+                )
+            else:
+                row_name = f"{self.name}__{key}"
+                verbose = f"{self.verbose_name} ({_to_verbose(key)})"
+            for row in child_rows:
+                row["name"] = row_name
+                row["metric_verbose_name"] = verbose
+            rows.extend(child_rows)
+        return rows
+
+    def pretty(
+        self,
+        *,
+        report: EstimatorReport,
+        data_source: DataSource = "test",
+        **kwargs: Any,
+    ) -> Any:
+        """Return the same object as ``estimator.score``."""
+        merged_kwargs = self.kwargs | kwargs
+        return self._raw_cached(report=report, data_source=data_source, **merged_kwargs)
 
     def _raw(
         self,

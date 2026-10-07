@@ -60,8 +60,6 @@ def test_uses_custom_metrics(report_type, binary_classification_data):
         splitter=0.2 if report_type == "estimator" else 3,
     )
     report.metrics.add("f1")
-    # DummyClassifier's score() method is not exactly `ClassifierMixin`'s so
-    # it is considered as a proper metric and used in the check
     n_metrics = len(
         [m for m in report.metrics.available() if m not in ["fit_time", "predict_time"]]
     )
