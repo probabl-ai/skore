@@ -177,7 +177,7 @@ class Metric:
             return
 
         self.name = name
-        self.verbose_name = name if verbose_name is None else verbose_name
+        self.verbose_name = verbose_name or name
         self.greater_is_better = greater_is_better
         self.response_method = response_method
         self.function = function
