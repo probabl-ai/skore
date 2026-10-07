@@ -104,6 +104,11 @@ Put on Hub with a polars target
 
 :meth:`~skore.Project.put` no longer raises an error when storing a :class:`~skore.CrossValidationReport` whose target ``y`` is a polars Series in a Hub project. See :pr:`3273` by :user:`jeromedockes`.
 
+Running checks on skrub DataOps
+-------------------------------
+
+Running checks on skrub DataOps is now supported. See :pr:`3086` by :user:`glemaitre` and :user:`auguste-probabl`.
+
 -----
 
 Thanks to the following contributors for their work this month (in no particular order):
