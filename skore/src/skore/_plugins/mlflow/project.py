@@ -18,6 +18,7 @@ from typing import Any, TypedDict, cast
 import joblib
 import mlflow
 import mlflow.sklearn
+import numpy as np
 import pandas as pd
 from mlflow.entities import Run as MLFlowRun
 from mlflow.exceptions import MlflowException
@@ -478,8 +479,26 @@ SKOPS_TRUSTED_TYPES = [
 ]
 
 
+def _mlflow_input_example(example: Any) -> Any:
+    """Return ``example`` when MLflow can store it, otherwise ``None``.
+
+    MLflow accepts a pandas frame, a numpy array, or a non-empty dict of arrays.
+    A dict of polars or pandas frames is not JSON-serializable.
+    """
+    if isinstance(example, pd.DataFrame | np.ndarray):
+        return example
+    if (
+        isinstance(example, dict)
+        and example
+        and all(isinstance(value, np.ndarray) for value in example.values())
+    ):
+        return example
+    return None
+
+
 def _log_model(model: BaseEstimator, input_example: Any, **kwargs: Any) -> None:
     """Log a model using skops first, then cloudpickle as fallback."""
+    input_example = _mlflow_input_example(input_example)
     if ("skops_trusted_types" in signature(mlflow.sklearn.log_model).parameters) and (
         "skops_trusted_types" not in kwargs
     ):

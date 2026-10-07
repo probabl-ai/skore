@@ -2,6 +2,7 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import mlflow
+import numpy as np
 import pandas as pd
 import pytest
 import skrub
@@ -125,6 +126,28 @@ def test_log_model_falls_back_for_mlflow_2(monkeypatch) -> None:
     project_module._log_model(LinearRegression(), input_example=None, name="test")
 
     assert len(calls) == 2
+
+
+def test_log_model_omits_unstorable_input_example(monkeypatch) -> None:
+    import polars as pl
+
+    calls = []
+
+    def _log_model(*args, **kwargs):
+        calls.append(kwargs)
+
+    monkeypatch.setattr(mlflow.sklearn, "log_model", _log_model)
+
+    project_module._log_model(
+        LinearRegression(),
+        input_example={"df": pl.DataFrame({"a": [1, 2, 3]})},
+        name="model",
+    )
+    assert calls[-1]["input_example"] is None
+
+    arrays = {"X": np.arange(3)}
+    project_module._log_model(LinearRegression(), input_example=arrays, name="model")
+    assert calls[-1]["input_example"] is arrays
 
 
 def test_log_model_reraises_unexpected_typeerror(monkeypatch) -> None:

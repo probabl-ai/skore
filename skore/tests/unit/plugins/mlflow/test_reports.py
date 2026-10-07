@@ -18,6 +18,7 @@ from skore._plugins.mlflow.reports import (
     Metric,
     Model,
     _dataset_from_Xy,
+    _sample_environment,
     _sample_input_example,
     iter_cv,
     iter_cv_metrics,
@@ -76,6 +77,20 @@ def test_iter_estimator_smoke(report):
 @pytest.mark.parametrize("report", CV_REPORT_FIXTURES, indirect=True)
 def test_iter_cv_smoke(report):
     assert len({type(obj) for obj in iter_cv(report)}) >= 5
+
+
+def test_sample_environment_keeps_dataframe_library() -> None:
+    import polars as pl
+
+    polars_frame = pl.DataFrame({"a": list(range(8))})
+    pandas_frame = pd.DataFrame({"b": list(range(8))})
+
+    sampled = _sample_environment({"polars": polars_frame, "pandas": pandas_frame})
+
+    assert isinstance(sampled["polars"], pl.DataFrame)
+    assert isinstance(sampled["pandas"], pd.DataFrame)
+    assert len(sampled["polars"]) == 5
+    assert len(sampled["pandas"]) == 5
 
 
 def test_sample_input_example_casts_category_to_object() -> None:

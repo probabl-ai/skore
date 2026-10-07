@@ -254,22 +254,12 @@ def _data_analyze_html(report: CrossValidationReport | EstimatorReport) -> Any:
             plt.close("all")
 
 
-def _pandas_from_polars(value: Any) -> Any:
-    """Return ``value`` as pandas when it is a polars frame or series."""
-    if nw.dependencies.is_polars_dataframe(value) or nw.dependencies.is_polars_series(
-        value
-    ):
-        return nw.from_native(value, allow_series=True).to_pandas()
-    return value
-
-
 def _sample_environment(
     environment: dict[str, Any], *, max_samples: int = 5
 ) -> dict[str, Any]:
     """Row-sample an evaluation environment for an MLflow input example.
 
-    Polars values are converted to pandas so signature inference sees a type
-    MLflow already accepts. Scalars are left unchanged.
+    Each value stays in its own dataframe library. Scalars are left unchanged.
     """
     return {
         key: _sample_environment_value(value, max_samples=max_samples)
@@ -280,7 +270,10 @@ def _sample_environment(
 def _sample_environment_value(value: Any, *, max_samples: int) -> Any:
     if isinstance(value, dict):
         return _sample_environment(value, max_samples=max_samples)
-    value = _pandas_from_polars(value)
+    if nw.dependencies.is_polars_dataframe(value) or nw.dependencies.is_polars_series(
+        value
+    ):
+        return value.head(max_samples)
     if isinstance(value, pd.DataFrame | np.ndarray):
         return _sample_input_example(value, max_samples=max_samples)
     if isinstance(value, pd.Series):
