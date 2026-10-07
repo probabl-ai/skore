@@ -1,3 +1,4 @@
+import warnings
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -128,8 +129,9 @@ def test_log_model_falls_back_for_mlflow_2(monkeypatch) -> None:
     assert len(calls) == 2
 
 
-def test_log_model_omits_unstorable_input_example(monkeypatch) -> None:
+def test_log_model_encodes_environment_input_example(monkeypatch) -> None:
     import polars as pl
+    from mlflow.models.utils import _Example
 
     calls = []
 
@@ -140,10 +142,28 @@ def test_log_model_omits_unstorable_input_example(monkeypatch) -> None:
 
     project_module._log_model(
         LinearRegression(),
-        input_example={"df": pl.DataFrame({"a": [1, 2, 3]})},
+        input_example={
+            "polars": pl.DataFrame({"a": [1, 2]}),
+            "pandas": pd.DataFrame({"b": [3, 4]}),
+            "_skrub_X": np.arange(2),
+            "path": "data.csv",
+        },
         name="model",
     )
-    assert calls[-1]["input_example"] is None
+    encoded = calls[-1]["input_example"]
+    assert encoded == {
+        "polars": {"columns": ["a"], "data": [(1,), (2,)]},
+        "pandas": {"columns": ["b"], "data": [[3], [4]]},
+        "_skrub_X": [0, 1],
+        "path": "data.csv",
+    }
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore",
+            message=".*Any type hint is inferred as AnyType.*",
+            category=UserWarning,
+        )
+        _Example(encoded)
 
     arrays = {"X": np.arange(3)}
     project_module._log_model(LinearRegression(), input_example=arrays, name="model")
