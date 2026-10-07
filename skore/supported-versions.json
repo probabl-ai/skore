@@ -1,6 +1,5 @@
 [
     {"os": "ubuntu-latest", "python": "3.11", "dependencies": ["scikit-learn==1.6.*"], "coverage": false},
-    {"os": "ubuntu-latest", "python": "3.11", "dependencies": ["scikit-learn==1.6.*", "mlflow==2.*"], "coverage": false},
     {"os": "ubuntu-latest", "python": "3.11", "dependencies": ["scikit-learn==1.9.*"], "coverage": false},
 
     {"os": "ubuntu-latest", "python": "3.12", "dependencies": ["scikit-learn==1.6.*"], "coverage": false},
@@ -15,7 +14,6 @@
     {"os": "ubuntu-latest", "python": "3.14", "dependencies": ["scikit-learn==1.9.*", "mlflow==3.*"], "coverage": false},
     {"os": "ubuntu-latest", "python": "3.14", "dependencies": ["scikit-learn==1.9.*"], "coverage": true},
 
-    {"os": "windows-latest", "python": "3.11", "dependencies": ["scikit-learn==1.6.*", "mlflow==2.*"], "coverage": false},
     {"os": "windows-latest", "python": "3.11", "dependencies": ["scikit-learn==1.6.*"], "coverage": false},
     {"os": "windows-latest", "python": "3.11", "dependencies": ["scikit-learn==1.9.*"], "coverage": false},
 

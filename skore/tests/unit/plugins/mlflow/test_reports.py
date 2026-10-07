@@ -6,6 +6,7 @@ import pytest
 import skrub
 from mlflow.data.numpy_dataset import NumpyDataset
 from mlflow.data.pandas_dataset import PandasDataset
+from mlflow.data.polars_dataset import PolarsDataset
 from numpy.testing import assert_array_equal
 from sklearn.datasets import make_regression
 from sklearn.dummy import DummyRegressor
@@ -170,7 +171,7 @@ def test_iter_estimator_skrub_learner_uses_test_environment() -> None:
     ],
 )
 def test_dataset_from_Xy_polars(y: str) -> None:
-    """Polars features and targets are recorded as a pandas MLflow dataset."""
+    """Polars features and targets are recorded as a polars MLflow dataset."""
     import polars as pl
 
     features = pl.DataFrame({"a": [1, 2, 3], "b": [4.0, 5.0, 6.0]})
@@ -181,6 +182,6 @@ def test_dataset_from_Xy_polars(y: str) -> None:
 
     dataset = _dataset_from_Xy(features, target).dataset
 
-    assert isinstance(dataset, PandasDataset)
+    assert isinstance(dataset, PolarsDataset)
     assert list(dataset.df.columns) == ["a", "b", "label"]
     assert len(dataset.df) == 3

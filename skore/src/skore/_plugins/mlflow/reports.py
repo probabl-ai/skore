@@ -303,14 +303,68 @@ def _sample_input_example(X: ArrayLike, *, max_samples: int = 5) -> ArrayLike:
         return X[:max_samples]
 
 
+def _dataset_from_polars(X: Any, y: Any, context: str | None) -> Dataset:
+    """Log a polars feature frame with ``mlflow.data.from_polars``.
+
+    ``from_polars`` records a single target column. Several targets fall back to
+    the numpy dataset path.
+    """
+    import polars as pl
+
+    if isinstance(y, dict) or (
+        isinstance(y, np.ndarray) and y.ndim == 2 and y.shape[1] != 1
+    ):
+        if isinstance(y, dict):
+            targets = y
+        else:
+            targets = {f"target_{idx}": y[:, idx] for idx in range(y.shape[1])}
+        return _dataset_from_Xy(X.to_numpy(), targets, context=context)
+
+    if isinstance(y, pl.Series):
+        name = y.name if y.name else "target"
+        target_frame = y.alias(name).to_frame()
+    elif isinstance(y, pl.DataFrame):
+        if y.width != 1:
+            return _dataset_from_Xy(
+                X.to_numpy(),
+                {column: y.get_column(column).to_numpy() for column in y.columns},
+                context=context,
+            )
+        name = str(y.columns[0])
+        target_frame = y
+    elif isinstance(y, pd.Series):
+        name = str(y.name) if y.name is not None else "target"
+        target_frame = pl.Series(name, y.to_numpy()).to_frame()
+    elif isinstance(y, pd.DataFrame):
+        if len(y.columns) != 1:
+            return _dataset_from_Xy(
+                X.to_numpy(),
+                {column: y[column].to_numpy() for column in y.columns},
+                context=context,
+            )
+        name = str(y.columns[0])
+        target_frame = pl.from_pandas(y)
+    elif isinstance(y, np.ndarray):
+        name = "target"
+        values = y.ravel() if y.ndim == 2 else y
+        target_frame = pl.Series(name, values).to_frame()
+    else:
+        raise TypeError(f"Unsupported target type for a polars dataset: {type(y)}")
+
+    frame = pl.concat([X, target_frame], how="horizontal")
+    return Dataset(
+        dataset=mlflow.data.from_polars(frame, targets=name),  # type: ignore[attr-defined]
+        context=context,
+    )
+
+
 def _dataset_from_Xy(
     X: pd.DataFrame | NDArray[np.generic],
     y: pd.DataFrame | pd.Series | NDArray[np.generic] | dict[str, NDArray[np.generic]],
     context: str | None = None,
 ) -> Dataset:
-    X = _pandas_from_polars(X)
-    if not isinstance(y, dict):
-        y = _pandas_from_polars(y)
+    if nw.dependencies.is_polars_dataframe(X):
+        return _dataset_from_polars(X, y, context)
 
     if isinstance(X, np.ndarray):
         if isinstance(y, pd.Series):
