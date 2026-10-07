@@ -4,9 +4,14 @@ from types import SimpleNamespace
 import mlflow
 import pandas as pd
 import pytest
+import skrub
 from mlflow.exceptions import MlflowException
+from sklearn.datasets import make_regression
+from sklearn.dummy import DummyRegressor
 from sklearn.linear_model import LinearRegression
+from sklearn.model_selection import KFold
 
+from skore import CrossValidationReport
 from skore._plugins.mlflow import Project
 from skore._plugins.mlflow import project as project_module
 from skore._plugins.mlflow.project import (
@@ -337,6 +342,29 @@ class TestProject:
         for artifact in self.CLF_ARTIFACTS:
             assert (report_dir / artifact).exists()
         assert (report_dir / "metrics_details" / "per_split.csv").exists()
+
+    def test_put_get_skrub_cross_validation(self) -> None:
+        X, y = make_regression(n_samples=40, n_features=3, random_state=0)
+        learner = (
+            skrub.X(X).skb.apply(DummyRegressor(), y=skrub.y(y)).skb.make_learner()
+        )
+        report = CrossValidationReport(
+            learner,
+            data={"_skrub_X": X, "_skrub_y": y},
+            splitter=KFold(n_splits=2),
+        )
+        project = Project("<project>")
+        project.put("<key>", report)
+
+        (metadata,) = project.summarize()
+        run = mlflow.get_run(metadata["id"])
+        assert run.data.tags["skore_status"] == "completed"
+
+        restored = project.get(metadata["id"])
+        assert isinstance(restored, CrossValidationReport)
+        assert restored.metrics.rmse(aggregate="mean").iloc[0] == pytest.approx(
+            report.metrics.rmse(aggregate="mean").iloc[0]
+        )
 
     def test_get_unknown_id_with_explicit_tracking_uri(self, mlflow_tracking_uri):
         tracking_uri = mlflow_tracking_uri()
