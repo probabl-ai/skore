@@ -27,7 +27,8 @@ from httpx import (
 from httpx import Client as HTTPXClient
 from httpx._types import HeaderTypes
 
-from skore._plugins.hub.authentication import ENV_VAR_NAME, URI, registry
+from skore._plugins.hub.authentication import ENV_VAR_NAME, URI
+from skore._plugins.hub.authentication import key as key_module
 
 logger = getLogger(__name__)
 
@@ -250,11 +251,13 @@ class HUBClient(Client):
         # if JUPYTERLITE, user is authenticated via cookies
         if not JUPYTERLITE:
             if not (
-                key := environ.get(ENV_VAR_NAME)
-                or registry.get(host=host, workspace=workspace)
+                key := (
+                    environ.get(ENV_VAR_NAME)
+                    or key_module.get(host=host, workspace=workspace)
+                )
             ):
                 raise RuntimeError(
-                    "No API key found for this workspace; store one with "
+                    "No API key found for this workspace; generate one with "
                     "`$ skore hub api-key generate --workspace <workspace>`, "
                     "or set the SKORE_HUB_API_KEY environment variable."
                 )

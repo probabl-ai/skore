@@ -7,9 +7,9 @@ API keys are stored in ``~/.skore.hub/credentials.json`` as a JSON object:
         "type": "plaintext",
         "keys": [
             {
+                "id": 42,
                 "host": "<host>",
                 "workspace": "<workspace>",
-                "api_key_id": 42,
                 "key": "<key>"
             }
         ]
@@ -19,9 +19,10 @@ API keys are stored in ``~/.skore.hub/credentials.json`` as a JSON object:
         "type": "secret",
         "keys": [
             {
+                "id": 42,
                 "host": "<host>",
                 "workspace": "<workspace>",
-                "api_key_id": 42
+                "key": null
             }
         ]
     }
@@ -38,23 +39,23 @@ Notes
 -----
 The registry is locked during write operations.
 
-When ``host`` is omitted on :meth:`set`, :meth:`get`, :meth:`get_api_key_id` or
-:meth:`delete`, its value is derived from :func:`URI`. Hosts are compared after
-:func:`normalize`, so a trailing slash or differences in scheme/host case do not
-create a distinct credential.
+When ``host`` is omitted on :meth:`set`, :meth:`get` or :meth:`delete`, its value is
+derived from :func:`URI`. Hosts are compared after :func:`normalize`, so a trailing
+slash or differences in scheme/host case do not create a distinct credential.
 """
 
 from __future__ import annotations
 
 from collections.abc import Callable, Generator
 from contextlib import suppress
+from dataclasses import asdict, dataclass
 from functools import wraps
 from json import dump, load
 from pathlib import Path
 from shutil import move
 from stat import S_IMODE
 from tempfile import NamedTemporaryFile, gettempdir
-from typing import TYPE_CHECKING, Any, Final, ParamSpec, TypeVar, cast
+from typing import TYPE_CHECKING, Any, Final, ParamSpec, TypeVar
 
 from filelock import FileLock
 from keyring import delete_password, get_keyring, get_password, set_password
@@ -72,6 +73,14 @@ if TYPE_CHECKING:
 KEYRING_SERVICE: Final[str] = "skore"
 DIRECTORY_MODE: Final[int] = 0o700
 FILE_MODE: Final[int] = 0o600
+
+
+@dataclass
+class Key:
+    id: int
+    host: str
+    workspace: str
+    key: str | None = None
 
 
 def lock(function: Callable[P, R]) -> Callable[P, R]:
@@ -124,65 +133,65 @@ def save_on_disk(*, registry: dict[str, Any], filepath: Path, mode: int) -> None
     filepath.chmod(mode)
 
 
-def keys() -> Generator[tuple[str, str]]:
-    """Yield ``(host, workspace)`` keys stored in the registry."""
+def keys() -> Generator[tuple[int, str, str]]:
+    """Yield ``(id, host, workspace)`` keys stored in the registry."""
     filepath = setup()
 
     with filepath.open() as file:
-        for credential in load(file)["keys"]:
-            yield (normalize(credential["host"]), credential["workspace"])
+        for entry in load(file)["keys"]:
+            yield (
+                entry["id"],
+                normalize(entry["host"]),
+                entry["workspace"],
+            )
 
 
 @lock
-def set(
-    *, host: str | None = None, workspace: str, api_key: str, api_key_id: int
-) -> None:
+def set(*, id: int, host: str | None = None, workspace: str, key: str) -> None:
     """
     Insert or replace the API key for ``host`` and ``workspace``.
 
     Parameters
     ----------
+    id : int
+        ID of the API key, used to revoke it from the hub.
     host : str, optional
         URI associated with the API key. If omitted, :func:`URI` is used.
     workspace : str
         Workspace associated with the API key.
-    api_key : str
+    key : str
         API key to persist.
-    api_key_id : int
-        Hub id of this API key, used to revoke it later.
     """
     filepath = setup()
-    host = normalize(host or URI())
-    mode = S_IMODE(filepath.stat().st_mode)
 
     with filepath.open() as file:
         registry = load(file)
 
-    if registry["type"] == "secret":
-        set_password(KEYRING_SERVICE, f"{host}:{workspace}", api_key)
-        new = {"host": host, "workspace": workspace, "api_key_id": api_key_id}
-    else:
-        new = {
-            "host": host,
-            "workspace": workspace,
-            "api_key_id": api_key_id,
-            "key": api_key,
-        }
+    host = normalize(host or URI())
+    new = Key(id=id, host=host, workspace=workspace)
 
-    for i, credential in enumerate(registry["keys"]):
-        if (
-            normalize(credential["host"]) == host
-            and credential["workspace"] == workspace
-        ):
-            registry["keys"][i] = new
+    if registry["type"] == "secret":
+        set_password(KEYRING_SERVICE, f"{host}:{workspace}", key)
+    else:
+        new.key = key
+
+    for i, entry in enumerate(registry["keys"]):
+        i_key = Key(**entry)
+
+        if (normalize(i_key.host) == host) and (i_key.workspace == workspace):
+            registry["keys"][i] = asdict(new)
             break
     else:
-        registry["keys"].append(new)
+        registry["keys"].append(asdict(new))
 
-    save_on_disk(registry=registry, filepath=filepath, mode=mode)
+    save_on_disk(
+        registry=registry,
+        filepath=filepath,
+        mode=S_IMODE(filepath.stat().st_mode),
+    )
 
 
-def get(*, host: str | None = None, workspace: str) -> str | None:
+def get(*, host: str | None = None, workspace: str) -> Key | None:
     """
     Return the API key for ``host`` and ``workspace``.
 
@@ -195,57 +204,24 @@ def get(*, host: str | None = None, workspace: str) -> str | None:
 
     Returns
     -------
-    str or None
+    Key or None
         The matching API key, or ``None`` if none is stored.
     """
     filepath = setup()
-    host = normalize(host or URI())
 
     with filepath.open() as file:
         registry = load(file)
 
-    for credential in registry["keys"]:
-        if (
-            normalize(credential["host"]) == host
-            and credential["workspace"] == workspace
-        ):
+    host = normalize(host or URI())
+
+    for entry in registry["keys"]:
+        key = Key(**entry)
+
+        if (normalize(key.host) == host) and (key.workspace == workspace):
             if registry["type"] == "secret":
-                return get_password(KEYRING_SERVICE, f"{host}:{workspace}")
+                key.key = get_password(KEYRING_SERVICE, f"{host}:{workspace}")
 
-            return cast(str, credential["key"])
-
-    return None
-
-
-def get_api_key_id(*, host: str | None = None, workspace: str) -> int | None:
-    """
-    Return the Hub API key id for ``host`` and ``workspace``.
-
-    Parameters
-    ----------
-    host : str, optional
-        URI associated with the API key. If omitted, :func:`URI` is used.
-    workspace : str
-        Workspace associated with the API key.
-
-    Returns
-    -------
-    int or None
-        The matching Hub id, or ``None`` if none is stored.
-    """
-    filepath = setup()
-    host = normalize(host or URI())
-
-    with filepath.open() as file:
-        registry = load(file)
-
-    for credential in registry["keys"]:
-        if (
-            normalize(credential["host"]) == host
-            and credential["workspace"] == workspace
-        ):
-            api_key_id = credential.get("api_key_id")
-            return int(api_key_id) if api_key_id is not None else None
+            return key
 
     return None
 
@@ -263,20 +239,24 @@ def delete(*, host: str | None = None, workspace: str) -> None:
         Workspace associated with the API key.
     """
     filepath = setup()
-    host = normalize(host or URI())
-    mode = S_IMODE(filepath.stat().st_mode)
 
     with filepath.open() as file:
         registry = load(file)
+
+    host = normalize(host or URI())
 
     if registry["type"] == "secret":
         with suppress(PasswordDeleteError):
             delete_password(KEYRING_SERVICE, f"{host}:{workspace}")
 
     registry["keys"] = [
-        credential
-        for credential in registry["keys"]
-        if normalize(credential["host"]) != host or credential["workspace"] != workspace
+        entry
+        for entry in registry["keys"]
+        if (normalize(entry["host"]) != host) or (entry["workspace"] != workspace)
     ]
 
-    save_on_disk(registry=registry, filepath=filepath, mode=mode)
+    save_on_disk(
+        registry=registry,
+        filepath=filepath,
+        mode=S_IMODE(filepath.stat().st_mode),
+    )
