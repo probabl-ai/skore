@@ -1,3 +1,5 @@
+"""Create and revoke API keys on ``skore hub``."""
+
 from __future__ import annotations
 
 from calendar import monthrange
@@ -21,6 +23,8 @@ PERMISSIONS = (
 
 @dataclass(frozen=True)
 class Workspace:
+    """Workspace membership returned by the hub."""
+
     id: int
     public_id: str
     permissions: frozenset[str]
@@ -28,17 +32,36 @@ class Workspace:
 
 @dataclass(frozen=True)
 class Identity:
+    """Authenticated user and their workspace memberships."""
+
     id: str
     workspaces: list[Workspace]
 
 
 @dataclass(frozen=True)
 class Key:
+    """API key issued by the hub."""
+
     id: int
     key: str
 
 
 def identity(*, host: str, token: Token) -> Identity:
+    """
+    Return the authenticated user and their workspace memberships.
+
+    Parameters
+    ----------
+    host : str
+        Hub backend URI.
+    token : Token
+        OAuth token used to call the hub.
+
+    Returns
+    -------
+    Identity
+        The current user.
+    """
     url = urljoin(host, "/identity/users/me")
     headers = {"Authorization": f"Bearer {token.access}"}
 
@@ -59,6 +82,19 @@ def identity(*, host: str, token: Token) -> Identity:
 
 
 def expires_at_from_expires(expires: Literal["1", "3", "6", "never"], /) -> str | None:
+    """
+    Return an absolute expiration timestamp for a relative lifetime.
+
+    Parameters
+    ----------
+    expires : {"1", "3", "6", "never"}
+        Lifetime in months, or ``"never"``.
+
+    Returns
+    -------
+    str or None
+        Expiration as an ISO 8601 string, or ``None`` when the key does not expire.
+    """
     if expires == "never":
         return None
 
@@ -82,6 +118,32 @@ def generate(
     expires: Literal["1", "3", "6", "never"] = "never",
     timeout: int = 600,
 ) -> Key:
+    """
+    Create an API key on the hub.
+
+    Parameters
+    ----------
+    host : str
+        Hub backend URI.
+    workspace : str
+        Public identifier of the workspace the key is scoped to.
+    name : str or None, default=None
+        Name of the API key. A random name is used when omitted.
+    expires : {"1", "3", "6", "never"}, default="never"
+        Lifetime of the API key, in months, or ``"never"``.
+    timeout : int, default=600
+        Seconds to wait for interactive authentication.
+
+    Returns
+    -------
+    Key
+        The issued API key.
+
+    Raises
+    ------
+    PermissionError
+        The user is not a member of ``workspace``, or lacks the required permissions.
+    """
     host = normalize(host)
     token = login(host=host, timeout=timeout)
     user = identity(host=host, token=token)
@@ -118,7 +180,19 @@ def generate(
     return Key(id=response["api_key_id"], key=response["api_key"])
 
 
-def delete(*, host: str, id: int, timeout: int = 600) -> None:
+def revoke(*, host: str, id: int, timeout: int = 600) -> None:
+    """
+    Revoke an API key.
+
+    Parameters
+    ----------
+    host : str
+        Hub backend URI.
+    id : int
+        Identifier of the API key to revoke.
+    timeout : int, default=600
+        Seconds to wait for interactive authentication.
+    """
     host = normalize(host)
     token = login(host=host, timeout=timeout)
     user = identity(host=host, token=token)

@@ -24,6 +24,11 @@ def get_oauth_device_login(host: str) -> tuple[str, str, str]:
     Initiates the OAuth device flow.
     Provides the user with a URL and a OTP code to authenticate the device.
 
+    Parameters
+    ----------
+    host : str
+        Hub backend URI.
+
     Returns
     -------
     tuple
@@ -56,8 +61,12 @@ def get_oauth_device_code_probe(
 
     Parameters
     ----------
+    host : str
+        Hub backend URI.
     device_code : str
         The device code to exchange for tokens.
+    timeout : int, default=600
+        Seconds to wait for the user to authorize the device.
     """
     url = "identity/oauth/device/code-probe"
     params = {"device_code": device_code}
@@ -88,9 +97,11 @@ def post_oauth_device_callback(host: str, state: str, user_code: str) -> None:
 
     Parameters
     ----------
-    state: str
+    host : str
+        Hub backend URI.
+    state : str
         The unique value identifying the device flow.
-    user_code: str
+    user_code : str
         The code entered by the user.
     """
     url = "identity/oauth/device/callback"
@@ -109,8 +120,10 @@ def get_oauth_device_token(host: str, device_code: str) -> tuple[str, str, str]:
 
     Parameters
     ----------
+    host : str
+        Hub backend URI.
     device_code : str
-        The device code to exchange for tokens
+        The device code to exchange for tokens.
 
     Returns
     -------
@@ -146,8 +159,10 @@ def post_oauth_refresh_token(host: str, refresh_token: str) -> tuple[str, str, s
 
     Parameters
     ----------
+    host : str
+        Hub backend URI.
     refresh_token : str
-        A valid refresh token
+        A valid refresh token.
 
     Returns
     -------
@@ -231,5 +246,21 @@ class Token:
 
 @cache
 def login(*, host: str, timeout: int = 600) -> Token:
-    """Login to ``skore hub``."""
+    """
+    Login to ``skore hub``.
+
+    The returned token is cached for the given ``host`` and ``timeout``.
+
+    Parameters
+    ----------
+    host : str
+        Hub backend URI.
+    timeout : int, default=600
+        Seconds to wait for interactive authentication.
+
+    Returns
+    -------
+    Token
+        A token that refreshes itself when it expires.
+    """
     return Token(host=host, timeout=timeout)

@@ -76,6 +76,8 @@ FILE_MODE: Final[int] = 0o600
 
 @dataclass
 class Key:
+    """API key stored in the local registry."""
+
     id: int
     host: str
     workspace: str
@@ -96,6 +98,17 @@ def lock(function: Callable[P, R]) -> Callable[P, R]:
 
 
 def setup() -> Path:
+    """
+    Return the credentials file, creating an empty registry when it is missing.
+
+    The directory is created with mode ``0o700`` and the file with mode ``0o600``.
+    An existing file is left unchanged, including its permission bits.
+
+    Returns
+    -------
+    Path
+        Path to ``~/.skore.hub/credentials.json``.
+    """
     directory = Path.home() / ".skore.hub"
 
     if not directory.exists():
@@ -196,10 +209,10 @@ def get(*, host: str, workspace: str) -> Key | None:
 
     Parameters
     ----------
-    host : str, optional
-        URI associated with the API key. If omitted, :func:`URI` is used.
+    host : str
+        URI associated with the API key.
     workspace : str
-        Workspace associated with the API Key.
+        Workspace associated with the API key.
 
     Returns
     -------
@@ -232,8 +245,8 @@ def delete(*, host: str, workspace: str) -> None:
 
     Parameters
     ----------
-    host : str, optional
-        URI associated with the API key. If omitted, :func:`URI` is used.
+    host : str
+        URI associated with the API key.
     workspace : str
         Workspace associated with the API key.
     """
