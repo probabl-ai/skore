@@ -3,13 +3,12 @@ from __future__ import annotations
 from calendar import monthrange
 from dataclasses import dataclass
 from datetime import UTC, datetime
-from os import environ
 from typing import Literal
 from urllib.parse import urljoin
 from uuid import uuid4
 
 from skore._plugins.hub.authentication.login import Token, login
-from skore._plugins.hub.authentication.uri import URI, normalize
+from skore._plugins.hub.authentication.uri import normalize
 from skore._plugins.hub.client.client import Client
 
 PERMISSIONS = (
@@ -77,16 +76,14 @@ def expires_at_from_expires(expires: Literal["1", "3", "6", "never"], /) -> str 
 
 def generate(
     *,
-    host: str | None = None,
+    host: str,
     workspace: str,
     name: str | None = None,
     expires: Literal["1", "3", "6", "never"] = "never",
     timeout: int = 600,
 ) -> Key:
-    host = normalize(host or URI())
-    environ["SKORE_HUB_URI"] = host
-
-    token = login(timeout=timeout)
+    host = normalize(host)
+    token = login(host=host, timeout=timeout)
     user = identity(host=host, token=token)
 
     if not (
@@ -121,11 +118,9 @@ def generate(
     return Key(id=response["api_key_id"], key=response["api_key"])
 
 
-def delete(*, host: str | None = None, id: int, timeout: int = 600) -> None:
-    host = normalize(host or URI())
-    environ["SKORE_HUB_URI"] = host
-
-    token = login(timeout=timeout)
+def delete(*, host: str, id: int, timeout: int = 600) -> None:
+    host = normalize(host)
+    token = login(host=host, timeout=timeout)
     user = identity(host=host, token=token)
 
     with Client() as client:

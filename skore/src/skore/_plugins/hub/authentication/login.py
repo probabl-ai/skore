@@ -13,19 +13,16 @@ from httpx import HTTPStatusError, TimeoutException
 from rich.align import Align
 from rich.panel import Panel
 
+from skore import console
+from skore._plugins.hub.client.client import Client
 
-def get_oauth_device_login(success_uri: str | None = None) -> tuple[str, str, str]:
+
+def get_oauth_device_login(host: str) -> tuple[str, str, str]:
     """
     Initiate device OAuth flow.
 
     Initiates the OAuth device flow.
     Provides the user with a URL and a OTP code to authenticate the device.
-
-    Parameters
-    ----------
-    success_uri : str, optional
-        The URI to redirect to after successful authentication.
-        If not provided, defaults to None.
 
     Returns
     -------
@@ -38,14 +35,8 @@ def get_oauth_device_login(success_uri: str | None = None) -> tuple[str, str, st
         - user_code: str
             The user code that needs to be entered on the authorization page
     """
-    from skore._plugins.hub.authentication.uri import URI
-    from skore._plugins.hub.client.client import Client
-
-    url = "identity/oauth/device/login"
-    params = {"success_uri": success_uri} if success_uri is not None else {}
-
     with Client() as client:
-        response = client.get(urljoin(URI(), url), params=params).json()
+        response = client.get(urljoin(host, "identity/oauth/device/login")).json()
 
         return (
             response["authorization_url"],
@@ -54,7 +45,9 @@ def get_oauth_device_login(success_uri: str | None = None) -> tuple[str, str, st
         )
 
 
-def get_oauth_device_code_probe(device_code: str, *, timeout: int = 600) -> None:
+def get_oauth_device_code_probe(
+    host: str, device_code: str, *, timeout: int = 600
+) -> None:
     """
     Ensure authorization code is acknowledged.
 
@@ -66,9 +59,6 @@ def get_oauth_device_code_probe(device_code: str, *, timeout: int = 600) -> None
     device_code : str
         The device code to exchange for tokens.
     """
-    from skore._plugins.hub.authentication.uri import URI
-    from skore._plugins.hub.client.client import Client
-
     url = "identity/oauth/device/code-probe"
     params = {"device_code": device_code}
 
@@ -77,7 +67,7 @@ def get_oauth_device_code_probe(device_code: str, *, timeout: int = 600) -> None
 
         while True:
             try:
-                client.get(urljoin(URI(), url), params=params)
+                client.get(urljoin(host, url), params=params)
             except HTTPStatusError as exc:
                 if exc.response.status_code != 400:
                     raise
@@ -90,7 +80,7 @@ def get_oauth_device_code_probe(device_code: str, *, timeout: int = 600) -> None
                 break
 
 
-def post_oauth_device_callback(state: str, user_code: str) -> None:
+def post_oauth_device_callback(host: str, state: str, user_code: str) -> None:
     """
     Validate the user-provided device code.
 
@@ -103,17 +93,14 @@ def post_oauth_device_callback(state: str, user_code: str) -> None:
     user_code: str
         The code entered by the user.
     """
-    from skore._plugins.hub.authentication.uri import URI
-    from skore._plugins.hub.client.client import Client
-
     url = "identity/oauth/device/callback"
     data = {"state": state, "user_code": user_code}
 
     with Client() as client:
-        client.post(urljoin(URI(), url), data=data)
+        client.post(urljoin(host, url), data=data)
 
 
-def get_oauth_device_token(device_code: str) -> tuple[str, str, str]:
+def get_oauth_device_token(host: str, device_code: str) -> tuple[str, str, str]:
     """
     Exchanges the device code for an access token.
 
@@ -136,14 +123,11 @@ def get_oauth_device_token(device_code: str) -> tuple[str, str, str]:
         - expires_at : str
             The expiration datetime as ISO 8601 str of the access token
     """
-    from skore._plugins.hub.authentication.uri import URI
-    from skore._plugins.hub.client.client import Client
-
     url = "identity/oauth/device/token"
     params = {"device_code": device_code}
 
     with Client() as client:
-        response = client.get(urljoin(URI(), url), params=params).json()
+        response = client.get(urljoin(host, url), params=params).json()
         tokens = response["token"]
 
         return (
@@ -153,7 +137,7 @@ def get_oauth_device_token(device_code: str) -> tuple[str, str, str]:
         )
 
 
-def post_oauth_refresh_token(refresh_token: str) -> tuple[str, str, str]:
+def post_oauth_refresh_token(host: str, refresh_token: str) -> tuple[str, str, str]:
     """
     Refresh an access token using a provided refresh token.
 
@@ -176,14 +160,11 @@ def post_oauth_refresh_token(refresh_token: str) -> tuple[str, str, str]:
         - expires_at : str
             The expiration datetime as ISO 8601 str of the access token
     """
-    from skore._plugins.hub.authentication.uri import URI
-    from skore._plugins.hub.client.client import Client
-
     url = "identity/oauth/token/refresh"
     json = {"refresh_token": refresh_token}
 
     with Client() as client:
-        response = client.post(urljoin(URI(), url), json=json).json()
+        response = client.post(urljoin(host, url), json=json).json()
 
         return (
             response["access_token"],
@@ -201,10 +182,9 @@ class Token:
     Refresh the token on-the-fly if necessary.
     """
 
-    def __init__(self, *, timeout: int = 600) -> None:
-        from skore import console
+    def __init__(self, *, host: str, timeout: int = 600) -> None:
 
-        url, device_code, user_code = get_oauth_device_login()
+        url, device_code, user_code = get_oauth_device_login(host)
 
         console.print(
             Panel(
@@ -222,11 +202,12 @@ class Token:
 
         open_webbrowser(url)
 
-        get_oauth_device_code_probe(device_code, timeout=timeout)
-        post_oauth_device_callback(device_code, user_code)
+        get_oauth_device_code_probe(host, device_code, timeout=timeout)
+        post_oauth_device_callback(host, device_code, user_code)
 
-        access, refreshment, expiration = get_oauth_device_token(device_code)
+        access, refreshment, expiration = get_oauth_device_token(host, device_code)
 
+        self.__host = host
         self.__lock = RLock()
         self.__access = access
         self.__refreshment = refreshment
@@ -238,7 +219,7 @@ class Token:
         with self.__lock:
             if self.__expiration <= datetime.now(UTC):
                 access, refreshment, expiration = post_oauth_refresh_token(
-                    self.__refreshment
+                    self.__host, self.__refreshment
                 )
 
                 self.__access = access
@@ -249,6 +230,6 @@ class Token:
 
 
 @cache
-def login(*, timeout: int = 600) -> Token:
+def login(*, host: str, timeout: int = 600) -> Token:
     """Login to ``skore hub``."""
-    return Token(timeout=timeout)
+    return Token(host=host, timeout=timeout)

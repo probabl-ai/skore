@@ -4,6 +4,7 @@ from collections.abc import Generator
 from typing import Literal
 
 from skore._plugins.hub.authentication import registry
+from skore._plugins.hub.authentication.uri import URI, normalize
 
 
 class KeyExistsError(Exception):
@@ -24,6 +25,8 @@ def generate(
     timeout: int = 600,
     force: bool = False,
 ) -> None:
+    host = normalize(host or URI())
+
     if old := registry.local.get(host=host, workspace=workspace):
         if not force:
             raise KeyExistsError(
@@ -46,12 +49,16 @@ def generate(
 
 
 def get(*, host: str | None = None, workspace: str) -> str | None:
+    host = normalize(host or URI())
+
     return (
         (key := registry.local.get(host=host, workspace=workspace)) and key.key or None
     )
 
 
 def delete(*, host: str | None = None, workspace: str) -> None:
+    host = normalize(host or URI())
+
     if key := registry.local.get(host=host, workspace=workspace):
         registry.local.delete(host=host, workspace=workspace)
         registry.distant.delete(host=host, id=key.id)

@@ -39,9 +39,8 @@ Notes
 -----
 The registry is locked during write operations.
 
-When ``host`` is omitted on :meth:`set`, :meth:`get` or :meth:`delete`, its value is
-derived from :func:`URI`. Hosts are compared after :func:`normalize`, so a trailing
-slash or differences in scheme/host case do not create a distinct credential.
+Hosts are compared after :func:`normalize`, so a trailing slash or differences in
+scheme/host case do not create a distinct credential.
 """
 
 from __future__ import annotations
@@ -63,7 +62,7 @@ from keyring.backends.fail import Keyring as FailBackend
 from keyring.core import recommended
 from keyring.errors import PasswordDeleteError
 
-from skore._plugins.hub.authentication.uri import URI, normalize
+from skore._plugins.hub.authentication.uri import normalize
 
 if TYPE_CHECKING:
     P = ParamSpec("P")
@@ -147,7 +146,7 @@ def keys() -> Generator[tuple[int, str, str]]:
 
 
 @lock
-def set(*, id: int, host: str | None = None, workspace: str, key: str) -> None:
+def set(*, id: int, host: str, workspace: str, key: str) -> None:
     """
     Insert or replace the API key for ``host`` and ``workspace``.
 
@@ -155,8 +154,8 @@ def set(*, id: int, host: str | None = None, workspace: str, key: str) -> None:
     ----------
     id : int
         ID of the API key, used to revoke it from the hub.
-    host : str, optional
-        URI associated with the API key. If omitted, :func:`URI` is used.
+    host : str
+        URI associated with the API key.
     workspace : str
         Workspace associated with the API key.
     key : str
@@ -167,7 +166,7 @@ def set(*, id: int, host: str | None = None, workspace: str, key: str) -> None:
     with filepath.open() as file:
         registry = load(file)
 
-    host = normalize(host or URI())
+    host = normalize(host)
     new = Key(id=id, host=host, workspace=workspace)
 
     if registry["type"] == "secret":
@@ -191,7 +190,7 @@ def set(*, id: int, host: str | None = None, workspace: str, key: str) -> None:
     )
 
 
-def get(*, host: str | None = None, workspace: str) -> Key | None:
+def get(*, host: str, workspace: str) -> Key | None:
     """
     Return the API key for ``host`` and ``workspace``.
 
@@ -212,7 +211,7 @@ def get(*, host: str | None = None, workspace: str) -> Key | None:
     with filepath.open() as file:
         registry = load(file)
 
-    host = normalize(host or URI())
+    host = normalize(host)
 
     for entry in registry["keys"]:
         key = Key(**entry)
@@ -227,7 +226,7 @@ def get(*, host: str | None = None, workspace: str) -> Key | None:
 
 
 @lock
-def delete(*, host: str | None = None, workspace: str) -> None:
+def delete(*, host: str, workspace: str) -> None:
     """
     Remove the API key for ``host`` and ``workspace``.
 
@@ -243,7 +242,7 @@ def delete(*, host: str | None = None, workspace: str) -> None:
     with filepath.open() as file:
         registry = load(file)
 
-    host = normalize(host or URI())
+    host = normalize(host)
 
     if registry["type"] == "secret":
         with suppress(PasswordDeleteError):
