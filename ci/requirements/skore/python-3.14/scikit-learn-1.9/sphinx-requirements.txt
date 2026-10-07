@@ -8,15 +8,15 @@ aiosignal==1.4.0
     # via aiohttp
 alabaster==1.0.0
     # via sphinx
-alembic==1.19.0
+alembic==1.20.0
     # via mlflow
-altair==6.2.2
+altair==6.3.0
     # via skore (skore/pyproject.toml)
 annotated-doc==0.0.5
     # via fastapi
 annotated-types==0.8.0
     # via pydantic
-anyio==4.14.2
+anyio==4.15.1
     # via
     #   httpx
     #   mlflow-skinny
@@ -36,7 +36,7 @@ beautifulsoup4==4.15.0
     # via pydata-sphinx-theme
 blinker==1.9.0
     # via flask
-cachetools==7.1.7
+cachetools==7.2.0
     # via
     #   mlflow-skinny
     #   mlflow-tracing
@@ -47,11 +47,11 @@ certifi==2026.7.22
     #   requests
 cffi==2.1.1
     # via cryptography
-charset-normalizer==3.4.9
+charset-normalizer==3.5.1
     # via requests
-choreographer==1.3.0
+choreographer==1.4.0
     # via kaleido
-click==8.4.2
+click==8.5.0
     # via
     #   flask
     #   mlflow-skinny
@@ -63,7 +63,7 @@ cloudpickle==3.1.2
     #   skrub
 comm==0.2.3
     # via ipywidgets
-contourpy==1.3.3
+contourpy==1.4.0
     # via matplotlib
 cryptography==50.0.1
     # via
@@ -71,7 +71,7 @@ cryptography==50.0.1
     #   mlflow
 cycler==0.12.1
     # via matplotlib
-databricks-sdk==0.125.0
+databricks-sdk==0.142.0
     # via
     #   mlflow-skinny
     #   mlflow-tracing
@@ -92,7 +92,7 @@ flask==3.1.3
     #   mlflow
 flask-cors==6.0.5
     # via mlflow
-fonttools==4.63.0
+fonttools==4.66.0
     # via matplotlib
 frozenlist==1.8.0
     # via
@@ -100,21 +100,21 @@ frozenlist==1.8.0
     #   aiosignal
 gitdb==4.0.12
     # via gitpython
-gitpython==3.1.58
+gitpython==3.1.62
     # via mlflow-skinny
-google-auth==2.56.3
+google-auth==2.58.1
     # via databricks-sdk
 graphene==3.4.3
     # via mlflow
-graphql-core==3.2.11
+graphql-core==3.2.12
     # via
     #   graphene
     #   graphql-relay
 graphql-relay==3.2.0
     # via graphene
-greenlet==3.5.4
+greenlet==3.5.6
     # via sqlalchemy
-gunicorn==26.0.0
+gunicorn==26.2.0
     # via mlflow
 h11==0.16.0
     # via
@@ -124,23 +124,23 @@ httpcore==1.0.9
     # via httpx
 httpx==0.28.1
     # via skore (skore/pyproject.toml)
-huey==3.3.4
+huey==3.4.0
     # via mlflow
-idna==3.18
+idna==3.20
     # via
     #   anyio
     #   httpx
     #   requests
     #   yarl
-imagesize==2.0.0
+imagesize==2.0.1
     # via sphinx
-importlib-metadata==9.0.0
+importlib-metadata==9.0.1
     # via mlflow-skinny
-ipython==9.16.1
+ipython==9.17.1
     # via ipywidgets
 ipython-pygments-lexers==1.1.1
     # via ipython
-ipywidgets==8.1.8
+ipywidgets==8.1.9
     # via rich
 itsdangerous==2.2.0
     # via flask
@@ -162,17 +162,17 @@ jsonschema==4.26.0
     # via altair
 jsonschema-specifications==2025.9.1
     # via jsonschema
-jupyterlab-widgets==3.0.16
+jupyterlab-widgets==3.0.17
     # via ipywidgets
-kaleido==1.3.0
+kaleido==1.4.0
     # via skore (skore/pyproject.toml)
-kiwisolver==1.5.0
+kiwisolver==1.5.1
     # via matplotlib
 logistro==2.0.1
     # via
     #   choreographer
     #   kaleido
-mako==1.4.1
+mako==1.4.3
     # via alembic
 markdown-it-py==4.2.0
     # via rich
@@ -182,7 +182,7 @@ markupsafe==3.0.3
     #   jinja2
     #   mako
     #   werkzeug
-matplotlib==3.11.1
+matplotlib==3.11.2
     # via
     #   skore (skore/pyproject.toml)
     #   mlflow
@@ -192,23 +192,23 @@ matplotlib-inline==0.2.2
     # via ipython
 mdurl==0.1.2
     # via markdown-it-py
-mlflow==3.16.0
+mlflow==3.16.1
     # via skore (skore/pyproject.toml)
-mlflow-skinny==3.16.0
+mlflow-skinny==3.16.1
     # via mlflow
-mlflow-tracing==3.16.0
+mlflow-tracing==3.16.1
     # via mlflow
-multidict==6.7.1
+multidict==6.9.1
     # via
     #   aiohttp
     #   yarl
-narwhals==2.24.0
+narwhals==2.26.0
     # via
     #   skore (skore/pyproject.toml)
     #   altair
     #   plotly
     #   scikit-learn
-numpy==2.5.1
+numpy==2.5.3
     # via
     #   skore (skore/pyproject.toml)
     #   contourpy
@@ -221,7 +221,7 @@ numpy==2.5.1
     #   skops
     #   skrub
     #   xgboost-cpu
-numpydoc==1.10.0
+numpydoc==1.11.0
     # via skore (skore/pyproject.toml)
 opentelemetry-api==1.44.0
     # via
@@ -239,7 +239,7 @@ opentelemetry-sdk==1.44.0
     #   mlflow-tracing
 opentelemetry-semantic-conventions==0.65b0
     # via opentelemetry-sdk
-orjson==3.11.9
+orjson==3.12.0
     # via
     #   skore (skore/pyproject.toml)
     #   kaleido
@@ -247,7 +247,6 @@ packaging==26.3
     # via
     #   skore (skore/pyproject.toml)
     #   altair
-    #   gunicorn
     #   kaleido
     #   matplotlib
     #   mlflow-skinny
@@ -256,7 +255,7 @@ packaging==26.3
     #   skops
     #   sphinx
     #   sphinx-autosummary-accessors
-pandas==2.3.3
+pandas==3.0.6
     # via
     #   skore (skore/pyproject.toml)
     #   mlflow
@@ -270,19 +269,19 @@ pillow==12.3.0
     # via
     #   matplotlib
     #   sphinx-gallery
-platformdirs==4.11.0
+platformdirs==4.11.13
     # via choreographer
 plotly==6.9.0
     # via skore (skore/pyproject.toml)
-polars==1.43.2
+polars==1.44.2
     # via skore (skore/pyproject.toml)
-polars-runtime-32==1.43.2
+polars-runtime-32==1.44.2
     # via polars
 prettytable==3.18.0
     # via skops
 prompt-toolkit==3.0.53
     # via ipython
-propcache==0.5.2
+propcache==0.5.4
     # via
     #   aiohttp
     #   yarl
@@ -296,9 +295,9 @@ psutil==7.2.2
     # via ipython
 ptyprocess==0.7.0
     # via pexpect
-pure-eval==0.2.3
+pure-eval==0.2.4
     # via stack-data
-pyarrow==25.0.0
+pyarrow==25.0.1
     # via mlflow
 pyasn1==0.6.4
     # via pyasn1-modules
@@ -306,19 +305,19 @@ pyasn1-modules==0.4.2
     # via google-auth
 pycparser==3.0
     # via cffi
-pydantic==2.13.4
+pydantic==2.13.5
     # via
     #   skore (skore/pyproject.toml)
     #   fastapi
     #   mlflow-skinny
     #   mlflow-tracing
-pydantic-core==2.46.4
+pydantic-core==2.46.5
     # via pydantic
 pydata-sphinx-theme==0.19.0
     # via skore (skore/pyproject.toml)
 pydot==4.0.1
     # via skrub
-pygments==2.20.0
+pygments==2.21.0
     # via
     #   accessible-pygments
     #   ipython
@@ -327,7 +326,7 @@ pygments==2.20.0
     #   rich
     #   sphinx
     #   sphinx-tabs
-pyparsing==3.3.2
+pyparsing==3.3.3
     # via
     #   matplotlib
     #   pydot
@@ -336,10 +335,8 @@ python-dateutil==2.9.0.post0
     #   graphene
     #   matplotlib
     #   pandas
-python-dotenv==1.2.2
+python-dotenv==1.2.3
     # via mlflow-skinny
-pytz==2026.3.post1
-    # via pandas
 pyyaml==6.0.3
     # via mlflow-skinny
 referencing==0.37.0
@@ -359,14 +356,14 @@ rpds-py==2026.6.3
     # via
     #   jsonschema
     #   referencing
-scikit-learn==1.9.0
+scikit-learn==1.9.1
     # via
     #   --override skore/overrides.txt
     #   skore (skore/pyproject.toml)
     #   mlflow
     #   skops
     #   skrub
-scipy==1.18.0
+scipy==1.18.1
     # via
     #   skore (skore/pyproject.toml)
     #   mlflow
@@ -376,11 +373,11 @@ scipy==1.18.0
     #   xgboost-cpu
 seaborn==0.13.2
     # via skore (skore/pyproject.toml)
-simplejson==4.1.1
+simplejson==4.1.2
     # via choreographer
 six==1.17.0
     # via python-dateutil
-skops==0.14.0
+skops==0.16.0
     # via mlflow
 skrub==0.10.1
     # via skore (skore/pyproject.toml)
@@ -388,7 +385,7 @@ smmap==5.0.3
     # via gitdb
 snowballstemmer==3.1.1
     # via sphinx
-soupsieve==2.9.1
+soupsieve==2.10
     # via beautifulsoup4
 sphinx==8.1.3
     # via
@@ -407,7 +404,7 @@ sphinx-copybutton==0.5.2
     # via skore (skore/pyproject.toml)
 sphinx-design==0.7.0
     # via skore (skore/pyproject.toml)
-sphinx-gallery==0.21.0
+sphinx-gallery==0.22.1
     # via skore (skore/pyproject.toml)
 sphinx-issues==6.0.0
     # via skore (skore/pyproject.toml)
@@ -425,7 +422,7 @@ sphinxcontrib-qthelp==2.0.0
     # via sphinx
 sphinxcontrib-serializinghtml==2.0.0
     # via sphinx
-sqlalchemy==2.0.51
+sqlalchemy==2.0.54
     # via
     #   alembic
     #   mlflow
@@ -433,11 +430,11 @@ sqlparse==0.6.0
     # via mlflow-skinny
 stack-data==0.6.3
     # via ipython
-starlette==1.4.1
+starlette==1.7.0
     # via
     #   fastapi
     #   mlflow-skinny
-threadpoolctl==3.6.0
+threadpoolctl==3.7.0
     # via scikit-learn
 traitlets==5.16.1
     # via
@@ -448,6 +445,7 @@ typing-extensions==4.16.0
     # via
     #   alembic
     #   altair
+    #   anyio
     #   beautifulsoup4
     #   fastapi
     #   graphene
@@ -460,20 +458,18 @@ typing-extensions==4.16.0
     #   pydata-sphinx-theme
     #   sqlalchemy
     #   typing-inspection
-typing-inspection==0.4.2
+typing-inspection==0.4.4
     # via
     #   fastapi
     #   pydantic
-tzdata==2026.3
-    # via pandas
-urllib3==2.7.0
+urllib3==2.8.0
     # via
     #   databricks-sdk
     #   docker
     #   requests
-uvicorn==0.52.1
+uvicorn==0.54.0
     # via mlflow-skinny
-wcwidth==0.8.2
+wcwidth==0.9.1
     # via
     #   prettytable
     #   prompt-toolkit
@@ -481,11 +477,11 @@ werkzeug==3.1.8
     # via
     #   flask
     #   flask-cors
-widgetsnbextension==4.0.15
+widgetsnbextension==4.0.16
     # via ipywidgets
-xgboost-cpu==3.4.0
+xgboost-cpu==3.4.1
     # via skore (skore/pyproject.toml)
-yarl==1.24.5
+yarl==1.25.1
     # via aiohttp
 zipp==4.1.0
     # via importlib-metadata

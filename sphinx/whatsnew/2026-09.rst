@@ -1,0 +1,124 @@
+What's new in skore — September 2026
+====================================
+
+CalibrationDisplay ``n_bins="auto"`` option
+-------------------------------------------
+
+The calibration curve display used a fixed default of 5 bins regardless of the size of the dataset, which could hide detail on large datasets or produce noisy curves on small ones. :meth:`~skore.CalibrationDisplay.frame` now uses the default ``n_bins="auto"`` parameter, which derives the number of bins from the test-set size (using the cube-root rule). See :pr:`3254` by :user:`direkkakkar319-ops`.
+
+.. code-block:: python
+
+    X, y = make_classification(
+        n_samples=20_000, n_features=20, n_informative=2, n_redundant=10,
+        random_state=42,
+    )
+    report = skore.evaluate(LogisticRegression(), X, y, splitter=0.2)
+
+    report.inspection.calibration_curve(n_bins=5).frame()
+
+    #   predicted_probability  fraction_of_positives  data_source  label
+    # 0              0.008479                 0.0100         test      0
+    # 1              0.121083                 0.0875         test      0
+    # ...
+
+    report.inspection.calibration_curve().frame()  # n_bins="auto" by default
+
+    #   predicted_probability  fraction_of_positives  data_source  label
+    # 0              0.001065                  0.008         test      0
+    # 1              0.005288                  0.008         test      0
+    # ...
+    #
+    # the number of bins is derived from the test-set size (16 here
+    # instead of 5)
+
+Golden-feature check (SKD011) refinement
+----------------------------------------
+
+SKD011 ("golden feature") has been improved:
+
+- The check is now marked "not applicable" when SKD002 has already flagged underfitting, otherwise SKD011 would fire spuriously: if the model is already bad when using all features, then only using one feature gives a similar result to using all features, which triggers SKD011.
+- The check now tries to identify a special case of the golden-feature pitfall: whether the golden feature may be a copy of the target itself.
+
+See :pr:`3252` by :user:`GaetandeCast`.
+
+.. code-block:: python
+
+    X["leaked"] = y
+    report = skore.evaluate(LinearRegression(), X, y, splitter=0.2)
+    report.checks.summarize().frame(section="tip")
+
+    #   code  ... explanation                                       ...
+    # SKD011      A model trained on feature(s) ['leaked'] alone
+    #             has similar performance to a model trained on the
+    #             target itself, on the default predictive metrics.
+    #             This likely means the target is present among the
+    #             features.
+
+Coefficient interpretation check (SKD006) fixes
+-----------------------------------------------
+
+Two bugs in the feature-scaling check were fixed.
+
+- SKD006 previously raised a ``TypeError`` when the predictor input contains non-numeric columns; it now computes the standard deviation on numeric columns only.
+- It also looks at the training split alone instead of the combined train and test data, so that a scaler fitted on the training set is detected even when the test set would add enough variance to hide it.
+
+See :pr:`3285` and :pr:`3288` by :user:`GaetandeCast` and :user:`glemaitre`.
+
+Checks pitfall examples
+-----------------------
+
+New examples have been added to illustrate common modeling pitfalls and how the automated checks catch them; they are available at :ref:`sphx_glr_auto_examples_pitfalls_and_solutions`. The new examples cover the SKD003 (inconsistent performance), SKD005 (underrepresented classes), SKD006 (coefficient interpretation), SKD009 (worse than baseline), SKD010 (slower than baseline) and SKD011/SKD012 (golden and useless features) checks. See :pr:`3145`, :pr:`3147`, :pr:`3148`, :pr:`3159`, :pr:`3160` and :pr:`3161` by :user:`moujanrastgoo`.
+
+MLflow projects on Databricks
+-----------------------------
+
+:class:`~skore.Project` with ``mode="mlflow"`` could not be used with Databricks-managed MLflow. Note that on Databricks the project ``name`` passed to :class:`~skore.Project` must be an absolute workspace path. See :pr:`3214` by :user:`yanndebray`.
+
+Metrics summary tables are paginated in HTML
+--------------------------------------------
+
+The HTML representation of metrics summary tables now paginates long tables ten rows per page, instead of rendering them in full in notebooks. Text, Markdown and :meth:`~skore.MetricsSummaryDisplay.frame` outputs are unchanged. See :pr:`3270` by :user:`GaetandeCast`.
+
+Dict keys name the sub-metrics of custom metrics
+------------------------------------------------
+
+When a custom metric function returns a dict of values, each key is now reported as a distinct metric name in the summary, instead of the function name being repeated for every value. See :pr:`3253` by :user:`auguste-probabl`.
+
+.. code-block:: python
+
+    def custom(estimator, X, y):
+        return {"A": 1, "B": 2}
+
+    report.metrics.add(custom)
+    report.metrics.summarize().frame()
+
+    #           metric
+    # A          1.000
+    # B          2.000
+    # accuracy   0.950
+    # precision  1.000
+    # ...
+
+Put on Hub with a polars target
+-------------------------------
+
+:meth:`~skore.Project.put` no longer raises an error when storing a :class:`~skore.CrossValidationReport` whose target ``y`` is a polars Series in a Hub project. See :pr:`3273` by :user:`jeromedockes`.
+
+Running checks on skrub DataOps
+-------------------------------
+
+Running checks on skrub DataOps is now supported. See :pr:`3086` by :user:`glemaitre` and :user:`auguste-probabl`.
+
+-----
+
+Thanks to the following contributors for their work this month (in no particular order):
+
+- :user:`thomass-dev`
+- :user:`GaetandeCast`
+- :user:`glemaitre`
+- :user:`moujanrastgoo`
+- :user:`yanndebray`
+- :user:`direkkakkar319-ops`
+- :user:`m4nn2609-dot`
+- :user:`auguste-probabl`
+- :user:`jeromedockes`
