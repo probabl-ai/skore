@@ -116,9 +116,9 @@ def test_get_without_stored_secret(monkeypatch):
 def test_revoke(hub):
     key_module.generate(host="https://a.example", workspace="w1")
     key_module.generate(host="https://b.example", workspace="w2")
-    key_module.revoke(host="https://a.example", workspace="w1")
+    key_module.revoke(host="https://a.example", workspace="w1", timeout=10)
 
-    assert hub.revoked == [{"host": "https://a.example", "id": 1}]
+    assert hub.revoked == [{"host": "https://a.example", "id": 1, "timeout": 10}]
     assert key_module.get(host="https://a.example", workspace="w1") is None
     assert key_module.get(host="https://b.example", workspace="w2") == "k2"
     assert list(key_module.keys()) == [(2, "https://b.example", "w2")]
@@ -137,6 +137,6 @@ def test_revoke_without_host_uses_environment_uri(monkeypatch, hub):
     key_module.generate(host="https://other.example", workspace="w2")
     key_module.revoke(workspace="w1")
 
-    assert hub.revoked == [{"host": "https://custom.example", "id": 1}]
+    assert hub.revoked == [{"host": "https://custom.example", "id": 1, "timeout": 600}]
     assert key_module.get(workspace="w1") is None
     assert key_module.get(host="https://other.example", workspace="w2") == "k2"

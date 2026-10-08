@@ -98,7 +98,7 @@ def get(*, host: str | None = None, workspace: str) -> str | None:
     )
 
 
-def revoke(*, host: str | None = None, workspace: str) -> None:
+def revoke(*, host: str | None = None, workspace: str, timeout: int = 600) -> None:
     """
     Remove the API key from the local registry and revoke it.
 
@@ -108,9 +108,11 @@ def revoke(*, host: str | None = None, workspace: str) -> None:
         Hub backend URI. If omitted, :func:`URI` is used.
     workspace : str
         Workspace associated with the API key.
+    timeout : int, default=600
+        Seconds to wait for interactive authentication.
     """
     host = normalize(host or URI())
 
     if key := registry.local.get(host=host, workspace=workspace):
         registry.local.delete(host=host, workspace=workspace)
-        registry.distant.revoke(host=host, id=key.id)
+        registry.distant.revoke(host=host, id=key.id, timeout=timeout)
