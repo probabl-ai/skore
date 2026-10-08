@@ -271,8 +271,8 @@ def test_get_custom(binary_classification_data):
     report.metrics.add(lambda estimator, X, y: 1, name="hello")
 
     assert report.metrics.get("hello").to_dict() == {
-        ("DummyClassifier", "mean"): {"Hello": 1.0},
-        ("DummyClassifier", "std"): {"Hello": 0.0},
+        ("DummyClassifier", "mean"): {"hello": 1.0},
+        ("DummyClassifier", "std"): {"hello": 0.0},
     }
 
 
@@ -289,8 +289,8 @@ def test_custom_metric_as_method(binary_classification_data):
     report.metrics.add(lambda estimator, X, y: 1, name="hello")
 
     assert report.metrics.hello().to_dict() == {
-        ("DummyClassifier", "mean"): {"Hello": 1.0},
-        ("DummyClassifier", "std"): {"Hello": 0.0},
+        ("DummyClassifier", "mean"): {"hello": 1.0},
+        ("DummyClassifier", "std"): {"hello": 0.0},
     }
 
     report.metrics.remove("hello")

@@ -345,8 +345,8 @@ def test_get_custom(comparison_estimator_reports_binary_classification):
     report.metrics.add(lambda estimator, X, y: 1, name="hello")
 
     assert report.metrics.get("hello").to_dict() == {
-        "DummyClassifier_1": {"Hello": 1},
-        "DummyClassifier_2": {"Hello": 1},
+        "DummyClassifier_1": {"hello": 1},
+        "DummyClassifier_2": {"hello": 1},
     }
 
 
@@ -360,8 +360,8 @@ def test_custom_metric_as_method(comparison_estimator_reports_binary_classificat
     report.metrics.add(lambda estimator, X, y: 1, name="hello")
 
     assert report.metrics.hello().to_dict() == {
-        "DummyClassifier_1": {"Hello": 1},
-        "DummyClassifier_2": {"Hello": 1},
+        "DummyClassifier_1": {"hello": 1},
+        "DummyClassifier_2": {"hello": 1},
     }
 
     report.metrics.remove("hello")

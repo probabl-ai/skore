@@ -198,8 +198,7 @@ class _MetricsAccessor(BaseMetricsAccessor[CrossValidationReport], DirNamesMixin
 
         verbose_name : str or None, default=None
             Custom verbose name for the metric which will be used for display
-            purposes. If ``None``, the verbose name is inferred from the metric
-            name.
+            purposes. If ``None``, the verbose name is the name unchanged.
 
         greater_is_better : bool, default=True
             Whether higher values are better (only for callables).
@@ -222,7 +221,8 @@ class _MetricsAccessor(BaseMetricsAccessor[CrossValidationReport], DirNamesMixin
         >>> classifier = LogisticRegression(max_iter=10_000)
         >>> report = evaluate(classifier, X, y, splitter=2, pos_label=1)
         >>> report.metrics.add(
-        ...     make_scorer(mean_absolute_error, response_method="predict")
+        ...     make_scorer(mean_absolute_error, response_method="predict"),
+        ...     verbose_name="Mean Absolute Error",
         ... )
         >>> report.metrics.summarize(metric="mean_absolute_error").frame(
         ...     verbose_name=True, flat_index=False

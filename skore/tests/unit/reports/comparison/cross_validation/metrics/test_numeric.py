@@ -314,10 +314,10 @@ def test_get_custom(comparison_cross_validation_reports_binary_classification):
     report.metrics.add(lambda estimator, X, y: 1, name="hello")
 
     assert report.metrics.get("hello").to_dict() == {
-        ("mean", "DummyClassifier_1"): {"Hello": 1.0},
-        ("mean", "DummyClassifier_2"): {"Hello": 1.0},
-        ("std", "DummyClassifier_1"): {"Hello": 0.0},
-        ("std", "DummyClassifier_2"): {"Hello": 0.0},
+        ("mean", "DummyClassifier_1"): {"hello": 1.0},
+        ("mean", "DummyClassifier_2"): {"hello": 1.0},
+        ("std", "DummyClassifier_1"): {"hello": 0.0},
+        ("std", "DummyClassifier_2"): {"hello": 0.0},
     }
 
 
@@ -333,10 +333,10 @@ def test_custom_metric_as_method(
     report.metrics.add(lambda estimator, X, y: 1, name="hello")
 
     assert report.metrics.hello().to_dict() == {
-        ("mean", "DummyClassifier_1"): {"Hello": 1.0},
-        ("mean", "DummyClassifier_2"): {"Hello": 1.0},
-        ("std", "DummyClassifier_1"): {"Hello": 0.0},
-        ("std", "DummyClassifier_2"): {"Hello": 0.0},
+        ("mean", "DummyClassifier_1"): {"hello": 1.0},
+        ("mean", "DummyClassifier_2"): {"hello": 1.0},
+        ("std", "DummyClassifier_1"): {"hello": 0.0},
+        ("std", "DummyClassifier_2"): {"hello": 0.0},
     }
 
     report.metrics.remove("hello")

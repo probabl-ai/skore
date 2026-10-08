@@ -455,14 +455,14 @@ class TestEstimatorReportPayload:
         assert [m for m in payload.metrics if "hello" in m.name] == [
             Metric(
                 name="hello",
-                verbose_name="Hello",
+                verbose_name="hello",
                 data_source="train",
                 greater_is_better=True,
                 value=1.0,
             ),
             Metric(
                 name="hello",
-                verbose_name="Hello",
+                verbose_name="hello",
                 data_source="test",
                 greater_is_better=True,
                 value=1.0,
@@ -517,9 +517,9 @@ class TestEstimatorReportPayload:
         custom = [m for m in payload.metrics if m.name.startswith("score_")]
         assert {m.name for m in custom} == {"score_a_1", "score_b_1", "score_c_1"}
         assert {m.verbose_name for m in custom} == {
-            "Score A 1",
-            "Score B 1",
-            "Score C 1",
+            "score_a_1",
+            "score_b_1",
+            "score_c_1",
         }
         # train + test for each submetric
         assert len(custom) == 6
