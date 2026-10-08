@@ -3,12 +3,18 @@ from __future__ import annotations
 import functools
 from typing import TYPE_CHECKING, Any, TypeGuard
 
+import narwhals as nw
+import numpy as np
+import pandas as pd
+import scipy.sparse as sp
 from sklearn.base import BaseEstimator
 from sklearn.pipeline import Pipeline
 from sklearn.utils.validation import NotFittedError, check_is_fitted
 from skrub import DataOp, as_data_op
 from skrub._data_ops._data_ops import Apply
 from skrub._data_ops._evaluation import _DataOpTraversal, find_first_apply
+
+from skore._sklearn.feature_names import _get_feature_names
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -121,7 +127,9 @@ def get_predictor_and_input(
     ``CrossValidationReport.input_data``), not a reconstructed X/y-only dict.
 
     The returned input is the value seen by the fitted predictor after all
-    upstream graph steps have been evaluated on ``env``.
+    upstream graph steps have been evaluated on ``env``. When the leading steps
+    of a pipeline in the supervised apply output an array, it is returned as a
+    dataframe named after their output features.
     """
     apply_node = supervised_apply_node(learner.data_op)
     impl = apply_node._skrub_impl
@@ -131,10 +139,23 @@ def get_predictor_and_input(
     )
     input_value = truncated.transform(env)
     applied = impl.estimator_
+    predictor = fitted_predictor_from_apply(apply_node)
     if isinstance(applied, Pipeline) and len(applied) > 1:
-        input_value = applied[:-1].transform(input_value)
+        preprocessor = applied[:-1]
+        input_value = preprocessor.transform(input_value)
+        if not nw.dependencies.is_into_dataframe(input_value) and not sp.issparse(
+            input_value
+        ):
+            input_value = pd.DataFrame(
+                input_value,
+                columns=_get_feature_names(
+                    predictor,
+                    transformer=preprocessor,
+                    n_features=np.shape(input_value)[1],
+                ),
+            )
 
-    return input_value, fitted_predictor_from_apply(apply_node)
+    return input_value, predictor
 
 
 def find_fitted_estimators(learner: SkrubLearner) -> list[BaseEstimator]:
@@ -251,6 +272,49 @@ class _LearnerAdapter(BaseEstimator):
 
     def __sklearn_tags__(self):
         return self.estimator.__sklearn_tags__()
+
+
+class _XNodeEstimatorAdapter(BaseEstimator):
+    """Wrap a fitted skrub learner to accept the value of the ``X`` node directly.
+
+    Every other variable of the environment is kept from ``environment``, so that
+    ``X`` can be permuted, for instance in
+    :func:`~sklearn.inspection.permutation_importance`.
+    """
+
+    def __init__(self, learner, environment):
+        self.learner = learner
+        self.environment = environment
+
+    def fit(self, X, y=None):
+        # the learner is already fitted; defined to satisfy scikit-learn validation
+        return self
+
+    def __getattr__(self, name):
+        if name not in ["predict", "decision_function", "predict_proba", "score"]:
+            raise AttributeError(
+                f"{type(self).__name__!r} object has no attribute {name!r}"
+            )
+        learner_method = getattr(self.learner, name)
+
+        @functools.wraps(learner_method)
+        def estimator_method(X, y=None):
+            environment = self.environment | {"_skrub_X": X}
+            if name == "score":
+                environment["_skrub_y"] = y
+            return learner_method(environment)
+
+        return estimator_method
+
+    @property
+    def classes_(self):
+        return self.learner.classes_
+
+    def __sklearn_is_fitted__(self):
+        return True
+
+    def __sklearn_tags__(self):
+        return self.learner.__sklearn_tags__()
 
 
 def to_learner(estimator: EstimatorLike) -> _LearnerAdapter:
