@@ -1,0 +1,266 @@
+"""Login to ``skore hub``."""
+
+from __future__ import annotations
+
+from datetime import UTC, datetime
+from functools import cache
+from threading import RLock
+from time import sleep
+from urllib.parse import urljoin
+from webbrowser import open as open_webbrowser
+
+from httpx import HTTPStatusError, TimeoutException
+from rich.align import Align
+from rich.panel import Panel
+
+from skore import console
+from skore._plugins.hub.client.client import Client
+
+
+def get_oauth_device_login(host: str) -> tuple[str, str, str]:
+    """
+    Initiate device OAuth flow.
+
+    Initiates the OAuth device flow.
+    Provides the user with a URL and a OTP code to authenticate the device.
+
+    Parameters
+    ----------
+    host : str
+        Hub backend URI.
+
+    Returns
+    -------
+    tuple
+        A tuple containing:
+        - authorization_url: str
+            The URL to which the user needs to navigate
+        - device_code: str
+            The device code used for authentication
+        - user_code: str
+            The user code that needs to be entered on the authorization page
+    """
+    with Client() as client:
+        response = client.get(urljoin(host, "identity/oauth/device/login")).json()
+
+        return (
+            response["authorization_url"],
+            response["device_code"],
+            response["user_code"],
+        )
+
+
+def get_oauth_device_code_probe(
+    host: str, device_code: str, *, timeout: int = 600
+) -> None:
+    """
+    Ensure authorization code is acknowledged.
+
+    Start polling, wait for the authorization code to be acknowledged by the hub.
+    This is mandatory to be authorize to exchange with a token.
+
+    Parameters
+    ----------
+    host : str
+        Hub backend URI.
+    device_code : str
+        The device code to exchange for tokens.
+    timeout : int, default=600
+        Seconds to wait for the user to authorize the device.
+    """
+    url = "identity/oauth/device/code-probe"
+    params = {"device_code": device_code}
+
+    with Client() as client:
+        start = datetime.now()
+
+        while True:
+            try:
+                client.get(urljoin(host, url), params=params)
+            except HTTPStatusError as exc:
+                if exc.response.status_code != 400:
+                    raise
+
+                if (datetime.now() - start).total_seconds() >= timeout:
+                    raise TimeoutException("Authentication timeout") from exc
+
+                sleep(0.5)
+            else:
+                break
+
+
+def post_oauth_device_callback(host: str, state: str, user_code: str) -> None:
+    """
+    Validate the user-provided device code.
+
+    This endpoint verifies the code entered by the user during the device auth flow.
+
+    Parameters
+    ----------
+    host : str
+        Hub backend URI.
+    state : str
+        The unique value identifying the device flow.
+    user_code : str
+        The code entered by the user.
+    """
+    url = "identity/oauth/device/callback"
+    data = {"state": state, "user_code": user_code}
+
+    with Client() as client:
+        client.post(urljoin(host, url), data=data)
+
+
+def get_oauth_device_token(host: str, device_code: str) -> tuple[str, str, str]:
+    """
+    Exchanges the device code for an access token.
+
+    This endpoint completes the device authorization flow
+    by exchanging the validated device code for an access token.
+
+    Parameters
+    ----------
+    host : str
+        Hub backend URI.
+    device_code : str
+        The device code to exchange for tokens.
+
+    Returns
+    -------
+    tuple
+        A tuple containing:
+        - access_token : str
+            The OAuth access token
+        - refresh_token : str
+            The OAuth refresh token
+        - expires_at : str
+            The expiration datetime as ISO 8601 str of the access token
+    """
+    url = "identity/oauth/device/token"
+    params = {"device_code": device_code}
+
+    with Client() as client:
+        response = client.get(urljoin(host, url), params=params).json()
+        tokens = response["token"]
+
+        return (
+            tokens["access_token"],
+            tokens["refresh_token"],
+            tokens["expires_at"],
+        )
+
+
+def post_oauth_refresh_token(host: str, refresh_token: str) -> tuple[str, str, str]:
+    """
+    Refresh an access token using a provided refresh token.
+
+    This endpoint allows a client to obtain a new access token
+    by providing a valid refresh token.
+
+    Parameters
+    ----------
+    host : str
+        Hub backend URI.
+    refresh_token : str
+        A valid refresh token.
+
+    Returns
+    -------
+    tuple
+        A tuple containing:
+        - access_token : str
+            The OAuth access token
+        - refresh_token : str
+            The OAuth refresh token
+        - expires_at : str
+            The expiration datetime as ISO 8601 str of the access token
+    """
+    url = "identity/oauth/token/refresh"
+    json = {"refresh_token": refresh_token}
+
+    with Client() as client:
+        response = client.post(urljoin(host, url), json=json).json()
+
+        return (
+            response["access_token"],
+            response["refresh_token"],
+            response["expires_at"],
+        )
+
+
+class Token:
+    """
+    Token used for ``skore hub`` authentication, as HTTP header parameters.
+
+    Notes
+    -----
+    Refresh the token on-the-fly if necessary.
+    """
+
+    def __init__(self, *, host: str, timeout: int = 600) -> None:
+
+        url, device_code, user_code = get_oauth_device_login(host)
+
+        console.print(
+            Panel(
+                Align.center(
+                    "Starting interactive authentication for the session.\n"
+                    "Opening browser for interactive authentication; if this fails, "
+                    f"please visit:\n[link={url}]{url}[/link]"
+                ),
+                title="[cyan]Login to [bold]Skore Hub",
+                border_style="cyan",
+                padding=1,
+            ),
+            soft_wrap=True,
+        )
+
+        open_webbrowser(url)
+
+        get_oauth_device_code_probe(host, device_code, timeout=timeout)
+        post_oauth_device_callback(host, device_code, user_code)
+
+        access, refreshment, expiration = get_oauth_device_token(host, device_code)
+
+        self.__host = host
+        self.__lock = RLock()
+        self.__access = access
+        self.__refreshment = refreshment
+        self.__expiration = datetime.fromisoformat(expiration)
+
+    @property
+    def access(self) -> str:
+        """Return a valid access token, refreshing it if it has expired."""
+        with self.__lock:
+            if self.__expiration <= datetime.now(UTC):
+                access, refreshment, expiration = post_oauth_refresh_token(
+                    self.__host, self.__refreshment
+                )
+
+                self.__access = access
+                self.__refreshment = refreshment
+                self.__expiration = datetime.fromisoformat(expiration)
+
+        return self.__access
+
+
+@cache
+def login(*, host: str, timeout: int = 600) -> Token:
+    """
+    Login to ``skore hub``.
+
+    The returned token is cached for the given ``host`` and ``timeout``.
+
+    Parameters
+    ----------
+    host : str
+        Hub backend URI.
+    timeout : int, default=600
+        Seconds to wait for interactive authentication.
+
+    Returns
+    -------
+    Token
+        A token that refreshes itself when it expires.
+    """
+    return Token(host=host, timeout=timeout)
