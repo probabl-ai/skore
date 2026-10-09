@@ -81,23 +81,20 @@ def identity(*, host: str, token: Token) -> Identity:
     )
 
 
-def expires_at_from_expires(expires: Literal["1", "3", "6", "never"], /) -> str | None:
+def expires_at_from_expires(expires: Literal["1", "3", "6"], /) -> str:
     """
     Return an absolute expiration timestamp for a relative lifetime.
 
     Parameters
     ----------
-    expires : {"1", "3", "6", "never"}
-        Lifetime in months, or ``"never"``.
+    expires : {"1", "3", "6"}
+        Lifetime in months.
 
     Returns
     -------
     str or None
         Expiration as an ISO 8601 string, or ``None`` when the key does not expire.
     """
-    if expires == "never":
-        return None
-
     now = datetime.now(tz=UTC)
     shifted_month = now.month - 1 + int(expires)
 
@@ -170,7 +167,7 @@ def generate(
         "workspace_id": membership.id,
     }
 
-    if expires is not None:
+    if expires != "never":
         json["expires_at"] = expires_at_from_expires(expires)
 
     with Client() as client:
