@@ -12,6 +12,8 @@ ast-serialize==0.11.2
     # via mypy
 asttokens==3.0.2
     # via stack-data
+backports-tarfile==1.2.0
+    # via jaraco-context
 blinker==1.9.0
     # via flask
 build==1.6.1
@@ -27,7 +29,7 @@ cffi==2.1.1
     # via cryptography
 cfgv==3.5.0
     # via pre-commit
-charset-normalizer==3.5.1
+charset-normalizer==3.5.2
     # via requests
 click==8.5.0
     # via
@@ -43,13 +45,15 @@ comm==0.2.3
     # via ipywidgets
 contourpy==1.3.3
     # via matplotlib
-coverage[toml]==7.16.1
+coverage[toml]==7.16.2
     # via pytest-cov
-cryptography==50.0.1
-    # via google-auth
+cryptography==50.0.2
+    # via
+    #   google-auth
+    #   secretstorage
 cycler==0.12.1
     # via matplotlib
-databricks-sdk==0.142.0
+databricks-sdk==0.145.0
     # via mlflow-skinny
 distlib==0.4.3
     # via virtualenv
@@ -59,32 +63,31 @@ execnet==2.1.2
     # via pytest-xdist
 executing==2.2.1
     # via stack-data
-fastapi==0.141.1
+fastapi==0.142.2
     # via mlflow-skinny
-filelock==4.0.3
+filelock==4.0.8
     # via
+    #   skore (skore/pyproject.toml)
     #   python-discovery
     #   virtualenv
 flask==3.1.3
     # via mlflow
-fonttools==4.66.0
+fonttools==4.66.1
     # via matplotlib
 gitdb==4.0.12
     # via gitpython
-gitpython==3.1.62
+gitpython==3.2.0
     # via mlflow-skinny
-google-auth==2.58.1
+google-auth==2.59.1
     # via databricks-sdk
 graphene==3.4.3
     # via mlflow
-graphql-core==3.2.12
+graphql-core==3.2.13
     # via
     #   graphene
     #   graphql-relay
 graphql-relay==3.2.0
     # via graphene
-greenlet==3.5.6
-    # via sqlalchemy
 gunicorn==23.0.0
     # via mlflow
 h11==0.16.0
@@ -97,7 +100,7 @@ httpx==0.28.1
     # via
     #   skore (skore/pyproject.toml)
     #   respx
-identify==2.6.19
+identify==2.6.20
     # via pre-commit
 idna==3.20
     # via
@@ -105,7 +108,9 @@ idna==3.20
     #   httpx
     #   requests
 importlib-metadata==8.9.0
-    # via mlflow-skinny
+    # via
+    #   keyring
+    #   mlflow-skinny
 iniconfig==2.3.0
     # via pytest
 ipython==9.17.1
@@ -118,10 +123,20 @@ ipywidgets==8.1.9
     # via rich
 itsdangerous==2.2.0
     # via flask
+jaraco-classes==3.4.0
+    # via keyring
+jaraco-context==6.1.2
+    # via keyring
+jaraco-functools==4.6.0
+    # via keyring
 jedi==0.20.0
     # via
     #   skore (skore/pyproject.toml)
     #   ipython
+jeepney==0.9.0
+    # via
+    #   keyring
+    #   secretstorage
 jinja2==3.1.6
     # via
     #   skore (skore/pyproject.toml)
@@ -135,13 +150,15 @@ joblib==1.6.0
     #   skrub
 jupyterlab-widgets==3.0.17
     # via ipywidgets
+keyring==25.7.0
+    # via skore (skore/pyproject.toml)
 kiwisolver==1.5.1
     # via matplotlib
-librt==0.15.0
+librt==0.16.0
     # via mypy
 mako==1.4.3
     # via alembic
-markdown==3.10.3
+markdown==3.11
     # via mlflow
 markdown-it-py==4.2.0
     # via rich
@@ -167,6 +184,10 @@ mlflow==2.22.5
     #   skore (skore/pyproject.toml)
 mlflow-skinny==2.22.5
     # via mlflow
+more-itertools==11.1.0
+    # via
+    #   jaraco-classes
+    #   jaraco-functools
 mypy==2.3.1
     # via skore (skore/pyproject.toml)
 mypy-extensions==1.1.0
@@ -175,7 +196,7 @@ narwhals==2.26.0
     # via
     #   skore (skore/pyproject.toml)
     #   plotly
-nodeenv==1.10.0
+nodeenv==1.11.0
     # via pre-commit
 numpy==2.4.6
     # via
@@ -192,14 +213,15 @@ numpy==2.4.6
     #   skrub
 numpy-typing-compat==20251206.2.4
     # via optype
-opentelemetry-api==1.44.0
+opentelemetry-api==1.45.0
     # via
+    #   fastapi
     #   mlflow-skinny
     #   opentelemetry-sdk
     #   opentelemetry-semantic-conventions
-opentelemetry-sdk==1.44.0
+opentelemetry-sdk==1.45.0
     # via mlflow-skinny
-opentelemetry-semantic-conventions==0.65b0
+opentelemetry-semantic-conventions==0.66b0
     # via opentelemetry-sdk
 optype[numpy]==0.17.1
     # via scipy-stubs
@@ -214,6 +236,7 @@ packaging==24.2
     #   mlflow-skinny
     #   plotly
     #   pytest
+    #   virtualenv
 pandas==2.3.3
     # via
     #   skore (skore/pyproject.toml)
@@ -228,7 +251,7 @@ pexpect==4.9.0
     # via ipython
 pillow==12.3.0
     # via matplotlib
-platformdirs==4.11.13
+platformdirs==4.12.2
     # via virtualenv
 plotly==7.1.0
     # via skore (skore/pyproject.toml)
@@ -341,13 +364,15 @@ scipy-stubs==1.17.1.5
     # via skore (skore/pyproject.toml)
 seaborn==0.13.2
     # via skore (skore/pyproject.toml)
+secretstorage==3.5.0
+    # via keyring
 six==1.17.0
     # via python-dateutil
-skrub==0.10.1
+skrub==0.11.0
     # via skore (skore/pyproject.toml)
 smmap==5.0.3
     # via gitdb
-sqlalchemy==2.0.54
+sqlalchemy==2.1.1
     # via
     #   alembic
     #   mlflow
@@ -399,11 +424,11 @@ uuid6==2025.0.1
     # via skore (skore/pyproject.toml)
 uvicorn==0.54.0
     # via mlflow-skinny
-virtualenv==21.12.1
+virtualenv==21.14.2
     # via pre-commit
 wcwidth==0.9.1
     # via prompt-toolkit
-werkzeug==3.1.8
+werkzeug==3.1.9
     # via flask
 widgetsnbextension==4.0.16
     # via ipywidgets
