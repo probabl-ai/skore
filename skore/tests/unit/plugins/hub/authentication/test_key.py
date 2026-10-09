@@ -93,7 +93,7 @@ def test_generate_force_replaces_existing_key(hub):
         host="https://a.example", workspace="w1", name="second", force=True
     )
 
-    assert hub.revoked == [{"host": "https://a.example", "id": 1}]
+    assert hub.revoked == [{"host": "https://a.example", "id": 1, "timeout": 600}]
     assert hub.generated[1]["name"] == "second"
     assert key_module.get(host="https://a.example", workspace="w1") == "k2"
     assert list(key_module.keys()) == [(2, "https://a.example", "w1")]

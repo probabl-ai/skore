@@ -79,7 +79,6 @@ def test_identity(respx_mock):
 @mark.parametrize(
     ("expires", "expected"),
     [
-        ("never", None),
         ("1", "2026-02-28T15:04:05+00:00"),
         ("3", "2026-04-30T15:04:05+00:00"),
         ("6", "2026-07-31T15:04:05+00:00"),
@@ -151,7 +150,6 @@ def test_generate_defaults(monkeypatch, respx_mock):
         "name": "abc123",
         "permissions": list(PERMISSIONS),
         "workspace_id": 9,
-        "expires_at": None,
     }
 
 
