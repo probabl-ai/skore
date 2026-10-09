@@ -104,7 +104,7 @@ def expires_at_from_expires(expires: Literal["1", "3", "6"], /) -> str:
 
     expiration = now.replace(year=new_year, month=new_month, day=new_day)
 
-    return expiration.isoformat(timespec="seconds")  # .replace("+00:00", "Z")
+    return expiration.isoformat(timespec="seconds")
 
 
 def generate(
