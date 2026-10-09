@@ -2,21 +2,28 @@ import numpy as np
 import pandas as pd
 import pytest
 from sklearn.base import clone
+from sklearn.datasets import make_regression
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.linear_model import Ridge
+from sklearn.model_selection import train_test_split
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import FunctionTransformer
+from skrub import tabular_pipeline
 
-from skore import ComparisonReport, EstimatorReport
+from skore import ComparisonReport, EstimatorReport, compare
 
 
 @pytest.mark.parametrize(
     "metric_name, expected",
     [
         (
-            "score",
+            "default_score",
             pd.DataFrame(
                 [[0.45, 0.55]],
                 columns=pd.Index(
                     ["DummyClassifier_1", "DummyClassifier_2"], name="Estimator"
                 ),
-                index=pd.Index(["Score"], name="Metric"),
+                index=pd.Index(["Default estimator score"], name="Metric"),
             ),
         ),
         (
@@ -118,13 +125,13 @@ def test_binary_classification(
     "metric_name, expected",
     [
         (
-            "score",
+            "default_score",
             pd.DataFrame(
                 [[-0.061173, -0.061173]],
                 columns=pd.Index(
                     ["DummyRegressor_1", "DummyRegressor_2"], name="Estimator"
                 ),
-                index=pd.Index(["Score"], name="Metric"),
+                index=pd.Index(["Default estimator score"], name="Metric"),
             ),
         ),
         (
@@ -361,3 +368,37 @@ def test_custom_metric_as_method(comparison_estimator_reports_binary_classificat
 
     with pytest.raises(AttributeError):
         report.metrics.hello()
+
+
+def test_default_score_aligned_for_nested_pipeline():
+    """A nested pipeline and a mixin estimator share a finite ``default_score``.
+
+    Non-regression test for https://github.com/probabl-ai/skore/issues/3289.
+    """
+    X, y = make_regression(n_samples=80, n_features=4, random_state=0)
+    X_df = pd.DataFrame(X, columns=[f"f{i}" for i in range(X.shape[1])])
+    X_train, X_test, y_train, y_test = train_test_split(
+        X_df, y, test_size=0.25, random_state=0
+    )
+
+    ridge = make_pipeline(FunctionTransformer(), tabular_pipeline(Ridge()))
+    forest = tabular_pipeline(RandomForestRegressor(n_estimators=5, random_state=0))
+    report_ridge = EstimatorReport(
+        ridge, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    report_forest = EstimatorReport(
+        forest, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    frame = (
+        compare({"ridge_with_fe": report_ridge, "random_forest": report_forest})
+        .metrics.summarize()
+        .frame()
+    )
+
+    for name, report in (
+        ("ridge_with_fe", report_ridge),
+        ("random_forest", report_forest),
+    ):
+        value = frame.loc["default_score", name]
+        assert pd.notna(value)
+        assert value == pytest.approx(report.estimator_.score(X_test, y_test))

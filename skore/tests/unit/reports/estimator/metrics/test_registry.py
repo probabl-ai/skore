@@ -155,15 +155,15 @@ class TestBasicAdd:
         assert "accuracy_score" in report._metric_registry
 
     def test_cannot_use_reserved_name(self, binary_classification_report):
-        """Test that adding a metric named 'score' raises an error."""
+        """Test that adding a metric named 'default_score' raises an error."""
         report = binary_classification_report
 
-        def score(y_true, y_pred):
+        def default_score(y_true, y_pred):
             return 1.0
 
-        err_msg = "Cannot add 'score': it is a reserved name."
+        err_msg = "Cannot add 'default_score': it is a reserved name."
         with pytest.raises(ValueError, match=err_msg):
-            report.metrics.add(make_scorer(score))
+            report.metrics.add(make_scorer(default_score))
 
     def test_readd_default_metric(self, binary_classification_report):
         """Test that a default metric can be removed and added back."""
@@ -296,7 +296,7 @@ class TestAddPosition:
         keys = list(report._metric_registry.keys())
         assert keys[0] == "metric_b"
         assert keys[1] == "metric_a"
-        assert keys[2] == "score"
+        assert keys[2] == "default_score"
 
         display = report.metrics.summarize()
         assert display.summary.iloc[0]["verbose_name"] == "metric_b"
@@ -347,7 +347,7 @@ class TestAddPosition:
 
         keys = list(report._metric_registry.keys())
         assert keys[0] == "m_first"
-        assert keys[1] == "score"
+        assert keys[1] == "default_score"
         assert keys[-1] == "m_last"
 
     def test_readd_raises_without_remove(self, binary_classification_report):
@@ -647,7 +647,7 @@ class TestMultiMetric:
             y_test=y_test,
         )
 
-        display = report.metrics.summarize(metric="score")
+        display = report.metrics.summarize(metric="default_score")
 
         assert list(display.summary["name"]) == [
             "accuracy",

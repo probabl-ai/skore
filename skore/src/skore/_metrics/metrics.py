@@ -825,8 +825,8 @@ class Mape(Metric):
 
 
 class Score(Metric):
-    name = "score"
-    verbose_name = "Score"
+    name = "default_score"
+    verbose_name = "Default estimator score"
     greater_is_better = True
     function = None
     function_kind = None

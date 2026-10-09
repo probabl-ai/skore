@@ -22,7 +22,7 @@ def test_aggregate_mean(forest_binary_classification_data):
     assert isinstance(result, pd.Series)
     assert result.name == "randomforestclassifier_mean"
     assert isinstance(result.index, pd.Index)
-    assert len(result) == 10
+    assert len(result) == 11
 
 
 def test_aggregate_mean_std(forest_binary_classification_data):
@@ -38,7 +38,7 @@ def test_aggregate_mean_std(forest_binary_classification_data):
         "randomforestclassifier_mean",
         "randomforestclassifier_std",
     ]
-    assert result.shape == (10, 2)
+    assert result.shape == (11, 2)
 
 
 def test_aggregate_none(forest_binary_classification_data):
@@ -54,7 +54,7 @@ def test_aggregate_none(forest_binary_classification_data):
         "randomforestclassifier_split_0",
         "randomforestclassifier_split_1",
     ]
-    assert result.shape == (10, 2)
+    assert result.shape == (11, 2)
 
 
 def test_favorability_with_aggregate_mean_std(forest_binary_classification_data):
@@ -110,6 +110,7 @@ def test_format_wide_binary_classification(forest_binary_classification_data):
     result = display.frame(aggregate=["mean", "std"])
     assert isinstance(result.index, pd.Index)
     assert result.index.tolist() == [
+        "default_score",
         "accuracy",
         "precision_0",
         "precision_1",
@@ -155,6 +156,7 @@ def test_format_wide_multioutput(linear_regression_multioutput_data):
     result = display.frame(aggregate=["mean", "std"])
     assert isinstance(result.index, pd.Index)
     assert result.index.tolist() == [
+        "default_score",
         "r2_0",
         "r2_1",
         "rmse_0",
@@ -225,6 +227,7 @@ def test_data_source_both_format_wide(forest_binary_classification_data):
         f"{name}_(test)_std",
     ]
     assert result.index.tolist() == [
+        "default_score",
         "accuracy",
         "precision_0",
         "precision_1",
@@ -247,7 +250,7 @@ def test_multiclass_classification(forest_multiclass_classification_data):
     result = display.frame(aggregate=["mean", "std"])
 
     assert isinstance(result.index, pd.Index)
-    assert result.shape == (16, 2)
+    assert result.shape == (17, 2)
 
 
 def test_with_mixed_favorability(forest_binary_classification_data):

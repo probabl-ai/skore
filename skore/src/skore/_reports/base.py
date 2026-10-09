@@ -243,7 +243,7 @@ class BaseMetricsAccessor(_BaseAccessor, Generic[ParentT]):
     # into Metrics by ``_build_help_data``.
     _HELP_METHOD_GROUPS: ClassVar[dict[str, tuple[str, ...]]] = {
         "Registry": ("available", "add", "remove", "get"),
-        "Metrics": ("fit_time", "predict_time", "score", "timings"),
+        "Metrics": ("fit_time", "predict_time", "default_score", "timings"),
         "Displays": (
             "summarize",
             "roc",

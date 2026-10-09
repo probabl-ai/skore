@@ -432,8 +432,8 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
 
             return timings
 
-    @available_if(_check_any_sub_report_has_metric("score"))
-    def score(
+    @available_if(_check_any_sub_report_has_metric("default_score"))
+    def default_score(
         self,
         *,
         data_source: DataSource = "test",
@@ -472,12 +472,12 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
         >>> estimator_1 = LogisticRegression(max_iter=10000, random_state=42)
         >>> estimator_2 = LogisticRegression(max_iter=10000, random_state=43)
         >>> comparison_report = evaluate([estimator_1, estimator_2], X, y, splitter=0.2)
-        >>> comparison_report.metrics.score()
-        Estimator      LogisticRegression_1  LogisticRegression_2
+        >>> comparison_report.metrics.default_score()
+        Estimator              LogisticRegression_1  LogisticRegression_2
         Metric
-        Score                       0.94...               0.94...
+        Default estimator score             0.94...               0.94...
         """
-        return self._metric("score", data_source=data_source).frame(
+        return self._metric("default_score", data_source=data_source).frame(
             aggregate=aggregate,
             verbose_name=True,
             flat_index=False,

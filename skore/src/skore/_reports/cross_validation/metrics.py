@@ -396,8 +396,8 @@ class _MetricsAccessor(BaseMetricsAccessor[CrossValidationReport], DirNamesMixin
             rows, report_type="cross-validation", errors=[]
         )
 
-    @available_if(_check_estimator_report_has_method("metrics", "score"))
-    def score(
+    @available_if(_check_estimator_report_has_method("metrics", "default_score"))
+    def default_score(
         self,
         *,
         data_source: DataSource = "test",
@@ -434,13 +434,13 @@ class _MetricsAccessor(BaseMetricsAccessor[CrossValidationReport], DirNamesMixin
         >>> X, y = load_breast_cancer(return_X_y=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
         >>> report = evaluate(classifier, X, y, splitter=2)
-        >>> report.metrics.score()
+        >>> report.metrics.default_score()
         Estimator LogisticRegression
-        Aggregate               mean      std
+        Aggregate                         mean      std
         Metric
-        Score               0.94...  0.00...
+        Default estimator score       0.94...  0.00...
         """
-        return self._metric("score", data_source=data_source).frame(
+        return self._metric("default_score", data_source=data_source).frame(
             aggregate=aggregate,
             verbose_name=True,
             flat_index=False,

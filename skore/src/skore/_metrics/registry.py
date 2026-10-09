@@ -36,8 +36,8 @@ class MetricRegistry(UserDict[str, Metric]):
         )
 
         if Score.available(report):
-            self.data["score"] = Score()
-            self.data.move_to_end("score", last=False)
+            self.data["default_score"] = Score()
+            self.data.move_to_end("default_score", last=False)
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}({list(self.data.keys())})"
@@ -63,7 +63,7 @@ class MetricRegistry(UserDict[str, Metric]):
         if position not in ("first", "last"):
             raise ValueError(f"position must be 'first' or 'last', got {position!r}.")
 
-        if metric.name == "score":
+        if metric.name == "default_score":
             raise ValueError(f"Cannot add {metric.name!r}: it is a reserved name.")
 
         if metric.name in self.data:

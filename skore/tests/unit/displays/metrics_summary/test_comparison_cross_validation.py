@@ -64,7 +64,7 @@ def test_default_regression(comparison_cross_validation_reports_regression):
         "std_dummyregressor_2",
     ]
     assert result.index.tolist() == [
-        "score",
+        "default_score",
         "r2",
         "rmse",
         "mae",

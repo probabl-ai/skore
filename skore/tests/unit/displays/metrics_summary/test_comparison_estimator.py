@@ -22,7 +22,7 @@ def test_data_source_both(estimator_reports_binary_classification):
     result = report.metrics.summarize(data_source="both").frame()
 
     assert result.index.to_list() == [
-        "score",
+        "default_score",
         "accuracy",
         "precision_0",
         "precision_1",
@@ -51,7 +51,7 @@ def test_format_wide(estimator_reports_binary_classification):
     result_df = result.frame()
     assert isinstance(result_df.index, pd.Index)
     assert result_df.index.tolist() == [
-        "score",
+        "default_score",
         "accuracy",
         "precision_0",
         "precision_1",
