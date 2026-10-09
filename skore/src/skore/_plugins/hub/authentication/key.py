@@ -62,7 +62,7 @@ def generate(
             )
 
         registry.local.delete(host=host, workspace=workspace)
-        registry.distant.revoke(host=host, id=old.id)
+        registry.distant.revoke(host=host, id=old.id, timeout=timeout)
 
     new = registry.distant.generate(
         host=host,
