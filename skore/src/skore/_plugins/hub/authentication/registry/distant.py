@@ -144,13 +144,9 @@ def generate(
     host = normalize(host)
     token = login(host=host, timeout=timeout)
     user = identity(host=host, token=token)
+    membership = next((w for w in user.workspaces if w.public_id == workspace), None)
 
-    if not (
-        membership := next(
-            (w for w in user.workspaces if w.public_id == workspace),
-            None,
-        )
-    ):
+    if membership is None:
         raise PermissionError(f"You are not member of {workspace!r}")
 
     if not membership.permissions.issuperset(set(PERMISSIONS)):
