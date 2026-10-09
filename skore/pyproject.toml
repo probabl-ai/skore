@@ -92,7 +92,7 @@ hub = [
   "pydantic",
   "rich[jupyter]>=14.2",
   "scipy",
-  # "skore-cli>=0.5",
+  "skore-cli>=0.5",
 ]
 mlflow = ["mlflow>=2.20.4"]
 
