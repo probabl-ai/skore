@@ -6,7 +6,7 @@ Skore's open-source Python library accelerates ML model development with automat
 smart methodological guidance, and comprehensive cross-validation analysis.\
 """
 dynamic = ["license-files", "readme", "version"]
-requires-python = ">=3.11"
+requires-python = ">=3.11,<3.15"
 maintainers = [{ name = "skore developers", email = "skore@signal.probabl.ai" }]
 license = "MIT"
 classifiers = [
@@ -92,9 +92,8 @@ hub = [
   "pydantic",
   "rich[jupyter]>=14.2",
   "scipy",
-  "skore-cli>=0.5",
 ]
-mlflow = ["mlflow>=2.20.4"]
+mlflow = ["mlflow>=3"]
 
 [project.entry-points."skore.plugins.project"]
 local = "skore._plugins.local:Project"
@@ -153,6 +152,10 @@ filterwarnings = [
   # mlflow calls ``DataFrame.all(0)``, but pandas (>=3) warns that the arguments of
   # ``all`` become keyword-only in pandas 4.
   'ignore:Starting with pandas version 4\.0 all arguments of all will be keyword-only::mlflow',
+  # MLflow still maps a relationship with ``lazy="noload"``. SQLAlchemy (>=2.1)
+  # deprecates that loader during ``configure_mappers()`` and attributes the
+  # warning to the MLflow caller. Hit by every test that opens a tracking store.
+  'ignore:The ``noload`` loader strategy is deprecated:sqlalchemy.exc.SADeprecationWarning:mlflow',
   # sklearn (<=1.9) still passes ``iprint``/``disp`` to scipy's L-BFGS-B.
   # SciPy (<=1.17) emits a DeprecationWarning; SciPy (>=1.18) treats them as
   # unknown options (OptimizeWarning). Do not pin module to ``scipy``: the
