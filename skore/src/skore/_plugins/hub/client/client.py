@@ -5,7 +5,7 @@ from __future__ import annotations
 from contextlib import suppress
 from functools import reduce
 from http import HTTPStatus
-from importlib.metadata import PackageNotFoundError, version
+from importlib.metadata import version
 from importlib.util import find_spec
 from json import dumps
 from logging import getLogger
@@ -26,7 +26,6 @@ from httpx import (
 )
 from httpx import Client as HTTPXClient
 from httpx._types import HeaderTypes
-from packaging.requirements import Requirement
 
 from skore._plugins.hub.authentication import ENV_VAR_NAME, URI
 
@@ -164,7 +163,6 @@ def __semver(version: str) -> str | None:
 
 PACKAGE_SEMVER = __semver(version("skore"))
 JUPYTERLITE = find_spec("pyodide") is not None
-SKORE_CLI = Requirement("skore-cli>=0.5")
 
 
 class HUBClient(Client):
@@ -259,26 +257,8 @@ class HUBClient(Client):
                     or key_module.get(host=host, workspace=workspace)
                 )
             ):
-                try:
-                    skore_cli_version = version(SKORE_CLI.name)
-                except PackageNotFoundError:
-                    skore_cli_satisfied = False
-                else:
-                    skore_cli_satisfied = SKORE_CLI.specifier.contains(
-                        skore_cli_version,
-                        prereleases=True,
-                    )
-
-                if skore_cli_satisfied:
-                    hint = "generate one with "
-                else:
-                    hint = (
-                        f"install `{SKORE_CLI}` (`pip install '{SKORE_CLI}'`) and "
-                        "generate one with "
-                    )
-
                 raise RuntimeError(
-                    f"No API key found for this workspace; {hint}"
+                    "No API key found for this workspace; generate one with "
                     "`$ skore hub api-key generate --workspace <workspace>`, "
                     "or set the SKORE_HUB_API_KEY environment variable."
                 )
