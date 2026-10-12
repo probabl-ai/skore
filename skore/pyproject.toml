@@ -152,6 +152,10 @@ filterwarnings = [
   # mlflow calls ``DataFrame.all(0)``, but pandas (>=3) warns that the arguments of
   # ``all`` become keyword-only in pandas 4.
   'ignore:Starting with pandas version 4\.0 all arguments of all will be keyword-only::mlflow',
+  # MLflow still maps a relationship with ``lazy="noload"``. SQLAlchemy (>=2.1)
+  # deprecates that loader during ``configure_mappers()`` and attributes the
+  # warning to the MLflow caller. Hit by every test that opens a tracking store.
+  'ignore:The ``noload`` loader strategy is deprecated:sqlalchemy.exc.SADeprecationWarning:mlflow',
   # sklearn (<=1.9) still passes ``iprint``/``disp`` to scipy's L-BFGS-B.
   # SciPy (<=1.17) emits a DeprecationWarning; SciPy (>=1.18) treats them as
   # unknown options (OptimizeWarning). Do not pin module to ``scipy``: the
