@@ -226,6 +226,8 @@ class MetricsSummaryDisplay(DisplayMixin):
             table = df.groupby(index_cols, dropna=False, sort=False)[
                 PIVOT_VALUE_COLUMN
             ].agg(agg_list)
+            if "std" in agg_list and df["split"].nunique() == 1:
+                table["std"] = pd.Series(pd.NA, index=table.index, dtype="Float64")
             table.columns = pd.MultiIndex.from_tuples(
                 [(estimator, str(col)) for col in table.columns]
             )
@@ -328,10 +330,22 @@ class MetricsSummaryDisplay(DisplayMixin):
                 sort=False,
             )
             estimators = list(dict.fromkeys(df["estimator"]))
-            table = table[
-                [(str(agg), estimator) for agg in agg_list for estimator in estimators]
-            ]
-            table.columns.names = [None, "estimator"]
+            table = table.reindex(
+                columns=pd.MultiIndex.from_tuples(
+                    [
+                        (str(agg), estimator)
+                        for agg in agg_list
+                        for estimator in estimators
+                    ],
+                    names=[None, "estimator"],
+                )
+            )
+            if "std" in agg_list:
+                single_split = df.groupby("estimator", sort=False)["split"].nunique()
+                for estimator_name in single_split.index[single_split == 1]:
+                    table[("std", estimator_name)] = pd.Series(
+                        pd.NA, index=table.index, dtype="Float64"
+                    )
         return table
 
     def _finalize(

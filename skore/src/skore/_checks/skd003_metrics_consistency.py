@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, cast
 import numpy as np
 
 from skore._checks.base import Check
-from skore._checks.utils import majority_vote
+from skore._checks.utils import CheckNotApplicable, majority_vote
 
 if TYPE_CHECKING:
     from skore._reports.base import _BaseReport
@@ -48,6 +48,10 @@ class CheckMetricsConsistencyAcrossSplits(Check):
     def check_function(self, report: _BaseReport) -> str | None:
         """Detect outlier performance across cross-validation splits."""
         report = cast("CrossValidationReport", report)
+        if len(report.reports_) == 1:
+            raise CheckNotApplicable(
+                "Dispersion across splits is undefined with a single split."
+            )
 
         report_data = report.metrics.summarize(data_source="test").frame(
             aggregate=None, flat_index=True
