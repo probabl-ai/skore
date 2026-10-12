@@ -40,6 +40,60 @@ def test_installed_rejects_sidecar_without_id(tmp_path):
         list(installed(tmp_path))
 
 
+@pytest.mark.parametrize(
+    "skill_id",
+    ["../../.ssh/authorized_keys", "..", "/tmp/skill", "foo/bar", ""],
+)
+def test_install_skill_rejects_an_unsafe_id(tmp_path, skill_id):
+    root = tmp_path / "release"
+    root.mkdir()
+
+    with pytest.raises(SkillStoreError, match="skill id"):
+        install_skill(
+            {"id": skill_id, "path": "skills/alpha", "hash": "h"},
+            root,
+            tmp_path / "skills",
+            "v1",
+            "owner/name",
+        )
+
+    assert not (tmp_path / "skills").exists()
+    assert list(root.iterdir()) == []
+
+
+def test_install_skill_rejects_an_absolute_path(tmp_path):
+    root = tmp_path / "release"
+    root.mkdir()
+
+    with pytest.raises(SkillStoreError, match="escapes the release"):
+        install_skill(
+            {"id": "alpha", "path": "/etc/passwd", "hash": "h"},
+            root,
+            tmp_path / "skills",
+            "v1",
+            "owner/name",
+        )
+
+
+def test_install_skill_rejects_a_path_outside_the_release(tmp_path):
+    root = tmp_path / "release"
+    root.mkdir()
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    (outside / "SKILL.md").write_text("secret")
+
+    with pytest.raises(SkillStoreError, match="escapes the release"):
+        install_skill(
+            {"id": "alpha", "path": "../outside", "hash": "h"},
+            root,
+            tmp_path / "skills",
+            "v1",
+            "owner/name",
+        )
+
+    assert not (tmp_path / "skills").exists()
+
+
 def test_install_skill_keeps_existing_directory_when_copy_fails(tmp_path):
     target = tmp_path / "skills"
     destination = target / "alpha"

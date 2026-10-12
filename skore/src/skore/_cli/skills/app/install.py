@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from contextlib import suppress
 from pathlib import Path
 from typing import Any
@@ -261,7 +262,7 @@ class ProbablSkillsInstaller(App[None]):
 
         self.notify(f"Fetching latest skills release from {repo}...")
         try:
-            tag, root, catalog = load_release(repo)
+            tag, root, catalog = await asyncio.to_thread(load_release, repo)
         except ReleaseError as error:
             self.notify(str(error), severity="error")
             return False

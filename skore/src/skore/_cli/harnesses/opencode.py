@@ -11,6 +11,7 @@ from skore._cli.harnesses.context import (
     SKORE_PROVIDER_KEY,
     HarnessContext,
 )
+from skore._cli.harnesses.cursor import _load_json_object
 from skore._cli.project import ensure_gitignore_entry
 from skore._cli.style import console
 
@@ -35,23 +36,33 @@ export const SkoreSessionPlugin = async () => ({
 
 
 def _configure_opencode(ctx: HarnessContext) -> dict[str, Any]:
-    """Write ``opencode.json`` with the Skore Hub provider."""
+    """Write ``opencode.json`` with the Skore Hub provider.
+
+    An existing file keeps its other providers and its ``model``. ``$schema``
+    and ``model`` are set only when the file is created.
+    """
     config_path = ctx.workspace / "opencode.json"
-    config: dict[str, Any] = {
-        "$schema": OPENCODE_SCHEMA,
-        "model": f"{SKORE_PROVIDER_KEY}/{ctx.model_id}",
-        "provider": {
-            SKORE_PROVIDER_KEY: {
-                "npm": "@ai-sdk/openai-compatible",
-                "name": "Skore Hub",
-                "options": {
-                    "baseURL": ctx.base_url,
-                    "apiKey": ctx.api_key,
-                },
-                "models": {ctx.model_id: dict(OPENCODE_MODEL)},
-            }
+    is_new = not config_path.is_file()
+    config = _load_json_object(config_path)
+    if is_new:
+        config["$schema"] = OPENCODE_SCHEMA
+        config["model"] = f"{SKORE_PROVIDER_KEY}/{ctx.model_id}"
+    providers = config.get("provider", {})
+    if not isinstance(providers, dict):
+        raise RuntimeError(
+            f"{config_path} provider is not a JSON object; fix or move it, "
+            "then run `skore agent` again."
+        )
+    providers[SKORE_PROVIDER_KEY] = {
+        "npm": "@ai-sdk/openai-compatible",
+        "name": "Skore Hub",
+        "options": {
+            "baseURL": ctx.base_url,
+            "apiKey": ctx.api_key,
         },
+        "models": {ctx.model_id: dict(OPENCODE_MODEL)},
     }
+    config["provider"] = providers
     config_path.write_text(json.dumps(config, indent=2) + "\n")
     ensure_gitignore_entry(ctx.workspace, "opencode.json")
     console.print(f"[skore.ok]+[/] wrote [skore.path]{config_path}[/]")

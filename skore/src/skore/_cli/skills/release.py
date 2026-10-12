@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import shutil
+import tarfile
 from collections.abc import Iterator
 from contextlib import contextmanager
 from pathlib import Path
@@ -25,7 +26,7 @@ def load_release(repo: str = GITHUB_REPO) -> tuple[str, Path, dict[str, Any]]:
     """
     try:
         return fetch_release(repo)
-    except (OSError, ValueError, KeyError) as error:
+    except (OSError, ValueError, KeyError, tarfile.TarError, EOFError) as error:
         raise ReleaseError(
             f"Could not fetch the latest skills release from GitHub ({repo}): {error}"
         ) from error

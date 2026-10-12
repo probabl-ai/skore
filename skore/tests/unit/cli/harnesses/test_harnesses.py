@@ -251,6 +251,62 @@ def test_pi_config_matches_hub_ui(tmp_path):
     assert compat["sessionAffinityFormat"] == "openrouter"
 
 
+def test_claude_config_keeps_existing_settings(tmp_path):
+    settings = tmp_path / ".claude"
+    settings.mkdir()
+    (settings / "settings.local.json").write_text(
+        json.dumps(
+            {
+                "permissions": {"allow": ["Bash"]},
+                "hooks": {"Stop": []},
+                "model": "opus",
+                "env": {"OTHER_TOKEN": "kept"},
+            }
+        )
+    )
+
+    AGENTS["claude-code"].configure(_ctx(tmp_path))
+
+    config = json.loads((settings / "settings.local.json").read_text())
+    assert config["permissions"] == {"allow": ["Bash"]}
+    assert config["hooks"] == {"Stop": []}
+    assert config["model"] == "opus"
+    assert config["env"]["OTHER_TOKEN"] == "kept"
+    assert config["env"]["ANTHROPIC_AUTH_TOKEN"] == "secret-key"
+
+
+def test_opencode_config_keeps_existing_provider_and_model(tmp_path):
+    (tmp_path / "opencode.json").write_text(
+        json.dumps(
+            {
+                "model": "other/model",
+                "mcp": {"local": {}},
+                "provider": {"other": {"name": "Other"}},
+            }
+        )
+    )
+
+    AGENTS["opencode"].configure(_ctx(tmp_path))
+
+    config = json.loads((tmp_path / "opencode.json").read_text())
+    assert config["model"] == "other/model"
+    assert config["mcp"] == {"local": {}}
+    assert config["provider"]["other"] == {"name": "Other"}
+    assert config["provider"]["skore"]["name"] == "Skore Hub"
+
+
+def test_pi_config_keeps_existing_providers(tmp_path):
+    config_path = tmp_path / ".pi" / "agent" / "models.json"
+    config_path.parent.mkdir(parents=True)
+    config_path.write_text(json.dumps({"providers": {"other": {"api": "openai"}}}))
+
+    AGENTS["pi"].configure(_ctx(tmp_path))
+
+    config = json.loads(config_path.read_text())
+    assert config["providers"]["other"] == {"api": "openai"}
+    assert config["providers"]["skore"]["apiKey"] == "secret-key"
+
+
 def test_cursor_config_points_at_the_mcp_endpoint(tmp_path):
     AGENTS["cursor"].configure(_ctx(tmp_path))
 

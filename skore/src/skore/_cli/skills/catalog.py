@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import shutil
 import tarfile
 from io import BytesIO
 from pathlib import Path
@@ -54,7 +55,7 @@ def _fetch_bytes(url: str) -> bytes:
         The raw content of the response.
     """
     request = Request(url, headers={"User-Agent": _USER_AGENT})
-    with urlopen(request) as response:
+    with urlopen(request, timeout=30) as response:
         return response.read()
 
 
@@ -94,12 +95,14 @@ def download_release(tag: str, repo: str = GITHUB_REPO) -> Path:
     url = f"https://api.github.com/repos/{repo}/tarball/{tag}"
     archive = _fetch_bytes(url)
     destination = Path(mkdtemp(prefix="skore-skills-"))
-
-    with tarfile.open(fileobj=BytesIO(archive), mode="r:gz") as tar:
-        tar.extractall(destination, filter="data")
-
-    # GitHub source tarballs always contain a single top-level directory.
-    (root,) = destination.iterdir()
+    try:
+        with tarfile.open(fileobj=BytesIO(archive), mode="r:gz") as tar:
+            tar.extractall(destination, filter="data")
+        # GitHub source tarballs always contain a single top-level directory.
+        (root,) = destination.iterdir()
+    except Exception:
+        shutil.rmtree(destination, ignore_errors=True)
+        raise
     return root
 
 
@@ -152,5 +155,9 @@ def fetch_release(repo: str = GITHUB_REPO) -> tuple[str, Path, dict[str, Any]]:
     """
     tag = latest_release_tag(repo)
     root = download_release(tag, repo)
-    catalog = load_catalog(root)
+    try:
+        catalog = load_catalog(root)
+    except Exception:
+        shutil.rmtree(root.parent, ignore_errors=True)
+        raise
     return tag, root, catalog

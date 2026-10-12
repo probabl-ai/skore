@@ -1,13 +1,17 @@
 import json
+import tarfile
+from io import BytesIO
 from urllib.request import Request
 
 import pytest
 
 from skore._cli.skills import catalog as _catalog
+from skore._cli.skills.release import ReleaseError, load_release
 
 
 def test_fetch_bytes_sends_user_agent(monkeypatch):
     captured: dict[str, Request] = {}
+    timeouts: list[float | None] = []
 
     class FakeResponse:
         def read(self):
@@ -19,14 +23,16 @@ def test_fetch_bytes_sends_user_agent(monkeypatch):
         def __exit__(self, *args):
             return None
 
-    def fake_urlopen(request):
+    def fake_urlopen(request, timeout=None):
         captured["request"] = request
+        timeouts.append(timeout)
         return FakeResponse()
 
     monkeypatch.setattr(_catalog, "urlopen", fake_urlopen)
 
     assert _catalog._fetch_bytes("https://example.com") == b"payload"
     assert captured["request"].headers["User-agent"] == "skore-skills-cli"
+    assert timeouts == [30]
 
 
 @pytest.mark.parametrize(
@@ -140,3 +146,56 @@ def test_load_catalog_legacy_tarball(catalog_dict, legacy_release_tarball, monke
 
     root = _catalog.download_release("0.1.0")
     assert _catalog.load_catalog(root) == catalog_dict
+
+
+def _gzip_tarball(members: dict[str, bytes]) -> bytes:
+    buffer = BytesIO()
+    with tarfile.open(fileobj=buffer, mode="w:gz") as archive:
+        for name, data in members.items():
+            info = tarfile.TarInfo(name)
+            info.size = len(data)
+            archive.addfile(info, BytesIO(data))
+    return buffer.getvalue()
+
+
+def test_load_release_rejects_a_non_tar_body(monkeypatch, tmp_path):
+    extract = tmp_path / "extract"
+
+    def fake_fetch(url):
+        if url.endswith("/releases/latest"):
+            return b'{"tag_name": "0.1.0"}'
+        return b"not a tarball"
+
+    def fake_mkdtemp(**kwargs):
+        extract.mkdir()
+        return str(extract)
+
+    monkeypatch.setattr(_catalog, "_fetch_bytes", fake_fetch)
+    monkeypatch.setattr(_catalog, "mkdtemp", fake_mkdtemp)
+
+    with pytest.raises(ReleaseError, match="Could not fetch"):
+        load_release("owner/name")
+
+    assert not extract.exists()
+
+
+def test_fetch_release_removes_temp_dir_when_catalog_is_missing(monkeypatch, tmp_path):
+    extract = tmp_path / "extract"
+    archive = _gzip_tarball({"repo-1.0/README.md": b"hello"})
+
+    def fake_fetch(url):
+        if url.endswith("/releases/latest"):
+            return b'{"tag_name": "0.1.0"}'
+        return archive
+
+    def fake_mkdtemp(**kwargs):
+        extract.mkdir()
+        return str(extract)
+
+    monkeypatch.setattr(_catalog, "_fetch_bytes", fake_fetch)
+    monkeypatch.setattr(_catalog, "mkdtemp", fake_mkdtemp)
+
+    with pytest.raises(FileNotFoundError, match="No catalog file"):
+        _catalog.fetch_release("owner/name")
+
+    assert not extract.exists()

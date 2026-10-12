@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 import shutil
 from collections.abc import Iterator
 from pathlib import Path
@@ -13,6 +14,7 @@ from skore._cli.skills.catalog import GITHUB_REPO
 SIDECAR = ".skore-skill.json"
 LOCAL_CATALOG = ".catalog.json"
 LEGACY_CATALOG = "catalog.json"
+_SKILL_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
 
 
 class SkillStoreError(Exception):
@@ -141,10 +143,25 @@ def write_sidecar(destination: Path, skill: dict, tag: str, repo: str) -> None:
     (destination / SIDECAR).write_text(json.dumps(sidecar, indent=2))
 
 
+def _validated_skill_paths(skill: dict, root: Path, target: Path) -> tuple[Path, Path]:
+    """Return the source and destination after rejecting paths that escape them."""
+    skill_id = skill["id"]
+    if not isinstance(skill_id, str) or _SKILL_ID.fullmatch(skill_id) is None:
+        raise SkillStoreError(
+            f"skill id {skill_id!r} must be a single path component of letters, "
+            "digits, dots, underscores, or hyphens."
+        )
+    source = (root / skill["path"]).resolve()
+    if not source.is_relative_to(root.resolve()):
+        raise SkillStoreError(
+            f"skill path {skill['path']!r} escapes the release directory."
+        )
+    return source, target / skill_id
+
+
 def install_skill(skill: dict, root: Path, target: Path, tag: str, repo: str) -> None:
     """Copy ``skill`` from the extracted release into ``target`` and write a sidecar."""
-    source = root / skill["path"]
-    destination = target / skill["id"]
+    source, destination = _validated_skill_paths(skill, root, target)
     staging = destination.with_name(f".{destination.name}.skore-tmp")
     backup = destination.with_name(f".{destination.name}.skore-bak")
     if staging.exists():

@@ -8,6 +8,7 @@ from typing import Any
 
 from skore._cli.harnesses import process as _process
 from skore._cli.harnesses.context import HarnessContext
+from skore._cli.harnesses.cursor import _load_json_object
 from skore._cli.project import SkoreConfig, ensure_gitignore_entry
 from skore._cli.runtime import is_non_interactive
 from skore._cli.style import console
@@ -24,17 +25,29 @@ IDE_PLUGIN_LABELS = {
 
 
 def _configure_claude(ctx: HarnessContext) -> dict[str, Any]:
-    """Write ``.claude/settings.local.json`` for Claude."""
+    """Write ``.claude/settings.local.json`` for Claude.
+
+    The file belongs to Claude, so an existing ``permissions``, ``hooks``, or
+    ``model`` entry is kept. Only the Skore ``env`` keys are updated.
+    """
     config_dir = ctx.workspace / ".claude"
     config_dir.mkdir(parents=True, exist_ok=True)
     config_path = config_dir / "settings.local.json"
-    payload = {
-        "env": {
+    payload = _load_json_object(config_path)
+    env = payload.get("env", {})
+    if not isinstance(env, dict):
+        raise RuntimeError(
+            f"{config_path} env is not a JSON object; fix or move it, "
+            "then run `skore agent` again."
+        )
+    env.update(
+        {
             "ANTHROPIC_BASE_URL": ctx.hub_url.rstrip("/"),
             "ANTHROPIC_AUTH_TOKEN": ctx.api_key,
             "ANTHROPIC_MODEL": ctx.model_id,
         }
-    }
+    )
+    payload["env"] = env
     config_path.write_text(json.dumps(payload, indent=2) + "\n")
     ensure_gitignore_entry(ctx.workspace, ".claude/settings.local.json")
     console.print(f"[skore.ok]+[/] wrote [skore.path]{config_path}[/]")
