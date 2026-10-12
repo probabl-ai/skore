@@ -1,3 +1,4 @@
+from re import escape
 from urllib.parse import urljoin
 
 from httpx import (
@@ -157,8 +158,54 @@ class TestHUBClient:
         assert respx_mock.calls.last.request.headers["X-API-Key"] == "<env-key>"
 
     @mark.respx()
-    def test_request_without_credentials(self):
-        with raises(RuntimeError, match="No API key found"), HUBClient() as client:
+    @mark.parametrize(
+        ("cli_version", "message"),
+        [
+            (
+                "0.5.0",
+                (
+                    "No API key found for this workspace; generate one with "
+                    "`$ skore hub api-key generate --workspace <workspace>`, "
+                    "or set the SKORE_HUB_API_KEY environment variable."
+                ),
+            ),
+            (
+                "0.4.1",
+                (
+                    "No API key found for this workspace; "
+                    "install `skore-cli>=0.5` (`pip install 'skore-cli>=0.5'`) and "
+                    "generate one with "
+                    "`$ skore hub api-key generate --workspace <workspace>`, "
+                    "or set the SKORE_HUB_API_KEY environment variable."
+                ),
+            ),
+            (
+                None,
+                (
+                    "No API key found for this workspace; "
+                    "install `skore-cli>=0.5` (`pip install 'skore-cli>=0.5'`) and "
+                    "generate one with "
+                    "`$ skore hub api-key generate --workspace <workspace>`, "
+                    "or set the SKORE_HUB_API_KEY environment variable."
+                ),
+            ),
+        ],
+    )
+    def test_request_without_credentials(self, monkeypatch, cli_version, message):
+        from importlib.metadata import PackageNotFoundError
+
+        def fake_version(distribution):
+            if distribution == "skore-cli":
+                if cli_version is None:
+                    raise PackageNotFoundError(distribution)
+
+                return cli_version
+
+            return "1.0.0"
+
+        monkeypatch.setattr("skore._plugins.hub.client.client.version", fake_version)
+
+        with raises(RuntimeError, match=f"^{escape(message)}$"), HUBClient() as client:
             client.request("GET", "workspace")
 
     @mark.respx()
