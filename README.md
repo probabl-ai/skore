@@ -82,13 +82,13 @@ Evaluate your model and get comprehensive insights in one line:
 ```python
 from sklearn.datasets import make_classification
 from sklearn.linear_model import LogisticRegression
-from skore import CrossValidationReport
+from skore import evaluate
 
 X, y = make_classification(n_classes=2, n_samples=100_000, n_informative=4)
 clf = LogisticRegression()
 
 # Get structured insights that matter for your use case
-cv_report = CrossValidationReport(clf, X, y)
+cv_report = evaluate(clf, X, y, splitter=5)
 
 # See what insights are available
 cv_report.help()

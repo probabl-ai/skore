@@ -4,7 +4,12 @@ What's new in skore — September 2026
 CalibrationDisplay ``n_bins="auto"`` option
 -------------------------------------------
 
-The calibration curve display used a fixed default of 5 bins regardless of the size of the dataset, which could hide detail on large datasets or produce noisy curves on small ones. :meth:`~skore.CalibrationDisplay.frame` now uses the default ``n_bins="auto"`` parameter, which derives the number of bins from the test-set size (using the cube-root rule). See :pr:`3254` by :user:`direkkakkar319-ops`.
+The calibration curve display used a fixed default of 5 bins regardless of the size of
+the dataset, which could hide detail on large datasets or produce noisy curves on small
+ones. :meth:`~skore.EstimatorReport.inspection.calibration_curve` now uses the default
+``n_bins="auto"`` parameter, which derives the number of bins from the selected data
+source size (using the cube-root rule). See :pr:`3254` by
+:user:`direkkakkar319-ops`.
 
 .. code-block:: python
 

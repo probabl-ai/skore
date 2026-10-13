@@ -6,7 +6,7 @@ Automated checks
 
 `skore` provides automated checks for common model quality pitfalls.
 Use :meth:`~skore.EstimatorReport.checks.summarize` to run checks and get a
-a summary of the findings. Findings come in two severities:
+summary of the findings. Findings come in two severities:
 
 - **issues** flag a concrete modeling problem to fix (e.g. overfitting);
 - **tips** do not signal a defect on their own but invite caution, typically on

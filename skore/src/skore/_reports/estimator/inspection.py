@@ -373,21 +373,21 @@ class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
     ) -> CalibrationDisplay:
         """Display the calibration curve.
 
-        This method is available for binary classification reports. It computes
-        the calibration curve data for each report and returns a display that
-        can be plotted with :meth:`CalibrationDisplay.plot`.
+        This method is available for binary and multiclass classification reports.
+        It computes one-vs-rest calibration curve data for each class and returns a
+        display that can be plotted with :meth:`CalibrationDisplay.plot`.
 
         Parameters
         ----------
         data_source : {"test", "train"}, default="test"
-            The data source for the calibration curve. If None, the default data
-            source is used.
+            The data source for the calibration curve.
 
         n_bins : int or "auto", default="auto"
-            The number of bins to use for the calibration curve. Default is 5.
+            The number of bins to use for the calibration curve. ``"auto"`` derives
+            the number of bins from the data source size using the cube-root rule.
 
         strategy : {"uniform", "quantile"}, default="quantile"
-            The strategy to use for binning. Default is "uniform".
+            The strategy to use for binning.
 
         Returns
         -------

@@ -9,7 +9,7 @@ Local projects used to be saved on disk in SQLite databases via the `diskcache` 
 .. code-block:: python
 
     p = skore.Project("demo")
-    p.put("my-report", EstimatorReport(estimator, X, y))
+    p.put("my-report", skore.evaluate(estimator, X, y))
 
     # ./skore/
     # └── projects/demo/reports/latest__my-report/

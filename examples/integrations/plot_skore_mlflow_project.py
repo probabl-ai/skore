@@ -5,12 +5,12 @@
 Store and retrieve Skore reports in MLflow
 ==========================================
 
-The primilarly goal of `skore` is to create data science artifacts in the form of
+The primary goal of `skore` is to create data science artifacts in the form of
 structured reports. Those reports can easily be used programmatically via the Python
 API. A subsequent aim is to store those reports that you create during your experiment
 cycle in a way that it is easy to retrieve them later on.
 
-Skore provides two natives ways to store reports: locally or on Skore Hub. Skore Hub
+Skore provides two native ways to store reports: locally or on Skore Hub. Skore Hub
 provides additional interactivity features for you to explore, compare and share
 visual insights.
 

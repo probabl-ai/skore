@@ -60,6 +60,8 @@ def _code_block(app: Sphinx, code: str) -> str:
 
 def generate_landing_page(app: Sphinx) -> None:
     """Generate the landing page feature sections HTML."""
+    if app.builder.name != "html":
+        return
 
     template_dir = Path(app.confdir) / "_templates"
     ns: dict = {}

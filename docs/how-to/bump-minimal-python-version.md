@@ -7,6 +7,8 @@
 - Update `README.md`
   - Badge
   - "You need Python>=3.x"
+- Update `sphinx/install.rst`
+  - "You need ``python>=3.x``"
 - Update `CONTRIBUTING.rst`
   - "You will need ``python >=3.x``"
 - Update `python-version` in github workflows

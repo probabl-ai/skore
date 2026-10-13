@@ -22,6 +22,7 @@ way. The functionalities of the report are accessible through accessors.
     ComparisonReport.help
     ComparisonReport.create_estimator_report
     ComparisonReport.get_predictions
+    ComparisonReport.to_markdown
 
 .. rubric:: Accessors
 
