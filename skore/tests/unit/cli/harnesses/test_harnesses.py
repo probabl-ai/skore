@@ -307,6 +307,26 @@ def test_pi_config_keeps_existing_providers(tmp_path):
     assert config["providers"]["skore"]["apiKey"] == "secret-key"
 
 
+@pytest.mark.parametrize(
+    ("name", "relative", "payload"),
+    [
+        ("claude-code", ".claude/settings.local.json", {"env": ["not-an-object"]}),
+        ("opencode", "opencode.json", {"provider": ["not-an-object"]}),
+        ("pi", ".pi/agent/models.json", {"providers": ["not-an-object"]}),
+    ],
+)
+def test_config_refuses_a_non_object_skore_section(tmp_path, name, relative, payload):
+    path = tmp_path / relative
+    path.parent.mkdir(parents=True, exist_ok=True)
+    original = json.dumps(payload)
+    path.write_text(original)
+
+    with pytest.raises(RuntimeError, match="not a JSON object"):
+        AGENTS[name].configure(_ctx(tmp_path))
+
+    assert path.read_text() == original
+
+
 def test_cursor_config_points_at_the_mcp_endpoint(tmp_path):
     AGENTS["cursor"].configure(_ctx(tmp_path))
 
