@@ -35,6 +35,8 @@ way. The functionalities of the report are accessible through accessors.
     ComparisonReport.inspection
     ComparisonReport.metrics
 
+.. _comparison_metrics:
+
 Metrics
 -------
 

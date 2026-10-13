@@ -1,12 +1,14 @@
 """Cross-check stable contracts between the public API and documentation."""
 
 import re
+import tomllib
 from pathlib import Path
 
 import skore
 from skore._checks.builtin import _BUILTIN_CHECKS
 
-SPHINX_DIR = Path(__file__).parents[3] / "sphinx"
+REPO_DIR = Path(__file__).parents[3]
+SPHINX_DIR = REPO_DIR / "sphinx"
 
 
 def test_public_api_is_mentioned_in_reference():
@@ -40,3 +42,20 @@ def test_builtin_check_documentation_anchors_exist():
     }
 
     assert missing == {}
+
+
+def test_documented_python_requirement_matches_package_metadata():
+    """Install instructions use the minimum version declared by the package."""
+    pyproject = tomllib.loads((REPO_DIR / "skore" / "pyproject.toml").read_text())
+    match = re.search(r">=([0-9.]+)", pyproject["project"]["requires-python"])
+    assert match is not None
+    minimum = match.group(1)
+
+    documented = {
+        "README.md": (REPO_DIR / "README.md").read_text(),
+        "CONTRIBUTING.rst": (REPO_DIR / "CONTRIBUTING.rst").read_text(),
+        "sphinx/install.rst": (SPHINX_DIR / "install.rst").read_text(),
+    }
+    missing = [path for path, text in documented.items() if minimum not in text]
+
+    assert missing == []

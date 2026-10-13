@@ -28,24 +28,25 @@ class Project:
     existing one.
 
     The class main methods are :func:`~skore.Project.put`,
-    :func:`~skore.Project.summarize`, :func:`~skore.Project.get`, and
-    :func:`~skore.Project.sync`, respectively to insert a key-report pair into the
-    project, obtain the metadata/metrics of the inserted reports, get a specific report
-    by its id, and synchronize reports between projects.
+    :func:`~skore.Project.summarize`, :func:`~skore.Project.get`,
+    :func:`~skore.Project.delete`, and :func:`~skore.Project.sync`, respectively to
+    insert a key-report pair into the project, obtain the metadata/metrics of the
+    inserted reports, get or delete a specific report by its id, and synchronize
+    reports between projects.
 
     Three mutually exclusive modes are available and can be configured using the
     ``mode`` parameter of the constructor:
 
     .. rubric:: Hub mode
 
-    The project is configured to communicate with ``skore hub``.
+    The project is configured to communicate with Skore Hub.
 
-    In this mode, ``workspace`` is a ``skore hub`` concept that must be configured on
-    the ``skore hub`` interface. It represents an isolated entity managing users,
+    In this mode, ``workspace`` is a Skore Hub concept that must be configured on
+    the Skore Hub interface. It represents an isolated entity managing users,
     projects, and resources. It can be a company, organization, or team that operates
     independently within the system.
 
-    Note: Using Project in ``hub`` mode requires an account on ``skore hub``, with
+    Note: Using Project in ``hub`` mode requires an account on Skore Hub, with
     access rights to the specified workspace. Authentication uses an API key, in
     this order:
 

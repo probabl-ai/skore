@@ -1,7 +1,7 @@
 What's new in skore — September 2026
 ====================================
 
-CalibrationDisplay ``n_bins="auto"`` option
+``calibration_curve(n_bins="auto")`` option
 -------------------------------------------
 
 The calibration curve display used a fixed default of 5 bins regardless of the size of

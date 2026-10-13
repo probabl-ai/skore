@@ -90,6 +90,16 @@ Inspection
      - Display for visualizing classifier calibration curves
 
 
+General
+"""""""
+
+.. list-table::
+   :widths: 30 70
+
+   * - :class:`Display`
+     - Protocol implemented by every visualization display
+
+
 Checks
 ^^^^^^
 

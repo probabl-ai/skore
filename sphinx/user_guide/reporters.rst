@@ -199,13 +199,13 @@ have different data types, they will be considered as different.
 
 The caching mechanism is also available and exposes the same methods.
 
-Refer to the :ref:`cross_validation_metrics` section for more details on the
+Refer to the :ref:`comparison_metrics` section for more details on the
 metrics available in `skore` for comparison.
 
 Checks
 ------
 
-:meth:`~skore.EstimatorReport.checks` is the entry point to run checks that
+:obj:`EstimatorReport.checks` is the entry point to run checks that
 detect common modeling pitfalls. It provides the following methods:
 
 - :meth:`~skore.EstimatorReport.checks.summarize` to run checks and get a summary

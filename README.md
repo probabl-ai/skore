@@ -53,7 +53,7 @@ The core mission of **Skore** is to turn uneven ML development into structured, 
 
 #### With pip
 
-We recommend using a [virtual environment (venv)](https://docs.python.org/3/tutorial/venv.html). You need `python>=3.11`.
+We recommend using a [virtual environment (venv)](https://docs.python.org/3/tutorial/venv.html). You need `python>=3.11.4`.
 
 Then, you can install skore by using `pip`:
 ```bash
