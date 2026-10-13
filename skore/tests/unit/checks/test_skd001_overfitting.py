@@ -63,11 +63,7 @@ def test_uses_custom_metrics(report_type, regression_data):
     )
     report.metrics.add("root_mean_squared_error")
     n_metrics = len(
-        [
-            m
-            for m in report.metrics.available()
-            if m not in ["score", "fit_time", "predict_time"]
-        ]
+        [m for m in report.metrics.available() if m not in ["fit_time", "predict_time"]]
     )
 
     explanation = CheckOverfitting().check_function(report)

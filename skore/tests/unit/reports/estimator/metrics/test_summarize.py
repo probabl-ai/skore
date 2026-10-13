@@ -75,6 +75,7 @@ def test_default(forest_binary_classification_with_test, metric):
     check_display_structure(
         display,
         expected_metrics={
+            "Default estimator score",
             "Accuracy",
             "Precision",
             "Recall",
@@ -98,6 +99,7 @@ def test_default_binary_classification_svc(svc_binary_classification_with_test):
     check_display_structure(
         display,
         expected_metrics={
+            "Default estimator score",
             "Accuracy",
             "Precision",
             "Recall",
@@ -120,6 +122,7 @@ def test_default_multiclass_classification_forest(
     check_display_structure(
         display,
         expected_metrics={
+            "Default estimator score",
             "Accuracy",
             "Log loss",
             "Precision",
@@ -152,9 +155,7 @@ def test_name_is_registry_key(forest_multiclass_classification_with_test):
 
     names = set(report.metrics.summarize().summary["name"])
 
-    # `score` is the only registered metric that `summarize` skips here, because
-    # RandomForestClassifier uses the default `ClassifierMixin.score`.
-    assert names == set(report.metrics.available()) - {"score"}
+    assert names == set(report.metrics.available())
     assert {"precision", "precision_avg", "precision_weighted"} <= names
 
 
@@ -167,6 +168,7 @@ def test_default_multiclass_classification_svc(svc_multiclass_classification_wit
     check_display_structure(
         display,
         expected_metrics={
+            "Default estimator score",
             "Accuracy",
             "Precision",
             "Recall",
@@ -193,6 +195,7 @@ def test_default_regression(linear_regression_with_test):
     check_display_structure(
         display,
         expected_metrics={
+            "Default estimator score",
             "R²",
             "RMSE",
             "MAE",
@@ -216,6 +219,7 @@ def test_default_multioutput_regression(linear_regression_multioutput_with_test)
     check_display_structure(
         display,
         expected_metrics={
+            "Default estimator score",
             "R²",
             "RMSE",
             "MAE",
@@ -272,6 +276,7 @@ def test_default_without_predict_proba(custom_classifier_no_predict_proba_with_t
     check_display_structure(
         display,
         expected_metrics={
+            "Default estimator score",
             "Accuracy",
             "Precision",
             "Recall",
@@ -287,9 +292,7 @@ def test_default_without_predict_proba(custom_classifier_no_predict_proba_with_t
 def test_default_non_standard_score(
     binary_classification_data, wrap_in_pipeline, has_custom_score
 ):
-    """
-    If the estimator has a non-standard `.score` method, `summarize` will include it.
-    """
+    """``default_score`` is reported for mixin and custom ``score`` methods."""
 
     class CustomScoreEstimator(RandomForestClassifier):
         def score(self, X, y):
@@ -302,6 +305,7 @@ def test_default_non_standard_score(
     display = report.metrics.summarize()
 
     expected_metrics = {
+        "Default estimator score",
         "Brier score",
         "Log loss",
         "ROC AUC",
@@ -311,8 +315,6 @@ def test_default_non_standard_score(
         "Fit time (s)",
         "Predict time (s)",
     }
-    if has_custom_score:
-        expected_metrics.add("Score")
     check_display_structure(
         display,
         expected_metrics=expected_metrics,
@@ -349,6 +351,7 @@ def test_pos_label(forest_binary_classification_with_test):
     check_display_structure(
         display,
         expected_metrics={
+            "Default estimator score",
             "Accuracy",
             "Precision",
             "Recall",
@@ -380,6 +383,7 @@ def test_pos_label_strings(forest_binary_classification_with_test):
     display = report.metrics.summarize()
     assert isinstance(display.summary, pd.DataFrame)
     assert set(display.summary["verbose_name"]) == {
+        "Default estimator score",
         "Accuracy",
         "Precision",
         "Recall",
@@ -407,6 +411,7 @@ def test_pos_label_bool(forest_binary_classification_with_test):
     display = report.metrics.summarize()
     assert isinstance(display.summary, pd.DataFrame)
     assert set(display.summary["verbose_name"]) == {
+        "Default estimator score",
         "Accuracy",
         "Precision",
         "Recall",

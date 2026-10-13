@@ -5,7 +5,7 @@ name: pytest
 #
 # The workflow runs `pytest` jobs on all the repository packages, identified by the JSON
 # list `env.PACKAGES`. If you want to run this workflow on a new package, you only have
-# to add its name in the above list, and in the `pr-display-code-coverage.yml` workflow.
+# to add its name in the above list.
 #
 # It's important to notice that only one workflow is triggered for all packages.
 #
@@ -268,17 +268,19 @@ jobs:
         working-directory: ${{ matrix.package }}/
         run: |
           mkdir coverage
-          python -m pytest src/ tests/ --junitxml=coverage/pytest.xml --cov-config=pyproject.toml --cov-report=xml:coverage/pytest-coverage.xml --cov
+          python -m pytest src/ tests/ --cov-config=pyproject.toml --cov-report=xml:coverage/pytest-coverage.xml --cov
           sed -i -E "s/filename=\"venv\/lib\/python[^/]*\/site-packages\/${PACKAGE//-/_}/filename=\"${PACKAGE}\/src\/${PACKAGE//-/_}/g" coverage/pytest-coverage.xml
         env:
           PACKAGE: ${{ matrix.package }}
 
-      - name: Upload coverage reports
-        if: ${{ (github.repository == 'probabl-ai/skore') && matrix.coverage && (github.event_name == 'pull_request') }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - name: Upload coverage reports to Codecov
+        if: ${{ (github.repository == 'probabl-ai/skore') && matrix.coverage }}
+        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
         with:
-          name: ${{ matrix.package }}-coverage
-          path: ${{ matrix.package }}/coverage/
+          token: ${{ secrets.CODECOV_TOKEN }}
+          slug: probabl-ai/skore
+          files: skore/coverage/pytest-coverage.xml
+          disable_search: true
 
   pytest:
     needs:

@@ -1,5 +1,7 @@
 import pandas as pd
 import pytest
+from sklearn.linear_model import LinearRegression
+from sklearn.model_selection import ShuffleSplit
 
 from skore import CrossValidationReport
 
@@ -39,3 +41,27 @@ def test_timings(forest_binary_classification_data, aggregate, expected_columns)
         "Predict time train (s)",
         "Predict time test (s)",
     ]
+
+
+def test_single_split_std_is_missing(regression_data):
+    """A one-split report stores an undefined standard deviation as missing."""
+    X, y = regression_data
+    report = CrossValidationReport(
+        LinearRegression(),
+        X,
+        y,
+        splitter=ShuffleSplit(n_splits=1, random_state=0),
+    )
+    frame = report.metrics.summarize().frame(flat_index=False)
+    std = frame.xs("std", level="aggregate", axis=1)
+    assert std.dtypes.iloc[0] == pd.Float64Dtype()
+    assert std.isna().all().all()
+    pd.testing.assert_series_equal(
+        report.metrics.summarize().frame(aggregate="mean"),
+        report.metrics.summarize().frame(aggregate=None),
+        check_names=False,
+    )
+
+    timings = report.metrics.timings()
+    assert timings["std"].dtype == pd.Float64Dtype()
+    assert timings["std"].isna().all()

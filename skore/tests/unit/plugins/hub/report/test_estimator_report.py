@@ -154,6 +154,16 @@ class TestEstimatorReportPayload:
     def test_metrics(self, payload):
         assert [m.model_dump() for m in payload.metrics] == [
             {
+                "name": "default_score",
+                "verbose_name": "Default estimator score",
+                "data_source": "train",
+                "greater_is_better": True,
+                "value": approx(1.0, abs=1e-4),
+                "label": None,
+                "output": None,
+                "average": None,
+            },
+            {
                 "name": "accuracy",
                 "verbose_name": "Accuracy",
                 "data_source": "train",
@@ -249,6 +259,16 @@ class TestEstimatorReportPayload:
                 "data_source": "train",
                 "greater_is_better": False,
                 "value": approx(0.0, abs=float("inf")),
+                "label": None,
+                "output": None,
+                "average": None,
+            },
+            {
+                "name": "default_score",
+                "verbose_name": "Default estimator score",
+                "data_source": "test",
+                "greater_is_better": True,
+                "value": approx(0.9, abs=1e-4),
                 "label": None,
                 "output": None,
                 "average": None,
@@ -435,14 +455,14 @@ class TestEstimatorReportPayload:
         assert [m for m in payload.metrics if "hello" in m.name] == [
             Metric(
                 name="hello",
-                verbose_name="Hello",
+                verbose_name="hello",
                 data_source="train",
                 greater_is_better=True,
                 value=1.0,
             ),
             Metric(
                 name="hello",
-                verbose_name="Hello",
+                verbose_name="hello",
                 data_source="test",
                 greater_is_better=True,
                 value=1.0,
@@ -497,9 +517,9 @@ class TestEstimatorReportPayload:
         custom = [m for m in payload.metrics if m.name.startswith("score_")]
         assert {m.name for m in custom} == {"score_a_1", "score_b_1", "score_c_1"}
         assert {m.verbose_name for m in custom} == {
-            "Score A 1",
-            "Score B 1",
-            "Score C 1",
+            "score_a_1",
+            "score_b_1",
+            "score_c_1",
         }
         # train + test for each submetric
         assert len(custom) == 6

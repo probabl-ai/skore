@@ -5,6 +5,7 @@ Common test for the metrics accessor of a ComparisonReport.
 import pytest
 from sklearn.datasets import make_classification
 from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import accuracy_score
 from sklearn.svm import LinearSVC
 
 from skore import ComparisonReport, CrossValidationReport, EstimatorReport
@@ -153,3 +154,49 @@ def test_non_default_n_jobs():
 
     assert isinstance(display, MetricsSummaryDisplay)
     assert set(display.summary["estimator"]) == {"LinearSVC", "LogisticRegression"}
+
+
+@pytest.mark.parametrize("report_cls", [EstimatorReport, CrossValidationReport])
+def test_metric_names_keep_their_case(report_cls):
+    """Metric names are stored and displayed exactly as given.
+
+    Non-regression test for:
+    https://github.com/probabl-ai/skore/issues/3275
+    """
+    X, y = make_classification(n_samples=30, random_state=0)
+
+    def MY_METRIC(estimator, X, y):
+        return accuracy_score(estimator.predict(X), y)
+
+    def My_metric(estimator, X, y):
+        return accuracy_score(estimator.predict(X), y)
+
+    def make_report(metric, *, verbose_name=None):
+        estimator = LogisticRegression(max_iter=1_000)
+        if report_cls is EstimatorReport:
+            report = report_cls(estimator, X_train=X, y_train=y, X_test=X, y_test=y)
+        else:
+            report = report_cls(estimator, X, y, splitter=2)
+        report.metrics.add(metric, verbose_name=verbose_name)
+        return report
+
+    report = make_report(MY_METRIC)
+    frame = report.metrics.summarize().frame()
+    assert "MY_METRIC" in frame.index
+    assert "my_metric" not in frame.index
+    verbose_names = set(
+        report.metrics.summarize(metric="MY_METRIC").summary["verbose_name"]
+    )
+    assert verbose_names == {"MY_METRIC"}
+
+    named = make_report(MY_METRIC, verbose_name="My metric")
+    named_verbose_names = set(
+        named.metrics.summarize(metric="MY_METRIC").summary["verbose_name"]
+    )
+    assert named_verbose_names == {"My metric"}
+
+    comparison = ComparisonReport([report, make_report(My_metric)])
+    compared = comparison.metrics.summarize().frame()
+    assert "MY_METRIC" in compared.index
+    assert "My_metric" in compared.index
+    assert "my_metric" not in compared.index

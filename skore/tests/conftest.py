@@ -17,11 +17,7 @@ from sklearn.svm import SVC
 from sklearn.utils.multiclass import unique_labels
 from sklearn.utils.validation import check_is_fitted
 
-from skore import (
-    ComparisonReport,
-    CrossValidationReport,
-    EstimatorReport,
-)
+from skore import ComparisonReport, CrossValidationReport, EstimatorReport
 from skore._config import LocalConfiguration
 from skore._externals.sklearn_compat import validate_data
 
@@ -42,6 +38,46 @@ def monkeypatch_tmpdir(monkeypatch, tmp_path):
 
     monkeypatch.setenv("TMPDIR", str(tmp_path))
     importlib.reload(tempfile)
+
+
+@pytest.fixture(autouse=True)
+def monkeypatch_home(monkeypatch, tmp_path):
+    """
+    Change ``HOME`` used by ``os.path.expanduser()`` to point to ``tmp_path``, so
+    that it is automatically deleted after use, with no impact on user's environment.
+
+    https://docs.python.org/3/library/os.path.html#os.path.expanduser
+    """
+    monkeypatch.setenv("HOME", str(tmp_path))
+    monkeypatch.setenv("USERPROFILE", str(tmp_path))
+
+
+@pytest.fixture(autouse=True)
+def monkeypatch_keyring(monkeypatch):
+    """
+    Make the system keyring unavailable, so that tests can't read and write into the
+    user's real keyring.
+
+    Force a re-init of the keyring backend, ``keyring.get_keyring()`` caching the
+    backend in ``keyring.core``.
+
+    https://github.com/jaraco/keyring#disabling-keyring
+    https://github.com/jaraco/keyring/blob/7603e7cadc254b4c6e3fc2b2f0916a005e78087d/keyring/core.py#L32
+    """
+    import keyring.core
+
+    monkeypatch.setenv("PYTHON_KEYRING_BACKEND", "keyring.backends.null.Keyring")
+    keyring.core.init_backend()
+
+
+@pytest.fixture(autouse=True)
+def monkeypatch_skore_hub_envars(monkeypatch):
+    """
+    Change environment variables that can be used to reach the production's or user's
+    HUB instance, disabling potential impacts on user's environment.
+    """
+    monkeypatch.setenv("SKORE_HUB_URI", "http://localhost")
+    monkeypatch.delenv("SKORE_HUB_API_KEY", raising=False)
 
 
 @pytest.fixture(autouse=True)

@@ -46,8 +46,7 @@ def monkeypatch_table_report_representation(monkeypatch):
     "ignore:.*The workspace name can only contain unicode.*:UserWarning"
 )
 @mark.filterwarnings("ignore:.*The project name can only contain unicode.*:UserWarning")
-@mark.usefixtures("monkeypatch_project_hub_client")
-@mark.usefixtures("monkeypatch_artifact_hub_client")
+@mark.usefixtures("monkeypatch_hub_client")
 class TestProject:
     @mark.respx()
     def test_workspace(self, respx_mock):
@@ -508,7 +507,7 @@ class TestProject:
             ),
             (
                 "get",
-                "projects/workspace/name/reports/",
+                "projects/workspace/name/reports",
                 Response(
                     200,
                     json={
@@ -709,7 +708,7 @@ class TestProject:
             ),
             (
                 "get",
-                "projects/workspace/name/reports/",
+                "projects/workspace/name/reports",
                 {"cursor": None},
                 Response(
                     200,
@@ -721,7 +720,7 @@ class TestProject:
             ),
             (
                 "get",
-                "projects/workspace/name/reports/",
+                "projects/workspace/name/reports",
                 {"cursor": 499},
                 Response(
                     200,

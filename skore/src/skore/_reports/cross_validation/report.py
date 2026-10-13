@@ -22,7 +22,11 @@ from skore._utils.parallel import delayed
 from skore._utils.progress_bar import track
 from skore._utils.repr.data import get_documentation_url
 from skore._utils.repr.html_repr import render_template
-from skore._utils.repr.markdown import markdown_data_section, report_markdown_context
+from skore._utils.repr.markdown import (
+    format_std,
+    markdown_data_section,
+    report_markdown_context,
+)
 from skore._utils.repr.paginated_metrics import metrics_summary_html
 from skore._utils.repr.utils import repair_estimator_html_for_slotted_host
 from skore._utils.skrub import is_skrub_learner, to_estimator, to_learner
@@ -645,11 +649,11 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
                 **report_markdown_context(self),
                 "fit_time": (
                     f"{timings.loc['Fit time (s)', 'mean']:.3f} s"
-                    f" (± {timings.loc['Fit time (s)', 'std']:.3f})"
+                    f" (± {format_std(timings.loc['Fit time (s)', 'std'])})"
                 ),
                 "predict_time": (
                     f"{timings.loc['Predict time test (s)', 'mean']:.3f} s"
-                    f" (± {timings.loc['Predict time test (s)', 'std']:.3f})"
+                    f" (± {format_std(timings.loc['Predict time test (s)', 'std'])})"
                 ),
                 "n_folds": len(self.reports_),
                 "splitter_repr": (repr(self.splitter)),

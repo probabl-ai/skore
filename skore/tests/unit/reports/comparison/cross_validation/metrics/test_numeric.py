@@ -46,11 +46,11 @@ def case_timings_with_train_predictions(
 
 
 @pytest.fixture
-def case_score(comparison_cross_validation_reports_binary_classification):
-    expected_index = pd.Index(["Score"], name="Metric")
+def case_default_score(comparison_cross_validation_reports_binary_classification):
+    expected_index = pd.Index(["Default estimator score"], name="Metric")
     return (
         comparison_cross_validation_reports_binary_classification,
-        "score",
+        "default_score",
         expected_index,
         expected_columns,
     )
@@ -185,7 +185,7 @@ def case(request):
     [
         "case_timings",
         "case_timings_with_train_predictions",
-        "case_score",
+        "case_default_score",
         "case_accuracy",
         "case_precision",
         "case_recall",
@@ -210,7 +210,7 @@ def test_metrics(case):
     [
         "case_timings",
         "case_timings_with_train_predictions",
-        "case_score",
+        "case_default_score",
         "case_accuracy",
         "case_precision",
         "case_recall",
@@ -314,10 +314,10 @@ def test_get_custom(comparison_cross_validation_reports_binary_classification):
     report.metrics.add(lambda estimator, X, y: 1, name="hello")
 
     assert report.metrics.get("hello").to_dict() == {
-        ("mean", "DummyClassifier_1"): {"Hello": 1.0},
-        ("mean", "DummyClassifier_2"): {"Hello": 1.0},
-        ("std", "DummyClassifier_1"): {"Hello": 0.0},
-        ("std", "DummyClassifier_2"): {"Hello": 0.0},
+        ("mean", "DummyClassifier_1"): {"hello": 1.0},
+        ("mean", "DummyClassifier_2"): {"hello": 1.0},
+        ("std", "DummyClassifier_1"): {"hello": 0.0},
+        ("std", "DummyClassifier_2"): {"hello": 0.0},
     }
 
 
@@ -333,10 +333,10 @@ def test_custom_metric_as_method(
     report.metrics.add(lambda estimator, X, y: 1, name="hello")
 
     assert report.metrics.hello().to_dict() == {
-        ("mean", "DummyClassifier_1"): {"Hello": 1.0},
-        ("mean", "DummyClassifier_2"): {"Hello": 1.0},
-        ("std", "DummyClassifier_1"): {"Hello": 0.0},
-        ("std", "DummyClassifier_2"): {"Hello": 0.0},
+        ("mean", "DummyClassifier_1"): {"hello": 1.0},
+        ("mean", "DummyClassifier_2"): {"hello": 1.0},
+        ("std", "DummyClassifier_1"): {"hello": 0.0},
+        ("std", "DummyClassifier_2"): {"hello": 0.0},
     }
 
     report.metrics.remove("hello")

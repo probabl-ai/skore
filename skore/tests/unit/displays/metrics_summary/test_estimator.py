@@ -54,6 +54,7 @@ def test_format_wide_multiclass(forest_multiclass_classification_with_test):
     assert result.name == "RandomForestClassifier"
     assert isinstance(result.index, pd.Index)
     assert result.index.to_list() == [
+        "default_score",
         "accuracy",
         "precision_0",
         "precision_1",
@@ -83,10 +84,11 @@ def test_format_wide_multioutput(linear_regression_multioutput_with_test):
     assert isinstance(result, pd.Series)
     assert result.name == "LinearRegression"
     assert isinstance(result.index, pd.Index)
-    assert len(result) == 10
+    assert len(result) == 11
     assert result.loc["r2_0"] == 1
     assert result.loc["r2_1"] == 1
     assert result.index.to_list() == [
+        "default_score",
         "r2_0",
         "r2_1",
         "rmse_0",
@@ -137,6 +139,7 @@ def test_format_wide_with_favorability(forest_binary_classification_with_test):
 
     assert isinstance(result.index, pd.Index)
     assert result.index.to_list() == [
+        "default_score",
         "accuracy",
         "precision_0",
         "precision_1",
@@ -188,6 +191,7 @@ def test_data_source_both_format_wide(forest_binary_classification_data):
         "RandomForestClassifier (test)",
     ]
     assert result.index.to_list() == [
+        "default_score",
         "accuracy",
         "precision_0",
         "precision_1",

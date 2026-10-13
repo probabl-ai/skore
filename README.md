@@ -4,6 +4,7 @@
   ![python](https://img.shields.io/badge/python-3.11%20%7C%203.12%20%7C%203.13%20%7C%203.14-blue?style=flat&logo=python)
   [![downloads](https://static.pepy.tech/badge/skore/month)](https://pepy.tech/projects/skore)
   [![pypi](https://img.shields.io/pypi/v/skore)](https://pypi.org/project/skore/)
+  [![Coverage](https://codecov.io/gh/probabl-ai/skore/branch/main/graph/badge.svg)](https://codecov.io/gh/probabl-ai/skore)
   [![Discord](https://img.shields.io/discord/1275821367324840119?label=Discord)](https://discord.probabl.ai/)
 
 </div>

@@ -88,7 +88,10 @@ def _check_results_single_metric(report, metric, expected_n_splits, expected_nb_
     assert all(report._cache != {} for report in report.reports_)
     report._clear_cache()
 
-    _check_metrics_names(result, [metric], expected_nb_stats)
+    # ``default_score`` is displayed as "Default estimator score", which does
+    # not normalize to the technical name the way "brier_score" does.
+    expected_label = "Default estimator score" if metric == "default_score" else metric
+    _check_metrics_names(result, [expected_label], expected_nb_stats)
 
     # check the aggregate parameter
     stats = ["mean", "std"]
@@ -110,7 +113,7 @@ def _check_results_single_metric(report, metric, expected_n_splits, expected_nb_
         ("brier_score", 1),
         ("roc_auc", 1),
         ("log_loss", 1),
-        ("score", 1),
+        ("default_score", 1),
     ],
 )
 def test_binary_classification(forest_binary_classification_data, metric, nb_stats):
@@ -130,7 +133,7 @@ def test_binary_classification(forest_binary_classification_data, metric, nb_sta
         ("recall", 3),
         ("roc_auc", 3),
         ("log_loss", 1),
-        ("score", 1),
+        ("default_score", 1),
     ],
 )
 def test_multiclass_classification(
@@ -151,7 +154,7 @@ def test_multiclass_classification(
         ("rmse", 1),
         ("mae", 1),
         ("mape", 1),
-        ("score", 1),
+        ("default_score", 1),
     ],
 )
 def test_regression(linear_regression_data, metric, nb_stats):
@@ -168,7 +171,7 @@ def test_regression(linear_regression_data, metric, nb_stats):
         ("rmse", 2),
         ("mae", 2),
         ("mape", 2),
-        ("score", 1),
+        ("default_score", 1),
     ],
 )
 def test_regression_multioutput(linear_regression_multioutput_data, metric, nb_stats):
@@ -268,8 +271,8 @@ def test_get_custom(binary_classification_data):
     report.metrics.add(lambda estimator, X, y: 1, name="hello")
 
     assert report.metrics.get("hello").to_dict() == {
-        ("DummyClassifier", "mean"): {"Hello": 1.0},
-        ("DummyClassifier", "std"): {"Hello": 0.0},
+        ("DummyClassifier", "mean"): {"hello": 1.0},
+        ("DummyClassifier", "std"): {"hello": 0.0},
     }
 
 
@@ -286,8 +289,8 @@ def test_custom_metric_as_method(binary_classification_data):
     report.metrics.add(lambda estimator, X, y: 1, name="hello")
 
     assert report.metrics.hello().to_dict() == {
-        ("DummyClassifier", "mean"): {"Hello": 1.0},
-        ("DummyClassifier", "std"): {"Hello": 0.0},
+        ("DummyClassifier", "mean"): {"hello": 1.0},
+        ("DummyClassifier", "std"): {"hello": 0.0},
     }
 
     report.metrics.remove("hello")

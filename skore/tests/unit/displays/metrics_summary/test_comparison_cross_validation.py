@@ -3,6 +3,8 @@
 import pandas as pd
 from pandas.testing import assert_frame_equal
 from sklearn.dummy import DummyClassifier
+from sklearn.linear_model import LinearRegression
+from sklearn.model_selection import ShuffleSplit
 
 from skore import ComparisonReport, CrossValidationReport
 
@@ -64,7 +66,7 @@ def test_default_regression(comparison_cross_validation_reports_regression):
         "std_dummyregressor_2",
     ]
     assert result.index.tolist() == [
-        "score",
+        "default_score",
         "r2",
         "rmse",
         "mae",
@@ -177,3 +179,22 @@ def test_frame_has_estimator_and_split_columns(
     assert frame.columns.names == ["estimator", "split"]
     assert frame.columns.get_level_values("estimator").nunique() == 2
     assert set(frame.columns.get_level_values("split")) == {"Split #0", "Split #1"}
+
+
+def test_single_split_estimator_std_is_missing(regression_data):
+    """Only estimators with one split get a missing standard deviation."""
+    X, y = regression_data
+    single = CrossValidationReport(
+        LinearRegression(),
+        X,
+        y,
+        splitter=ShuffleSplit(n_splits=1, random_state=0),
+    )
+    multi = CrossValidationReport(LinearRegression(), X, y, splitter=2)
+    report = ComparisonReport({"single": single, "multi": multi})
+    frame = report.metrics.summarize().frame(flat_index=False)
+    single_std = frame.xs("single", level=1, axis=1)["std"]
+    multi_std = frame.xs("multi", level=1, axis=1)["std"]
+    assert single_std.dtype == pd.Float64Dtype()
+    assert single_std.isna().all()
+    assert multi_std.notna().all()

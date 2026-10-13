@@ -25,9 +25,9 @@ def test_repr_includes_frame_and_hint(forest_binary_classification_with_test):
     )
 
 
-def test_repr_html_includes_frame_and_hint(forest_binary_classification_with_test):
+def test_repr_html_includes_frame_and_hint(linear_regression_with_test):
     """Check that _repr_html_ shows the default frame and a trailing hint."""
-    estimator, X_test, y_test = forest_binary_classification_with_test
+    estimator, X_test, y_test = linear_regression_with_test
     display = EstimatorReport(
         estimator, X_test=X_test, y_test=y_test
     ).metrics.summarize()
