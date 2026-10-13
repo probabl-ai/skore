@@ -12,7 +12,7 @@ from sklearn.dummy import DummyClassifier, DummyRegressor
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.exceptions import NotFittedError
 from sklearn.linear_model import LinearRegression, LogisticRegression
-from sklearn.model_selection import LeaveOneGroupOut, train_test_split
+from sklearn.model_selection import LeaveOneGroupOut, ShuffleSplit, train_test_split
 from sklearn.pipeline import Pipeline
 from sklearn.utils.validation import check_is_fitted
 
@@ -545,6 +545,19 @@ def test_state_has_no_unexpected_data_copy(estimator, splitter):
     # However, this is a heuristic; if this test fails, it may also be because the state
     # size is no longer dominated by the size of X.
     assert state_nbytes_without_data(report) < X.nbytes
+
+
+def test_single_split_stays_cross_validation_report(regression_data):
+    """A one-split splitter builds a valid CrossValidationReport."""
+    X, y = regression_data
+    report = CrossValidationReport(
+        LinearRegression(),
+        X,
+        y,
+        splitter=ShuffleSplit(n_splits=1, random_state=0),
+    )
+    assert isinstance(report, CrossValidationReport)
+    assert len(report.reports_) == 1
 
 
 def test_no_data_error():

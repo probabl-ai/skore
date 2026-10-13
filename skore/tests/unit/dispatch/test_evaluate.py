@@ -3,7 +3,12 @@ import pytest
 import skrub
 from sklearn.dummy import DummyClassifier
 from sklearn.linear_model import LinearRegression, LogisticRegression
-from sklearn.model_selection import KFold, LeaveOneGroupOut, StratifiedKFold
+from sklearn.model_selection import (
+    KFold,
+    LeaveOneGroupOut,
+    ShuffleSplit,
+    StratifiedKFold,
+)
 
 from skore import ComparisonReport, CrossValidationReport, EstimatorReport, evaluate
 
@@ -57,6 +62,43 @@ def test_cv_object_splitter(regression_data):
     report = evaluate(LinearRegression(), X, y, splitter=KFold(n_splits=4))
     assert isinstance(report, CrossValidationReport)
     assert len(report.reports_) == 4
+
+
+def test_single_split_cv_returns_estimator_report(regression_data):
+    """A cross-validation splitter with one split returns an EstimatorReport."""
+    X, y = regression_data
+    report = evaluate(
+        LinearRegression(),
+        X,
+        y,
+        splitter=ShuffleSplit(n_splits=1, random_state=0),
+    )
+    assert isinstance(report, EstimatorReport)
+
+
+def test_single_split_generator_returns_estimator_report(regression_data):
+    """A generator that yields one split returns an EstimatorReport."""
+    X, y = regression_data
+
+    def one_split(features, target=None, groups=None):
+        n_samples = features.shape[0]
+        yield np.arange(n_samples // 2), np.arange(n_samples // 2, n_samples)
+
+    report = evaluate(LinearRegression(), X, y, splitter=one_split(X, y))
+    assert isinstance(report, EstimatorReport)
+
+
+def test_dict_estimators_single_split_returns_estimator_comparison(regression_data):
+    """Several estimators with one split are compared as estimator reports."""
+    X, y = regression_data
+    report = evaluate(
+        {"a": LinearRegression(), "b": LinearRegression()},
+        X,
+        y,
+        splitter=ShuffleSplit(n_splits=1, random_state=0),
+    )
+    assert isinstance(report, ComparisonReport)
+    assert all(isinstance(child, EstimatorReport) for child in report.reports_.values())
 
 
 def test_multiple_estimators(regression_data):
@@ -234,6 +276,23 @@ def test_evaluate_skrub_learner_uses_data_op_cv_with_split_kwargs():
     skrub_cv = pred.skb.cross_validate({"df": df})
     skore_accuracy = report.metrics.accuracy(aggregate="mean").iloc[0]
     assert skore_accuracy == pytest.approx(skrub_cv["test_score"].mean())
+
+
+@pytest.mark.filterwarnings(
+    "ignore:The least populated class in y has only:UserWarning"
+)
+def test_evaluate_skrub_learner_single_split_data_op_cv_returns_estimator_report():
+    """A skrub DataOp cross-validation of one split returns an EstimatorReport."""
+    df = skrub.datasets.toy_products()
+    data = skrub.var("df", df)
+    X = data[["description", "price"]].skb.mark_as_X(
+        cv=ShuffleSplit(n_splits=1, test_size=0.2, random_state=0)
+    )
+    y = data["category"].skb.mark_as_y()
+    learner = X.skb.apply(DummyClassifier(), y=y).skb.make_learner()
+
+    report = evaluate(learner, data={"df": df})
+    assert isinstance(report, EstimatorReport)
 
 
 @pytest.mark.filterwarnings(
