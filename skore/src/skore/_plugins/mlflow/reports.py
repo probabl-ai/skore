@@ -344,7 +344,7 @@ def _dataset_from_polars(X: Any, y: Any, context: str | None) -> Dataset:
     else:
         raise TypeError(f"Unsupported target type for a polars dataset: {type(y)}")
 
-    frame = pl.concat([X, target_frame], how="horizontal")
+    frame = X.with_columns(target_frame)
     return Dataset(
         dataset=mlflow.data.from_polars(frame, targets=name),  # type: ignore[attr-defined]
         context=context,
