@@ -14,6 +14,7 @@ Parameters = (
     | dict[Literal["with_roc_auc"], Literal[True]]
     | dict[Literal["threshold_value"], Literal["all"]]
     | dict[Literal["threshold_value"], None]
+    | dict[Literal["fast_mode"], Literal[True]]
     | None
 )
 
@@ -34,9 +35,11 @@ class Media(Artifact, ABC, Generic[Report]):
         The name of the media.
     data_source : str | None
         The source of the data used to generate the media.
+    parameters : Parameters
+        The parameters used to generate the media.
     """
 
     report: Report = Field(repr=False, exclude=True)
     name: str = Field(init=False)
     data_source: str | None = Field(init=False)
-    parameters: Parameters | None = Field(init=False, default=None)
+    parameters: Parameters = Field(init=False, default=None)

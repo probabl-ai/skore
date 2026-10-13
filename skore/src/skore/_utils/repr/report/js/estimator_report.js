@@ -23,4 +23,6 @@ function skoreInitEstimatorReport(containerId) {
             e.stopPropagation();
         });
     });
+
+    skoreInitMetricsPagers(shadowRoot);
 }

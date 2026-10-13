@@ -1,6 +1,6 @@
 import pytest
 
-from skore._sklearn._estimator.report import EstimatorReport
+from skore._reports.estimator.report import EstimatorReport
 
 
 @pytest.fixture

@@ -1,11 +1,13 @@
 import re
 from copy import deepcopy
 from io import BytesIO
+from uuid import UUID, uuid4
 
 import joblib
 import numpy as np
 import pytest
 import skrub
+from sklearn.base import clone
 from sklearn.cluster import KMeans
 from sklearn.datasets import make_classification, make_regression
 from sklearn.dummy import DummyClassifier, DummyRegressor
@@ -18,6 +20,7 @@ from sklearn.svm import SVC
 from sklearn.utils.validation import check_is_fitted
 
 from skore import EstimatorReport, evaluate
+from skore._utils.repr.paginated_metrics import METRICS_HTML_PAGE_SIZE
 
 
 def test_estimator_not_fitted():
@@ -76,6 +79,36 @@ def test_from_fitted_estimator(forest_binary_classification_with_test):
         report.X_train = X
     with pytest.raises(AttributeError):
         report.y_train = y
+
+
+def test_fitted_estimator_with_training_data_raises(
+    forest_binary_classification_with_train_test,
+):
+    """Passing training data with an already-fitted estimator is rejected."""
+    estimator, X_train, X_test, y_train, y_test = (
+        forest_binary_classification_with_train_test
+    )
+    estimator = estimator.fit(X_train, y_train)
+    err_msg = "Training data must not be provided when the estimator is already fitted"
+    with pytest.raises(ValueError, match=err_msg):
+        EstimatorReport(
+            estimator,
+            X_train=X_train,
+            y_train=y_train,
+            X_test=X_test,
+            y_test=y_test,
+        )
+
+
+def test_fitted_skrub_learner_with_train_data_raises():
+    """Passing train_data with an already-fitted SkrubLearner is rejected."""
+    X, y = make_classification(n_samples=40, random_state=0)
+    data_op = skrub.X(X).skb.apply(LogisticRegression(), y=skrub.y(y))
+    split = data_op.skb.train_test_split(random_state=0)
+    learner = data_op.skb.make_learner().fit(split["train"])
+    err_msg = "Training data must not be provided when the estimator is already fitted"
+    with pytest.raises(ValueError, match=err_msg):
+        EstimatorReport(learner, train_data=split["train"], test_data=split["test"])
 
 
 def test_from_fitted_pipeline(pipeline_binary_classification_with_test):
@@ -152,7 +185,11 @@ def test_cache_predictions(request, fixture_name, pass_train_data, expected_n_ke
     estimator, X_test, y_test = request.getfixturevalue(fixture_name)
     if pass_train_data:
         report = EstimatorReport(
-            estimator, X_train=X_test, y_train=y_test, X_test=X_test, y_test=y_test
+            clone(estimator),
+            X_train=X_test,
+            y_train=y_test,
+            X_test=X_test,
+            y_test=y_test,
         )
     else:
         report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
@@ -350,16 +387,24 @@ def _assert_estimator_report_repr_html(
 @pytest.mark.parametrize("with_train", [False, True])
 def test_report_repr_html(request, fixture, with_train):
     X_train, X_test, y_train, y_test = request.getfixturevalue(fixture)
-    kwargs = {"X_test": X_test, "y_test": y_test} | (
-        {"X_train": X_train, "y_train": y_train} if with_train else {}
-    )
 
     if "classification" in fixture:
         estimator = DummyClassifier(strategy="uniform", random_state=0)
     else:
         estimator = DummyRegressor()
 
-    report = EstimatorReport(estimator.fit(X_train, y_train), **kwargs)
+    if with_train:
+        report = EstimatorReport(
+            estimator,
+            X_train=X_train,
+            y_train=y_train,
+            X_test=X_test,
+            y_test=y_test,
+        )
+    else:
+        report = EstimatorReport(
+            estimator.fit(X_train, y_train), X_test=X_test, y_test=y_test
+        )
     estimator_name = estimator.__class__.__name__
     _assert_estimator_report_repr_html(report._repr_html_(), estimator_name)
 
@@ -370,13 +415,19 @@ def test_report_repr_html_sklearn_estimator_bad_html_repr(with_train):
     ``_repr_html_``."""
     X, y = make_classification(n_classes=2, random_state=42)
     X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
-    estimator = _DummyClassifierBadRepr(strategy="uniform", random_state=0).fit(
-        X_train, y_train
-    )
-    kwargs = {"X_test": X_test, "y_test": y_test} | (
-        {"X_train": X_train, "y_train": y_train} if with_train else {}
-    )
-    report = EstimatorReport(estimator, **kwargs)
+    estimator = _DummyClassifierBadRepr(strategy="uniform", random_state=0)
+    if with_train:
+        report = EstimatorReport(
+            estimator,
+            X_train=X_train,
+            y_train=y_train,
+            X_test=X_test,
+            y_test=y_test,
+        )
+    else:
+        report = EstimatorReport(
+            estimator.fit(X_train, y_train), X_test=X_test, y_test=y_test
+        )
     _assert_estimator_report_repr_html(report._repr_html_(), "DummyClassifier")
 
 
@@ -400,6 +451,41 @@ def test_prefit_no_train_data_repr_methods(prefit_regression_report_no_train_dat
 
     fragments = prefit_regression_report_no_train_data._html_repr_fragments()
     assert "R²" in fragments["metrics_summary"]
+    assert "skore-metrics-pager" not in fragments["metrics_summary"]
+
+
+def test_metrics_summary_html_paginates_multiclass(
+    forest_multiclass_classification_with_test,
+):
+    """Multi-class default metrics exceed one page in the report Results tab."""
+    estimator, X_test, y_test = forest_multiclass_classification_with_test
+    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
+    html = report._html_repr_fragments()["metrics_summary"]
+    n_rows = len(
+        report.metrics.summarize(data_source="test").frame(
+            verbose_name=True, flat_index=False
+        )
+    )
+    assert n_rows > METRICS_HTML_PAGE_SIZE
+    assert "skore-metrics-pager" in html
+    tbody = html[html.find("<tbody>") : html.find("</tbody>")]
+    assert tbody.count("<tr") == n_rows
+    assert 'data-page="1"' in html
+    assert "skore-metrics-pager-next" in html
+    full = report._repr_html_()
+    assert "skoreInitMetricsPagers" in full
+    assert ".skore-metrics-pager.is-ready tbody tr" in full
+
+
+def test_non_html_reprs_have_no_pager(forest_multiclass_classification_with_test):
+    """Pagination is HTML-only: frame, text, and markdown stay complete."""
+    estimator, X_test, y_test = forest_multiclass_classification_with_test
+    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
+    display = report.metrics.summarize()
+    assert "skore-metrics-pager" not in repr(display)
+    assert "skore-metrics-pager" not in repr(report)
+    assert "skore-metrics-pager" not in report.to_markdown()
+    assert "skore-metrics-pager" not in display.frame().to_string()
 
 
 def test_text_repr(forest_binary_classification_data):
@@ -449,9 +535,12 @@ def test_report_get_data_and_y_true(data_source):
     X, y = make_classification(n_samples=10, n_classes=2, random_state=42)
     X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
 
-    estimator = LogisticRegression().fit(X_train, y_train)
     report = EstimatorReport(
-        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+        LogisticRegression(),
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
     )
     data, y_result = report._get_data_and_y_true(data_source=data_source)
 
@@ -515,11 +604,51 @@ def test_from_dict_bypasses_init_and_restores_state(
     assert restored.pos_label == report.pos_label
     assert restored._cache == report._cache
     assert restored.metrics.accuracy() == expected_accuracy
-
     # check new metrics can be computed, including custom metrics:
     restored.metrics.roc_auc()
     df = restored.metrics.summarize().frame(flat_index=False, verbose_name=True)
     assert "F1" in df.index.get_level_values("Metric").to_numpy()
+
+
+def test_new_report_id_is_uuid7(logistic_binary_classification_with_test):
+    estimator, X_test, y_test = logistic_binary_classification_with_test
+    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test, pos_label=1)
+
+    assert isinstance(report.id, str)
+    assert UUID(report.id).version == 7
+    state = report.to_dict()
+    assert state["metadata"]["id"] == report.id
+    assert EstimatorReport.from_dict(state).id == report.id
+
+
+def test_from_dict_migrates_legacy_integer_report_id(
+    logistic_binary_classification_with_test,
+):
+    estimator, X_test, y_test = logistic_binary_classification_with_test
+    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test, pos_label=1)
+    state = report.to_dict()
+    legacy_id = uuid4()
+    state["metadata"]["id"] = legacy_id.int
+
+    restored = EstimatorReport.from_dict(state)
+
+    assert restored.id == str(legacy_id)
+
+
+def test_unpickle_migrates_legacy_direct_report_id(
+    logistic_binary_classification_with_test,
+):
+    estimator, X_test, y_test = logistic_binary_classification_with_test
+    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test, pos_label=1)
+    legacy_id = uuid4()
+    state = report.__dict__.copy()
+    state.pop("_metadata")
+    state["id"] = legacy_id.int
+
+    restored = EstimatorReport.__new__(EstimatorReport)
+    restored.__setstate__(state)
+
+    assert restored.id == str(legacy_id)
 
 
 def test_from_dict_rejects_unknown_version(logistic_binary_classification_with_test):

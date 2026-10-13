@@ -9,8 +9,20 @@ Storing data science artifacts
 `skore` provides a :class:`Project` class to store data science artifacts. The storage
 is either local or remote, based on the value passed to the parameter `mode` at
 initialization. When `mode` is set to `hub`, the project is configured to communicate
-with `skore hub`. Refer to the documentation of :class:`Project` for the detailed API
-and take a look on the `example <example-getting-started_>`_.
+with `skore hub`. Authentication uses an API key, in this order:
+
+- the ``SKORE_HUB_API_KEY`` environment variable, which always wins. The key
+  is bound to a workspace; using it against another workspace fails at
+  runtime.
+- otherwise the local credentials registry for the hub host and workspace:
+
+.. code-block:: bash
+
+    $ skore hub api-key generate --workspace <workspace>
+
+See :ref:`cli-hub` to generate, list, and revoke keys from the command line.
+Refer to the documentation of :class:`Project` for the detailed API and take a look on
+the `example <example-getting-started_>`_.
 
 Creating a project
 ------------------
@@ -26,7 +38,7 @@ mode-specific keyword arguments.
    # Local persistence
    project_local = Project(name="my-xp", mode="local", workspace=Path("/tmp/skore"))
 
-   # Skore Hub (requires skore.login() first)
+   # Skore Hub (requires an API key in the registry or SKORE_HUB_API_KEY)
    project_hub = Project(name="my-xp", mode="hub", workspace="my-workspace")
 
    # MLflow experiment
@@ -35,6 +47,13 @@ mode-specific keyword arguments.
        mode="mlflow",
        tracking_uri="http://localhost:5000",
    )
+
+.. note::
+
+   Databricks managed MLflow (``tracking_uri="databricks"``) only accepts experiment
+   names that are absolute workspace paths, so ``name`` must be one, for example
+   ``"/Users/me@example.com/my-experiment"``. `skore` places the internal experiment in
+   which it stores report objects in the home directory of the workspace user.
 
 Working with reports
 --------------------
@@ -56,3 +75,45 @@ returned by :meth:`Project.summarize`. This method returns a list of
 
 To retrieve a specific report for which you have its ``id`` (as returned by
 :meth:`Project.summarize`), use the :meth:`Project.get` method.
+
+.. _synchronizing-projects:
+
+Synchronizing projects
+----------------------
+
+Use :meth:`Project.sync` to transfer reports between projects. The project on which the
+method is called is the source. :ref:`cli-sync` runs the same transfer from the shell.
+
+.. code-block:: python
+
+   project_hub = Project(
+       name=project_local.name,
+       mode="hub",
+       workspace="my-workspace",
+   )
+   result = project_local.sync(project_hub)
+
+The caller is the source; reverse the call for the opposite direction. Set
+``bidirectional=True`` to transfer missing reports in both directions.
+
+When both projects have the same name, pass the destination mode as a shortcut. The
+destination is built with the caller's name and the supplied mode-specific arguments.
+
+.. code-block:: python
+
+   result = project_local.sync("hub", workspace="my-workspace")
+
+Reports are matched using the ``report_id`` column returned by
+``Project.summarize().frame()`` and copied with their keys. Existing IDs are skipped;
+contents and metadata are not compared. Reports without a ``report_id`` are ignored.
+Set ``dry_run=True`` to return the transfer plan without loading or storing reports.
+
+The returned :class:`pandas.DataFrame` is indexed by ``report_id``. Its ``direction``
+column is ``"outbound"`` from the caller to the other project, ``"inbound"`` from the
+other project to the caller, or missing when a report is skipped. Its ``status`` column
+is ``"planned"``, ``"transferred"``, or ``"skipped"``.
+
+.. note::
+
+   Two MLflow projects must use the same tracking URI because MLflow uses process-global
+   tracking state. Synchronization does not provide concurrency control.

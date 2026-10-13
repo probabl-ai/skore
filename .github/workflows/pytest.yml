@@ -5,7 +5,7 @@ name: pytest
 #
 # The workflow runs `pytest` jobs on all the repository packages, identified by the JSON
 # list `env.PACKAGES`. If you want to run this workflow on a new package, you only have
-# to add its name in the above list, and in the `pr-display-code-coverage.yml` workflow.
+# to add its name in the above list.
 #
 # It's important to notice that only one workflow is triggered for all packages.
 #
@@ -51,7 +51,7 @@ jobs:
       pull-requests: read
     steps:
       - name: Checkout code
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Create dynamically filtering file, based on `env.PACKAGES`
         id: setup
@@ -69,7 +69,7 @@ jobs:
 
       - name: Define if at least one file has changed
         id: filter
-        uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d # v4.0.1
+        uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
         with:
           filters: ${{ runner.temp }}/filters.yaml
 
@@ -85,9 +85,14 @@ jobs:
       contents: read
     steps:
       - name: Checkout code
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 2
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
+        with:
+          version: "0.12.8"
 
       - name: Check lockfiles are not obsolete
         run: |
@@ -113,7 +118,6 @@ jobs:
             (echo "${changes}" | grep -qE "${{ matrix.package }}/pyproject.toml") &&
             (echo "${changes}" | (! grep -qE "ci/requirements/${{ matrix.package }}/.*/test-requirements.txt"))
           then
-              curl -LsSf https://astral.sh/uv/0.6.16/install.sh | sh
               bash ci/pip-compile.sh --test-requirements
 
               if (git diff --name-only | grep -qE "ci/requirements/${{ matrix.package }}/.*/test-requirements.txt"); then
@@ -130,7 +134,7 @@ jobs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Set matrix for pytest-test
         id: set-matrix
@@ -194,10 +198,10 @@ jobs:
       contents: read
     steps:
       - name: Checkout code
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Setup Python
-        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         id: setup-python
         with:
           python-version: ${{ matrix.python }}
@@ -205,7 +209,7 @@ jobs:
           cache: pip
 
       - name: Restore python-venv
-        uses: actions/cache/restore@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         id: cache-python-venv
         with:
           path: ${{ matrix.package }}/venv
@@ -238,7 +242,7 @@ jobs:
         run: python -m pip install --requirement test-requirements.txt
 
       - name: Save python-venv
-        uses: actions/cache/save@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         if: steps.cache-python-venv.outputs.cache-hit != 'true'
         with:
           path: ${{ matrix.package }}/venv
@@ -264,17 +268,19 @@ jobs:
         working-directory: ${{ matrix.package }}/
         run: |
           mkdir coverage
-          python -m pytest src/ tests/ --junitxml=coverage/pytest.xml --cov-config=pyproject.toml --cov-report=xml:coverage/pytest-coverage.xml --cov
+          python -m pytest src/ tests/ --cov-config=pyproject.toml --cov-report=xml:coverage/pytest-coverage.xml --cov
           sed -i -E "s/filename=\"venv\/lib\/python[^/]*\/site-packages\/${PACKAGE//-/_}/filename=\"${PACKAGE}\/src\/${PACKAGE//-/_}/g" coverage/pytest-coverage.xml
         env:
           PACKAGE: ${{ matrix.package }}
 
-      - name: Upload coverage reports
-        if: ${{ (github.repository == 'probabl-ai/skore') && matrix.coverage && (github.event_name == 'pull_request') }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - name: Upload coverage reports to Codecov
+        if: ${{ (github.repository == 'probabl-ai/skore') && matrix.coverage }}
+        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
         with:
-          name: ${{ matrix.package }}-coverage
-          path: ${{ matrix.package }}/coverage/
+          token: ${{ secrets.CODECOV_TOKEN }}
+          slug: probabl-ai/skore
+          files: skore/coverage/pytest-coverage.xml
+          disable_search: true
 
   pytest:
     needs:

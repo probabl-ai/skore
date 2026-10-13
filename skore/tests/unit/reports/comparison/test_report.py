@@ -20,8 +20,9 @@ from skore import (
     compare,
     evaluate,
 )
-from skore._externals._sklearn_compat import convert_container
-from skore._utils._dataframe import _concat_vertical
+from skore._externals.sklearn_compat import convert_container
+from skore._utils.dataframe import _concat_vertical
+from skore._utils.repr.paginated_metrics import METRICS_HTML_PAGE_SIZE
 
 
 def test_pickle(tmp_path, report):
@@ -279,8 +280,9 @@ def test_create_estimator_report_skrub_concatenate_train_and_test_raises():
         )
 
 
-def test_create_estimator_report_skrub_uses_fitted_estimator_without_refit():
-    """Skrub path should use new test_data for held-out evaluation."""
+def test_create_estimator_report_skrub_refits_on_train_data():
+    """Skrub path should refit the unfitted estimator on train_data and use
+    new test_data for held-out evaluation."""
     X, y = make_classification(n_samples=40, random_state=0)
     data_op_a = skrub.X(X).skb.apply(
         LogisticRegression(C=0.5, random_state=0), y=skrub.y(y)
@@ -306,6 +308,8 @@ def test_create_estimator_report_skrub_uses_fitted_estimator_without_refit():
     assert isinstance(final_report, EstimatorReport)
     assert joblib.hash(final_report.X_train) == joblib.hash(source_a.X_train)
     assert joblib.hash(final_report.X_test) == joblib.hash(source_a.X_test)
+    assert final_report.estimator is source_a.estimator
+    assert final_report.estimator_ is not source_a.estimator_
 
 
 def test_create_estimator_report_skrub_requires_test_data():
@@ -542,3 +546,21 @@ def test_report_repr_html(comparison_fixture, request):
     assert "report-tabset" in html_out
     assert "ComparisonReport.metrics" in html_out
     assert "skore-comparison-report-select" in html_out
+
+
+def test_metrics_summary_html_paginates_multiclass(
+    comparison_estimator_reports_multiclass_classification,
+):
+    html = comparison_estimator_reports_multiclass_classification._repr_html_()
+    assert "skore-metrics-pager" in html
+    assert 'data-page="1"' in html
+    tbody = html[html.find("<tbody>") : html.find("</tbody>")]
+    n_rows = len(
+        comparison_estimator_reports_multiclass_classification.metrics.summarize(
+            data_source="test"
+        ).frame(verbose_name=True, flat_index=False)
+    )
+    assert n_rows > METRICS_HTML_PAGE_SIZE
+    assert tbody.count("<tr") == n_rows
+    assert "skoreInitMetricsPagers" in html
+    assert ".skore-metrics-pager.is-ready tbody tr" in html

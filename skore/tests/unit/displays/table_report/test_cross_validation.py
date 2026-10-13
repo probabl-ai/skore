@@ -6,7 +6,7 @@ from sklearn.dummy import DummyRegressor
 from skrub import tabular_pipeline
 
 from skore import CrossValidationReport, Display, TableReportDisplay
-from skore._externals._sklearn_compat import convert_container
+from skore._externals.sklearn_compat import convert_container
 
 
 @pytest.fixture(scope="module")

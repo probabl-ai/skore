@@ -12,14 +12,15 @@ from sklearn.dummy import DummyClassifier, DummyRegressor
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.exceptions import NotFittedError
 from sklearn.linear_model import LinearRegression, LogisticRegression
-from sklearn.model_selection import LeaveOneGroupOut, train_test_split
+from sklearn.model_selection import LeaveOneGroupOut, ShuffleSplit, train_test_split
 from sklearn.pipeline import Pipeline
 from sklearn.utils.validation import check_is_fitted
 
 from skore import CrossValidationReport, EstimatorReport, evaluate
-from skore._externals._sklearn_compat import convert_container
-from skore._sklearn._cross_validation.report import _generate_estimator_report
-from skore._utils._testing import MockEstimator
+from skore._externals.sklearn_compat import convert_container
+from skore._reports.cross_validation.report import _generate_estimator_report
+from skore._utils.repr.paginated_metrics import METRICS_HTML_PAGE_SIZE
+from skore._utils.testing import MockEstimator
 
 
 def test_generate_estimator_report(forest_binary_classification_data):
@@ -252,6 +253,32 @@ def test_metrics_summary_html_is_compact(forest_binary_classification_data):
     repr_str = repr(report)
     assert "Estimator" not in repr_str
     assert "Aggregate" not in repr_str
+
+
+def test_metrics_summary_html_paginates_multiclass(
+    forest_multiclass_classification_data,
+):
+    """Multi-class default metrics exceed one page in the report Results tab."""
+    estimator, X, y = forest_multiclass_classification_data
+    report = CrossValidationReport(estimator, X=X, y=y, splitter=2)
+    html = report._html_repr_fragments()["metrics_summary"]
+    n_rows = len(
+        report.metrics.summarize(data_source="test").frame(
+            verbose_name=True, flat_index=False
+        )
+    )
+    assert n_rows > METRICS_HTML_PAGE_SIZE
+    assert "skore-metrics-pager" in html
+    tbody = html[html.find("<tbody>") : html.find("</tbody>")]
+    assert tbody.count("<tr") == n_rows
+    assert 'data-page="1"' in html
+    thead = html[html.find("<thead>") : html.find("</thead>")]
+    assert thead.count("<tr") == 1
+    assert "Estimator" not in html
+    assert "Aggregate" not in html
+    full = report._repr_html_()
+    assert "skoreInitMetricsPagers" in full
+    assert ".skore-metrics-pager.is-ready tbody tr" in full
 
 
 def test_text_repr(forest_binary_classification_data):
@@ -518,6 +545,19 @@ def test_state_has_no_unexpected_data_copy(estimator, splitter):
     # However, this is a heuristic; if this test fails, it may also be because the state
     # size is no longer dominated by the size of X.
     assert state_nbytes_without_data(report) < X.nbytes
+
+
+def test_single_split_stays_cross_validation_report(regression_data):
+    """A one-split splitter builds a valid CrossValidationReport."""
+    X, y = regression_data
+    report = CrossValidationReport(
+        LinearRegression(),
+        X,
+        y,
+        splitter=ShuffleSplit(n_splits=1, random_state=0),
+    )
+    assert isinstance(report, CrossValidationReport)
+    assert len(report.reports_) == 1
 
 
 def test_no_data_error():

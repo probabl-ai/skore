@@ -9,6 +9,7 @@ from collections.abc import Iterable, Iterator
 from contextlib import contextmanager, redirect_stderr, redirect_stdout
 from datetime import UTC, datetime
 from importlib.metadata import version
+from inspect import signature
 from io import StringIO
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -19,10 +20,13 @@ import mlflow
 import mlflow.sklearn
 import pandas as pd
 from mlflow.entities import Run as MLFlowRun
-from mlflow.exceptions import MlflowException, RestException
+from mlflow.exceptions import MlflowException
 from mlflow.tracking import MlflowClient
 from mlflow.utils.autologging_utils import disable_discrete_autologging
+from mlflow.utils.databricks_utils import get_databricks_host_creds
 from mlflow.utils.logging_utils import MLFLOW_LOGGING_STREAM
+from mlflow.utils.rest_utils import http_request_safe
+from mlflow.utils.uri import is_databricks_uri
 from sklearn.base import BaseEstimator
 
 from skore import CrossValidationReport, EstimatorReport
@@ -53,6 +57,7 @@ except ImportError:
 
 class Metadata(TypedDict):  # noqa: D101
     id: str
+    report_id: str | None
     key: str
     date: str
     learner: str
@@ -97,6 +102,51 @@ def format_date(start_time: int | None) -> str:
     return datetime.fromtimestamp(start_time / 1_000, tz=UTC).isoformat()
 
 
+STORAGE_EXPERIMENT_NAME = "__skore-storage__"
+
+
+def _databricks_user_name(tracking_uri: str) -> str:
+    """Identity of the workspace user behind a Databricks ``tracking_uri``."""
+    creds = get_databricks_host_creds(tracking_uri)  # type: ignore[no-untyped-call]
+    response = http_request_safe(  # type: ignore[no-untyped-call]
+        host_creds=creds,
+        endpoint="/api/2.0/preview/scim/v2/Me",
+        method="GET",
+    )
+
+    body = response.json()
+    try:
+        return cast(str, body["userName"])
+    except KeyError:
+        raise MlflowException(
+            "Databricks SCIM 'Me' response has no 'userName' field; this can happen "
+            "when authenticating as a service principal, which is identified by "
+            "'applicationId' rather than 'userName'."
+        ) from None
+
+
+def _storage_experiment_name(tracking_uri: str) -> str:
+    """
+    Name of the internal experiment storing the objects of a project's reports.
+
+    Databricks only accepts experiment names that are absolute workspace paths, so the
+    storage experiment lives in the home directory of the workspace user there.
+    """
+    if not is_databricks_uri(tracking_uri):  # type: ignore[no-untyped-call]
+        return STORAGE_EXPERIMENT_NAME
+
+    try:
+        user_name = _databricks_user_name(tracking_uri)
+    except MlflowException as exc:
+        raise MlflowException(
+            "Failed to resolve the Databricks workspace user needed to create the "
+            f"{STORAGE_EXPERIMENT_NAME!r} experiment. Make sure the credentials used "
+            f"for '{tracking_uri}' can read the current user."
+        ) from exc
+
+    return f"/Users/{user_name}/{STORAGE_EXPERIMENT_NAME}"
+
+
 class Project:
     """
     API to persist in MLflow.
@@ -117,17 +167,21 @@ class Project:
             mlflow.set_tracking_uri(tracking_uri)
 
         self.__tracking_uri = mlflow.get_tracking_uri()
+        storage_name = _storage_experiment_name(self.__tracking_uri)
         try:
-            self.__storage_experiment_id = mlflow.create_experiment("__skore-storage__")
-        except RestException:
-            storage_experiment = mlflow.get_experiment_by_name("__skore-storage__")
+            self.__storage_experiment_id = mlflow.create_experiment(storage_name)
+        except MlflowException:
+            # Local stores raise a plain `MlflowException` on duplicate names, while
+            # tracking servers raise its `RestException` subclass. Reuse the existing
+            # experiment either way, so several projects can share a tracking URI.
+            storage_experiment = mlflow.get_experiment_by_name(storage_name)
             if storage_experiment is None:
                 raise
             self.__storage_experiment_id = storage_experiment.experiment_id
         self.__mlflow_client = MlflowClient()
         self.__name = name
         experiment = mlflow.set_experiment(name)
-        self.__experiment_id = cast(str, experiment.experiment_id)
+        self.__experiment_id = experiment.experiment_id
 
     @property
     def name(self) -> str:
@@ -190,6 +244,7 @@ class Project:
                 {
                     "skore_status": "started",
                     "skore_version": version("skore"),
+                    "skore_report_id": report.id,
                     "report_type": report_type(report),
                     "ml_task": report.ml_task,
                     "learner": report.estimator_name_,
@@ -250,14 +305,11 @@ class Project:
 
     def summarize(self) -> list[Metadata]:
         """Obtain metadata/metrics for all persisted models in insertion order."""
-        runs = cast(
-            list[MLFlowRun],
-            mlflow.search_runs(
-                experiment_ids=[self.experiment_id],
-                output_format="list",
-                order_by=["attributes.start_time ASC"],
-                filter_string='tags.skore_status = "completed"',
-            ),
+        runs = mlflow.search_runs(
+            experiment_ids=[self.experiment_id],
+            output_format="list",
+            order_by=["attributes.start_time ASC"],
+            filter_string='tags.skore_status = "completed"',
         )
 
         metadatas = []
@@ -272,38 +324,41 @@ class Project:
     @staticmethod
     def _run_to_metadata(run: MLFlowRun) -> Metadata:
         tags = run.data.tags
-        metrics = run.data.metrics
+        run_metrics = run.data.metrics
         report_type = tags["report_type"]
 
         if report_type == "estimator":
-            inputs = sorted(run.inputs.dataset_inputs, key=_dataset_context_tag)
+            dataset_inputs = [] if run.inputs is None else run.inputs.dataset_inputs
+            inputs = sorted(dataset_inputs, key=_dataset_context_tag)
             digests = [inp.dataset.digest for inp in inputs]
-            metrics = {
-                "rmse": run.data.metrics.get("rmse"),
-                "log_loss": run.data.metrics.get("log_loss"),
-                "roc_auc": run.data.metrics.get("roc_auc"),
-                "fit_time": metrics["fit_time"],
-                "predict_time": metrics["predict_time"],
+            metrics: dict[str, float | None] = {
+                "rmse": run_metrics.get("rmse"),
+                "log_loss": run_metrics.get("log_loss"),
+                "roc_auc": run_metrics.get("roc_auc"),
+                "fit_time": run_metrics["fit_time"],
+                "predict_time": run_metrics["predict_time"],
             }
         elif report_type == "cross-validation":
-            digests = [run.inputs.dataset_inputs[0].dataset.digest]
+            dataset_inputs = [] if run.inputs is None else run.inputs.dataset_inputs
+            digests = [dataset_inputs[0].dataset.digest]
             metrics = {
-                "rmse_mean": run.data.metrics.get("rmse"),
-                "log_loss_mean": run.data.metrics.get("log_loss"),
-                "roc_auc_mean": run.data.metrics.get("roc_auc"),
-                "fit_time_mean": metrics["fit_time"],
-                "predict_time_mean": metrics["predict_time"],
-                "rmse_std": run.data.metrics.get("rmse_std"),
-                "log_loss_std": run.data.metrics.get("log_loss_std"),
-                "roc_auc_std": run.data.metrics.get("roc_auc_std"),
-                "fit_time_std": run.data.metrics.get("fit_time_std"),
-                "predict_time_std": run.data.metrics.get("predict_time_std"),
+                "rmse_mean": run_metrics.get("rmse"),
+                "log_loss_mean": run_metrics.get("log_loss"),
+                "roc_auc_mean": run_metrics.get("roc_auc"),
+                "fit_time_mean": run_metrics["fit_time"],
+                "predict_time_mean": run_metrics["predict_time"],
+                "rmse_std": run_metrics.get("rmse_std"),
+                "log_loss_std": run_metrics.get("log_loss_std"),
+                "roc_auc_std": run_metrics.get("roc_auc_std"),
+                "fit_time_std": run_metrics.get("fit_time_std"),
+                "predict_time_std": run_metrics.get("predict_time_std"),
             }
         else:
             raise ValueError(f"Unsupported report type: {report_type}")
 
         metadata = {
             "id": run.info.run_id,
+            "report_id": tags.get("skore_report_id"),
             "key": run.info.run_name,
             "date": format_date(run.info.start_time),
             "report_type": report_type,
@@ -343,14 +398,11 @@ class Project:
                 f"tracking_uri='{tracking_uri}') does not exist."
             )
 
-        active_runs = cast(
-            list[MLFlowRun],
-            mlflow.search_runs(
-                experiment_ids=[experiment.experiment_id],
-                filter_string='attributes.status = "RUNNING"',
-                max_results=1,
-                output_format="list",
-            ),
+        active_runs = mlflow.search_runs(
+            experiment_ids=[experiment.experiment_id],
+            filter_string='attributes.status = "RUNNING"',
+            max_results=1,
+            output_format="list",
         )
         if active_runs:
             raise RuntimeError(
@@ -417,9 +469,22 @@ class Project:
 
 ## Helpers for logging in MLFlow:
 
+# Since ``skops==0.15`` (https://github.com/skops-dev/skops/pull/535), ``Tree`` and
+# ``TreePredictor`` are no longer trusted by default. Trust them again so tree-based
+# estimators keep serializing with skops.
+SKOPS_TRUSTED_TYPES = [
+    "sklearn.ensemble._hist_gradient_boosting.predictor.TreePredictor",
+    "sklearn.tree._tree.Tree",
+]
+
 
 def _log_model(model: BaseEstimator, input_example: Any, **kwargs: Any) -> None:
     """Log a model using skops first, then cloudpickle as fallback."""
+    if ("skops_trusted_types" in signature(mlflow.sklearn.log_model).parameters) and (
+        "skops_trusted_types" not in kwargs
+    ):
+        kwargs["skops_trusted_types"] = SKOPS_TRUSTED_TYPES
+
     try:
         with (
             _filterwarnings(UserWarning, ".*Any type hint is inferred as AnyType.*"),
@@ -552,9 +617,8 @@ def _flatten_df_index(df: pd.DataFrame | pd.Series) -> pd.DataFrame:
     if isinstance(df, pd.Series):
         df = df.to_frame(name=df.name)
     df = df.copy(deep=False)
-    columns = df.columns
-    if columns is not None and columns.nlevels > 1:
-        df.columns = columns.droplevel(0)
+    if isinstance(df.columns, pd.MultiIndex):
+        df.columns = df.columns.droplevel(0)
 
     index = df.index
     if isinstance(index, pd.RangeIndex) and len(index.names) == 1:

@@ -40,10 +40,18 @@ class _RichReportHelpMixin(_ReportHelpDataMixin, _BaseRichHelpMixin):
         for accessor_data in data.get("accessors", []):
             branch = tree.add(f"[bold cyan].{accessor_data['name']}[/bold cyan]")
 
-            for method in accessor_data["methods"]:
-                displayed_name = f"{method['name']}(...)"
-                description = method["description"]
-                branch.add(f".{displayed_name.ljust(25)} - {description}")
+            if accessor_data.get("groups"):
+                for group in accessor_data["groups"]:
+                    sub = branch.add(f"[bold cyan]{group['name']}[/bold cyan]")
+                    for method in group["methods"]:
+                        displayed_name = f"{method['name']}(...)"
+                        description = method["description"]
+                        sub.add(f".{displayed_name.ljust(25)} - {description}")
+            else:
+                for method in accessor_data["methods"]:
+                    displayed_name = f"{method['name']}(...)"
+                    description = method["description"]
+                    branch.add(f".{displayed_name.ljust(25)} - {description}")
 
         base_methods = data.get("base_methods", [])
         if base_methods:
@@ -93,10 +101,18 @@ class _RichAccessorHelpMixin(_AccessorHelpDataMixin, _BaseRichHelpMixin):
         accessor_name = data.get("accessor_name", "")
         branch = tree.add(f"[bold cyan].{accessor_name}[/bold cyan]")
 
-        for method in data.get("methods", []):
-            displayed_name = f"{method['name']}(...)"
-            description = method["description"]
-            branch.add(f".{displayed_name}".ljust(26) + f" - {description}")
+        if data.get("groups"):
+            for group in data["groups"]:
+                sub = branch.add(f"[bold cyan]{group['name']}[/bold cyan]")
+                for method in group["methods"]:
+                    displayed_name = f"{method['name']}(...)"
+                    description = method["description"]
+                    sub.add(f".{displayed_name}".ljust(26) + f" - {description}")
+        else:
+            for method in data.get("methods", []):
+                displayed_name = f"{method['name']}(...)"
+                description = method["description"]
+                branch.add(f".{displayed_name}".ljust(26) + f" - {description}")
 
         return tree
 

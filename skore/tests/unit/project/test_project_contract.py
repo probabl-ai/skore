@@ -3,26 +3,16 @@
 from __future__ import annotations
 
 from pathlib import Path
-from urllib.parse import urljoin
 
 import mlflow
 import pytest
-from httpx import Client, Response
+from httpx import Response
 from sklearn.datasets import make_regression
 from sklearn.linear_model import LinearRegression, Ridge
 
 from skore import EstimatorReport, Project, evaluate
-from skore._project._summary import Summary
-
-
-class FakeClient(Client):
-    def __init__(self, *args, **kwargs):
-        super().__init__()
-
-    def request(self, method, url, **kwargs):
-        response = super().request(method, urljoin("http://localhost", url), **kwargs)
-        response.raise_for_status()
-        return response
+from skore._plugins.hub.client.client import HUBClient
+from skore._project.summary import Summary
 
 
 @pytest.fixture
@@ -80,10 +70,10 @@ class TestLocalProjectContract:
 
 class TestMlflowProjectContract:
     @pytest.fixture(autouse=True)
-    def isolated_mlflow_tracking(self, tmp_path, monkeypatch):
+    def isolated_mlflow_tracking(self, tmp_path, monkeypatch, mlflow_tracking_uri):
         monkeypatch.chdir(tmp_path)
         previous_tracking_uri = mlflow.get_tracking_uri()
-        tracking_uri = f"sqlite:///{tmp_path}/mlflow.db"
+        tracking_uri = mlflow_tracking_uri()
         mlflow.set_tracking_uri(tracking_uri)
         try:
             yield tracking_uri
@@ -92,9 +82,6 @@ class TestMlflowProjectContract:
                 mlflow.end_run()
             mlflow.set_tracking_uri(previous_tracking_uri)
 
-    @pytest.mark.filterwarnings(
-        r"ignore:codecs\.open\(\) is deprecated:DeprecationWarning:mlflow"
-    )
     def test_api_contract(
         self, regression_report, second_regression_report, isolated_mlflow_tracking
     ):
@@ -136,13 +123,15 @@ class TestMlflowProjectContract:
             )
 
 
-@pytest.mark.respx()
-class TestHubProjectContract:
-    @pytest.fixture(autouse=True)
-    def hub_client(self, monkeypatch):
-        monkeypatch.setattr("skore._plugins.hub.project.project.HUBClient", FakeClient)
-        monkeypatch.setattr("skore._plugins.hub.artifact.upload.HUBClient", FakeClient)
+@pytest.fixture
+def monkeypatch_hub_client(monkeypatch):
+    monkeypatch.setenv("SKORE_HUB_API_KEY", "<key>")
+    monkeypatch.setitem(HUBClient.__init__.__kwdefaults__, "retry", False)
 
+
+@pytest.mark.respx()
+@pytest.mark.usefixtures("monkeypatch_hub_client")
+class TestHubProjectContract:
     def test_api_contract(self, regression_report, respx_mock, monkeypatch):
         monkeypatch.setattr(
             "skore._plugins.hub.artifact.media.data.TableReport.content_to_upload",
@@ -167,7 +156,7 @@ class TestHubProjectContract:
             ),
             (
                 "get",
-                "projects/workspace/contract-hub/reports/",
+                "projects/workspace/contract-hub/reports",
                 Response(200, json={"next_cursor": None, "items": []}),
             ),
             ("delete", "/projects/workspace/contract-hub", Response(204)),

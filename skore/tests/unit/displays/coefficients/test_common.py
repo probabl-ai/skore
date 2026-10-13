@@ -31,6 +31,7 @@ class TestCoefficientsDisplay:
         assert isinstance(display, CoefficientsDisplay)
         assert hasattr(display, "coefficients")
         assert hasattr(display, "report_type")
+        assert "feature_std" in display.coefficients.columns
 
         fig = display.plot()
         assert fig is not None
@@ -93,6 +94,7 @@ class TestCoefficientsDisplay:
             "label",
             "output",
             "coefficient",
+            "feature_std",
         }
         assert set(display.coefficients.columns) == expected
 

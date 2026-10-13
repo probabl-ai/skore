@@ -3,7 +3,7 @@ import pandas as pd
 import pytest
 
 from skore import EstimatorReport
-from skore._utils._testing import check_cache_unchanged
+from skore._utils.testing import check_cache_unchanged
 
 
 @pytest.mark.parametrize(

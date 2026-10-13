@@ -5,7 +5,7 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 
 from skore import EstimatorReport, ImpurityDecreaseDisplay
-from skore._externals._sklearn_compat import convert_container
+from skore._externals.sklearn_compat import convert_container
 
 
 def test_with_pipeline(forest_binary_classification_with_train_test):

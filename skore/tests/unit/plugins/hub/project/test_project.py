@@ -46,8 +46,7 @@ def monkeypatch_table_report_representation(monkeypatch):
     "ignore:.*The workspace name can only contain unicode.*:UserWarning"
 )
 @mark.filterwarnings("ignore:.*The project name can only contain unicode.*:UserWarning")
-@mark.usefixtures("monkeypatch_project_hub_client")
-@mark.usefixtures("monkeypatch_artifact_hub_client")
+@mark.usefixtures("monkeypatch_hub_client")
 class TestProject:
     @mark.respx()
     def test_workspace(self, respx_mock):
@@ -208,6 +207,7 @@ class TestProject:
 
         # Compare content with the desired output
         assert content == desired
+        assert all("position" not in metric for metric in content["metrics"])
 
     @mark.filterwarnings(
         # ignore precision warning due to the low number of labels in
@@ -257,6 +257,7 @@ class TestProject:
 
         # Compare content with the desired output
         assert content == desired
+        assert all("position" not in metric for metric in content["metrics"])
 
     @mark.respx()
     def test_put_estimator_report_string_labels_with_pos_label(
@@ -506,7 +507,7 @@ class TestProject:
             ),
             (
                 "get",
-                "projects/workspace/name/reports/",
+                "projects/workspace/name/reports",
                 Response(
                     200,
                     json={
@@ -516,6 +517,7 @@ class TestProject:
                                 "urn": "skore:report:estimator:<report_id_0>",
                                 "type": "estimator",
                                 "id": "<report_id_0>",
+                                "canonical_report_id": "<report_id_0>",
                                 "key": "<key>",
                                 "ml_task": "<ml_task>",
                                 "estimator_class_name": "<estimator_class_name>",
@@ -534,6 +536,7 @@ class TestProject:
                                 "urn": "skore:report:estimator:<report_id_1>",
                                 "type": "estimator",
                                 "id": "<report_id_1>",
+                                "canonical_report_id": "<report_id_1>",
                                 "key": "<key>",
                                 "ml_task": "<ml_task>",
                                 "estimator_class_name": "<estimator_class_name>",
@@ -556,6 +559,7 @@ class TestProject:
                                 "urn": "skore:report:cross-validation:<report_id_2>",
                                 "type": "cross-validation",
                                 "id": "<report_id_2>",
+                                "canonical_report_id": "<report_id_2>",
                                 "key": "<key>",
                                 "ml_task": "<ml_task>",
                                 "estimator_class_name": "<estimator_class_name>",
@@ -594,6 +598,7 @@ class TestProject:
         assert summary == [
             {
                 "id": "skore:report:estimator:<report_id_0>",
+                "report_id": "<report_id_0>",
                 "key": "<key>",
                 "date": nowstr,
                 "learner": "<estimator_class_name>",
@@ -618,6 +623,7 @@ class TestProject:
             },
             {
                 "id": "skore:report:estimator:<report_id_1>",
+                "report_id": "<report_id_1>",
                 "key": "<key>",
                 "date": nowstr,
                 "learner": "<estimator_class_name>",
@@ -642,6 +648,7 @@ class TestProject:
             },
             {
                 "id": "skore:report:cross-validation:<report_id_2>",
+                "report_id": "<report_id_2>",
                 "key": "<key>",
                 "date": nowstr,
                 "learner": "<estimator_class_name>",
@@ -701,7 +708,7 @@ class TestProject:
             ),
             (
                 "get",
-                "projects/workspace/name/reports/",
+                "projects/workspace/name/reports",
                 {"cursor": None},
                 Response(
                     200,
@@ -713,7 +720,7 @@ class TestProject:
             ),
             (
                 "get",
-                "projects/workspace/name/reports/",
+                "projects/workspace/name/reports",
                 {"cursor": 499},
                 Response(
                     200,

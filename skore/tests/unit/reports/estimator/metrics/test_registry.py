@@ -17,8 +17,8 @@ from sklearn.metrics import (
 )
 
 from skore import EstimatorReport
-from skore._sklearn.metrics import FunctionKind, Metric, MissingKwargsError
-from skore._utils._testing import check_cache_changed, check_cache_unchanged
+from skore._metrics import FunctionKind, Metric, MissingKwargsError
+from skore._utils.testing import check_cache_changed, check_cache_unchanged
 
 
 def business_loss(y_true, y_pred, *, cost_fp, cost_fn):
@@ -60,7 +60,7 @@ class TestBasicAdd:
         metric = report._metric_registry["business_loss"]
 
         assert metric.name == "business_loss"
-        assert metric.verbose_name == "Business Loss"
+        assert metric.verbose_name == "business_loss"
         assert metric.greater_is_better is False
         assert metric.kwargs == {"cost_fn": 5, "cost_fp": 10}
 
@@ -86,7 +86,7 @@ class TestBasicAdd:
         )
 
         assert "custom_metric" in report._metric_registry
-        assert report._metric_registry["custom_metric"].verbose_name == "Custom Metric"
+        assert report._metric_registry["custom_metric"].verbose_name == "custom_metric"
 
     def test_callable_with_verbose_name(self, binary_classification_report):
         """Test adding a callable with a custom name."""
@@ -154,16 +154,28 @@ class TestBasicAdd:
         assert "business_loss" in report._metric_registry
         assert "accuracy_score" in report._metric_registry
 
-    def test_cannot_override_builtin_metric(self, binary_classification_report):
-        """Test that adding with a built-in technical name raises an error."""
+    def test_cannot_use_reserved_name(self, binary_classification_report):
+        """Test that adding a metric named 'default_score' raises an error."""
+        report = binary_classification_report
+
+        def default_score(y_true, y_pred):
+            return 1.0
+
+        err_msg = "Cannot add 'default_score': it is a reserved name."
+        with pytest.raises(ValueError, match=err_msg):
+            report.metrics.add(make_scorer(default_score))
+
+    def test_readd_default_metric(self, binary_classification_report):
+        """Test that a default metric can be removed and added back."""
         report = binary_classification_report
 
         def accuracy(y_true, y_pred):
             return 1.0
 
-        err_msg = "Cannot add 'accuracy': it is a built-in metric name."
-        with pytest.raises(ValueError, match=err_msg):
-            report.metrics.add(make_scorer(accuracy))
+        report.metrics.remove("accuracy")
+        report.metrics.add(make_scorer(accuracy))
+
+        assert report.metrics.get("accuracy") == 1.0
 
 
 class TestRemove:
@@ -233,7 +245,7 @@ class TestSummarizeIntegration:
         frame = display.frame(flat_index=False, verbose_name=True)
         metric_names = frame.index.get_level_values("Metric").to_numpy()
         assert "Accuracy" in metric_names
-        assert "Business Loss" in metric_names
+        assert "business_loss" in metric_names
 
     def test_summarize_with_explicit_custom_metric(self, binary_classification_report):
         """Test calling summarize with explicit custom metric name."""
@@ -246,7 +258,7 @@ class TestSummarizeIntegration:
 
         assert len(display.summary) == 1
         row = display.summary.iloc[0]
-        assert row["verbose_name"] == "Business Loss"
+        assert row["verbose_name"] == "business_loss"
         assert not row["greater_is_better"]
 
     def test_summarize_with_mixed_metrics(self, binary_classification_report):
@@ -258,7 +270,7 @@ class TestSummarizeIntegration:
         # Should work with list including both types
         display = report.metrics.summarize(metric=["accuracy", "business_loss"])
 
-        assert set(display.summary["verbose_name"]) == {"Accuracy", "Business Loss"}
+        assert set(display.summary["verbose_name"]) == {"Accuracy", "business_loss"}
 
 
 class TestAddPosition:
@@ -284,10 +296,10 @@ class TestAddPosition:
         keys = list(report._metric_registry.keys())
         assert keys[0] == "metric_b"
         assert keys[1] == "metric_a"
-        assert keys[2] == "score"
+        assert keys[2] == "default_score"
 
         display = report.metrics.summarize()
-        assert display.summary.iloc[0]["verbose_name"] == "Metric B"
+        assert display.summary.iloc[0]["verbose_name"] == "metric_b"
 
     def test_position_last_appends_in_order(self, binary_classification_report):
         """Last-position adds appear after all built-ins, in insertion order."""
@@ -335,7 +347,7 @@ class TestAddPosition:
 
         keys = list(report._metric_registry.keys())
         assert keys[0] == "m_first"
-        assert keys[1] == "score"
+        assert keys[1] == "default_score"
         assert keys[-1] == "m_last"
 
     def test_readd_raises_without_remove(self, binary_classification_report):
@@ -477,7 +489,9 @@ class TestEdgeCases:
         estimator, X_train, X_test, y_train, y_test = (
             logistic_binary_classification_with_train_test
         )
-        report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
+        report = EstimatorReport(
+            estimator.fit(X_train, y_train), X_test=X_test, y_test=y_test
+        )
 
         scorer = make_scorer(accuracy_score, response_method="predict")
         report.metrics.add(scorer)
@@ -529,7 +543,7 @@ class TestDifferentMLTasks:
         report.metrics.add(make_scorer(accuracy_score, response_method="predict"))
 
         display = report.metrics.summarize()
-        assert "Accuracy Score" in display.summary["verbose_name"].values
+        assert "accuracy_score" in display.summary["verbose_name"].values
 
     def test_regression(self, regression_report):
         """Test add on regression report."""
@@ -544,7 +558,7 @@ class TestDifferentMLTasks:
         report.metrics.add(scorer)
 
         display = report.metrics.summarize()
-        assert "Custom Mse" in display.summary["verbose_name"].values
+        assert "custom_mse" in display.summary["verbose_name"].values
 
     def test_multioutput_regression(
         self, linear_regression_multioutput_with_train_test
@@ -563,7 +577,7 @@ class TestDifferentMLTasks:
         report.metrics.add(scorer)
 
         display = report.metrics.summarize()
-        assert "Mean Squared Error" in display.summary["verbose_name"].values
+        assert "mean_squared_error" in display.summary["verbose_name"].values
 
     def test_wrong_ml_task(self, linear_regression_with_train_test):
         """adding a metric incompatible with the ML task doesn't crash."""
@@ -595,6 +609,11 @@ class TestMultiMetric:
 
         display = report.metrics.summarize(metric="multimetric_scorer")
 
+        assert list(display.summary["name"]) == [
+            "accuracy",
+            "precision",  # Label 0
+            "precision",  # Label 1
+        ]
         assert list(display.summary["verbose_name"]) == [
             "accuracy",
             "precision",  # Label 0
@@ -628,8 +647,13 @@ class TestMultiMetric:
             y_test=y_test,
         )
 
-        display = report.metrics.summarize(metric="score")
+        display = report.metrics.summarize(metric="default_score")
 
+        assert list(display.summary["name"]) == [
+            "accuracy",
+            "precision",  # Label 0
+            "precision",  # Label 1
+        ]
         assert list(display.summary["verbose_name"]) == [
             "accuracy",
             "precision",  # Label 0
@@ -669,9 +693,17 @@ class TestStringScorerNames:
         # NOTE: User can pass "f1", not "f1_score" which is the name of the actual
         # metric function
         display = report.metrics.summarize(metric="f1")
-        metric_rows = display.summary[display.summary["verbose_name"] == "F1"]
+        metric_rows = display.summary[display.summary["verbose_name"] == "f1"]
 
         assert len(metric_rows) == 1
+
+    def test_string_scorer_verbose_name(self, binary_classification_report):
+        """A string scorer keeps an explicit verbose name."""
+        report = binary_classification_report
+
+        report.metrics.add("f1", verbose_name="F1")
+
+        assert report._metric_registry["f1"].verbose_name == "F1"
 
     def test_string_scorer_appears_in_summarize(self, binary_classification_report):
         """Test that string scorers appear in summarize() output."""
@@ -685,7 +717,7 @@ class TestStringScorerNames:
         display = report.metrics.summarize()
         metrics_after = set(display.summary["verbose_name"])
 
-        assert metrics_after - metrics_before == {"F1"}
+        assert metrics_after - metrics_before == {"f1"}
 
     def test_neg_scorer(self, regression_report):
         """Test that neg_* scorers have correct sign, direction, and display name."""
@@ -762,7 +794,7 @@ class TestMetric:
         """Test that Metric.__repr__ works as expected"""
         m = Metric(name="accuracy", function=None, greater_is_better=True)
         assert repr(m) == (
-            "Metric(name='accuracy', verbose_name='Accuracy', function=None, "
+            "Metric(name='accuracy', verbose_name='accuracy', function=None, "
             "greater_is_better=True, response_method=None, kwargs={})"
         )
 
@@ -773,7 +805,7 @@ class TestMetric:
         )
 
         assert repr(m) == (
-            "Metric(name='accuracy', verbose_name='Accuracy', function=None, "
+            "Metric(name='accuracy', verbose_name='accuracy', function=None, "
             "greater_is_better=True, response_method=None, kwargs={'hello': 1})"
         )
 
@@ -804,12 +836,12 @@ class TestSerialization:
         metric = report2._metric_registry["business_loss_scorer"]
         assert callable(metric.function)
         assert metric.name == "business_loss_scorer"
-        assert metric.verbose_name == "Business Loss Scorer"
+        assert metric.verbose_name == "business_loss_scorer"
         assert metric.greater_is_better is False
         assert metric.kwargs == {"cost_fp": 20, "cost_fn": 3}
 
         display = report2.metrics.summarize()
-        assert "Business Loss Scorer" in display.summary["verbose_name"].values
+        assert "business_loss_scorer" in display.summary["verbose_name"].values
 
     def test_serde_lambda(self, binary_classification_report):
         """Test that if added metric is a lambda, it is lost when pickling."""
@@ -856,7 +888,7 @@ class TestMetricNew:
         )
 
         assert metric.name == "my_loss"
-        assert metric.verbose_name == "My Loss"
+        assert metric.verbose_name == "my_loss"
         assert metric.function is business_loss_scorer
         assert metric.kwargs == {"cost_fp": 10, "cost_fn": 5}
 
@@ -922,7 +954,7 @@ class TestMetricNew:
         result = Metric.new(original, name="renamed")
 
         assert result.name == "renamed"
-        assert result.verbose_name == "Renamed"
+        assert result.verbose_name == "renamed"
         assert original.name == "original"  # unchanged
 
     def test_string(self):

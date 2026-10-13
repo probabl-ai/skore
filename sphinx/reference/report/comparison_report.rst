@@ -41,6 +41,12 @@ The `metrics` accessor helps you to evaluate the statistical performance of the
 compared estimators. In addition, we provide a sub-accessor `plot`, to
 get the common performance metric representations.
 
+Registered metrics whose name is a valid Python identifier are also available as
+``report.metrics.<name>(...)``. Use
+:meth:`~skore.ComparisonReport.metrics.available` (or
+:meth:`~skore.ComparisonReport.metrics.help`) at runtime to discover which metrics
+apply to a given report.
+
 .. include:: ../api/ComparisonReport.metrics.inc
 
 Inspection

@@ -79,6 +79,26 @@ def test_sample_input_example_casts_category_to_object() -> None:
     assert sample["cat"].tolist() == ["a", "b"]
 
 
+def test_dataset_from_Xy_expands_multidimensional_array_targets():
+    """A dataframe paired with a 2D array target becomes one column per output."""
+    y = np.column_stack([y_numpy, y_numpy])
+
+    dataset = _dataset_from_Xy(X_pandas, y).dataset
+
+    assert isinstance(dataset, NumpyDataset)
+    assert set(dataset.targets) == {"target_0", "target_1"}
+
+
+def test_dataset_from_Xy_uses_single_frame_column_name():
+    """A one-column target frame keeps its column name as the MLflow target."""
+    y = y_pandas.to_frame(name="label")
+
+    dataset = _dataset_from_Xy(X_pandas, y).dataset
+
+    assert isinstance(dataset, PandasDataset)
+    assert "label" in dataset.df.columns
+
+
 @pytest.mark.parametrize(
     ("X", "y"),
     list(product([X_pandas, X_numpy], [y_pandas, y_numpy, y_pandas_multi_targets])),

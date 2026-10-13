@@ -37,6 +37,7 @@ extensions = [
     "sphinx.ext.intersphinx",
     "sphinx.ext.linkcode",
     "sphinx_autosummary_accessors",
+    "sphinx_click",
     "sphinx_copybutton",
     "sphinx_design",
     "sphinx_gallery.gen_gallery",
@@ -110,6 +111,7 @@ sphinx_gallery_conf = {
         "../examples/getting_started",
         "../examples/use_cases",
         "../examples/model_evaluation",
+        "../examples/pitfalls_and_solutions",
         "../examples/integrations",
         "../examples/technical_details",
     ],
@@ -237,3 +239,31 @@ copybutton_prompt_is_regexp = True
 
 # sphinx-issues config
 issues_github_path = "probabl-ai/skore"
+
+
+def _nest_command_toctree(app, doctree):
+    """Keep command toctrees inside the click section.
+
+    sphinx-click emits a section, and a following ``toctree`` stays outside it.
+    The section menu then lists subcommands beside the command instead of under
+    it.
+    """
+    if not app.env.docname.startswith("reference/cli/"):
+        return
+    from docutils import nodes
+    from sphinx import addnodes
+
+    sections = [child for child in doctree.children if isinstance(child, nodes.section)]
+    if len(sections) != 1:
+        return
+    section = sections[0]
+    for child in list(doctree.children):
+        if child is section or not isinstance(child, nodes.Element):
+            continue
+        if any(isinstance(node, addnodes.toctree) for node in child.findall()):
+            child.parent.remove(child)
+            section.append(child)
+
+
+def setup(app):
+    app.connect("doctree-read", _nest_command_toctree, priority=0)
