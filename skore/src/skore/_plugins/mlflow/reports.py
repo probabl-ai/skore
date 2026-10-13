@@ -285,7 +285,7 @@ def _dataset_from_Xy(
         targets = name
         y = pd.DataFrame({name: y})
     elif len(y.columns) == 1:
-        (targets) = y.columns
+        (targets,) = y.columns
     else:
         # mlflow.data.from_pandas doesn't support multiple targets
         # use mlflow.data.from_numpy instead
