@@ -96,8 +96,7 @@ def _render_result(result, *, dry_run: bool) -> None:
     "--hub-url",
     default=None,
     help=(
-        "Hub URL (API or frontend, e.g. ``https://skore.probabl.ai``). "
-        "Frontend URLs are auto-resolved via ``/.well-known/skore-hub.json``. "
+        "Hub URL (e.g. ``https://skore.probabl.ai``). "
         f"Defaults to the ``{URI_ENV}`` environment variable or the public Hub."
     ),
 )
