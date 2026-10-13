@@ -75,6 +75,7 @@ sphinx-base = [
   "pydata-sphinx-theme",
   "seaborn",
   "skrub",
+  "sphinx-click",
   "sphinx-copybutton",
   "sphinx-design",
   "sphinx-gallery",

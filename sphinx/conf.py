@@ -37,6 +37,7 @@ extensions = [
     "sphinx.ext.intersphinx",
     "sphinx.ext.linkcode",
     "sphinx_autosummary_accessors",
+    "sphinx_click",
     "sphinx_copybutton",
     "sphinx_design",
     "sphinx_gallery.gen_gallery",

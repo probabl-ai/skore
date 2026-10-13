@@ -112,6 +112,16 @@ Utilities
      - Print version information for skore and its dependencies
 
 
+Command-line interface
+^^^^^^^^^^^^^^^^^^^^^^
+
+.. list-table::
+   :widths: 30 70
+
+   * - :ref:`skore <cli-reference>`
+     - Synchronize projects, install agent skills, and connect a coding agent to Skore Hub
+
+
 .. toctree::
    :maxdepth: 2
    :hidden:
@@ -119,3 +129,4 @@ Utilities
    Managing a project <project>
    ML Assistance <report/index>
    Utilities <utils>
+   Command-line interface <cli>
