@@ -61,7 +61,7 @@ the current project:
 
 .. code-block:: bash
 
-   $ skore skills install all
+   $ skore skills install --all
 
 That writes them to ``.agents/skills``, or to the project directory of the
 agent that is currently running. To install one skill or one workflow:
