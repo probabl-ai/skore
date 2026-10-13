@@ -44,6 +44,18 @@ def test_builtin_check_documentation_anchors_exist():
     assert missing == {}
 
 
+def test_builtin_check_titles_match_user_guide():
+    """User-guide headings use the title emitted by each built-in check."""
+    guide = (SPHINX_DIR / "user_guide" / "automated_checks.rst").read_text()
+    missing = [
+        f"{check.code} - {check.title}"
+        for check in _BUILTIN_CHECKS
+        if f"{check.code} - {check.title}" not in guide
+    ]
+
+    assert missing == []
+
+
 def test_documented_python_requirement_matches_package_metadata():
     """Install instructions use the minimum version declared by the package."""
     pyproject = tomllib.loads((REPO_DIR / "skore" / "pyproject.toml").read_text())

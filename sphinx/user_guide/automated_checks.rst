@@ -311,8 +311,8 @@ Check out the :ref:`example for this check <example_skd006_coefficient_interpret
 
 .. _skd007-mdi-cardinality-bias:
 
-SKD007 - MDI feature importance is biased for high-cardinality features
---------------------------------------------------------------------------
+SKD007 - MDI biased for high-cardinality features
+-------------------------------------------------
 
 How it is detected
 ^^^^^^^^^^^^^^^^^^
@@ -399,8 +399,8 @@ Check out the :ref:`example for this check <example_skd008_correlated_features>`
 
 .. _skd009-worse-than-baseline:
 
-SKD009 - Model performance vs. baseline
-----------------------------------------
+SKD009 - Model performance vs. HistGradientBoosting baseline
+------------------------------------------------------------
 
 How it is detected
 ^^^^^^^^^^^^^^^^^^

@@ -1,13 +1,14 @@
 """
 .. _example_skd009_worse_than_baseline:
 
-SKD009 - Model worse than baseline
-==================================
+SKD009 - Model performance vs. HistGradientBoosting baseline
+============================================================
 
-This example walks through mitigations when check
-:ref:`SKD009 <skd009-worse-than-baseline>` fires. The check trains a strong
-:func:`~skrub.tabular_pipeline` baseline (gradient boosting on vectorized
-data) and flags estimators that are significantly worse on default metrics.
+This example walks through mitigations for check
+:ref:`SKD009 <skd009-worse-than-baseline>`. The check trains a strong
+:func:`~skrub.tabular_pipeline` baseline (HistGradientBoosting on vectorized
+data). It always reports that baseline's performance, and warns when the
+estimator is significantly worse on default metrics.
 
 Mitigations from the :ref:`user guide <skd009-worse-than-baseline>`, in the order
 we try them here:
@@ -261,7 +262,7 @@ report_tuned.checks.summarize()
 # Conclusion
 # ==========
 #
-# SKD009 informs you when your model is beaten by a simple but strong baseline.
-# We showed different approaches to address it: feature and target engineering,
-# changing model family and tuning hyperparameters to finally clear well past
-# the baseline.
+# SKD009 compares a model with a HistGradientBoosting baseline. It warns when
+# the model is significantly worse, and it still reports the baseline scores
+# when the model is on par or better. The mitigations shown here are feature
+# and target engineering, a change of model family, and hyperparameter tuning.
