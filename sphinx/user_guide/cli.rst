@@ -37,8 +37,7 @@ a new ``skore`` directory at the Git root). A workspace option is rejected for
 MLflow. ``--tracking-uri`` sets the tracking URI of every MLflow endpoint in the
 command; two MLflow projects share that URI. ``--to-project`` renames the
 destination; otherwise it keeps the source name. ``--hub-url`` selects the Hub
-(an API URL, or a frontend such as ``https://skore.probabl.ai``, which is
-resolved through ``/.well-known/skore-hub.json``). It defaults to
+instance to target (such as ``https://skore.probabl.ai``. It defaults to
 ``SKORE_HUB_URI`` or the public Hub.
 
 ``--both`` transfers missing reports in both directions. ``--dry-run`` prints
