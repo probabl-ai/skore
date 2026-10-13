@@ -30,18 +30,18 @@ def test_sync_help_describes_endpoints():
     }
 
     assert result.exit_code == 0
-    assert "SOURCE_PROJECT is the source project name." in output
+    assert "``SOURCE_PROJECT`` is the source project name." in output
     assert option_help["from_mode"] == (
-        "Storage mode of the source project. Defaults to local."
+        "Storage mode of the source project. Defaults to ``local``."
     )
     assert option_help["from_workspace"].startswith(
-        "Source workspace. Required for Hub"
+        "Source workspace. Required for ``hub``"
     )
     assert option_help["to_project"] == (
-        "Destination project name. Defaults to SOURCE_PROJECT."
+        "Destination project name. Defaults to ``SOURCE_PROJECT``."
     )
     assert option_help["to_workspace"].startswith(
-        "Destination workspace. Required for Hub"
+        "Destination workspace. Required for ``hub``"
     )
     assert option_help["tracking_uri"].startswith(
         "MLflow tracking URI. Applied to every MLflow endpoint"
