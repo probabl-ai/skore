@@ -20,6 +20,34 @@ def _plain_output(output: str) -> str:
     return _ANSI_ESCAPE.sub("", output)
 
 
+def test_sync_help_describes_endpoints():
+    result = CliRunner().invoke(sync, ["--help"])
+    output = _plain_output(result.output)
+    option_help = {
+        parameter.name: parameter.help
+        for parameter in sync.params
+        if hasattr(parameter, "help")
+    }
+
+    assert result.exit_code == 0
+    assert "SOURCE_PROJECT is the source project name." in output
+    assert option_help["from_mode"] == (
+        "Storage mode of the source project. Defaults to local."
+    )
+    assert option_help["from_workspace"].startswith(
+        "Source workspace. Required for Hub"
+    )
+    assert option_help["to_project"] == (
+        "Destination project name. Defaults to SOURCE_PROJECT."
+    )
+    assert option_help["to_workspace"].startswith(
+        "Destination workspace. Required for Hub"
+    )
+    assert option_help["tracking_uri"].startswith(
+        "MLflow tracking URI. Applied to every MLflow endpoint"
+    )
+
+
 @dataclass
 class _Project:
     name: str

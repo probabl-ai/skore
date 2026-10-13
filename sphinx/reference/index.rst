@@ -129,4 +129,4 @@ Command-line interface
    Managing a project <project>
    ML Assistance <report/index>
    Utilities <utils>
-   Command-line interface <cli>
+   Command-line interface <cli/index>
