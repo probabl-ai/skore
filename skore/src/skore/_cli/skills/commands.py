@@ -56,7 +56,7 @@ def _agent_option(func):
         "-a",
         multiple=True,
         type=click.Choice(SKILL_AGENT_NAMES),
-        help="Target agent(s). Defaults to the .agents/ cross-client directory.",
+        help="Target agent(s). Defaults to the ``.agents/`` cross-client directory.",
     )(func)
 
 
@@ -303,7 +303,7 @@ def _copy_selected_skills(
 @click.group(invoke_without_command=True)
 @click.pass_context
 def skills(ctx) -> None:
-    """Install and manage Agent Skills from the probabl-ai/skills release."""
+    """Install and manage Agent Skills from the ``probabl-ai/skills`` release."""
     if ctx.invoked_subcommand is None:
         click.echo(ctx.get_help())
 
@@ -317,7 +317,7 @@ def skills(ctx) -> None:
     "-r",
     default=GITHUB_REPO,
     show_default=True,
-    help="GitHub owner/name of the skills catalog to install from.",
+    help="GitHub ``owner/name`` of the skills catalog to install from.",
 )
 @click.option(
     "--all",

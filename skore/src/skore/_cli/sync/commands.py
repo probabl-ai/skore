@@ -52,19 +52,52 @@ def _render_result(result, *, dry_run: bool) -> None:
 
 @click.command()
 @click.argument("source_project")
-@click.option("--from", "from_mode", type=click.Choice(MODES), default=None)
-@click.option("--from-workspace")
-@click.option("--to", "to_mode", type=click.Choice(MODES), default=None)
-@click.option("--to-project", default=None)
-@click.option("--to-workspace")
-@click.option("--tracking-uri")
+@click.option(
+    "--from",
+    "from_mode",
+    type=click.Choice(MODES),
+    default=None,
+    help="Storage mode of the source project. Defaults to ``local``.",
+)
+@click.option(
+    "--from-workspace",
+    help=(
+        "Source workspace. Required for ``hub``; optional local directory for "
+        "``local`` storage; invalid for ``mlflow``."
+    ),
+)
+@click.option(
+    "--to",
+    "to_mode",
+    type=click.Choice(MODES),
+    default=None,
+    help="Storage mode of the destination project. Defaults to ``local``.",
+)
+@click.option(
+    "--to-project",
+    default=None,
+    help="Destination project name. Defaults to ``SOURCE_PROJECT``.",
+)
+@click.option(
+    "--to-workspace",
+    help=(
+        "Destination workspace. Required for ``hub``; optional local directory "
+        "for ``local`` storage; invalid for ``mlflow``."
+    ),
+)
+@click.option(
+    "--tracking-uri",
+    help=(
+        "MLflow tracking URI. Applied to every MLflow endpoint; required only "
+        "when its default tracking URI is unsuitable."
+    ),
+)
 @click.option(
     "--hub-url",
     default=None,
     help=(
-        "Hub URL (API or frontend, e.g. https://skore.probabl.ai). "
-        "Frontend URLs are auto-resolved via /.well-known/skore-hub.json. "
-        f"Defaults to the {URI_ENV} environment variable or the public Hub."
+        "Hub URL (e.g. ``https://skore.probabl.ai``). "
+        f"Defaults to the ``{URI_ENV}`` environment variable or the public Hub."
     ),
 )
 @click.option(
@@ -83,7 +116,12 @@ def sync(
     both: bool,
     dry_run: bool,
 ) -> None:
-    """Synchronize report projects across local, Hub, and MLflow storage."""
+    """Synchronize report projects across local, Hub, and MLflow storage.
+
+    ``SOURCE_PROJECT`` is the source project name. Pass ``--from`` or ``--to``
+    (or both) to select the endpoint modes; an omitted endpoint mode defaults
+    to ``local`` storage.
+    """
     if from_mode is None and to_mode is None:
         raise click.UsageError("Pass --from or --to.")
 

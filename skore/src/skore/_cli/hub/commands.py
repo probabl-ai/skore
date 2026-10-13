@@ -60,7 +60,7 @@ def api_key(ctx) -> None:
     type=click.Choice(["1", "3", "6", "never"]),
     default="never",
     show_default=True,
-    help="Lifetime in months (1, 3, or 6 months), or never.",
+    help="Lifetime in months (``1``, ``3``, or ``6``), or ``never``.",
 )
 @click.option(
     "--force",
