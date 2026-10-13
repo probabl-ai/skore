@@ -53,8 +53,10 @@ choreographer==1.4.0
     # via kaleido
 click==8.5.0
     # via
+    #   skore (skore/pyproject.toml)
     #   flask
     #   mlflow-skinny
+    #   rich-click
     #   uvicorn
 cloudpickle==3.1.2
     # via
@@ -181,14 +183,19 @@ keyring==25.7.0
     # via skore (skore/pyproject.toml)
 kiwisolver==1.5.1
     # via matplotlib
+linkify-it-py==2.2.0
+    # via markdown-it-py
 logistro==2.0.1
     # via
     #   choreographer
     #   kaleido
 mako==1.4.3
     # via alembic
-markdown-it-py==4.2.0
-    # via rich
+markdown-it-py[linkify]==4.2.0
+    # via
+    #   mdit-py-plugins
+    #   rich
+    #   textual
 markupsafe==3.0.3
     # via
     #   flask
@@ -203,6 +210,8 @@ matplotlib==3.11.2
     #   skrub
 matplotlib-inline==0.2.2
     # via ipython
+mdit-py-plugins==0.6.1
+    # via textual
 mdurl==0.1.2
     # via markdown-it-py
 mlflow==3.16.1
@@ -288,7 +297,9 @@ pillow==12.3.0
     #   matplotlib
     #   sphinx-gallery
 platformdirs==4.12.2
-    # via choreographer
+    # via
+    #   choreographer
+    #   textual
 plotly==6.9.0
     # via skore (skore/pyproject.toml)
 polars==1.44.2
@@ -344,6 +355,7 @@ pygments==2.21.0
     #   rich
     #   sphinx
     #   sphinx-tabs
+    #   textual
 pyparsing==3.3.3
     # via
     #   matplotlib
@@ -369,6 +381,11 @@ requests==2.34.2
     #   skrub
     #   sphinx
 rich[jupyter]==15.0.0
+    # via
+    #   skore (skore/pyproject.toml)
+    #   rich-click
+    #   textual
+rich-click==1.9.9
     # via skore (skore/pyproject.toml)
 rpds-py==2026.6.3
     # via
@@ -454,6 +471,8 @@ starlette==1.7.0
     # via
     #   fastapi
     #   mlflow-skinny
+textual==8.2.8
+    # via skore (skore/pyproject.toml)
 threadpoolctl==3.7.0
     # via scikit-learn
 traitlets==5.16.1
@@ -477,6 +496,7 @@ typing-extensions==4.16.0
     #   pydantic-core
     #   pydata-sphinx-theme
     #   sqlalchemy
+    #   textual
     #   typing-inspection
 typing-inspection==0.4.4
     # via
