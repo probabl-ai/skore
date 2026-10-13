@@ -28,11 +28,11 @@ class Project:
     existing one.
 
     The class main methods are :func:`~skore.Project.put`,
-    :func:`~skore.Project.summarize`, :func:`~skore.Project.get`,
-    :func:`~skore.Project.delete`, and :func:`~skore.Project.sync`, respectively to
-    insert a key-report pair into the project, obtain the metadata/metrics of the
-    inserted reports, get or delete a specific report by its id, and synchronize
-    reports between projects.
+    :func:`~skore.Project.summarize`, :func:`~skore.Project.get`, and
+    :func:`~skore.Project.sync`, respectively to insert a key-report pair into the
+    project, obtain the metadata/metrics of the inserted reports, get a specific report
+    by its id, and synchronize reports between projects.
+    :func:`~skore.Project.delete` removes the project.
 
     Three mutually exclusive modes are available and can be configured using the
     ``mode`` parameter of the constructor:

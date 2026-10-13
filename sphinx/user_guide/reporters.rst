@@ -166,8 +166,9 @@ cross-validation strategy and an estimator report is created for each split. The
 a :class:`CrossValidationReport` is a collection of :class:`EstimatorReport` instances,
 available through the `reports_` attribute.
 
-For metrics and displays, the same API is exposed with an extra
-parameter, `aggregate`, to aggregate the metrics across the splits.
+Summary tables and feature-importance displays accept an extra `aggregate`
+parameter to combine values across splits. Curve and matrix displays keep one
+result per split.
 
 The :class:`CrossValidationReport` also comes with a caching mechanism by leveraging
 the :class:`EstimatorReport` caching mechanism and exposes the same methods.
