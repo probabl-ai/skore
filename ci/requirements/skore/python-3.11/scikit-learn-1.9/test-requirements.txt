@@ -48,6 +48,7 @@ click==8.5.0
     #   flask
     #   mlflow-skinny
     #   rich-click
+    #   skore-skills
     #   uvicorn
 cloudpickle==3.1.2
     # via
@@ -437,6 +438,8 @@ six==1.17.0
     # via python-dateutil
 skops==0.16.0
     # via mlflow
+skore-skills==0.8.0
+    # via skore (skore/pyproject.toml)
 skrub==0.11.0
     # via skore (skore/pyproject.toml)
 smmap==5.0.3
