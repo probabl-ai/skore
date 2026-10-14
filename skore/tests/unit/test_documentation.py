@@ -15,7 +15,7 @@ def test_public_api_is_mentioned_in_reference():
     """Every top-level public symbol is discoverable from the reference."""
     reference_dir = SPHINX_DIR / "reference"
     reference_text = "\n".join(
-        path.read_text()
+        path.read_text(encoding="utf-8")
         for path in reference_dir.rglob("*.rst")
         if "api" not in path.relative_to(reference_dir).parts
     )
@@ -31,7 +31,9 @@ def test_public_api_is_mentioned_in_reference():
 
 def test_builtin_check_documentation_anchors_exist():
     """Every built-in check links to an anchor in the automated-checks guide."""
-    guide = (SPHINX_DIR / "user_guide" / "automated_checks.rst").read_text()
+    guide = (SPHINX_DIR / "user_guide" / "automated_checks.rst").read_text(
+        encoding="utf-8"
+    )
 
     missing = {
         check.code: check.docs_url
@@ -46,7 +48,9 @@ def test_builtin_check_documentation_anchors_exist():
 
 def test_builtin_check_titles_match_user_guide():
     """User-guide headings use the title emitted by each built-in check."""
-    guide = (SPHINX_DIR / "user_guide" / "automated_checks.rst").read_text()
+    guide = (SPHINX_DIR / "user_guide" / "automated_checks.rst").read_text(
+        encoding="utf-8"
+    )
     missing = [
         f"{check.code} - {check.title}"
         for check in _BUILTIN_CHECKS
@@ -58,15 +62,17 @@ def test_builtin_check_titles_match_user_guide():
 
 def test_documented_python_requirement_matches_package_metadata():
     """Install instructions use the minimum version declared by the package."""
-    pyproject = tomllib.loads((REPO_DIR / "skore" / "pyproject.toml").read_text())
+    pyproject = tomllib.loads(
+        (REPO_DIR / "skore" / "pyproject.toml").read_text(encoding="utf-8")
+    )
     match = re.search(r">=([0-9.]+)", pyproject["project"]["requires-python"])
     assert match is not None
     minimum = match.group(1)
 
     documented = {
-        "README.md": (REPO_DIR / "README.md").read_text(),
-        "CONTRIBUTING.rst": (REPO_DIR / "CONTRIBUTING.rst").read_text(),
-        "sphinx/install.rst": (SPHINX_DIR / "install.rst").read_text(),
+        "README.md": (REPO_DIR / "README.md").read_text(encoding="utf-8"),
+        "CONTRIBUTING.rst": (REPO_DIR / "CONTRIBUTING.rst").read_text(encoding="utf-8"),
+        "sphinx/install.rst": (SPHINX_DIR / "install.rst").read_text(encoding="utf-8"),
     }
     missing = [path for path, text in documented.items() if minimum not in text]
 
