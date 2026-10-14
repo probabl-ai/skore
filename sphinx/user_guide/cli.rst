@@ -93,6 +93,14 @@ To delete one skill:
 
    $ skore skills remove <skill-id>
 
+The ``skore-skills`` package also provides deterministic helpers used by the
+installed skills. They are available through ``skore skills tools`` as an alias
+for the standalone ``skore-skills`` command:
+
+.. code-block:: bash
+
+   $ skore skills tools --help
+
 .. _cli-hub:
 
 Using Skore Hub

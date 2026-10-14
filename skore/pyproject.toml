@@ -40,6 +40,7 @@ dependencies = [
   "rich>=14.2",
   "scikit-learn",
   "seaborn",
+  "skore-skills",
   "skrub>=0.10",
   "textual",
   "uuid6>=2025.0.0; python_version < '3.14'",
@@ -270,6 +271,7 @@ module = [
   "rich_click.*",
   "seaborn.*",
   "sklearn.*",
+  "skore_skills.*",
   "skrub.*",
   "textual.*",
 ]

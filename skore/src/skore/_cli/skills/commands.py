@@ -13,6 +13,7 @@ import rich_click as click
 from rich.progress import BarColumn, Progress, SpinnerColumn, TextColumn
 from rich.table import Table
 from rich.tree import Tree
+from skore_skills.cli import cli as tools
 
 from skore._cli.agents import (
     DEFAULT_AGENT,
@@ -46,6 +47,7 @@ click.rich_click.COMMAND_GROUPS = {
     "cli skills": [
         {"name": "Discover", "commands": ["list"]},
         {"name": "Manage", "commands": ["install", "update", "remove"]},
+        {"name": "Tools", "commands": ["tools"]},
     ],
 }
 
@@ -306,6 +308,9 @@ def skills(ctx) -> None:
     """Install and manage Agent Skills from the ``probabl-ai/skore-skills`` release."""
     if ctx.invoked_subcommand is None:
         click.echo(ctx.get_help())
+
+
+skills.add_command(tools, name="tools")
 
 
 @skills.command("install")
