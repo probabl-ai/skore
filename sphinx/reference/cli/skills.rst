@@ -9,3 +9,4 @@
    skills-list
    skills-update
    skills-remove
+   skills-tools

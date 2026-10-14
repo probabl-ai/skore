@@ -9,8 +9,10 @@ from skore._cli import skore as _skore
 
 def test_cli_exposes_builtin_commands():
     from skore._cli import cli
+    from skore._cli.skills import skills
 
     assert {"skills", "agent", "hub", "sync"} == set(cli.commands)
+    assert {"install", "list", "remove", "tools", "update"} == set(skills.commands)
 
 
 def test_cli_without_subcommand_shows_plain_help():

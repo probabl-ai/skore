@@ -871,6 +871,25 @@ def test_skills_no_subcommand_shows_help(release, workspace):
     assert result.exit_code == 0
     assert "install" in result.output
     assert "list" in result.output
+    assert "tools" in result.output
+
+
+def test_tools_help(release, workspace):
+    result = _invoke(["skills", "tools", "--help"])
+
+    assert result.exit_code == 0
+    assert "Deterministic helpers" in result.output
+    assert "check" in result.output
+    assert "notebook" in result.output
+
+
+def test_tools_forwards_subcommands(release, workspace):
+    (workspace.project / "src").mkdir()
+
+    result = _invoke(["skills", "tools", "check", "workspace", "--format", "text"])
+
+    assert result.exit_code == 0
+    assert result.output == "scaffolded\n"
 
 
 async def test_auto_radio_set_selects_on_arrow(release):
