@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import pytest
@@ -10,6 +11,7 @@ from skore._cli.skills import release as skills_release
 from skore._cli.skills.release import open_release
 from skore._cli.skills.store import (
     SkillStoreError,
+    envelope_from_catalog_data,
     install_skill,
     installed,
     read_local_catalog,
@@ -29,6 +31,15 @@ def test_read_local_catalog_rejects_non_object(tmp_path):
 
     with pytest.raises(SkillStoreError, match="JSON object"):
         read_local_catalog(tmp_path)
+
+
+@pytest.mark.parametrize(
+    "payload",
+    ['["not", "a", "mapping"]\n', '{"repository": "acme/skills"}\n'],
+)
+def test_envelope_from_catalog_data_requires_sources(payload):
+    with pytest.raises(SkillStoreError, match="sources object"):
+        envelope_from_catalog_data(json.loads(payload))
 
 
 def test_installed_rejects_sidecar_without_id(tmp_path):

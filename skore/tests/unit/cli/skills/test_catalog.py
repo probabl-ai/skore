@@ -7,7 +7,11 @@ import pytest
 
 from skore._cli.skills import catalog as _catalog
 from skore._cli.skills.release import ReleaseError, load_release
-from skore._cli.skills.store import persist_source_catalog, skill_repository
+from skore._cli.skills.store import (
+    SkillStoreError,
+    persist_source_catalog,
+    skill_repository,
+)
 
 
 def test_fetch_bytes_sends_user_agent(monkeypatch):
@@ -56,7 +60,11 @@ def test_normalize_github_repo_rejects_invalid(value):
 
 def test_skill_repository_follows_renamed_repository():
     assert skill_repository({"repository": "probabl-ai/skills"}) == _catalog.GITHUB_REPO
-    assert skill_repository({}) == _catalog.GITHUB_REPO
+
+
+def test_skill_repository_requires_repository():
+    with pytest.raises(SkillStoreError, match="missing a repository"):
+        skill_repository({})
 
 
 def test_latest_release_tag(release):
@@ -101,30 +109,12 @@ def test_download_release(release_tarball, monkeypatch):
     assert (root / "skills" / "alpha" / "SKILL.md").is_file()
 
 
-def test_load_catalog_prefers_hidden_file(tmp_path, catalog_dict):
-    root = tmp_path / "repo"
-    root.mkdir()
-    hidden = {**catalog_dict, "name": "hidden"}
-    (root / ".catalog.json").write_text(json.dumps(hidden))
-    (root / "catalog.json").write_text(json.dumps(catalog_dict))
-
-    assert _catalog.load_catalog(root) == hidden
-
-
 def test_load_catalog_without_any_catalog_file(tmp_path):
     root = tmp_path / "repo"
     root.mkdir()
 
     with pytest.raises(FileNotFoundError, match="No catalog file found"):
         _catalog.load_catalog(root)
-
-
-def test_load_catalog_falls_back_to_catalog_json(tmp_path, catalog_dict):
-    root = tmp_path / "repo"
-    root.mkdir()
-    (root / "catalog.json").write_text(json.dumps(catalog_dict))
-
-    assert _catalog.load_catalog(root) == catalog_dict
 
 
 def test_fetch_release(release, catalog_dict):
@@ -168,13 +158,6 @@ def test_fetch_release_persists_tag_over_stale_catalog_version(release, tmp_path
     stored = json.loads((tmp_path / ".catalog.json").read_text())
 
     assert stored["sources"]["probabl-ai/skore-skills"]["version"] == tag
-
-
-def test_load_catalog_legacy_tarball(catalog_dict, legacy_release_tarball, monkeypatch):
-    monkeypatch.setattr(_catalog, "_fetch_bytes", lambda url: legacy_release_tarball)
-
-    root = _catalog.download_release("0.1.0")
-    assert _catalog.load_catalog(root) == catalog_dict
 
 
 def _gzip_tarball(members: dict[str, bytes]) -> bytes:

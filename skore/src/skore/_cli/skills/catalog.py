@@ -13,7 +13,7 @@ from urllib.request import Request, urlopen
 
 GITHUB_REPO = "probabl-ai/skore-skills"
 _USER_AGENT = "skore-skills-cli"
-CATALOG_FILENAMES = (".catalog.json", "catalog.json")
+CATALOG_FILENAME = ".catalog.json"
 
 
 def normalize_github_repo(value: str) -> str:
@@ -107,10 +107,7 @@ def download_release(tag: str, repo: str = GITHUB_REPO) -> Path:
 
 
 def load_catalog(root: Path) -> dict[str, Any]:
-    """Load the catalog JSON from an extracted repository ``root``.
-
-    Prefers ``.catalog.json`` and falls back to ``catalog.json`` so older
-    releases remain readable.
+    """Load ``.catalog.json`` from an extracted repository ``root``.
 
     Parameters
     ----------
@@ -125,15 +122,12 @@ def load_catalog(root: Path) -> dict[str, Any]:
     Raises
     ------
     FileNotFoundError
-        If neither catalog filename is present under ``root``.
+        If ``.catalog.json`` is not present under ``root``.
     """
-    for name in CATALOG_FILENAMES:
-        path = root / name
-        if path.is_file():
-            return json.loads(path.read_text())
-    raise FileNotFoundError(
-        f"No catalog file found in {root} (tried {', '.join(CATALOG_FILENAMES)})"
-    )
+    path = root / CATALOG_FILENAME
+    if not path.is_file():
+        raise FileNotFoundError(f"No catalog file found in {root} ({CATALOG_FILENAME})")
+    return json.loads(path.read_text())
 
 
 def fetch_release(repo: str = GITHUB_REPO) -> tuple[str, Path, dict[str, Any]]:

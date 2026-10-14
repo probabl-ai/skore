@@ -42,7 +42,7 @@ CATALOG = {
 _REPO_URL = re.compile(r"https://api\.github\.com/repos/([^/]+/[^/]+)/")
 
 
-def _build_tarball(catalog, *, catalog_name=".catalog.json"):
+def _build_tarball(catalog):
     buffer = io.BytesIO()
     prefix = "probabl-ai-skills-test"
 
@@ -53,7 +53,7 @@ def _build_tarball(catalog, *, catalog_name=".catalog.json"):
             info.size = len(data)
             tar.addfile(info, io.BytesIO(data))
 
-        add_bytes(catalog_name, json.dumps(catalog).encode())
+        add_bytes(".catalog.json", json.dumps(catalog).encode())
         for skill in catalog["skills"]:
             content = f"# {skill['title']}\n".encode()
             add_bytes(f"{skill['path']}/SKILL.md", content)
@@ -69,12 +69,6 @@ def catalog_dict():
 @pytest.fixture
 def release_tarball(catalog_dict):
     return _build_tarball(catalog_dict)
-
-
-@pytest.fixture
-def legacy_release_tarball(catalog_dict):
-    """Serve a release that still ships the pre-migration ``catalog.json``."""
-    return _build_tarball(catalog_dict, catalog_name="catalog.json")
 
 
 @pytest.fixture
