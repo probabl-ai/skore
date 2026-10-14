@@ -146,8 +146,7 @@ def _select_membership(
     "--host",
     default=None,
     help=(
-        "Hub host (API or frontend, e.g. ``https://skore.probabl.ai``). "
-        "Frontend URLs are auto-resolved via ``/.well-known/skore-hub.json``. "
+        "Hub host (e.g. ``https://skore.probabl.ai``). "
         f"Defaults to the ``{URI_ENV}`` environment variable or the public Hub."
     ),
 )
