@@ -13,7 +13,6 @@ from skore._cli.skills.catalog import GITHUB_REPO
 
 SIDECAR = ".skore-skill.json"
 LOCAL_CATALOG = ".catalog.json"
-LEGACY_CATALOG = "catalog.json"
 _SKILL_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
 
 
@@ -22,32 +21,44 @@ class SkillStoreError(Exception):
 
 
 def skill_repository(sidecar: dict[str, Any]) -> str:
-    """Return the GitHub ``owner/name`` recorded on an installed skill."""
-    return sidecar.get("repository") or GITHUB_REPO
+    """Return the GitHub ``owner/name`` recorded on an installed skill.
+
+    Sidecars written before the repository rename still say
+    ``probabl-ai/skills``. Those resolve to ``probabl-ai/skore-skills``.
+
+    Raises
+    ------
+    SkillStoreError
+        If ``sidecar`` has no ``repository``.
+    """
+    repo = sidecar.get("repository")
+    if not isinstance(repo, str) or not repo:
+        raise SkillStoreError("installed skill sidecar is missing a repository.")
+    if repo == "probabl-ai/skills":
+        return GITHUB_REPO
+    return repo
 
 
 def local_catalog_path(target: Path) -> Path | None:
-    """Return the on-disk catalog file, preferring the hidden name."""
+    """Return ``.catalog.json`` under ``target`` when that file exists."""
     hidden = target / LOCAL_CATALOG
     if hidden.is_file():
         return hidden
-    legacy = target / LEGACY_CATALOG
-    if legacy.is_file():
-        return legacy
     return None
 
 
 def envelope_from_catalog_data(data: Any) -> dict[str, Any]:
-    """Normalize a catalog file into the ``sources`` envelope.
+    """Return ``data`` when it is a catalog envelope with ``sources``.
 
-    A file without ``sources`` is the previous single-repository snapshot.
+    Raises
+    ------
+    SkillStoreError
+        If ``data`` is not an object whose ``sources`` value is an object.
     """
-    if isinstance(data, dict) and "sources" in data:
+    sources = data.get("sources") if isinstance(data, dict) else None
+    if isinstance(sources, dict):
         return data
-    repo = GITHUB_REPO
-    if isinstance(data, dict):
-        repo = data.get("repository") or GITHUB_REPO
-    return {"sources": {repo: data}}
+    raise SkillStoreError("catalog file must be an object with a sources object.")
 
 
 def _load_json(path: Path) -> Any:
@@ -68,29 +79,26 @@ def read_local_catalog(target: Path) -> dict[str, Any]:
     return envelope_from_catalog_data(data)
 
 
-def _remove_legacy_catalog(target: Path) -> None:
-    """Delete a leftover ``catalog.json`` after migrating to ``.catalog.json``."""
-    legacy = target / LEGACY_CATALOG
-    if legacy.is_file():
-        legacy.unlink()
-
-
 def write_local_catalog(target: Path, envelope: dict[str, Any]) -> None:
     """Write the per-target catalog envelope to ``.catalog.json``."""
     target.mkdir(parents=True, exist_ok=True)
     (target / LOCAL_CATALOG).write_text(json.dumps(envelope, indent=2) + "\n")
-    _remove_legacy_catalog(target)
 
 
 def persist_source_catalog(
     target: Path, repo: str, tag: str, catalog: dict[str, Any]
 ) -> None:
-    """Merge ``catalog`` for ``repo`` into ``target``'s local ``.catalog.json``."""
+    """Merge ``catalog`` for ``repo`` into ``target``'s local ``.catalog.json``.
+
+    The stored ``version`` is ``tag``. A version carried by ``catalog`` is
+    discarded.
+    """
     envelope = read_local_catalog(target)
     envelope.setdefault("sources", {})[repo] = {
         **catalog,
         "repository": repo,
         "release": tag,
+        "version": tag,
     }
     write_local_catalog(target, envelope)
 
@@ -126,7 +134,6 @@ def prune_local_catalog(target: Path) -> None:
     if not sources:
         if path.is_file():
             path.unlink()
-        _remove_legacy_catalog(target)
         return
     envelope["sources"] = sources
     write_local_catalog(target, envelope)

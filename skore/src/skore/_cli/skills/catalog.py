@@ -11,9 +11,9 @@ from tempfile import mkdtemp
 from typing import Any
 from urllib.request import Request, urlopen
 
-GITHUB_REPO = "probabl-ai/skills"
+GITHUB_REPO = "probabl-ai/skore-skills"
 _USER_AGENT = "skore-skills-cli"
-CATALOG_FILENAMES = (".catalog.json", "catalog.json")
+CATALOG_FILENAME = ".catalog.json"
 
 
 def normalize_github_repo(value: str) -> str:
@@ -64,7 +64,7 @@ def latest_release_tag(repo: str = GITHUB_REPO) -> str:
 
     Parameters
     ----------
-    repo : str, default="probabl-ai/skills"
+    repo : str, default="probabl-ai/skore-skills"
         The ``owner/name`` of the GitHub repository.
 
     Returns
@@ -84,7 +84,7 @@ def download_release(tag: str, repo: str = GITHUB_REPO) -> Path:
     ----------
     tag : str
         The release tag to download.
-    repo : str, default="probabl-ai/skills"
+    repo : str, default="probabl-ai/skore-skills"
         The ``owner/name`` of the GitHub repository.
 
     Returns
@@ -107,10 +107,7 @@ def download_release(tag: str, repo: str = GITHUB_REPO) -> Path:
 
 
 def load_catalog(root: Path) -> dict[str, Any]:
-    """Load the catalog JSON from an extracted repository ``root``.
-
-    Prefers ``.catalog.json`` and falls back to ``catalog.json`` so older
-    releases remain readable.
+    """Load ``.catalog.json`` from an extracted repository ``root``.
 
     Parameters
     ----------
@@ -125,15 +122,12 @@ def load_catalog(root: Path) -> dict[str, Any]:
     Raises
     ------
     FileNotFoundError
-        If neither catalog filename is present under ``root``.
+        If ``.catalog.json`` is not present under ``root``.
     """
-    for name in CATALOG_FILENAMES:
-        path = root / name
-        if path.is_file():
-            return json.loads(path.read_text())
-    raise FileNotFoundError(
-        f"No catalog file found in {root} (tried {', '.join(CATALOG_FILENAMES)})"
-    )
+    path = root / CATALOG_FILENAME
+    if not path.is_file():
+        raise FileNotFoundError(f"No catalog file found in {root} ({CATALOG_FILENAME})")
+    return json.loads(path.read_text())
 
 
 def fetch_release(repo: str = GITHUB_REPO) -> tuple[str, Path, dict[str, Any]]:
@@ -141,7 +135,7 @@ def fetch_release(repo: str = GITHUB_REPO) -> tuple[str, Path, dict[str, Any]]:
 
     Parameters
     ----------
-    repo : str, default="probabl-ai/skills"
+    repo : str, default="probabl-ai/skore-skills"
         The ``owner/name`` of the GitHub repository.
 
     Returns
@@ -151,7 +145,8 @@ def fetch_release(repo: str = GITHUB_REPO) -> tuple[str, Path, dict[str, Any]]:
     root : Path
         The path to the extracted repository root.
     catalog : dict
-        The parsed content of the catalog file.
+        The parsed catalog. Its ``version`` is the release tag, replacing any
+        version stored in the archive.
     """
     tag = latest_release_tag(repo)
     root = download_release(tag, repo)
@@ -160,4 +155,5 @@ def fetch_release(repo: str = GITHUB_REPO) -> tuple[str, Path, dict[str, Any]]:
     except Exception:
         shutil.rmtree(root.parent, ignore_errors=True)
         raise
+    catalog["version"] = tag
     return tag, root, catalog

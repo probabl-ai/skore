@@ -7,6 +7,11 @@ import pytest
 
 from skore._cli.skills import catalog as _catalog
 from skore._cli.skills.release import ReleaseError, load_release
+from skore._cli.skills.store import (
+    SkillStoreError,
+    persist_source_catalog,
+    skill_repository,
+)
 
 
 def test_fetch_bytes_sends_user_agent(monkeypatch):
@@ -38,7 +43,7 @@ def test_fetch_bytes_sends_user_agent(monkeypatch):
 @pytest.mark.parametrize(
     ("value", "expected"),
     [
-        ("probabl-ai/skills", "probabl-ai/skills"),
+        ("probabl-ai/skore-skills", "probabl-ai/skore-skills"),
         ("  acme/skills  ", "acme/skills"),
         ("/acme/skills/", "acme/skills"),
     ],
@@ -51,6 +56,15 @@ def test_normalize_github_repo(value, expected):
 def test_normalize_github_repo_rejects_invalid(value):
     with pytest.raises(ValueError, match="owner/name"):
         _catalog.normalize_github_repo(value)
+
+
+def test_skill_repository_follows_renamed_repository():
+    assert skill_repository({"repository": "probabl-ai/skills"}) == _catalog.GITHUB_REPO
+
+
+def test_skill_repository_requires_repository():
+    with pytest.raises(SkillStoreError, match="missing a repository"):
+        skill_repository({})
 
 
 def test_latest_release_tag(release):
@@ -68,7 +82,7 @@ def test_latest_release_tag_requests_latest_endpoint(monkeypatch):
 
     assert _catalog.latest_release_tag() == "1.2.3"
     assert captured == [
-        "https://api.github.com/repos/probabl-ai/skills/releases/latest"
+        "https://api.github.com/repos/probabl-ai/skore-skills/releases/latest"
     ]
 
 
@@ -95,16 +109,6 @@ def test_download_release(release_tarball, monkeypatch):
     assert (root / "skills" / "alpha" / "SKILL.md").is_file()
 
 
-def test_load_catalog_prefers_hidden_file(tmp_path, catalog_dict):
-    root = tmp_path / "repo"
-    root.mkdir()
-    hidden = {**catalog_dict, "name": "hidden"}
-    (root / ".catalog.json").write_text(json.dumps(hidden))
-    (root / "catalog.json").write_text(json.dumps(catalog_dict))
-
-    assert _catalog.load_catalog(root) == hidden
-
-
 def test_load_catalog_without_any_catalog_file(tmp_path):
     root = tmp_path / "repo"
     root.mkdir()
@@ -113,20 +117,12 @@ def test_load_catalog_without_any_catalog_file(tmp_path):
         _catalog.load_catalog(root)
 
 
-def test_load_catalog_falls_back_to_catalog_json(tmp_path, catalog_dict):
-    root = tmp_path / "repo"
-    root.mkdir()
-    (root / "catalog.json").write_text(json.dumps(catalog_dict))
-
-    assert _catalog.load_catalog(root) == catalog_dict
-
-
 def test_fetch_release(release, catalog_dict):
     tag, root, catalog = _catalog.fetch_release()
 
     assert tag == "0.1.0"
     assert (root / ".catalog.json").is_file()
-    assert catalog == catalog_dict
+    assert catalog == {**catalog_dict, "version": tag}
 
 
 def test_fetch_release_custom_repo(release, catalog_dict):
@@ -136,16 +132,32 @@ def test_fetch_release_custom_repo(release, catalog_dict):
     tag, root, catalog = _catalog.fetch_release("acme/skills")
 
     assert tag == "2.0.0"
-    assert catalog == other
+    assert catalog == {**other, "version": tag}
     assert any("/repos/acme/skills/" in url for url in release["urls"])
     assert (root / ".catalog.json").is_file()
 
 
-def test_load_catalog_legacy_tarball(catalog_dict, legacy_release_tarball, monkeypatch):
-    monkeypatch.setattr(_catalog, "_fetch_bytes", lambda url: legacy_release_tarball)
+def test_fetch_release_persists_tag_when_catalog_has_no_version(
+    release, catalog_dict, tmp_path
+):
+    tag, _root, catalog = _catalog.fetch_release()
 
-    root = _catalog.download_release("0.1.0")
-    assert _catalog.load_catalog(root) == catalog_dict
+    assert "version" not in catalog_dict
+    persist_source_catalog(tmp_path, "probabl-ai/skore-skills", tag, catalog)
+    stored = json.loads((tmp_path / ".catalog.json").read_text())
+
+    assert stored["sources"]["probabl-ai/skore-skills"]["version"] == tag
+
+
+def test_fetch_release_persists_tag_over_stale_catalog_version(release, tmp_path):
+    release["catalog"]["version"] = "0.0.1"
+    tag, _root, catalog = _catalog.fetch_release()
+
+    assert catalog["version"] == tag == "0.1.0"
+    persist_source_catalog(tmp_path, "probabl-ai/skore-skills", tag, catalog)
+    stored = json.loads((tmp_path / ".catalog.json").read_text())
+
+    assert stored["sources"]["probabl-ai/skore-skills"]["version"] == tag
 
 
 def _gzip_tarball(members: dict[str, bytes]) -> bytes:

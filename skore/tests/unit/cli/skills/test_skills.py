@@ -14,7 +14,6 @@ from skore._cli.skills.catalog import GITHUB_REPO, fetch_release
 from skore._cli.skills.commands import (
     ProbablSkillsInstaller,
 )
-from skore._cli.skills.store import envelope_from_catalog_data
 
 SIDECAR = ".skore-skill.json"
 LOCAL_CATALOG = ".catalog.json"
@@ -122,13 +121,14 @@ def test_install_skill_project(release, workspace):
         "id": "alpha",
         "release": "0.1.0",
         "hash": "hash-alpha-1",
-        "repository": "probabl-ai/skills",
+        "repository": "probabl-ai/skore-skills",
     }
     local_catalog = json.loads(
         (workspace.project / ".agents" / "skills" / ".catalog.json").read_text()
     )
-    assert "probabl-ai/skills" in local_catalog["sources"]
-    assert local_catalog["sources"]["probabl-ai/skills"]["release"] == "0.1.0"
+    assert "probabl-ai/skore-skills" in local_catalog["sources"]
+    assert local_catalog["sources"]["probabl-ai/skore-skills"]["release"] == "0.1.0"
+    assert local_catalog["sources"]["probabl-ai/skore-skills"]["version"] == "0.1.0"
 
 
 def test_install_workflow_expands_to_skills(release, workspace):
@@ -694,7 +694,7 @@ def test_list_installed(release, workspace):
 
     assert result.exit_code == 0
     assert "alpha" in result.output
-    assert "probabl-ai/skills" in result.output
+    assert "probabl-ai/skore-skills" in result.output
 
 
 def test_list_when_empty(release, workspace):
@@ -749,7 +749,7 @@ def test_update_reinstalls_changed_skill(release, workspace):
 
     assert result.exit_code == 0
     assert "updated" in result.output
-    assert "probabl-ai/skills" in result.output
+    assert "probabl-ai/skore-skills" in result.output
 
     sidecar = json.loads(
         (workspace.project / ".agents" / "skills" / "alpha" / SIDECAR).read_text()
@@ -776,7 +776,7 @@ def test_update_when_up_to_date(release, workspace):
 
     assert result.exit_code == 0
     assert "up to date" in result.output
-    assert "probabl-ai/skills" in result.output
+    assert "probabl-ai/skore-skills" in result.output
 
 
 def test_update_without_ids_errors(release, workspace):
@@ -1128,7 +1128,7 @@ def test_update_uses_stored_repository(release, workspace):
     assert "updated" in result.output
     assert "acme/skills" in result.output
     assert any("/repos/acme/skills/" in url for url in release["urls"])
-    assert not any("/repos/probabl-ai/skills/" in url for url in release["urls"])
+    assert not any("/repos/probabl-ai/skore-skills/" in url for url in release["urls"])
     sidecar = json.loads(
         (workspace.project / ".agents" / "skills" / "gamma" / SIDECAR).read_text()
     )
@@ -1162,93 +1162,12 @@ def test_update_mixed_repos_fetches_each_origin(release, workspace):
     assert result.exit_code == 0
     assert "alpha" in result.output
     assert "gamma" in result.output
-    assert any("/repos/probabl-ai/skills/" in url for url in release["urls"])
+    assert any("/repos/probabl-ai/skore-skills/" in url for url in release["urls"])
     assert any("/repos/acme/skills/" in url for url in release["urls"])
     local_catalog = json.loads(
         (workspace.project / ".agents" / "skills" / ".catalog.json").read_text()
     )
-    assert set(local_catalog["sources"]) == {"probabl-ai/skills", "acme/skills"}
-
-
-def test_update_legacy_sidecar_defaults_to_official_repo(release, workspace):
-    _invoke(["skills", "install", "alpha"])
-    sidecar_path = workspace.project / ".agents" / "skills" / "alpha" / SIDECAR
-    payload = json.loads(sidecar_path.read_text())
-    del payload["repository"]
-    sidecar_path.write_text(json.dumps(payload))
-    release["catalog"]["skills"][0]["hash"] = "hash-alpha-2"
-    release["urls"].clear()
-
-    result = _invoke(["skills", "update", "--all"])
-
-    assert result.exit_code == 0
-    assert "probabl-ai/skills" in result.output
-    assert any("/repos/probabl-ai/skills/" in url for url in release["urls"])
-    sidecar = json.loads(sidecar_path.read_text())
-    assert sidecar["repository"] == "probabl-ai/skills"
-    assert sidecar["hash"] == "hash-alpha-2"
-
-
-def test_update_migrates_legacy_sidecar_without_hash_change(release, workspace):
-    _invoke(["skills", "install", "alpha"])
-    skills_dir = workspace.project / ".agents" / "skills"
-    sidecar_path = skills_dir / "alpha" / SIDECAR
-    payload = json.loads(sidecar_path.read_text())
-    del payload["repository"]
-    sidecar_path.write_text(json.dumps(payload))
-    (skills_dir / ".catalog.json").unlink()
-
-    result = _invoke(["skills", "update", "--all"])
-
-    assert result.exit_code == 0
-    assert "up to date" in result.output
-    sidecar = json.loads(sidecar_path.read_text())
-    assert sidecar["repository"] == "probabl-ai/skills"
-    assert sidecar["hash"] == "hash-alpha-1"
-    local_catalog = json.loads((skills_dir / ".catalog.json").read_text())
-    assert "probabl-ai/skills" in local_catalog["sources"]
-
-
-def test_update_migrates_legacy_catalog_json(release, workspace):
-    _invoke(["skills", "install", "alpha"])
-    skills_dir = workspace.project / ".agents" / "skills"
-    hidden = skills_dir / ".catalog.json"
-    snapshot = json.loads(hidden.read_text())
-    single_repo = snapshot["sources"]["probabl-ai/skills"]
-    single_repo.pop("repository", None)
-    (skills_dir / "catalog.json").write_text(json.dumps(single_repo, indent=2))
-    hidden.unlink()
-    sidecar_path = skills_dir / "alpha" / SIDECAR
-    payload = json.loads(sidecar_path.read_text())
-    del payload["repository"]
-    sidecar_path.write_text(json.dumps(payload))
-
-    result = _invoke(["skills", "update", "--all"])
-
-    assert result.exit_code == 0
-    assert not (skills_dir / "catalog.json").exists()
-    local_catalog = json.loads(hidden.read_text())
-    assert set(local_catalog["sources"]) == {"probabl-ai/skills"}
-    sidecar = json.loads(sidecar_path.read_text())
-    assert sidecar["repository"] == "probabl-ai/skills"
-
-
-# --------------------------------------------------------------------------- #
-# Local catalog envelope helpers
-# --------------------------------------------------------------------------- #
-
-
-def test_envelope_from_catalog_data_wraps_non_mapping():
-    """A catalog file that is not a mapping still yields a default source."""
-    envelope = envelope_from_catalog_data(["not", "a", "mapping"])
-
-    assert envelope == {"sources": {GITHUB_REPO: ["not", "a", "mapping"]}}
-
-
-def test_envelope_from_catalog_data_honors_declared_repository():
-    envelope = envelope_from_catalog_data({"repository": "acme/skills"})
-
-    assert set(envelope["sources"]) == {"acme/skills"}
+    assert set(local_catalog["sources"]) == {"probabl-ai/skore-skills", "acme/skills"}
 
 
 def test_installed_ignores_unmanaged_entries(release, workspace):
@@ -1278,19 +1197,6 @@ def test_remove_keeps_catalog_source_still_in_use(release, workspace):
     assert not (skills_dir / "gamma").exists()
     local_catalog = json.loads((skills_dir / LOCAL_CATALOG).read_text())
     assert set(local_catalog["sources"]) == {GITHUB_REPO}
-
-
-def test_remove_prunes_legacy_catalog_when_last_skill_goes(release, workspace):
-    _invoke(["skills", "install", "alpha"])
-    skills_dir = workspace.project / ".agents" / "skills"
-    (skills_dir / LOCAL_CATALOG).unlink()
-    (skills_dir / "catalog.json").write_text(json.dumps({"skills": []}))
-
-    result = _invoke(["skills", "remove", "--all", "-y"])
-
-    assert result.exit_code == 0
-    assert not (skills_dir / "catalog.json").exists()
-    assert not (skills_dir / LOCAL_CATALOG).exists()
 
 
 def test_remove_unknown_id_reports_nothing_to_remove(release, workspace):

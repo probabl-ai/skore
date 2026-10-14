@@ -55,8 +55,8 @@ missing a report. How reports are matched is described in
 Installing agent skills
 -----------------------
 
-``skore skills`` installs `Agent Skills <https://github.com/probabl-ai/skills>`_
-from the latest release of ``probabl-ai/skills``. To install every skill into
+``skore skills`` installs `Agent Skills <https://github.com/probabl-ai/skore-skills>`_
+from the latest release of ``probabl-ai/skore-skills``. To install every skill into
 the current project:
 
 .. code-block:: bash
