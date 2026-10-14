@@ -265,7 +265,9 @@ AGENTS: dict[str, Agent] = {
 SKILL_AGENTS = {
     name: agent
     for name, agent in AGENTS.items()
-    if agent.project_skills_dir is not None or agent.user_skills_dir is not None
+    if agent.project_skills_dir is not None
+    or agent.user_skills_dir is not None
+    or agent.skill_target is not None
 }
 SKILL_AGENT_NAMES = list(SKILL_AGENTS)
 HARNESS_BY_NAME = {

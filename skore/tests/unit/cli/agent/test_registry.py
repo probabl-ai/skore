@@ -42,6 +42,8 @@ def test_agent_names_match_registry():
         "cline",
         "roo",
         "amp",
+        "opencode",
+        "pi",
         "github-copilot",
         "bob",
         "bob-ide",
