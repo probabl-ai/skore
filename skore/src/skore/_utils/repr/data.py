@@ -163,7 +163,7 @@ def get_documentation_url(
     """
     class_name = obj.__class__.__name__
     skore_version = parse_version(version("skore"))
-    if skore_version < parse_version("0.1"):
+    if skore_version < parse_version("0.15"):
         url_version = "dev"
     else:
         url_version = f"{skore_version.major}.{skore_version.minor}"

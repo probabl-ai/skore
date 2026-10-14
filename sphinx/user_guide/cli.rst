@@ -50,6 +50,12 @@ directions between the local project and an MLflow tracking server:
 missing a report. How reports are matched is described in
 :ref:`synchronizing-projects`.
 
+At least one of ``--from`` or ``--to`` is required; an omitted endpoint defaults to
+local storage. Use ``--to-project`` when the destination project has a different name.
+Hub endpoints also accept ``--hub-url``, while ``--from-workspace`` and
+``--to-workspace`` select endpoint-specific workspaces. See :ref:`cli-reference` for
+the complete option list.
+
 .. _cli-skills:
 
 Installing agent skills
@@ -117,7 +123,9 @@ machine. Create one for a workspace:
    $ skore hub api-key generate --workspace my-workspace
 
 This opens a device login in the browser, then stores the key for
-``my-workspace``. See which keys are already stored:
+``my-workspace``. Key generation also accepts options for the Hub host, key name,
+expiration, login timeout, and replacing an existing key; see :ref:`cli-reference`.
+See which keys are already stored:
 
 .. code-block:: bash
 
@@ -154,5 +162,6 @@ If you already know which harness to open, name it:
    $ skore agent --harness cursor
 
 Supported harnesses include Bob, Claude, Cursor, Codex, OpenCode, Pi, and
-Copilot. When this command is already running inside the selected harness, it
-writes the configuration and asks you to start a new session.
+Copilot, with CLI and IDE variants where available. The accepted ``--harness`` values
+are listed in :ref:`cli-reference`. When this command is already running inside the
+selected harness, it writes the configuration and asks you to start a new session.

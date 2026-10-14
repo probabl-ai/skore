@@ -32,6 +32,7 @@ release = os.environ["SPHINX_RELEASE"]
 extensions = [
     "matplotlib.sphinxext.plot_directive",
     "numpydoc",
+    "sphinx.ext.autodoc",
     "sphinx.ext.autosummary",
     "sphinx.ext.githubpages",
     "sphinx.ext.intersphinx",
@@ -141,17 +142,6 @@ if not (
         r"plot_getting_started\.py|plot_skore_hub_project\.py"
     )
 
-# Expose HUB URLs to RST
-example_base_url = (os.environ.get("SPHINX_EXAMPLE_BASE_URL") or "https://example.com")
-rst_epilog = f"""
-.. _example-getting-started: {example_base_url}/example-getting-started-{version}/cross-validations
-.. _example-skore-hub-project: {example_base_url}/example-skore-hub-project-{version}
-"""
-
-# Skore Hub base URL for landing page link (versioned example on Hub)
-html_context = {
-    "skore_hub_example_url": f"{example_base_url}/example-getting-started-{version}/cross-validations/",
-}
 # intersphinx configuration
 intersphinx_mapping = {
     "python": ("https://docs.python.org/3", None),
@@ -165,6 +155,9 @@ intersphinx_mapping = {
     "seaborn": ("http://seaborn.pydata.org", None),
     "xgboost": ("https://xgboost.readthedocs.io/en/stable/", None),
 }
+
+# Medium rejects automated link-checking requests even when articles are available.
+linkcheck_ignore = [r"https://medium\.com/.*"]
 
 numpydoc_show_class_members = False
 

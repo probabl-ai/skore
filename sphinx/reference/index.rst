@@ -22,6 +22,8 @@ Project Management
 
    * - :class:`Project`
      - Main class for managing a skore project and its reports
+   * - :class:`Summary`
+     - Summary of the reports stored in a project
 
 
 ML Assistance
@@ -84,6 +86,18 @@ Inspection
      - Display for visualizing feature importance via Mean Decrease in Impurity (MDI)
    * - :class:`PermutationImportanceDisplay`
      - Display for visualizing feature importance via permutation importance
+   * - :class:`CalibrationDisplay`
+     - Display for visualizing classifier calibration curves
+
+
+General
+"""""""
+
+.. list-table::
+   :widths: 30 70
+
+   * - :class:`Display`
+     - Protocol implemented by every visualization display
 
 
 Checks

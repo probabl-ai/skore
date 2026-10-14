@@ -9,7 +9,7 @@ Storing data science artifacts
 `skore` provides a :class:`Project` class to store data science artifacts. The storage
 is either local or remote, based on the value passed to the parameter `mode` at
 initialization. When `mode` is set to `hub`, the project is configured to communicate
-with `skore hub`. Authentication uses an API key, in this order:
+with Skore Hub. Authentication uses an API key, in this order:
 
 - the ``SKORE_HUB_API_KEY`` environment variable, which always wins. The key
   is bound to a workspace; using it against another workspace fails at
@@ -21,8 +21,7 @@ with `skore hub`. Authentication uses an API key, in this order:
     $ skore hub api-key generate --workspace <workspace>
 
 See :ref:`cli-hub` to generate, list, and revoke keys from the command line.
-Refer to the documentation of :class:`Project` for the detailed API and take a look on
-the `example <example-getting-started_>`_.
+Refer to the documentation of :class:`Project` for the detailed API.
 
 Creating a project
 ------------------
@@ -58,8 +57,8 @@ mode-specific keyword arguments.
 Working with reports
 --------------------
 
-Once a project is created, store :class:`EstimatorReport` via the method
-:meth:`Project.put`.
+Once a project is created, store an :class:`EstimatorReport` or
+:class:`CrossValidationReport` via :meth:`Project.put`.
 
 To retrieve the reports stored in the project, use the project summary by calling the
 method :meth:`Project.summarize`. This method returns a ``Summary`` object that holds
@@ -70,11 +69,12 @@ The interactive view provides different views to sort, group by, and filter the 
 the selection produces a query string ready to pass to ``Summary.query(...)``. Once the
 reports are filtered, retrieve them by calling the ``compare`` method on the object
 returned by :meth:`Project.summarize`. This method returns a list of
-:class:`EstimatorReport` instances (or a :class:`ComparisonReport` when called with
-``return_as="report"``).
+:class:`EstimatorReport` or :class:`CrossValidationReport` instances (or a
+:class:`ComparisonReport` when called with ``return_as="report"``).
 
 To retrieve a specific report for which you have its ``id`` (as returned by
 :meth:`Project.summarize`), use the :meth:`Project.get` method.
+:meth:`Project.delete` removes the project itself.
 
 .. _synchronizing-projects:
 

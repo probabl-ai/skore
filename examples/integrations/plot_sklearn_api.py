@@ -61,7 +61,7 @@ skrub.TableReport(X)
 # While `skore` is designed to be fully compatible with classifiers and regressors from
 # the scikit-learn library, it is also compatible with any classifier or regressor that
 # follows the scikit-learn API as defined in the `scikit-learn documentation
-# <https://scikit-learn.org/dev/developers/develop.html#rolling-your-own-estimatorl>`_.
+# <https://scikit-learn.org/dev/developers/develop.html#rolling-your-own-estimator>`_.
 #
 # Here, we showcase a gradient-boosted decision trees model from the
 # `XGBoost <https://github.com/dmlc/xgboost>`_ library that follows exactly this

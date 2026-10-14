@@ -47,7 +47,7 @@ def evaluate(
     Parameters
     ----------
     estimator : estimator object, list of estimators, or dict of estimators
-        The estimator to evaluate of several estimators to compare. An estimator can
+        The estimator to evaluate, or several estimators to compare. An estimator can
         be one of the following:
 
         - a scikit-learn compatible estimator as a :class:`~sklearn.base.BaseEstimator`;

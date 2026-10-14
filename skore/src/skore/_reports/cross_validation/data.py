@@ -154,7 +154,7 @@ class _DataAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         return TableReportDisplay._compute_data_for_display(df, with_plots=with_plots)
 
     def analyze(self, **kwargs) -> TableReportDisplay:
-        """Use :meth:`summarize` instead."""
+        """Use :meth:`summarize` instead of this deprecated alias."""
         warnings.warn(
             "data.analyze() is deprecated, use data.summarize() instead.",
             FutureWarning,

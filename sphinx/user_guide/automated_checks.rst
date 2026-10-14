@@ -6,7 +6,7 @@ Automated checks
 
 `skore` provides automated checks for common model quality pitfalls.
 Use :meth:`~skore.EstimatorReport.checks.summarize` to run checks and get a
-a summary of the findings. Findings come in two severities:
+summary of the findings. Findings come in two severities:
 
 - **issues** flag a concrete modeling problem to fix (e.g. overfitting);
 - **tips** do not signal a defect on their own but invite caution, typically on
@@ -311,8 +311,8 @@ Check out the :ref:`example for this check <example_skd006_coefficient_interpret
 
 .. _skd007-mdi-cardinality-bias:
 
-SKD007 - MDI feature importance is biased for high-cardinality features
---------------------------------------------------------------------------
+SKD007 - MDI biased for high-cardinality features
+-------------------------------------------------
 
 How it is detected
 ^^^^^^^^^^^^^^^^^^
@@ -399,8 +399,8 @@ Check out the :ref:`example for this check <example_skd008_correlated_features>`
 
 .. _skd009-worse-than-baseline:
 
-SKD009 - Model performance vs. baseline
-----------------------------------------
+SKD009 - Model performance vs. HistGradientBoosting baseline
+------------------------------------------------------------
 
 How it is detected
 ^^^^^^^^^^^^^^^^^^

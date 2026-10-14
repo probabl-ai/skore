@@ -21,6 +21,7 @@ report are accessible through accessors.
 
    EstimatorReport.help
    EstimatorReport.get_predictions
+   EstimatorReport.to_markdown
 
 .. rubric:: Accessors
 

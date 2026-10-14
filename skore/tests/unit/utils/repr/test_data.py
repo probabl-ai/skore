@@ -375,14 +375,15 @@ def test_get_documentation_url_attribute():
     [
         ("0.0.1", "dev"),
         ("0.0.0.dev0", "dev"),
-        ("0.1.0", "0.1"),
+        ("0.14.0", "dev"),
+        ("0.15.0", "0.15"),
         ("1.2.3", "1.2"),
     ],
 )
 def test_get_documentation_url_version_branches(
     monkeypatch, display_with_methods, mocked_version, expected_url_version
 ):
-    """get_documentation_url uses \"dev\" for version < 0.1, else major.minor."""
+    """get_documentation_url uses \"dev\" for version < 0.15, else major.minor."""
     monkeypatch.setattr(
         "skore._utils.repr.data.version",
         lambda name: mocked_version,

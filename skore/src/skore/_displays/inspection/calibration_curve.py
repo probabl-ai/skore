@@ -27,18 +27,17 @@ class CalibrationDisplay(DisplayMixin):
 
     Parameters
     ----------
-        calibration_report : DataFrame
-        Calibration report of the estimator The columns should be:
-            - `estimator`
-            - `data_source`
-            - `split`
-            - `label`
-            - `predicted_probability`
-            - `fraction_of_positives`
+    calibration_report : pandas.DataFrame
+        Calibration report of the estimator. Its columns are ``estimator``,
+        ``data_source``, ``split``, ``label``, ``predicted_probability``, and
+        ``fraction_of_positives``.
 
-     report_type : {"estimator", "cross-validation", "comparison-estimator", \
+    report_type : {"estimator", "cross-validation", "comparison-estimator", \
             "comparison-cross-validation"}
         Report type from which the display is created.
+
+    report_pos_label : int, float, bool, str or None, default=None
+        Positive class label configured on the report.
 
     Examples
     --------
