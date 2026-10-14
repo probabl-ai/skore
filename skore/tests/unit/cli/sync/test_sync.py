@@ -147,8 +147,8 @@ def test_sync_uses_one_mlflow_tracking_uri(projects):
             "--to-workspace is not valid for MLflow",
         ),
         (
-            ["experiment", "--from=mlflow", "--to=local", "--hub-url=http://hub.test"],
-            "--hub-url requires a Hub endpoint",
+            ["experiment", "--from=mlflow", "--to=local", "--host=http://hub.test"],
+            "--host requires a Hub endpoint",
         ),
         (
             ["experiment", "--from=local", "--tracking-uri=http://mlflow.test"],
@@ -173,7 +173,7 @@ def test_sync_rejects_same_endpoint_before_construction(projects):
     assert created == []
 
 
-def test_sync_hub_url_resolves_before_project_construction(projects, monkeypatch):
+def test_sync_host_resolves_before_project_construction(projects, monkeypatch):
     seen = []
     monkeypatch.setattr(
         _commands,
@@ -187,7 +187,7 @@ def test_sync_hub_url_resolves_before_project_construction(projects, monkeypatch
             "experiment",
             "--to=hub",
             "--to-workspace=team",
-            "--hub-url=https://frontend.test",
+            "--host=https://frontend.test",
         ],
     )
 

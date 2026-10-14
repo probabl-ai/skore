@@ -6,7 +6,12 @@ from types import SimpleNamespace
 
 import pytest
 
-from skore._cli.credentials import HubError, mint_api_key, require_workspace_api_key
+from skore._cli.credentials import (
+    HubError,
+    mint_api_key,
+    require_workspace_api_key,
+    workspace_memberships,
+)
 
 
 def test_mint_api_key_reports_an_existing_key(monkeypatch):
@@ -73,3 +78,27 @@ def test_require_workspace_api_key_errors_when_mint_is_not_stored(monkeypatch):
             workspace="ws-1",
             login_timeout=1,
         )
+
+
+def test_workspace_memberships_returns_authenticated_workspaces(monkeypatch):
+    calls = {}
+
+    def login(*, host, timeout):
+        calls["login"] = (host, timeout)
+        return SimpleNamespace(access="tok")
+
+    def identity(*, host, token):
+        calls["identity"] = (host, token.access)
+        return SimpleNamespace(workspaces=["ws-1"])
+
+    monkeypatch.setattr("skore._plugins.hub.authentication.login.login", login)
+    monkeypatch.setattr(
+        "skore._plugins.hub.authentication.registry.distant.identity",
+        identity,
+    )
+
+    assert workspace_memberships(host="http://hub.test", login_timeout=12) == ["ws-1"]
+    assert calls == {
+        "login": ("http://hub.test", 12),
+        "identity": ("http://hub.test", "tok"),
+    }

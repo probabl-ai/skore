@@ -3,8 +3,12 @@
 from __future__ import annotations
 
 from collections.abc import Iterator
+from typing import TYPE_CHECKING
 
 from skore._cli.skore import apply_hub_uri
+
+if TYPE_CHECKING:
+    from skore._plugins.hub.authentication.registry.distant import Workspace
 
 
 class HubError(Exception):
@@ -100,3 +104,16 @@ def revoke_api_key(*, host: str | None, workspace: str, timeout: int) -> bool:
 def iter_api_keys() -> Iterator[tuple[int, str, str]]:
     """Yield ``(id, host, workspace)`` for stored Hub API keys."""
     yield from _hub_key().keys()
+
+
+def workspace_memberships(*, host: str, login_timeout: int) -> list[Workspace]:
+    """Return workspace memberships for the authenticated Hub user.
+
+    ``host`` must already be a resolved Hub API URL. Device login is cached
+    for the same host and timeout, so a later key mint reuses it.
+    """
+    from skore._plugins.hub.authentication.login import login
+    from skore._plugins.hub.authentication.registry import distant
+
+    token = login(host=host, timeout=login_timeout)
+    return distant.identity(host=host, token=token).workspaces
