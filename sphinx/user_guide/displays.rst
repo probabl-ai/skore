@@ -74,7 +74,3 @@ single value column, :meth:`~skore.MetricsSummaryDisplay.frame` returns a named
 
     df = display.frame()
     df.head()
-
-Classifier inspection also includes
-:meth:`~skore.EstimatorReport.inspection.calibration_curve`, which returns a
-:class:`CalibrationDisplay` for binary or multiclass calibration curves.
