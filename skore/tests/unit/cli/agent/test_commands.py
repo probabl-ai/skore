@@ -27,8 +27,6 @@ from skore._cli.project import (
     ensure_gitignore_entry,
 )
 from skore._plugins.hub.authentication import key as hub_key
-from skore._plugins.hub.authentication import login as hub_login
-from skore._plugins.hub.authentication.registry import distant
 from skore._plugins.hub.authentication.registry.distant import Workspace
 
 _ANSI_ESCAPE = re.compile(r"\x1b\[[0-9;]*m")
@@ -52,19 +50,11 @@ def _membership(public_id: str = "ws-1", workspace_id: int = 1):
     return Workspace(id=workspace_id, public_id=public_id, permissions=frozenset())
 
 
-def _stub_login(monkeypatch):
+def _stub_memberships(monkeypatch, workspaces):
     monkeypatch.setattr(
-        hub_login,
-        "login",
-        lambda *, host, timeout: SimpleNamespace(access="tok"),
-    )
-
-
-def _stub_identity(monkeypatch, workspaces):
-    monkeypatch.setattr(
-        distant,
-        "identity",
-        lambda *, host, token: SimpleNamespace(workspaces=workspaces),
+        _commands,
+        "workspace_memberships",
+        lambda *, host, login_timeout: workspaces,
     )
 
 
@@ -166,10 +156,12 @@ def test_agent_refuses_unreadable_skore_without_replacing_it(tmp_path, monkeypat
     original = "{ not json"
     (tmp_path / SKORE_FILENAME).write_text(original)
     monkeypatch.setattr(
-        hub_login, "login", lambda **kwargs: (_ for _ in ()).throw(AssertionError)
+        _commands,
+        "workspace_memberships",
+        lambda **kwargs: (_ for _ in ()).throw(AssertionError),
     )
 
-    result = CliRunner().invoke(agent, ["--workspace", str(tmp_path)])
+    result = CliRunner().invoke(agent, [str(tmp_path)])
 
     assert result.exit_code != 0
     assert "could not parse" in result.output
@@ -240,15 +232,13 @@ def test_opencode_writer_embeds_api_key(tmp_path):
 
 def test_agent_nonexistent_workspace_errors(tmp_path):
     missing = tmp_path / "missing"
-    result = CliRunner().invoke(agent, ["--workspace", str(missing)])
+    result = CliRunner().invoke(agent, [str(missing)])
     assert result.exit_code != 0
-    assert "workspace does not exist" in result.output
+    assert "project does not exist" in result.output
 
 
 def test_agent_invalid_harness_lists_all_supported_harnesses(tmp_path):
-    result = CliRunner().invoke(
-        agent, ["--workspace", str(tmp_path), "--harness", "does-not-exist"]
-    )
+    result = CliRunner().invoke(agent, [str(tmp_path), "--harness", "does-not-exist"])
     assert result.exit_code != 0
     output = _plain_output(result.output)
     for name in HARNESS_NAMES:
@@ -263,9 +253,7 @@ def test_agent_reports_hub_errors(tmp_path, monkeypatch):
 
     monkeypatch.setattr(_commands, "require_workspace_api_key", boom)
 
-    result = CliRunner().invoke(
-        agent, ["--workspace", str(tmp_path), "--harness", "opencode"]
-    )
+    result = CliRunner().invoke(agent, [str(tmp_path), "--harness", "opencode"])
 
     assert result.exit_code != 0
     assert "mint failed" in result.output
@@ -288,9 +276,7 @@ def test_agent_reports_configure_errors(tmp_path, monkeypatch):
         ),
     )
 
-    result = CliRunner().invoke(
-        agent, ["--workspace", str(tmp_path), "--harness", "opencode"]
-    )
+    result = CliRunner().invoke(agent, [str(tmp_path), "--harness", "opencode"])
 
     assert result.exit_code != 0
     assert "configure broke" in result.output
@@ -306,9 +292,7 @@ def test_agent_reports_launch_errors(tmp_path, monkeypatch):
 
     monkeypatch.setattr(_commands, "launch_harness", boom)
 
-    result = CliRunner().invoke(
-        agent, ["--workspace", str(tmp_path), "--harness", "opencode"]
-    )
+    result = CliRunner().invoke(agent, [str(tmp_path), "--harness", "opencode"])
 
     assert result.exit_code != 0
     assert "launch broke" in result.output
@@ -329,7 +313,7 @@ def test_agent_uses_existing_skore_config(tmp_path, monkeypatch):
 
     result = CliRunner().invoke(
         agent,
-        ["--workspace", str(tmp_path), "--harness", "opencode"],
+        [str(tmp_path), "--harness", "opencode"],
     )
 
     assert result.exit_code == 0, result.output
@@ -338,12 +322,11 @@ def test_agent_uses_existing_skore_config(tmp_path, monkeypatch):
 
 
 def test_agent_hub_url_param_updates_skore_file(tmp_path, monkeypatch):
-    """Passing a different --hub-url rewrites .skore for that hub."""
+    """Passing a different --host rewrites .skore for that hub."""
     _write_skore(tmp_path)
     _mock_harness_on_path(monkeypatch, "opencode")
     _stub_resolve_hub_uri(monkeypatch)
-    _stub_login(monkeypatch)
-    _stub_identity(monkeypatch, [_membership()])
+    _stub_memberships(monkeypatch, [_membership()])
     monkeypatch.setattr(
         _commands,
         "launch_harness",
@@ -353,9 +336,8 @@ def test_agent_hub_url_param_updates_skore_file(tmp_path, monkeypatch):
     result = CliRunner().invoke(
         agent,
         [
-            "--workspace",
             str(tmp_path),
-            "--hub-url",
+            "--host",
             "http://other.hub",
             "--harness",
             "opencode",
@@ -376,8 +358,7 @@ def test_agent_hub_url_switch_uses_new_workspace_membership(tmp_path, monkeypatc
     _write_skore(tmp_path, workspace="ws-old", workspace_id=1)
     _mock_harness_on_path(monkeypatch, "opencode")
     _stub_resolve_hub_uri(monkeypatch)
-    _stub_login(monkeypatch)
-    _stub_identity(monkeypatch, [_membership("ws-new", workspace_id=9)])
+    _stub_memberships(monkeypatch, [_membership("ws-new", workspace_id=9)])
     monkeypatch.setattr(
         _commands,
         "launch_harness",
@@ -387,9 +368,8 @@ def test_agent_hub_url_switch_uses_new_workspace_membership(tmp_path, monkeypatc
     result = CliRunner().invoke(
         agent,
         [
-            "--workspace",
             str(tmp_path),
-            "--hub-url",
+            "--host",
             "http://other.hub",
             "--harness",
             "opencode",
@@ -410,8 +390,7 @@ def test_agent_hub_url_switch_asks_for_workspace(tmp_path, monkeypatch):
     _write_skore(tmp_path, workspace="ws-old", workspace_id=1)
     _mock_harness_on_path(monkeypatch, "opencode")
     _stub_resolve_hub_uri(monkeypatch)
-    _stub_login(monkeypatch)
-    _stub_identity(
+    _stub_memberships(
         monkeypatch,
         [_membership("ws-a"), _membership("ws-b", workspace_id=2)],
     )
@@ -426,9 +405,8 @@ def test_agent_hub_url_switch_asks_for_workspace(tmp_path, monkeypatch):
     result = CliRunner().invoke(
         agent,
         [
-            "--workspace",
             str(tmp_path),
-            "--hub-url",
+            "--host",
             "http://other.hub",
             "--harness",
             "opencode",
@@ -442,12 +420,14 @@ def test_agent_hub_url_switch_asks_for_workspace(tmp_path, monkeypatch):
 
 
 def test_agent_hub_url_param_matching_saved_reuses_config(tmp_path, monkeypatch):
-    """Passing --hub-url equal to the saved one reuses the config as-is."""
+    """Passing --host equal to the saved one reuses the config as-is."""
     _write_skore(tmp_path)
     _mock_harness_on_path(monkeypatch, "opencode")
-    logins = []
+    membership_lookups = []
     monkeypatch.setattr(
-        hub_login, "login", lambda *, host, timeout: logins.append(host)
+        _commands,
+        "workspace_memberships",
+        lambda *, host, login_timeout: membership_lookups.append(host),
     )
     monkeypatch.setattr(
         _commands,
@@ -458,9 +438,8 @@ def test_agent_hub_url_param_matching_saved_reuses_config(tmp_path, monkeypatch)
     result = CliRunner().invoke(
         agent,
         [
-            "--workspace",
             str(tmp_path),
-            "--hub-url",
+            "--host",
             "http://hub.test",
             "--harness",
             "opencode",
@@ -468,19 +447,21 @@ def test_agent_hub_url_param_matching_saved_reuses_config(tmp_path, monkeypatch)
     )
 
     assert result.exit_code == 0, result.output
-    assert logins == []
+    assert membership_lookups == []
     saved = json.loads((tmp_path / SKORE_FILENAME).read_text())
     assert saved["hub_url"] == "http://hub.test"
     assert "api_key" not in saved
 
 
 def test_agent_hub_url_trailing_slash_reuses_config(tmp_path, monkeypatch):
-    """A --hub-url equal modulo a trailing slash reuses the saved config."""
+    """A --host equal modulo a trailing slash reuses the saved config."""
     _write_skore(tmp_path)
     _mock_harness_on_path(monkeypatch, "opencode")
-    logins = []
+    membership_lookups = []
     monkeypatch.setattr(
-        hub_login, "login", lambda *, host, timeout: logins.append(host)
+        _commands,
+        "workspace_memberships",
+        lambda *, host, login_timeout: membership_lookups.append(host),
     )
     monkeypatch.setattr(
         _commands,
@@ -491,9 +472,8 @@ def test_agent_hub_url_trailing_slash_reuses_config(tmp_path, monkeypatch):
     result = CliRunner().invoke(
         agent,
         [
-            "--workspace",
             str(tmp_path),
-            "--hub-url",
+            "--host",
             "http://hub.test/",
             "--harness",
             "opencode",
@@ -501,10 +481,102 @@ def test_agent_hub_url_trailing_slash_reuses_config(tmp_path, monkeypatch):
     )
 
     assert result.exit_code == 0, result.output
-    assert logins == []
+    assert membership_lookups == []
     saved = json.loads((tmp_path / SKORE_FILENAME).read_text())
     assert saved["hub_url"] == "http://hub.test"
     assert "api_key" not in saved
+
+
+def test_agent_workspace_selects_named_membership(tmp_path, monkeypatch):
+    """``--workspace`` selects that Hub workspace without prompting."""
+    _mock_harness_on_path(monkeypatch, "opencode")
+    _stub_memberships(
+        monkeypatch,
+        [_membership("ws-a"), _membership("ws-b", workspace_id=2)],
+    )
+    monkeypatch.setattr(_commands, "is_non_interactive", lambda: True)
+    monkeypatch.setattr(
+        _commands,
+        "launch_harness",
+        lambda selected, workspace, model_id=DEFAULT_MODEL_ID, **k: None,
+    )
+
+    result = CliRunner().invoke(
+        agent,
+        [str(tmp_path), "--workspace", "ws-b", "--harness", "opencode"],
+    )
+
+    assert result.exit_code == 0, result.output
+    saved = json.loads((tmp_path / SKORE_FILENAME).read_text())
+    assert saved["workspace"] == "ws-b"
+    assert saved["workspace_id"] == 2
+
+
+def test_agent_workspace_rejects_unknown_membership(tmp_path, monkeypatch):
+    _stub_memberships(monkeypatch, [_membership()])
+
+    result = CliRunner().invoke(
+        agent,
+        [str(tmp_path), "--workspace", "missing", "--harness", "opencode"],
+    )
+
+    assert result.exit_code != 0
+    assert "not a member of workspace 'missing'" in _plain_output(result.output)
+
+
+def test_agent_matching_workspace_reuses_config(tmp_path, monkeypatch):
+    """A ``--workspace`` equal to the saved one does not authenticate again."""
+    _write_skore(tmp_path)
+    _mock_harness_on_path(monkeypatch, "opencode")
+    membership_lookups = []
+    monkeypatch.setattr(
+        _commands,
+        "workspace_memberships",
+        lambda *, host, login_timeout: membership_lookups.append(host),
+    )
+    monkeypatch.setattr(
+        _commands,
+        "launch_harness",
+        lambda selected, workspace, model_id=DEFAULT_MODEL_ID, **k: None,
+    )
+
+    result = CliRunner().invoke(
+        agent,
+        [str(tmp_path), "--workspace", "ws-1", "--harness", "opencode"],
+    )
+
+    assert result.exit_code == 0, result.output
+    assert membership_lookups == []
+
+
+def test_agent_workspace_switch_rewrites_config(tmp_path, monkeypatch):
+    """A different ``--workspace`` on the same hub rewrites .skore."""
+    _write_skore(tmp_path, workspace="ws-old", workspace_id=1)
+    _mock_harness_on_path(monkeypatch, "opencode")
+    _stub_memberships(monkeypatch, [_membership("ws-new", workspace_id=9)])
+    resolved = []
+    monkeypatch.setattr(
+        _commands,
+        "resolve_hub_uri",
+        lambda url, *args, **kwargs: resolved.append(url),
+    )
+    monkeypatch.setattr(
+        _commands,
+        "launch_harness",
+        lambda selected, workspace, model_id=DEFAULT_MODEL_ID, **k: None,
+    )
+
+    result = CliRunner().invoke(
+        agent,
+        [str(tmp_path), "--workspace", "ws-new", "--harness", "opencode"],
+    )
+
+    assert result.exit_code == 0, result.output
+    assert resolved == []
+    saved = json.loads((tmp_path / SKORE_FILENAME).read_text())
+    assert saved["hub_url"] == "http://hub.test"
+    assert saved["workspace"] == "ws-new"
+    assert saved["workspace_id"] == 9
 
 
 def test_agent_hub_switch_non_interactive_reuses_saved_harness(tmp_path, monkeypatch):
@@ -512,8 +584,7 @@ def test_agent_hub_switch_non_interactive_reuses_saved_harness(tmp_path, monkeyp
     _write_skore(tmp_path)
     _mock_harness_on_path(monkeypatch, "opencode")
     _stub_resolve_hub_uri(monkeypatch)
-    _stub_login(monkeypatch)
-    _stub_identity(monkeypatch, [_membership()])
+    _stub_memberships(monkeypatch, [_membership()])
     monkeypatch.setattr(_commands, "is_non_interactive", lambda: True)
     monkeypatch.setattr(_commands, "detect_agent", lambda: None)
     monkeypatch.setattr(
@@ -524,7 +595,7 @@ def test_agent_hub_switch_non_interactive_reuses_saved_harness(tmp_path, monkeyp
 
     result = CliRunner().invoke(
         agent,
-        ["--workspace", str(tmp_path), "--hub-url", "http://other.hub"],
+        [str(tmp_path), "--host", "http://other.hub"],
     )
 
     assert result.exit_code == 0, result.output
@@ -536,8 +607,7 @@ def test_agent_hub_switch_non_interactive_reuses_saved_harness(tmp_path, monkeyp
 
 def test_agent_creates_skore_on_first_run(tmp_path, monkeypatch):
     _mock_harness_on_path(monkeypatch, "opencode")
-    _stub_login(monkeypatch)
-    _stub_identity(monkeypatch, [_membership()])
+    _stub_memberships(monkeypatch, [_membership()])
     monkeypatch.setattr(
         _commands,
         "launch_harness",
@@ -546,7 +616,7 @@ def test_agent_creates_skore_on_first_run(tmp_path, monkeypatch):
 
     result = CliRunner().invoke(
         agent,
-        ["--workspace", str(tmp_path), "--harness", "opencode"],
+        [str(tmp_path), "--harness", "opencode"],
     )
 
     assert result.exit_code == 0, result.output
@@ -572,8 +642,7 @@ def test_agent_saves_claude_plugin_ide(tmp_path, monkeypatch):
     )
     monkeypatch.setattr(_claude, "is_non_interactive", lambda: False)
     monkeypatch.setattr(_claude, "_prompt_ide", lambda options: "cursor")
-    _stub_login(monkeypatch)
-    _stub_identity(monkeypatch, [_membership()])
+    _stub_memberships(monkeypatch, [_membership()])
     monkeypatch.setattr(
         _commands,
         "launch_harness",
@@ -582,7 +651,7 @@ def test_agent_saves_claude_plugin_ide(tmp_path, monkeypatch):
 
     result = CliRunner().invoke(
         agent,
-        ["--workspace", str(tmp_path), "--harness", "claude-plugin"],
+        [str(tmp_path), "--harness", "claude-plugin"],
     )
 
     assert result.exit_code == 0, result.output
@@ -607,8 +676,7 @@ def test_agent_claude_plugin_ide_flag_skips_the_menu(tmp_path, monkeypatch):
     monkeypatch.setattr(
         _claude, "_prompt_ide", lambda options: prompted.append(options)
     )
-    _stub_login(monkeypatch)
-    _stub_identity(monkeypatch, [_membership()])
+    _stub_memberships(monkeypatch, [_membership()])
     monkeypatch.setattr(
         _commands,
         "launch_harness",
@@ -617,7 +685,7 @@ def test_agent_claude_plugin_ide_flag_skips_the_menu(tmp_path, monkeypatch):
 
     result = CliRunner().invoke(
         agent,
-        ["--workspace", str(tmp_path), "--harness", "claude-plugin-cursor"],
+        [str(tmp_path), "--harness", "claude-plugin-cursor"],
     )
 
     assert result.exit_code == 0, result.output
@@ -653,7 +721,7 @@ def test_agent_reuses_saved_claude_plugin_ide(tmp_path, monkeypatch):
         ),
     )
 
-    result = CliRunner().invoke(agent, ["--workspace", str(tmp_path)])
+    result = CliRunner().invoke(agent, [str(tmp_path)])
 
     assert result.exit_code == 0, result.output
     assert prompted == []
@@ -676,7 +744,7 @@ def test_agent_accepts_claude_cli_alias(tmp_path, monkeypatch):
 
     result = CliRunner().invoke(
         agent,
-        ["--workspace", str(tmp_path), "--harness", "claude-cli"],
+        [str(tmp_path), "--harness", "claude-cli"],
     )
 
     assert result.exit_code == 0, result.output
@@ -694,17 +762,14 @@ def test_agent_bob_ide_first_run_on_linux_writes_mcp_config(
     and stored under the canonical ``bob-ide`` name."""
     monkeypatch.setattr(_process.sys, "platform", "linux")
     _mock_harness_on_path(monkeypatch, "bobide")
-    _stub_login(monkeypatch)
-    _stub_identity(monkeypatch, [_membership()])
+    _stub_memberships(monkeypatch, [_membership()])
     monkeypatch.setattr(
         _commands,
         "launch_harness",
         lambda selected, workspace, model_id=DEFAULT_MODEL_ID, **k: None,
     )
 
-    result = CliRunner().invoke(
-        agent, ["--workspace", str(tmp_path), "--harness", harness_flag]
-    )
+    result = CliRunner().invoke(agent, [str(tmp_path), "--harness", harness_flag])
 
     assert result.exit_code == 0, result.output
     assert "not installed or not on PATH" not in _plain_output(result.output)
@@ -716,11 +781,10 @@ def test_agent_bob_ide_first_run_on_linux_writes_mcp_config(
 
 def test_agent_non_interactive_without_harness_errors(tmp_path, monkeypatch):
     _clear_agent_envs(monkeypatch)
-    _stub_login(monkeypatch)
-    _stub_identity(monkeypatch, [_membership()])
+    _stub_memberships(monkeypatch, [_membership()])
     monkeypatch.setattr(_commands, "is_non_interactive", lambda: True)
 
-    result = CliRunner().invoke(agent, ["--workspace", str(tmp_path)])
+    result = CliRunner().invoke(agent, [str(tmp_path)])
 
     assert result.exit_code != 0
     assert "pass --harness" in _plain_output(result.output)
@@ -728,8 +792,7 @@ def test_agent_non_interactive_without_harness_errors(tmp_path, monkeypatch):
 
 def test_agent_generates_api_key_when_none_is_stored(tmp_path, monkeypatch):
     _mock_harness_on_path(monkeypatch, "opencode")
-    _stub_login(monkeypatch)
-    _stub_identity(monkeypatch, [_membership()])
+    _stub_memberships(monkeypatch, [_membership()])
     monkeypatch.setattr(
         _commands,
         "launch_harness",
@@ -750,9 +813,7 @@ def test_agent_generates_api_key_when_none_is_stored(tmp_path, monkeypatch):
     )
     monkeypatch.setattr(hub_key, "generate", fake_generate)
 
-    result = CliRunner().invoke(
-        agent, ["--workspace", str(tmp_path), "--harness", "opencode"]
-    )
+    result = CliRunner().invoke(agent, [str(tmp_path), "--harness", "opencode"])
 
     assert result.exit_code == 0, result.output
     assert generated == [("http://hub.test", "ws-1")]
@@ -916,7 +977,7 @@ def test_resolve_membership_single_membership_auto_selected():
 def test_resolve_membership_multiple_non_interactive_errors(monkeypatch):
     monkeypatch.setattr(_commands, "is_non_interactive", lambda: True)
     memberships = [_membership("ws-1"), _membership("ws-2", workspace_id=2)]
-    with pytest.raises(click.UsageError, match="run interactively"):
+    with pytest.raises(click.UsageError, match="--workspace"):
         _commands._resolve_membership(memberships)
 
 
@@ -933,12 +994,9 @@ def test_resolve_membership_multiple_interactive_picks(monkeypatch):
 
 
 def test_agent_no_memberships_errors(tmp_path, monkeypatch):
-    _stub_login(monkeypatch)
-    _stub_identity(monkeypatch, [])
+    _stub_memberships(monkeypatch, [])
 
-    result = CliRunner().invoke(
-        agent, ["--workspace", str(tmp_path), "--harness", "opencode"]
-    )
+    result = CliRunner().invoke(agent, [str(tmp_path), "--harness", "opencode"])
 
     assert result.exit_code != 0
     assert "not a member of any hub workspace" in _plain_output(result.output)
@@ -947,9 +1005,7 @@ def test_agent_no_memberships_errors(tmp_path, monkeypatch):
 def test_agent_errors_when_harness_not_installed(tmp_path, monkeypatch):
     _write_skore(tmp_path)
     monkeypatch.setattr(_process.shutil, "which", lambda cmd: None)
-    result = CliRunner().invoke(
-        agent, ["--workspace", str(tmp_path), "--harness", "opencode"]
-    )
+    result = CliRunner().invoke(agent, [str(tmp_path), "--harness", "opencode"])
 
     assert result.exit_code != 0
     assert "not installed or not on PATH" in _plain_output(result.output)
@@ -971,7 +1027,7 @@ def test_agent_valid_config_without_harness_non_interactive_errors(
     (tmp_path / SKORE_FILENAME).write_text(json.dumps(payload) + "\n")
     monkeypatch.setattr(_commands, "is_non_interactive", lambda: True)
 
-    result = CliRunner().invoke(agent, ["--workspace", str(tmp_path)])
+    result = CliRunner().invoke(agent, [str(tmp_path)])
 
     assert result.exit_code != 0
     assert "pass --harness" in _plain_output(result.output)
@@ -993,7 +1049,7 @@ def test_agent_valid_config_without_harness_picks_interactively(tmp_path, monkey
         lambda selected, workspace, model_id=DEFAULT_MODEL_ID, **k: None,
     )
 
-    result = CliRunner().invoke(agent, ["--workspace", str(tmp_path)])
+    result = CliRunner().invoke(agent, [str(tmp_path)])
 
     assert result.exit_code == 0, result.output
     saved = json.loads((tmp_path / SKORE_FILENAME).read_text())
@@ -1002,8 +1058,7 @@ def test_agent_valid_config_without_harness_picks_interactively(tmp_path, monkey
 
 def test_agent_first_run_picks_harness_interactively(tmp_path, monkeypatch):
     _mock_harness_on_path(monkeypatch, "opencode")
-    _stub_login(monkeypatch)
-    _stub_identity(monkeypatch, [_membership()])
+    _stub_memberships(monkeypatch, [_membership()])
     monkeypatch.setattr(_commands, "is_non_interactive", lambda: False)
     monkeypatch.setattr(_commands, "_pick_harness", lambda workspace: "opencode")
     monkeypatch.setattr(
@@ -1012,7 +1067,7 @@ def test_agent_first_run_picks_harness_interactively(tmp_path, monkeypatch):
         lambda selected, workspace, model_id=DEFAULT_MODEL_ID, **k: None,
     )
 
-    result = CliRunner().invoke(agent, ["--workspace", str(tmp_path)])
+    result = CliRunner().invoke(agent, [str(tmp_path)])
 
     assert result.exit_code == 0, result.output
     saved = json.loads((tmp_path / SKORE_FILENAME).read_text())
@@ -1028,9 +1083,7 @@ def test_agent_rewrites_config_when_harness_changes(tmp_path, monkeypatch):
         lambda selected, workspace, model_id=DEFAULT_MODEL_ID, **k: None,
     )
 
-    result = CliRunner().invoke(
-        agent, ["--workspace", str(tmp_path), "--harness", "opencode"]
-    )
+    result = CliRunner().invoke(agent, [str(tmp_path), "--harness", "opencode"])
 
     assert result.exit_code == 0, result.output
     saved = json.loads((tmp_path / SKORE_FILENAME).read_text())
@@ -1062,8 +1115,7 @@ def test_agent_non_interactive_auto_selects_claude(tmp_path, monkeypatch):
     _clear_agent_envs(monkeypatch)
     monkeypatch.setenv("CLAUDECODE", "1")
     _mock_harness_on_path(monkeypatch, "claude")
-    _stub_login(monkeypatch)
-    _stub_identity(monkeypatch, [_membership()])
+    _stub_memberships(monkeypatch, [_membership()])
     monkeypatch.setattr(_commands, "is_non_interactive", lambda: True)
     launched = []
     monkeypatch.setattr(
@@ -1074,7 +1126,7 @@ def test_agent_non_interactive_auto_selects_claude(tmp_path, monkeypatch):
         ),
     )
 
-    result = CliRunner().invoke(agent, ["--workspace", str(tmp_path)])
+    result = CliRunner().invoke(agent, [str(tmp_path)])
 
     assert result.exit_code == 0, result.output
     saved = json.loads((tmp_path / SKORE_FILENAME).read_text())
@@ -1087,8 +1139,7 @@ def test_agent_non_interactive_auto_selects_opencode(tmp_path, monkeypatch):
     _clear_agent_envs(monkeypatch)
     monkeypatch.setenv("OPENCODE_CLIENT", "1")
     _mock_harness_on_path(monkeypatch, "opencode")
-    _stub_login(monkeypatch)
-    _stub_identity(monkeypatch, [_membership()])
+    _stub_memberships(monkeypatch, [_membership()])
     monkeypatch.setattr(_commands, "is_non_interactive", lambda: True)
     launched = []
     monkeypatch.setattr(
@@ -1099,7 +1150,7 @@ def test_agent_non_interactive_auto_selects_opencode(tmp_path, monkeypatch):
         ),
     )
 
-    result = CliRunner().invoke(agent, ["--workspace", str(tmp_path)])
+    result = CliRunner().invoke(agent, [str(tmp_path)])
 
     assert result.exit_code == 0, result.output
     saved = json.loads((tmp_path / SKORE_FILENAME).read_text())
@@ -1111,8 +1162,7 @@ def test_agent_non_interactive_auto_selects_pi(tmp_path, monkeypatch):
     _clear_agent_envs(monkeypatch)
     monkeypatch.setenv("PI_CODING_AGENT", "true")
     _mock_harness_on_path(monkeypatch, "pi")
-    _stub_login(monkeypatch)
-    _stub_identity(monkeypatch, [_membership()])
+    _stub_memberships(monkeypatch, [_membership()])
     monkeypatch.setattr(_commands, "is_non_interactive", lambda: True)
     launched = []
     monkeypatch.setattr(
@@ -1123,7 +1173,7 @@ def test_agent_non_interactive_auto_selects_pi(tmp_path, monkeypatch):
         ),
     )
 
-    result = CliRunner().invoke(agent, ["--workspace", str(tmp_path)])
+    result = CliRunner().invoke(agent, [str(tmp_path)])
 
     assert result.exit_code == 0, result.output
     saved = json.loads((tmp_path / SKORE_FILENAME).read_text())
@@ -1137,11 +1187,10 @@ def test_agent_non_interactive_detected_harness_not_on_path_errors(
     _clear_agent_envs(monkeypatch)
     monkeypatch.setenv("CLAUDECODE", "1")
     monkeypatch.setattr(_process.shutil, "which", lambda cmd: None)
-    _stub_login(monkeypatch)
-    _stub_identity(monkeypatch, [_membership()])
+    _stub_memberships(monkeypatch, [_membership()])
     monkeypatch.setattr(_commands, "is_non_interactive", lambda: True)
 
-    result = CliRunner().invoke(agent, ["--workspace", str(tmp_path)])
+    result = CliRunner().invoke(agent, [str(tmp_path)])
 
     assert result.exit_code != 0
     assert "pass --harness" in _plain_output(result.output)
@@ -1162,9 +1211,7 @@ def test_agent_detected_different_harness_still_launches(tmp_path, monkeypatch):
         ),
     )
 
-    result = CliRunner().invoke(
-        agent, ["--workspace", str(tmp_path), "--harness", "opencode"]
-    )
+    result = CliRunner().invoke(agent, [str(tmp_path), "--harness", "opencode"])
 
     assert result.exit_code == 0, result.output
     assert launched == ["opencode"]
@@ -1191,7 +1238,7 @@ def test_agent_reuse_path_auto_selects_detected_harness(tmp_path, monkeypatch):
         ),
     )
 
-    result = CliRunner().invoke(agent, ["--workspace", str(tmp_path)])
+    result = CliRunner().invoke(agent, [str(tmp_path)])
 
     assert result.exit_code == 0, result.output
     saved = json.loads((tmp_path / SKORE_FILENAME).read_text())
@@ -1208,9 +1255,7 @@ def test_agent_translates_harness_runtime_errors(tmp_path, monkeypatch):
 
     monkeypatch.setattr(_commands, "get_harness", unknown)
 
-    result = CliRunner().invoke(
-        agent, ["--workspace", str(tmp_path), "--harness", "opencode"]
-    )
+    result = CliRunner().invoke(agent, [str(tmp_path), "--harness", "opencode"])
 
     assert result.exit_code == 1
     assert isinstance(result.exception, SystemExit)
@@ -1225,9 +1270,7 @@ def test_agent_translates_unknown_harness_keys(tmp_path, monkeypatch):
         _commands, "get_harness", lambda name: (_ for _ in ()).throw(KeyError(name))
     )
 
-    result = CliRunner().invoke(
-        agent, ["--workspace", str(tmp_path), "--harness", "opencode"]
-    )
+    result = CliRunner().invoke(agent, [str(tmp_path), "--harness", "opencode"])
 
     assert result.exit_code == 1
     assert isinstance(result.exception, SystemExit)
@@ -1242,9 +1285,7 @@ def test_agent_leaves_harness_abort_uncaught_as_click_exception(tmp_path, monkey
         _commands, "get_harness", lambda name: (_ for _ in ()).throw(click.Abort())
     )
 
-    result = CliRunner().invoke(
-        agent, ["--workspace", str(tmp_path), "--harness", "opencode"]
-    )
+    result = CliRunner().invoke(agent, [str(tmp_path), "--harness", "opencode"])
 
     assert result.exit_code == 1
     assert "Aborted." in result.output

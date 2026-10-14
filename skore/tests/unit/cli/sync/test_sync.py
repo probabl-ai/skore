@@ -20,6 +20,34 @@ def _plain_output(output: str) -> str:
     return _ANSI_ESCAPE.sub("", output)
 
 
+def test_sync_help_describes_endpoints():
+    result = CliRunner().invoke(sync, ["--help"])
+    output = _plain_output(result.output)
+    option_help = {
+        parameter.name: parameter.help
+        for parameter in sync.params
+        if hasattr(parameter, "help")
+    }
+
+    assert result.exit_code == 0
+    assert "``SOURCE_PROJECT`` is the source project name." in output
+    assert option_help["from_mode"] == (
+        "Storage mode of the source project. Defaults to ``local``."
+    )
+    assert option_help["from_workspace"].startswith(
+        "Source workspace. Required for ``hub``"
+    )
+    assert option_help["to_project"] == (
+        "Destination project name. Defaults to ``SOURCE_PROJECT``."
+    )
+    assert option_help["to_workspace"].startswith(
+        "Destination workspace. Required for ``hub``"
+    )
+    assert option_help["tracking_uri"].startswith(
+        "MLflow tracking URI. Applied to every MLflow endpoint"
+    )
+
+
 @dataclass
 class _Project:
     name: str
@@ -119,8 +147,8 @@ def test_sync_uses_one_mlflow_tracking_uri(projects):
             "--to-workspace is not valid for MLflow",
         ),
         (
-            ["experiment", "--from=mlflow", "--to=local", "--hub-url=http://hub.test"],
-            "--hub-url requires a Hub endpoint",
+            ["experiment", "--from=mlflow", "--to=local", "--host=http://hub.test"],
+            "--host requires a Hub endpoint",
         ),
         (
             ["experiment", "--from=local", "--tracking-uri=http://mlflow.test"],
@@ -145,7 +173,7 @@ def test_sync_rejects_same_endpoint_before_construction(projects):
     assert created == []
 
 
-def test_sync_hub_url_resolves_before_project_construction(projects, monkeypatch):
+def test_sync_host_resolves_before_project_construction(projects, monkeypatch):
     seen = []
     monkeypatch.setattr(
         _commands,
@@ -159,7 +187,7 @@ def test_sync_hub_url_resolves_before_project_construction(projects, monkeypatch
             "experiment",
             "--to=hub",
             "--to-workspace=team",
-            "--hub-url=https://frontend.test",
+            "--host=https://frontend.test",
         ],
     )
 

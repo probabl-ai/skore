@@ -20,6 +20,7 @@ with `skore hub`. Authentication uses an API key, in this order:
 
     $ skore hub api-key generate --workspace <workspace>
 
+See :ref:`cli-hub` to generate, list, and revoke keys from the command line.
 Refer to the documentation of :class:`Project` for the detailed API and take a look on
 the `example <example-getting-started_>`_.
 
@@ -81,7 +82,7 @@ Synchronizing projects
 ----------------------
 
 Use :meth:`Project.sync` to transfer reports between projects. The project on which the
-method is called is the source.
+method is called is the source. :ref:`cli-sync` runs the same transfer from the shell.
 
 .. code-block:: python
 
