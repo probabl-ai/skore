@@ -21,8 +21,7 @@ with Skore Hub. Authentication uses an API key, in this order:
     $ skore hub api-key generate --workspace <workspace>
 
 See :ref:`cli-hub` to generate, list, and revoke keys from the command line.
-Refer to the documentation of :class:`Project` for the detailed API and take a look on
-the `example <example-getting-started_>`_ guide for an end-to-end workflow.
+Refer to the documentation of :class:`Project` for the detailed API.
 
 Creating a project
 ------------------
