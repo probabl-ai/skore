@@ -22,7 +22,7 @@ with Skore Hub. Authentication uses an API key, in this order:
 
 See :ref:`cli-hub` to generate, list, and revoke keys from the command line.
 Refer to the documentation of :class:`Project` for the detailed API and take a look on
-the :ref:`reporters` guide for an end-to-end workflow.
+the `example <example-getting-started_>`_ guide for an end-to-end workflow.
 
 Creating a project
 ------------------
