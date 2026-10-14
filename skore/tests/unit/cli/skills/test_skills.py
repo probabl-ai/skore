@@ -122,13 +122,14 @@ def test_install_skill_project(release, workspace):
         "id": "alpha",
         "release": "0.1.0",
         "hash": "hash-alpha-1",
-        "repository": "probabl-ai/skills",
+        "repository": "probabl-ai/skore-skills",
     }
     local_catalog = json.loads(
         (workspace.project / ".agents" / "skills" / ".catalog.json").read_text()
     )
-    assert "probabl-ai/skills" in local_catalog["sources"]
-    assert local_catalog["sources"]["probabl-ai/skills"]["release"] == "0.1.0"
+    assert "probabl-ai/skore-skills" in local_catalog["sources"]
+    assert local_catalog["sources"]["probabl-ai/skore-skills"]["release"] == "0.1.0"
+    assert local_catalog["sources"]["probabl-ai/skore-skills"]["version"] == "0.1.0"
 
 
 def test_install_workflow_expands_to_skills(release, workspace):
@@ -694,7 +695,7 @@ def test_list_installed(release, workspace):
 
     assert result.exit_code == 0
     assert "alpha" in result.output
-    assert "probabl-ai/skills" in result.output
+    assert "probabl-ai/skore-skills" in result.output
 
 
 def test_list_when_empty(release, workspace):
@@ -749,7 +750,7 @@ def test_update_reinstalls_changed_skill(release, workspace):
 
     assert result.exit_code == 0
     assert "updated" in result.output
-    assert "probabl-ai/skills" in result.output
+    assert "probabl-ai/skore-skills" in result.output
 
     sidecar = json.loads(
         (workspace.project / ".agents" / "skills" / "alpha" / SIDECAR).read_text()
@@ -776,7 +777,7 @@ def test_update_when_up_to_date(release, workspace):
 
     assert result.exit_code == 0
     assert "up to date" in result.output
-    assert "probabl-ai/skills" in result.output
+    assert "probabl-ai/skore-skills" in result.output
 
 
 def test_update_without_ids_errors(release, workspace):
@@ -1128,7 +1129,7 @@ def test_update_uses_stored_repository(release, workspace):
     assert "updated" in result.output
     assert "acme/skills" in result.output
     assert any("/repos/acme/skills/" in url for url in release["urls"])
-    assert not any("/repos/probabl-ai/skills/" in url for url in release["urls"])
+    assert not any("/repos/probabl-ai/skore-skills/" in url for url in release["urls"])
     sidecar = json.loads(
         (workspace.project / ".agents" / "skills" / "gamma" / SIDECAR).read_text()
     )
@@ -1162,12 +1163,12 @@ def test_update_mixed_repos_fetches_each_origin(release, workspace):
     assert result.exit_code == 0
     assert "alpha" in result.output
     assert "gamma" in result.output
-    assert any("/repos/probabl-ai/skills/" in url for url in release["urls"])
+    assert any("/repos/probabl-ai/skore-skills/" in url for url in release["urls"])
     assert any("/repos/acme/skills/" in url for url in release["urls"])
     local_catalog = json.loads(
         (workspace.project / ".agents" / "skills" / ".catalog.json").read_text()
     )
-    assert set(local_catalog["sources"]) == {"probabl-ai/skills", "acme/skills"}
+    assert set(local_catalog["sources"]) == {"probabl-ai/skore-skills", "acme/skills"}
 
 
 def test_update_legacy_sidecar_defaults_to_official_repo(release, workspace):
@@ -1182,10 +1183,10 @@ def test_update_legacy_sidecar_defaults_to_official_repo(release, workspace):
     result = _invoke(["skills", "update", "--all"])
 
     assert result.exit_code == 0
-    assert "probabl-ai/skills" in result.output
-    assert any("/repos/probabl-ai/skills/" in url for url in release["urls"])
+    assert "probabl-ai/skore-skills" in result.output
+    assert any("/repos/probabl-ai/skore-skills/" in url for url in release["urls"])
     sidecar = json.loads(sidecar_path.read_text())
-    assert sidecar["repository"] == "probabl-ai/skills"
+    assert sidecar["repository"] == "probabl-ai/skore-skills"
     assert sidecar["hash"] == "hash-alpha-2"
 
 
@@ -1203,10 +1204,10 @@ def test_update_migrates_legacy_sidecar_without_hash_change(release, workspace):
     assert result.exit_code == 0
     assert "up to date" in result.output
     sidecar = json.loads(sidecar_path.read_text())
-    assert sidecar["repository"] == "probabl-ai/skills"
+    assert sidecar["repository"] == "probabl-ai/skore-skills"
     assert sidecar["hash"] == "hash-alpha-1"
     local_catalog = json.loads((skills_dir / ".catalog.json").read_text())
-    assert "probabl-ai/skills" in local_catalog["sources"]
+    assert "probabl-ai/skore-skills" in local_catalog["sources"]
 
 
 def test_update_migrates_legacy_catalog_json(release, workspace):
@@ -1214,7 +1215,7 @@ def test_update_migrates_legacy_catalog_json(release, workspace):
     skills_dir = workspace.project / ".agents" / "skills"
     hidden = skills_dir / ".catalog.json"
     snapshot = json.loads(hidden.read_text())
-    single_repo = snapshot["sources"]["probabl-ai/skills"]
+    single_repo = snapshot["sources"]["probabl-ai/skore-skills"]
     single_repo.pop("repository", None)
     (skills_dir / "catalog.json").write_text(json.dumps(single_repo, indent=2))
     hidden.unlink()
@@ -1228,9 +1229,9 @@ def test_update_migrates_legacy_catalog_json(release, workspace):
     assert result.exit_code == 0
     assert not (skills_dir / "catalog.json").exists()
     local_catalog = json.loads(hidden.read_text())
-    assert set(local_catalog["sources"]) == {"probabl-ai/skills"}
+    assert set(local_catalog["sources"]) == {"probabl-ai/skore-skills"}
     sidecar = json.loads(sidecar_path.read_text())
-    assert sidecar["repository"] == "probabl-ai/skills"
+    assert sidecar["repository"] == "probabl-ai/skore-skills"
 
 
 # --------------------------------------------------------------------------- #

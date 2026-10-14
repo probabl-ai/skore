@@ -30,7 +30,10 @@ click.rich_click.COMMAND_GROUPS = {
 _COMMANDS = [
     ("agent", "Authenticate, configure and launch a Skore Hub agent harness."),
     ("hub", "Manage Skore Hub credentials."),
-    ("skills", "Install and manage Agent Skills from the probabl-ai/skills release."),
+    (
+        "skills",
+        "Install and manage Agent Skills from the probabl-ai/skore-skills release.",
+    ),
     ("sync", "Synchronize report projects across local storage, Skore Hub and MLflow."),
 ]
 

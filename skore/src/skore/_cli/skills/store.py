@@ -22,8 +22,15 @@ class SkillStoreError(Exception):
 
 
 def skill_repository(sidecar: dict[str, Any]) -> str:
-    """Return the GitHub ``owner/name`` recorded on an installed skill."""
-    return sidecar.get("repository") or GITHUB_REPO
+    """Return the GitHub ``owner/name`` recorded on an installed skill.
+
+    Sidecars written before the repository rename still say
+    ``probabl-ai/skills``. Those resolve to ``probabl-ai/skore-skills``.
+    """
+    repo = sidecar.get("repository") or GITHUB_REPO
+    if repo == "probabl-ai/skills":
+        return GITHUB_REPO
+    return repo
 
 
 def local_catalog_path(target: Path) -> Path | None:
@@ -85,12 +92,17 @@ def write_local_catalog(target: Path, envelope: dict[str, Any]) -> None:
 def persist_source_catalog(
     target: Path, repo: str, tag: str, catalog: dict[str, Any]
 ) -> None:
-    """Merge ``catalog`` for ``repo`` into ``target``'s local ``.catalog.json``."""
+    """Merge ``catalog`` for ``repo`` into ``target``'s local ``.catalog.json``.
+
+    The stored ``version`` is ``tag``. A version carried by ``catalog`` is
+    discarded.
+    """
     envelope = read_local_catalog(target)
     envelope.setdefault("sources", {})[repo] = {
         **catalog,
         "repository": repo,
         "release": tag,
+        "version": tag,
     }
     write_local_catalog(target, envelope)
 

@@ -30,7 +30,7 @@ from skore._cli.skills.release import ReleaseError, cleanup_release, load_releas
 
 _SOURCE_INTRO = (
     "GitHub repository that publishes the skills catalog (owner/name).\n"
-    "The default is probabl-ai/skills. Change it to install from a fork "
+    "The default is probabl-ai/skore-skills. Change it to install from a fork "
     "or another catalog.\n"
     "[reverse] Enter [/] load catalog  [reverse] ? [/] help"
 )

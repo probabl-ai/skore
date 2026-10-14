@@ -303,7 +303,7 @@ def _copy_selected_skills(
 @click.group(invoke_without_command=True)
 @click.pass_context
 def skills(ctx) -> None:
-    """Install and manage Agent Skills from the ``probabl-ai/skills`` release."""
+    """Install and manage Agent Skills from the ``probabl-ai/skore-skills`` release."""
     if ctx.invoked_subcommand is None:
         click.echo(ctx.get_help())
 
