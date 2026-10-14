@@ -21,7 +21,6 @@ from skore._plugins import switch_plt_backend
 from skore._utils.skrub import is_skrub_learner
 
 ArrayLike: TypeAlias = pd.DataFrame | NDArray[np.generic]
-InputExample: TypeAlias = ArrayLike | dict[str, Any]
 
 
 @dataclass
@@ -68,7 +67,7 @@ class Model:
     """Model payload."""
 
     model: BaseEstimator
-    input_example: InputExample
+    input_example: ArrayLike | None
 
 
 CLF_METRICS = {
@@ -195,8 +194,10 @@ def iter_cv(report: CrossValidationReport) -> Generator[NestedLogItem, None, Non
 
     estimator = clone(report.estimator_)
     if is_skrub_learner(estimator):
+        # ``predict`` takes a dict environment, so MLflow cannot infer a
+        # meaningful signature from ``report.X``. Log the model without one.
         estimator.fit(report.input_data)
-        input_example: InputExample = _sample_environment(report.input_data)
+        input_example: ArrayLike | None = None
     else:
         estimator.fit(report.X, report.y)
         input_example = _sample_input_example(report.X)
@@ -232,9 +233,8 @@ def iter_estimator(report: EstimatorReport) -> Generator[LogItem, None, None]:
 
     estimator = report.estimator_
     if is_skrub_learner(estimator):
-        test_data = report.test_data
-        assert test_data is not None
-        input_example: InputExample = _sample_environment(test_data)
+        # ``predict`` takes a dict environment: no input example/signature.
+        input_example: ArrayLike | None = None
     else:
         input_example = _sample_input_example(report.X_test)
     yield Params(estimator.get_params())
@@ -252,33 +252,6 @@ def _data_analyze_html(report: CrossValidationReport | EstimatorReport) -> Any:
             return report.data.summarize()._repr_html_()
         finally:
             plt.close("all")
-
-
-def _sample_environment(
-    environment: dict[str, Any], *, max_samples: int = 5
-) -> dict[str, Any]:
-    """Row-sample an evaluation environment for an MLflow input example.
-
-    Each value stays in its own dataframe library. Scalars are left unchanged.
-    """
-    return {
-        key: _sample_environment_value(value, max_samples=max_samples)
-        for key, value in environment.items()
-    }
-
-
-def _sample_environment_value(value: Any, *, max_samples: int) -> Any:
-    if isinstance(value, dict):
-        return _sample_environment(value, max_samples=max_samples)
-    if nw.dependencies.is_polars_dataframe(value) or nw.dependencies.is_polars_series(
-        value
-    ):
-        return value.head(max_samples)
-    if isinstance(value, pd.DataFrame | np.ndarray):
-        return _sample_input_example(value, max_samples=max_samples)
-    if isinstance(value, pd.Series):
-        return value.head(max_samples)
-    return value
 
 
 def _sample_input_example(X: ArrayLike, *, max_samples: int = 5) -> ArrayLike:

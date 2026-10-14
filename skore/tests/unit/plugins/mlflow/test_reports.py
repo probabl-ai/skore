@@ -18,7 +18,6 @@ from skore._plugins.mlflow.reports import (
     Metric,
     Model,
     _dataset_from_Xy,
-    _sample_environment,
     _sample_input_example,
     iter_cv,
     iter_cv_metrics,
@@ -77,20 +76,6 @@ def test_iter_estimator_smoke(report):
 @pytest.mark.parametrize("report", CV_REPORT_FIXTURES, indirect=True)
 def test_iter_cv_smoke(report):
     assert len({type(obj) for obj in iter_cv(report)}) >= 5
-
-
-def test_sample_environment_keeps_dataframe_library() -> None:
-    import polars as pl
-
-    polars_frame = pl.DataFrame({"a": list(range(8))})
-    pandas_frame = pd.DataFrame({"b": list(range(8))})
-
-    sampled = _sample_environment({"polars": polars_frame, "pandas": pandas_frame})
-
-    assert isinstance(sampled["polars"], pl.DataFrame)
-    assert isinstance(sampled["pandas"], pd.DataFrame)
-    assert len(sampled["polars"]) == 5
-    assert len(sampled["pandas"]) == 5
 
 
 def test_sample_input_example_casts_category_to_object() -> None:
@@ -159,9 +144,9 @@ def test_iter_cv_skrub_learner_fits_environment() -> None:
 
     model = _top_level_model(iter_cv(report))
 
-    assert isinstance(model.input_example, dict)
-    assert len(model.model.predict(model.input_example)) == 5
+    assert model.input_example is None
     assert model.model is not report.estimator_
+    assert model.model.__sklearn_is_fitted__()
     assert not report.estimator_.__sklearn_is_fitted__()
 
 
@@ -175,12 +160,12 @@ def test_iter_cv_skrub_data_op_fits_environment() -> None:
 
     model = _top_level_model(iter_cv(report))
 
-    assert isinstance(model.input_example, dict)
-    assert len(model.model.predict(model.input_example)) == 5
+    assert model.input_example is None
+    assert model.model.__sklearn_is_fitted__()
 
 
-def test_iter_estimator_skrub_learner_uses_test_environment() -> None:
-    """Estimator logging samples the test environment for a SkrubLearner."""
+def test_iter_estimator_skrub_learner_has_no_input_example() -> None:
+    """Estimator logging omits the input example for a SkrubLearner."""
     X, y = make_regression(n_samples=40, n_features=3, random_state=0)
     X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0)
     learner = skrub.X().skb.apply(DummyRegressor(), y=skrub.y()).skb.make_learner()
@@ -192,10 +177,8 @@ def test_iter_estimator_skrub_learner_uses_test_environment() -> None:
 
     model = _top_level_model(iter_estimator(report))
 
-    assert isinstance(model.input_example, dict)
-    predictions = model.model.predict(model.input_example)
-    assert len(predictions) == 5
-    assert len(predictions) < len(X_test)
+    assert model.input_example is None
+    assert model.model.__sklearn_is_fitted__()
 
 
 @pytest.mark.parametrize(
