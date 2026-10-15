@@ -91,7 +91,7 @@ def _write_report(
     workspace: Path | None = None,
     project_name: str = "default",
     name: str | None = None,
-) -> Path:
+) -> str:
     workspace = find_workspace() if workspace is None else Path(workspace)
     project_dir = _init_project_dir(workspace, project_name)
     reports_dir = project_dir / "reports"
@@ -118,7 +118,7 @@ def _write_report(
     else:
         _write_report_contents(report, output_dir, workspace, name)
         _write_cv_split_reports(report, output_dir, workspace)
-    return output_dir
+    return str(report.id)
 
 
 def _write_cv_split_reports(
@@ -456,7 +456,7 @@ class Project:
             f"Project(name='{self.name}', mode='local', workspace='{self.workspace}')"
         )
 
-    def put(self, key: str, report: EstimatorReport | CrossValidationReport) -> Path:
+    def put(self, key: str, report: EstimatorReport | CrossValidationReport) -> str:
         """
         Put a key-report pair to the local project.
 

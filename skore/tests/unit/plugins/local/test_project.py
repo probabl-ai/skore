@@ -91,12 +91,13 @@ def test_init_delete(tmp_path):
 def test_put_get_summarize(tmp_path, regression, regression_dummy, cv_regression):
     project = Project(name="regression", workspace=tmp_path)
     regression.checks.summarize()
-    project.put("ridge", regression)
     project.put("dummy", regression_dummy)
     project.put("cv", cv_regression)
+    ridge_id = project.put("ridge", regression)
     fetched_regression = project.get(str(regression.id))
     fetched_dummy = project.get(regression_dummy.id)
     fetched_cv = project.get(cv_regression.id)
+    assert ridge_id == str(regression.id)
     assert ("report", "test", "predict", None) in fetched_regression._cache
     assert (
         "metrics",

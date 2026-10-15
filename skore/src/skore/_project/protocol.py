@@ -15,9 +15,7 @@ class ProjectBackend(Protocol):
 
     name: str
 
-    def put(
-        self, key: str, report: EstimatorReport | CrossValidationReport
-    ) -> None: ...
+    def put(self, key: str, report: EstimatorReport | CrossValidationReport) -> str: ...
 
     def get(self, id: str) -> EstimatorReport | CrossValidationReport: ...
 

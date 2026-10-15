@@ -193,7 +193,7 @@ class TestProject:
             respx_mock.request(method=method, url=url).mock(response)
 
         project = Project(name="name", workspace="workspace")
-        project.put("<key>", binary_classification)
+        report_id = project.put("<key>", binary_classification)
 
         # Retrieve the content of the request
         content = loads(respx_mock.calls.last.request.content.decode())
@@ -206,6 +206,7 @@ class TestProject:
         )
 
         # Compare content with the desired output
+        assert report_id == "skore:report:estimator:42"
         assert content == desired
         assert all("position" not in metric for metric in content["metrics"])
 
