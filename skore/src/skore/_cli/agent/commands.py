@@ -32,8 +32,9 @@ from skore._cli.harnesses.claude import (
 from skore._cli.harnesses.context import HarnessContext
 from skore._cli.project import SkoreConfig, SkoreConfigError, ensure_gitignore_entry
 from skore._cli.runtime import is_non_interactive
-from skore._cli.skore import URI_ENV, apply_hub_uri, resolve_hub_uri
+from skore._cli.skore import apply_hub_uri, resolve_hub_uri
 from skore._cli.style import action_required, console
+from skore._plugins.hub.authentication import HOST_ENV_VAR_NAME
 
 if TYPE_CHECKING:
     from skore._plugins.hub.authentication.registry.distant import Workspace
@@ -147,7 +148,7 @@ def _select_membership(
     default=None,
     help=(
         "Hub host (e.g. ``https://skore.probabl.ai``). "
-        f"Defaults to the ``{URI_ENV}`` environment variable or the public Hub."
+        f"Defaults to the ``{HOST_ENV_VAR_NAME}`` environment variable."
     ),
 )
 @click.option(

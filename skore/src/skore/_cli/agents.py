@@ -414,8 +414,9 @@ def launch_harness(
     agent: Agent, workspace: Path, *, model_id: str = DEFAULT_MODEL_ID
 ) -> None:
     """Launch ``agent``'s harness in ``workspace``."""
-    from skore._cli.skore import URI_ENV, apply_hub_uri
+    from skore._cli.skore import apply_hub_uri
     from skore._cli.style import console
+    from skore._plugins.hub.authentication import HOST_ENV_VAR_NAME
 
     if not is_harness_installed(agent):
         raise RuntimeError(missing_harness_message(agent))
@@ -426,7 +427,7 @@ def launch_harness(
     )
     from skore._cli.project import SkoreConfig, SkoreConfigError
 
-    if URI_ENV not in os.environ:
+    if HOST_ENV_VAR_NAME not in os.environ:
         try:
             config = SkoreConfig.load(workspace)
         except SkoreConfigError as error:

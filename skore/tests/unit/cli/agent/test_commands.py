@@ -66,7 +66,7 @@ def stub_registry(monkeypatch):
 
 @pytest.fixture(autouse=True)
 def default_hub_uri(monkeypatch):
-    """Seed the hub URI so first-run `URI()` does not hit the public hub."""
+    """Seed the hub URI so a run with no ``--host`` still has ``SKORE_HUB_URI``."""
     monkeypatch.setenv("SKORE_HUB_URI", "http://hub.test")
 
 
