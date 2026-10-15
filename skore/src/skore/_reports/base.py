@@ -10,7 +10,6 @@ from typing import TYPE_CHECKING, Any, ClassVar, Generic, Literal, TypeVar, cast
 
 import pandas as pd
 
-from skore._checks import _BUILTIN_CHECKS
 from skore._checks.utils import CheckNotApplicable
 from skore._externals.docscrape import Parameter
 from skore._metrics import Metric
@@ -170,6 +169,8 @@ class _BaseReport(ReportHelpMixin):
         return cast(ReportMetadata, normalized)
 
     def __init__(self) -> None:
+        from skore._checks.builtin import _BUILTIN_CHECKS
+
         self._checks_registry: list[Check] = list(_BUILTIN_CHECKS)
         self._metadata: ReportMetadata = {
             "id": str(uuid7()),

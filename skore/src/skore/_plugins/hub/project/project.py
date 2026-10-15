@@ -228,7 +228,7 @@ class Project:
         """The name of the project."""
         return self.__name
 
-    def put(self, key: str, report: EstimatorReport | CrossValidationReport) -> None:
+    def put(self, key: str, report: EstimatorReport | CrossValidationReport) -> str:
         """
         Put a key-report pair to the hub project.
 
@@ -266,10 +266,12 @@ class Project:
 
         if isinstance(report, EstimatorReport):
             payload = EstimatorReportPayload(project=self, key=key, report=report)
+            report_type_name = "estimator"
             endpoint = "estimator-reports"
             frontend_slug = "estimators"
         else:  # CrossValidationReport
             payload = CrossValidationReportPayload(project=self, key=key, report=report)
+            report_type_name = "cross-validation"
             endpoint = "cross-validation-reports"
             frontend_slug = "cross-validations"
 
@@ -316,8 +318,13 @@ class Project:
             progress.advance(task)
             progress.refresh()
 
-        report_url = f"{self.__frontend_url}/{frontend_slug}/{response.json()['id']}"
+        response_data = response.json()
+        raw_report_id = response_data["id"]
+        report_id = f"skore:report:{report_type_name}:{raw_report_id}"
+        report_url = f"{self.__frontend_url}/{frontend_slug}/{report_id}"
         console.print(f"Consult your report at [link={report_url}]{report_url}[/link]")
+
+        return report_id
 
     def get(self, id: str) -> EstimatorReport | CrossValidationReport:
         """Get a persisted report by its ID (hub URN)."""
