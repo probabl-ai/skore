@@ -181,7 +181,7 @@ class Project:
         self.__mlflow_client = MlflowClient()
         self.__name = name
         experiment = mlflow.set_experiment(name)
-        self.__experiment_id = experiment.experiment_id
+        self.__experiment_id: str = experiment.experiment_id
 
     @property
     def name(self) -> str:
@@ -471,10 +471,12 @@ class Project:
 
 # Since ``skops==0.15`` (https://github.com/skops-dev/skops/pull/535), ``Tree`` and
 # ``TreePredictor`` are no longer trusted by default. Trust them again so tree-based
-# estimators keep serializing with skops.
+# estimators keep serializing with skops. ``skrub.SkrubLearner`` is likewise not
+# trusted by default but is needed to serialize skrub learners.
 SKOPS_TRUSTED_TYPES = [
     "sklearn.ensemble._hist_gradient_boosting.predictor.TreePredictor",
     "sklearn.tree._tree.Tree",
+    "skrub.SkrubLearner",
 ]
 
 
