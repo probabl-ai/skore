@@ -1,6 +1,11 @@
 import matplotlib as mpl
+import pandas as pd
 import pytest
+import skrub
 from matplotlib.figure import Figure
+from sklearn.base import clone
+from sklearn.datasets import make_regression
+from sklearn.linear_model import Ridge
 from sklearn.metrics import (
     make_scorer,
     mean_squared_error,
@@ -8,7 +13,10 @@ from sklearn.metrics import (
     r2_score,
     recall_score,
 )
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import PolynomialFeatures, StandardScaler
 
+from skore import CrossValidationReport, EstimatorReport
 from skore._utils.testing import custom_r2_score
 
 
@@ -227,3 +235,102 @@ def test_data_source(estimator_reports_binary_classification, data_source):
         n_repeats=2, seed=0, data_source=data_source
     )
     assert set(display.importances["data_source"]) == {data_source}
+
+
+def _skrub_data_op(steps, predictor, *, chained):
+    """Build a DataOp equivalent to ``make_pipeline(*steps, predictor)``."""
+    X = skrub.X()
+    if chained:
+        for step in steps:
+            X = X.skb.apply(clone(step))
+        return X.skb.apply(clone(predictor), y=skrub.y())
+    return X.skb.apply(
+        make_pipeline(*[clone(s) for s in steps], clone(predictor)), y=skrub.y()
+    )
+
+
+def _sklearn_estimator(steps, predictor):
+    if not steps:
+        return clone(predictor)
+    return make_pipeline(*[clone(s) for s in steps], clone(predictor))
+
+
+SKRUB_CASES = [
+    pytest.param(steps, chained, id=f"{name}-{'chained' if chained else 'pipeline'}")
+    for name, steps in [
+        ("no_step", []),
+        ("scaler", [StandardScaler()]),
+        ("poly", [PolynomialFeatures(degree=2, include_bias=False)]),
+    ]
+    for chained in [True, False]
+]
+
+
+def _skrub_and_sklearn_reports(steps=(), chained=True):
+    X, y = make_regression(n_samples=60, n_features=3, random_state=0)
+    X = pd.DataFrame(X, columns=["a", "b", "c"])
+    skrub_report = EstimatorReport(
+        _skrub_data_op(steps, Ridge(), chained=chained).skb.make_learner(),
+        train_data={"X": X[:40], "y": y[:40]},
+        test_data={"X": X[40:], "y": y[40:]},
+    )
+    sklearn_report = EstimatorReport(
+        _sklearn_estimator(steps, Ridge()),
+        X_train=X[:40],
+        y_train=y[:40],
+        X_test=X[40:],
+        y_test=y[40:],
+    )
+    return skrub_report, sklearn_report
+
+
+@pytest.mark.parametrize("steps, chained", SKRUB_CASES)
+@pytest.mark.parametrize("at_step", [0, -1])
+@pytest.mark.parametrize("data_source", ["train", "test"])
+def test_skrub_learner_matches_sklearn_pipeline(steps, chained, at_step, data_source):
+    """A skrub learner gives the same importances as the equivalent scikit-learn
+    pipeline, both on the ``X`` node features and on the predictor input."""
+    skrub_report, sklearn_report = _skrub_and_sklearn_reports(steps, chained)
+    kwargs = {
+        "at_step": at_step,
+        "data_source": data_source,
+        "n_repeats": 2,
+        "max_samples": 0.8,
+        "seed": 0,
+    }
+    pd.testing.assert_frame_equal(
+        skrub_report.inspection.permutation_importance(**kwargs).frame(),
+        sklearn_report.inspection.permutation_importance(**kwargs).frame(),
+    )
+
+
+@pytest.mark.parametrize("metric", [None, "neg_mean_squared_error", "r2"])
+def test_skrub_learner_metric(metric):
+    """Metrics are forwarded to the skrub learner."""
+    skrub_report, sklearn_report = _skrub_and_sklearn_reports([StandardScaler()])
+    kwargs = {"metric": metric, "n_repeats": 2, "seed": 0}
+    pd.testing.assert_frame_equal(
+        skrub_report.inspection.permutation_importance(**kwargs).frame(),
+        sklearn_report.inspection.permutation_importance(**kwargs).frame(),
+    )
+
+
+@pytest.mark.parametrize("at_step", [1, -2, "ridge"])
+def test_skrub_learner_invalid_at_step(at_step):
+    """Only 0 and -1 are supported for skrub learners."""
+    skrub_report, _ = _skrub_and_sklearn_reports()
+    with pytest.raises(ValueError, match="at_step must be 0 or -1"):
+        skrub_report.inspection.permutation_importance(at_step=at_step, seed=0)
+
+
+def test_skrub_learner_cross_validation():
+    """Permutation importance works on a cross-validation report of a skrub
+    learner."""
+    X, y = make_regression(n_samples=60, n_features=3, random_state=0)
+    X = pd.DataFrame(X, columns=["a", "b", "c"])
+    data_op = skrub.X().skb.apply(Ridge(), y=skrub.y())
+    report = CrossValidationReport(
+        data_op.skb.make_learner(), data={"X": X, "y": y}, splitter=2
+    )
+    frame = report.inspection.permutation_importance(n_repeats=2, seed=0).frame()
+    assert frame["feature"].tolist() == ["a", "b", "c"]
