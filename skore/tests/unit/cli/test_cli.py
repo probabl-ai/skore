@@ -4,7 +4,10 @@ from __future__ import annotations
 
 import os
 
+import pytest
+
 from skore._cli import skore as _skore
+from skore._plugins.hub.authentication import HOST_ENV_VAR_NAME
 
 
 def test_cli_exposes_builtin_commands():
@@ -180,36 +183,33 @@ def test_cli_subcommand_help_omits_banner():
 # --------------------------------------------------------------------------- #
 
 
-def _stub_uri(monkeypatch, value="https://resolved.test"):
-    monkeypatch.setattr("skore._plugins.hub.authentication.URI", lambda: value)
+def test_resolve_hub_uri_without_url_requires_environment(monkeypatch):
+    monkeypatch.delenv(HOST_ENV_VAR_NAME, raising=False)
 
+    with pytest.raises(ValueError, match="You must provide an host"):
+        _skore.resolve_hub_uri(None)
 
-def test_resolve_hub_uri_without_url_keeps_env_unchanged(monkeypatch):
-    _stub_uri(monkeypatch)
-    monkeypatch.delenv(_skore.URI_ENV, raising=False)
-
-    assert _skore.resolve_hub_uri(None) == "https://resolved.test"
-    assert _skore.URI_ENV not in os.environ
+    assert HOST_ENV_VAR_NAME not in os.environ
 
 
 def test_resolve_hub_uri_sets_explicit_url(monkeypatch):
-    _stub_uri(monkeypatch)
-    monkeypatch.delenv(_skore.URI_ENV, raising=False)
+    monkeypatch.delenv(HOST_ENV_VAR_NAME, raising=False)
     monkeypatch.setattr(_skore, "_discover_api_url", lambda url: None)
 
-    assert _skore.resolve_hub_uri("https://hub.test") == "https://resolved.test"
-    assert os.environ[_skore.URI_ENV] == "https://hub.test"
+    assert _skore.resolve_hub_uri("https://hub.test") == "https://hub.test"
+    assert os.environ[HOST_ENV_VAR_NAME] == "https://hub.test"
 
 
 def test_resolve_hub_uri_discovers_api_url_from_frontend(monkeypatch):
-    _stub_uri(monkeypatch)
-    monkeypatch.delenv(_skore.URI_ENV, raising=False)
+    monkeypatch.delenv(HOST_ENV_VAR_NAME, raising=False)
     monkeypatch.setattr(
         _skore, "_discover_api_url", lambda url: "https://api.discovered.test"
     )
 
-    assert _skore.resolve_hub_uri("https://frontend.test") == "https://resolved.test"
-    assert os.environ[_skore.URI_ENV] == "https://api.discovered.test"
+    assert (
+        _skore.resolve_hub_uri("https://frontend.test") == "https://api.discovered.test"
+    )
+    assert os.environ[HOST_ENV_VAR_NAME] == "https://api.discovered.test"
 
 
 def test_discover_api_url_returns_api_url_on_success(monkeypatch):
