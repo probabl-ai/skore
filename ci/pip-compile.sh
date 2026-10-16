@@ -65,9 +65,22 @@ set -eu
 
         # Escape dependencies to be used in filename, both in Linux and Windows:
         # - make a str based on the JSON array
-        # - replace `==` by `-`
+        # - replace `==` by `_eq_`
+        # - replace '<=' by '_lte_'
+        # - replace '<' by '_lt_'
+        # - replace '>=' by '_gte_'
+        # - replace '>' by '_gt_'
         # - remove all `.*`
-        ESCAPED=$(jq 'join("_and_") | gsub("=="; "-") | gsub("\\.\\*"; "")' -rc <<< "${DEPENDENCIES}")
+        ESCAPED=$( \
+            jq 'join("_and_") |
+                gsub("=="; "_eq_") |
+                gsub("<="; "_lte_") |
+                gsub("<"; "_lt_") |
+                gsub(">="; "_gte_") |
+                gsub(">"; "_gt_") |
+                gsub("\\.\\*"; "")' \
+            -rc <<< "${DEPENDENCIES}" \
+        )
 
         echo "Generating ${PACKAGE} ${EXTRA}-requirements: python==${PYTHON} | ${DEPENDENCIES} (${counter}/${#COMBINATIONS[@]})"
 

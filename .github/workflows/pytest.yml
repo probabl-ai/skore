@@ -171,10 +171,18 @@ jobs:
                   for combination in combinations:
                       # Escape dependencies to be used in filename, both in Linux and Windows
                       # - make a str based on the JSON array
-                      # - replace `==` by `-`
+                      # - replace `==` by `_eq_`
+                      # - replace `<=` by `_lte_`
+                      # - replace `<` by `_lt_`
+                      # - replace `>=` by `_gte_`
+                      # - replace `>` by `_gt_`
                       # - remove all `.*`
                       escaped = "_and_".join(combination["dependencies"])
-                      escaped = escaped.replace("==", "-")
+                      escaped = escaped.replace("==", "_eq_")
+                      escaped = escaped.replace("<=", "_lte_")
+                      escaped = escaped.replace("<", "_lt_")
+                      escaped = escaped.replace(">=", "_gte_")
+                      escaped = escaped.replace(">", "_gt_")
                       escaped = escaped.replace(".*", "")
 
                       combination["dependencies"] = escaped
