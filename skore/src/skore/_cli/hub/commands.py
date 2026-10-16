@@ -42,7 +42,7 @@ def api_key(ctx) -> None:
 
 
 @api_key.command("generate")
-@click.option("--host", default=None, help="Hub host URL.")
+@click.option("--host", required=True, help="Hub host URL.")
 @click.option("--workspace", required=True, help="Hub workspace to mint the key for.")
 @click.option(
     "--name",
@@ -69,7 +69,7 @@ def api_key(ctx) -> None:
     help="Replace a stored key: revoke it on the hub, then mint a new one.",
 )
 def generate(
-    host: str | None,
+    host: str,
     workspace: str,
     name: str | None,
     login_timeout: int,
@@ -77,8 +77,7 @@ def generate(
     force: bool,
 ) -> None:
     """Mint a workspace-scoped Hub API key and store it locally."""
-    if host:
-        host = apply_hub_uri(host, discover=True)
+    host = apply_hub_uri(host, discover=True)
     try:
         mint_api_key(
             host=host,
@@ -100,7 +99,7 @@ def generate(
 
 
 @api_key.command("revoke")
-@click.option("--host", default=None, help="Hub host URL.")
+@click.option("--host", required=True, help="Hub host URL.")
 @click.option("--workspace", required=True, help="Hub workspace whose key to revoke.")
 @click.option(
     "--login-timeout",
@@ -108,10 +107,9 @@ def generate(
     show_default=True,
     help="Seconds to wait for interactive device login.",
 )
-def revoke(host: str | None, workspace: str, login_timeout: int) -> None:
+def revoke(host: str, workspace: str, login_timeout: int) -> None:
     """Revoke a stored Hub API key locally and on the hub."""
-    if host:
-        host = apply_hub_uri(host, discover=True)
+    host = apply_hub_uri(host, discover=True)
     if not revoke_api_key(host=host, workspace=workspace, timeout=login_timeout):
         console.print("No API key stored.")
 

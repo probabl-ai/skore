@@ -18,7 +18,7 @@ with Skore Hub. Authentication uses an API key, in this order:
 
 .. code-block:: bash
 
-    $ skore hub api-key generate --workspace <workspace>
+    $ skore hub api-key generate --host <host> --workspace <workspace>
 
 See :ref:`cli-hub` to generate, list, and revoke keys from the command line.
 Refer to the documentation of :class:`Project` for the detailed API.
@@ -38,7 +38,12 @@ mode-specific keyword arguments.
    project_local = Project(name="my-xp", mode="local", workspace=Path("/tmp/skore"))
 
    # Skore Hub (requires an API key in the registry or SKORE_HUB_API_KEY)
-   project_hub = Project(name="my-xp", mode="hub", workspace="my-workspace")
+   project_hub = Project(
+       name="my-xp",
+       mode="hub",
+       workspace="my-workspace",
+       host="my-host",
+   )
 
    # MLflow experiment
    project_mlflow = Project(
@@ -90,6 +95,7 @@ method is called is the source. :ref:`cli-sync` runs the same transfer from the 
        name=project_local.name,
        mode="hub",
        workspace="my-workspace",
+       host="my-host",
    )
    result = project_local.sync(project_hub)
 
@@ -101,7 +107,7 @@ destination is built with the caller's name and the supplied mode-specific argum
 
 .. code-block:: python
 
-   result = project_local.sync("hub", workspace="my-workspace")
+   result = project_local.sync("hub", workspace="my-workspace", host="my-host")
 
 Reports are matched using the ``report_id`` column returned by
 ``Project.summarize().frame()`` and copied with their keys. Existing IDs are skipped;
