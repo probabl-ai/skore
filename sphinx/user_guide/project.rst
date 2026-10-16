@@ -18,7 +18,7 @@ with Skore Hub. Authentication uses an API key, in this order:
 
 .. code-block:: bash
 
-    $ skore hub api-key generate --host https://api.skore.probabl.ai --workspace <workspace>
+    $ skore hub api-key generate --host <host> --workspace <workspace>
 
 See :ref:`cli-hub` to generate, list, and revoke keys from the command line.
 Refer to the documentation of :class:`Project` for the detailed API.
