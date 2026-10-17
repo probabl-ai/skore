@@ -714,3 +714,35 @@ How to reduce the risk
 - or set sensible non-default values manually.
 
 Check out the :ref:`example for this check <example_skd016_estimator_not_tuned>`.
+
+.. _skd017-train-test-duplicates:
+
+SKD017 - Duplicate rows across train and test
+---------------------------------------------
+
+How it is detected
+^^^^^^^^^^^^^^^^^^
+
+This check only applies when both ``X_train`` and ``X_test`` are
+narwhals-compatible DataFrames sharing the same columns. For each row in
+``X_test``, `skore` checks whether an identical row (across all feature columns)
+exists in ``X_train``. The check reports an issue with the number and share of
+test rows that are duplicated from the training set. For cross-validation
+reports, duplicates are counted across every fold.
+
+Why it matters
+^^^^^^^^^^^^^^
+
+When rows from the training set also appear in the test set, the model is
+evaluated on samples it was trained on. The reported score becomes optimistic
+and no longer reflects generalization to unseen data. This commonly happens
+when a dataset contains exact duplicates that are split without
+de-duplication.
+
+How to reduce the risk
+^^^^^^^^^^^^^^^^^^^^^^
+
+- de-duplicate the dataset before splitting into train and test,
+- if duplicates are legitimate, use a grouped splitter such as
+  :class:`~sklearn.model_selection.GroupShuffleSplit` so identical records stay
+  on the same side of the split.

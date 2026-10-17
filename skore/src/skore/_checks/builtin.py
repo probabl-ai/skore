@@ -18,6 +18,7 @@ from skore._checks.skd013_train_test_time_overlap import CheckTrainTestTimeOverl
 from skore._checks.skd014_hyperparams_at_search_edge import CheckHyperparamsAtSearchEdge
 from skore._checks.skd015_search_params_to_tune import CheckSearchParamsToTune
 from skore._checks.skd016_estimator_not_tuned import CheckEstimatorNotTuned
+from skore._checks.skd017_train_test_duplicates import CheckTrainTestDuplicates
 
 _BUILTIN_CHECKS = [
     CheckOverfitting(),
@@ -36,4 +37,5 @@ _BUILTIN_CHECKS = [
     CheckHyperparamsAtSearchEdge(),
     CheckSearchParamsToTune(),
     CheckEstimatorNotTuned(),
+    CheckTrainTestDuplicates(),
 ]
