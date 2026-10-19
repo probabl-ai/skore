@@ -101,8 +101,8 @@ class Project:
             The URI of the MLflow tracking server.
 
         host : str, optional
-            Hub backend address when ``mode="hub"`` (for example
-            ``https://api.skore.probabl.ai``), not the frontend address. If omitted,
+            Hub address when ``mode="hub"`` (for example
+            ``https://skore.probabl.ai``). If omitted,
             ``SKORE_HUB_URI`` is used. Ignored for other modes.
 
     Attributes
@@ -211,8 +211,8 @@ class Project:
                       - otherwise create 'skore' in the current working directory.
 
             host : str, optional
-                Hub backend address when ``mode="hub"`` (for example
-                ``https://api.skore.probabl.ai``), not the frontend address. If omitted,
+                Hub address when ``mode="hub"`` (for example
+                ``https://skore.probabl.ai``). If omitted,
                 ``SKORE_HUB_URI`` is used. Ignored for other modes.
 
             tracking_uri : str, mode:mlflow only.
@@ -483,7 +483,7 @@ class Project:
                 The URI of the MLflow tracking server.
 
             host : str, optional
-                Hub backend address when ``mode="hub"``. See the :class:`Project` class
+                Hub address when ``mode="hub"``. See the :class:`Project` class
                 docstring for details.
         """
         plugin, parameters = Project.__setup_plugin(mode, name, **kwargs)

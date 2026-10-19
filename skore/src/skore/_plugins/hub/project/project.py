@@ -184,9 +184,8 @@ class Project:
         projects, and resources. It can be a company, organization, or team that
         operates independently within the system.
     host : str, optional
-        Backend address of the Hub instance (for example
-        ``https://api.skore.probabl.ai``), not the frontend address
-        (``https://skore.probabl.ai``). If omitted, ``SKORE_HUB_URI`` is used.
+        Hub address (for example ``https://skore.probabl.ai``). If omitted,
+        ``SKORE_HUB_URI`` is used.
 
     Attributes
     ----------
@@ -195,7 +194,7 @@ class Project:
     workspace : str
         The workspace of the project.
     host : str
-        Backend address of the Hub instance.
+        Hub address.
     """
 
     __REPORT_URN_PATTERN = re.compile(
@@ -224,9 +223,8 @@ class Project:
             projects, and resources. It can be a company, organization, or team that
             operates independently within the system.
         host : str, optional
-            Backend address of the Hub instance (for example
-            ``https://api.skore.probabl.ai``), not the frontend address
-            (``https://skore.probabl.ai``). If omitted, ``SKORE_HUB_URI`` is used.
+            Hub address (for example ``https://skore.probabl.ai``). If omitted,
+            ``SKORE_HUB_URI`` is used.
         """
         assert host is not None
 
@@ -483,9 +481,8 @@ class Project:
             projects, and resources. It can be a company, organization, or team that
             operates independently within the system.
         host : str, optional
-            Backend address of the Hub instance (for example
-            ``https://api.skore.probabl.ai``), not the frontend address
-            (``https://skore.probabl.ai``). If omitted, ``SKORE_HUB_URI`` is used.
+            Hub address (for example ``https://skore.probabl.ai``). If omitted,
+            ``SKORE_HUB_URI`` is used.
         """
         assert host is not None
 

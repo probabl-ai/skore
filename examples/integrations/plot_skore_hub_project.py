@@ -42,7 +42,7 @@ workspace.
 #
 # .. code-block:: bash
 #
-#     $ skore hub api-key generate --host https://api.skore.probabl.ai --workspace <workspace>
+#     $ skore hub api-key generate --host https://skore.probabl.ai --workspace <workspace>
 
 # sphinx_gallery_start_ignore
 #

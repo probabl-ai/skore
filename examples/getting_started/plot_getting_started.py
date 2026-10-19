@@ -360,7 +360,7 @@ _ = cv_coefficients.plot(select_k=15, sorting_order="descending")
 #
 #    .. code-block:: bash
 #
-#        $ skore hub api-key generate --host https://api.skore.probabl.ai --workspace <workspace>
+#        $ skore hub api-key generate --host https://skore.probabl.ai --workspace <workspace>
 #
 #    You can also store reports locally using `mode="local"` when creating or loading
 #    projects via `skore.Project`.
