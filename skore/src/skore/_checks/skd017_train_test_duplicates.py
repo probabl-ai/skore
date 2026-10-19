@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Iterable
 from typing import TYPE_CHECKING
 
 import narwhals as nw
@@ -12,15 +13,52 @@ if TYPE_CHECKING:
     from skore._reports.estimator.report import EstimatorReport
 
 
+def _count_test_rows_in_train(
+    X_train: nw.DataFrame,
+    X_test: nw.DataFrame,
+    y_train: Iterable | None,
+    y_test: Iterable | None,
+) -> int:
+    """Count test rows whose features and label also appear in train.
+
+    Comparison via ``is_duplicated`` treats NaN as equal; labels, when present,
+    are included so rows with matching features but different labels don't count.
+    """
+    columns = X_train.columns
+    if y_train is not None and y_test is not None:
+        X_train = X_train.with_columns(
+            __skd017_y__=nw.new_series(
+                "__skd017_y__", list(y_train), backend=nw.get_native_namespace(X_train)
+            )
+        )
+        X_test = X_test.with_columns(
+            __skd017_y__=nw.new_series(
+                "__skd017_y__", list(y_test), backend=nw.get_native_namespace(X_test)
+            )
+        )
+        columns = X_train.columns
+
+    train_unique = X_train.select(columns).unique()
+    test_unique = X_test.select(columns).unique()
+
+    combined = nw.concat([train_unique, test_unique], how="vertical")
+    shared_mask = combined.is_duplicated().to_list()[len(train_unique) :]
+    matching = test_unique[[i for i, shared in enumerate(shared_mask) if shared]]
+    if len(matching) == 0:
+        return 0
+
+    # Map the matching unique rows back to the number of full test rows they cover.
+    expanded = nw.concat([matching.unique(), X_test.select(columns)], how="vertical")
+    expanded_mask = expanded.is_duplicated().to_list()[len(matching.unique()) :]
+    return sum(expanded_mask)
+
+
 class CheckTrainTestDuplicates(Check):
-    """Check for duplicate rows shared between train and test (SKD017).
+    """Check for duplicate rows across train and test (SKD017).
 
-    Flags rows present in ``X_test`` that are identical to rows in ``X_train``.
-    Such overlap leaks training data into the evaluation set and inflates the
-    reported score.
-
-    Raises :class:`CheckNotApplicable` when train data is unavailable or when
-    the inputs are not narwhals-compatible DataFrames.
+    Detects rows in the test set that are identical to training rows, which leaks
+    training data into the evaluation. Raises :class:`CheckNotApplicable` when
+    train data is unavailable or inputs are not narwhals DataFrames.
     """
 
     code = "SKD017"
@@ -28,6 +66,7 @@ class CheckTrainTestDuplicates(Check):
     report_types = ["estimator", "cross-validation"]
     docs_url = "skd017-train-test-duplicates"
     severity = "issue"
+    slow = True
 
     def check_function(self, report: _BaseReport) -> str | None:
         """Detect rows shared between the train and test feature matrices."""
@@ -63,11 +102,15 @@ class CheckTrainTestDuplicates(Check):
                     "Train and test feature matrices have different columns."
                 )
 
-            columns = X_train.columns
-            train_keys = {tuple(row) for row in X_train.select(columns).iter_rows()}
-            n_duplicates = sum(
-                tuple(row) in train_keys for row in X_test.select(columns).iter_rows()
-            )
+            X_test = X_test.select(X_train.columns)
+            try:
+                n_duplicates = _count_test_rows_in_train(
+                    X_train, X_test, fold.y_train, fold.y_test
+                )
+            except (TypeError, ValueError) as err:
+                raise CheckNotApplicable(
+                    "Could not compare train and test rows for duplicates."
+                ) from err
 
             total_duplicates += n_duplicates
             total_test += len(X_test)
