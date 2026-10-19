@@ -1,8 +1,11 @@
 import numpy as np
 import pandas as pd
 import pytest
+from sklearn.compose import ColumnTransformer
+from sklearn.ensemble import HistGradientBoostingClassifier
 from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.model_selection import KFold
+from sklearn.pipeline import make_pipeline
 
 from skore import EstimatorReport, evaluate
 from skore._checks.skd017_train_test_duplicates import CheckTrainTestDuplicates
@@ -95,4 +98,58 @@ def test_not_applicable_when_x_test_is_not_a_dataframe():
         y_test=y_test,
     )
     with pytest.raises(CheckNotApplicable, match="Got ndarray"):
+        CheckTrainTestDuplicates().check_function(report)
+
+
+def test_duplicates_with_nan_are_detected():
+    """Rows containing NaN that are duplicated across train/test still count."""
+    X_train = pd.DataFrame({"a": [1.0, np.nan, 2.0, 3.0], "b": [1.0, 2.0, 3.0, 4.0]})
+    # First test row is a verbatim copy of the NaN-containing train row.
+    X_test = pd.DataFrame({"a": [np.nan, 9.0], "b": [2.0, 9.0]})
+    report = EstimatorReport(
+        HistGradientBoostingClassifier(),
+        X_train=X_train,
+        y_train=[0, 1, 0, 1],
+        X_test=X_test,
+        y_test=[1, 0],
+    )
+    explanation = CheckTrainTestDuplicates().check_function(report)
+    assert explanation is not None
+    assert "1 test row(s)" in explanation
+
+
+def test_identical_features_different_label_not_counted():
+    """A test row sharing features but not label with train is not a duplicate."""
+    X_train = pd.DataFrame({"a": [1.0, 2.0, 3.0], "b": [1.0, 2.0, 3.0]})
+    X_test = X_train.iloc[:1].copy()  # same features as train row 0
+    y_train = [0, 1, 0]
+    y_test = [1]  # different label from train row 0 (which is 0)
+    report = EstimatorReport(
+        LogisticRegression(),
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
+    )
+    assert CheckTrainTestDuplicates().check_function(report) is None
+
+
+def test_not_applicable_when_rows_cannot_be_compared():
+    """Uncomparable (list-valued) cells degrade to CheckNotApplicable."""
+    # A column-dropping transformer lets the estimator fit while the report
+    # still stores the raw list-valued column that cannot be de-duplicated.
+    pipe = make_pipeline(
+        ColumnTransformer([("num", "passthrough", ["b"])], remainder="drop"),
+        LogisticRegression(),
+    )
+    X_train = pd.DataFrame({"a": [[1, 2], [3, 4], [5, 6]], "b": [1.0, 2.0, 3.0]})
+    X_test = pd.DataFrame({"a": [[1, 2]], "b": [1.0]})
+    report = EstimatorReport(
+        pipe,
+        X_train=X_train,
+        y_train=[0, 1, 0],
+        X_test=X_test,
+        y_test=[0],
+    )
+    with pytest.raises(CheckNotApplicable):
         CheckTrainTestDuplicates().check_function(report)
