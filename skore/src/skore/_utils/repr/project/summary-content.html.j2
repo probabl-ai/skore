@@ -1,5 +1,17 @@
+{% set report_tabs = [
+    {"label": "Journal", "help_variant": "text", "help_text": "Objective, ideas, backlog, and history rendered from the project."},
+    {"label": "Reports", "help_variant": "text", "help_text": "Table, plot, and trend views of the persisted reports."},
+] %}
+{% set report_class_name = "Summary" %}
 <div class="container summary-container" data-view="table">
     <header class="title">{{ report_title | e }}</header>
+    <div class="report-tabset">
+        {% include "common/report_tabset_chrome.html.j2" %}
+        <div class="report-tab-panels">
+            <div class="report-tab-panel">
+                <pre class="journal">{{ journal_markdown }}</pre>
+            </div>
+            <div class="report-tab-panel">
     {% if not has_rows %}
     <p class="summary-empty">No report found in the project. Use the <code>put</code> method to add reports.</p>
     {% else %}
@@ -42,4 +54,7 @@
     {% include "project/components/plot.html.j2" %}
     {% include "project/components/trend.html.j2" %}
     {% endif %}
+            </div>
+        </div>
+    </div>
 </div>

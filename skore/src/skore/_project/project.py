@@ -260,6 +260,49 @@ class Project:
             return self.__project.tracking_uri
         return None
 
+    @property
+    def objective(self) -> str:
+        """The project objective, as plain text."""
+        return self.__project.objective()
+
+    @objective.setter
+    def objective(self, text: str) -> None:
+        if not isinstance(text, str):
+            raise TypeError(f"Objective must be a string (found '{type(text)}')")
+        self.__project.set_objective(text)
+
+    @property
+    def experiments(self):
+        """The experiments stored in this project."""
+        from skore._project.experiments import Experiments
+
+        return Experiments(self)
+
+    def _experiment_rows(self):
+        return self.__project.experiments()
+
+    def _write_experiment(self, row):
+        """Validate one transition and persist that row."""
+        from skore._project.experiments import (
+            Experiment,
+            normalize_row,
+            transition_allowed,
+        )
+
+        stored = normalize_row(row)
+        current = None
+        for existing in self._experiment_rows():
+            if str(existing["id"]) == stored["id"]:
+                current = existing["status"]
+                break
+        if not transition_allowed(current, stored["status"], stored["plan"]):
+            raise ValueError(
+                f"Cannot move experiment {stored['id']} from {current!r} "
+                f"to {stored['status']!r}."
+            )
+        self.__project.upsert_experiment(stored)
+        return Experiment(self, stored)
+
     def put(self, key: str, report: EstimatorReport | CrossValidationReport):
         """
         Put a key-report pair to the project.
@@ -277,8 +320,8 @@ class Project:
 
         Returns
         -------
-        None
-            The report is persisted in the project backend.
+        report : EstimatorReport or CrossValidationReport
+            The same report, with an id assigned when it did not have one.
 
         Examples
         --------
@@ -305,6 +348,14 @@ class Project:
                 f"(found '{type(report)}')"
             )
 
+        stored = self._store_report(key, report)
+        self._raise_check_ideas(key, stored)
+        return stored
+
+    def _store_report(self, key: str, report: EstimatorReport | CrossValidationReport):
+        """Persist ``report`` without changing experiment rows."""
+        from skore._project.experiments import ensure_report_id
+
         if self.ml_task is not None:
             if report.ml_task != self.ml_task:
                 raise ValueError(
@@ -316,7 +367,61 @@ class Project:
         else:
             self.ml_task = report.ml_task
 
-        return self.__project.put(key=key, report=report)
+        ensure_report_id(report)
+        self.__project.put(key=key, report=report)
+        return report
+
+    def _raise_check_ideas(
+        self, key: str, report: EstimatorReport | CrossValidationReport
+    ):
+        """Append one idea per issue or tip check, once per source and code."""
+        from skore._agent import create_experiment
+        from skore._project.experiments import normalize_row
+
+        cache = getattr(report, "_check_results_cache", None) or {}
+        if not cache:
+            try:
+                report.checks.summarize(fast_mode=True)
+            except Exception:
+                return
+            cache = getattr(report, "_check_results_cache", None) or {}
+        if report.id is None:
+            return
+        frame = self.experiments.frame
+        for code, result in cache.items():
+            section = result.get("section") if isinstance(result, dict) else None
+            if section not in {"issue", "tip"}:
+                continue
+            title = result.get("title") if isinstance(result, dict) else None
+            if not title:
+                continue
+            if frame.empty:
+                matched = frame
+            else:
+                same_source = (
+                    frame["source_id"].fillna("").astype(str).eq(str(report.id))
+                )
+                same_code = frame["check_code"].fillna("").astype(str).eq(str(code))
+                matched = frame.loc[same_source & same_code]
+            if not matched.empty:
+                existing = normalize_row(matched.iloc[0].to_dict())
+                if existing["status"] == "idea" and existing["question"] != title:
+                    self._write_experiment({**existing, "question": title})
+                continue
+            stem = f"{key}-{str(code).lower()}"
+            suffix = 2
+            taken = set() if frame.empty else set(frame["stem"].astype(str))
+            while stem in taken:
+                stem = f"{key}-{str(code).lower()}-{suffix}"
+                suffix += 1
+            create_experiment(
+                self,
+                stem=stem,
+                question=str(title),
+                source_id=str(report.id),
+                check_code=str(code),
+            )
+            frame = self.experiments.frame
 
     def get(self, id: str) -> EstimatorReport | CrossValidationReport:
         """
@@ -383,7 +488,7 @@ class Project:
                     Index(frame.pop("id"), name="id", dtype=str),
                 ]
             )
-        return Summary(frame, self.__project)
+        return Summary(frame, self)
 
     def sync(
         self,

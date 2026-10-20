@@ -597,7 +597,7 @@ class TestProject:
 
         assert summary == [
             {
-                "id": "skore:report:estimator:<report_id_0>",
+                "id": "<report_id_0>",
                 "report_id": "<report_id_0>",
                 "key": "<key>",
                 "date": nowstr,
@@ -622,7 +622,7 @@ class TestProject:
                 "predict_time_std": None,
             },
             {
-                "id": "skore:report:estimator:<report_id_1>",
+                "id": "<report_id_1>",
                 "report_id": "<report_id_1>",
                 "key": "<key>",
                 "date": nowstr,
@@ -647,7 +647,7 @@ class TestProject:
                 "predict_time_std": None,
             },
             {
-                "id": "skore:report:cross-validation:<report_id_2>",
+                "id": "<report_id_2>",
                 "report_id": "<report_id_2>",
                 "key": "<key>",
                 "date": nowstr,

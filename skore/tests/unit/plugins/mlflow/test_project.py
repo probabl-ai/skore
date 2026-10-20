@@ -23,6 +23,15 @@ from skore._plugins.mlflow.project import (
 )
 
 
+def _run_id(report_id: str) -> str:
+    runs = mlflow.search_runs(
+        filter_string=f"tags.skore_report_id = '{report_id}'",
+        output_format="list",
+        max_results=1,
+    )
+    return runs[0].info.run_id
+
+
 def test_format_date() -> None:
     assert format_date(0) == "1970-01-01T00:00:00+00:00"
     assert format_date(None) == ""
@@ -262,7 +271,7 @@ class TestProject:
         assert metadata[expected_metric] is not None
         assert metadata["fit_time"] is not None
 
-        run = mlflow.get_run(metadata["id"])
+        run = mlflow.get_run(_run_id(metadata["id"]))
         assert run.info.run_name == "<key>"
 
         report_dir = Path(
@@ -322,7 +331,7 @@ class TestProject:
         assert metadata["fit_time_std"] is not None
         assert metadata["predict_time_std"] is not None
 
-        run = mlflow.get_run(metadata["id"])
+        run = mlflow.get_run(_run_id(metadata["id"]))
         assert run.data.metrics["roc_auc"] == pytest.approx(metadata["roc_auc_mean"])
         assert run.data.metrics["roc_auc_std"] == pytest.approx(metadata["roc_auc_std"])
         assert run.data.metrics["fit_time_std"] == pytest.approx(
@@ -333,7 +342,7 @@ class TestProject:
 
         report_dir = Path(
             mlflow.artifacts.download_artifacts(
-                run_id=metadata["id"],
+                run_id=_run_id(metadata["id"]),
                 tracking_uri=project.tracking_uri,
             )
         )
@@ -358,7 +367,7 @@ class TestProject:
         project.put("<key>", report)
 
         (metadata,) = project.summarize()
-        run = mlflow.get_run(metadata["id"])
+        run = mlflow.get_run(_run_id(metadata["id"]))
         assert run.data.tags["skore_status"] == "completed"
 
         restored = project.get(metadata["id"])

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import logging
 import re
 import warnings
@@ -285,11 +286,27 @@ class Project:
             else:
                 raise TypeError(type(obj))
 
+    def _report_run_id(self, report_id: str) -> str:
+        """Return the MLflow run id that stores ``report_id``."""
+        runs = mlflow.search_runs(
+            experiment_ids=[self.experiment_id],
+            filter_string=(
+                f"tags.skore_report_id = '{report_id}' "
+                "and tags.skore_status = 'completed'"
+            ),
+            output_format="list",
+            max_results=1,
+        )
+        if runs:
+            return str(runs[0].info.run_id)
+        return report_id
+
     def get(self, id: str) -> EstimatorReport | CrossValidationReport:
-        """Get a persisted report by its MLflow run id."""
+        """Get a persisted report by its skore report id."""
+        run_id = self._report_run_id(id)
         try:
             pickle_path = mlflow.artifacts.download_artifacts(
-                run_id=id,
+                run_id=run_id,
                 artifact_path="report.pkl",
                 tracking_uri=self.tracking_uri,
             )
@@ -314,6 +331,9 @@ class Project:
 
         metadatas = []
         for run in runs:
+            tags = getattr(getattr(run, "data", None), "tags", None) or {}
+            if tags.get("skore_kind") == "experiment":
+                continue
             try:
                 metadatas.append(self._run_to_metadata(run))
             except KeyError:
@@ -356,9 +376,10 @@ class Project:
         else:
             raise ValueError(f"Unsupported report type: {report_type}")
 
+        report_id = tags.get("skore_report_id")
         metadata = {
-            "id": run.info.run_id,
-            "report_id": tags.get("skore_report_id"),
+            "id": report_id or run.info.run_id,
+            "report_id": report_id,
             "key": run.info.run_name,
             "date": format_date(run.info.start_time),
             "report_type": report_type,
@@ -382,6 +403,66 @@ class Project:
             "predict_time_std": None,
         }
         return cast(Metadata, {**metadata, **metrics})
+
+    def _experiment_runs(self) -> list[MLFlowRun]:
+        runs = mlflow.search_runs(
+            experiment_ids=[self.experiment_id],
+            filter_string="tags.skore_kind = 'experiment'",
+            output_format="list",
+        )
+        return list(runs)
+
+    def experiments(self) -> list[dict[str, Any]]:
+        """Return every experiment row stored in this MLflow experiment."""
+        rows = []
+        for run in self._experiment_runs():
+            artifact = mlflow.artifacts.download_artifacts(
+                run_id=run.info.run_id,
+                artifact_path="experiment.json",
+                tracking_uri=self.tracking_uri,
+            )
+            rows.append(json.loads(Path(artifact).read_text(encoding="UTF-8")))
+        return rows
+
+    def upsert_experiment(self, row: dict[str, Any]) -> None:
+        """Create or replace the MLflow run that stores one experiment row."""
+        if mlflow.active_run() is not None:
+            raise RuntimeError(
+                "An active MLflow run is already open. "
+                "Call mlflow.end_run() before updating an experiment."
+            )
+        existing = mlflow.search_runs(
+            experiment_ids=[self.experiment_id],
+            filter_string=f"tags.skore_experiment_id = '{row['id']}'",
+            output_format="list",
+            max_results=1,
+        )
+        run_id = existing[0].info.run_id if existing else None
+        with mlflow.start_run(
+            run_id=run_id,
+            run_name=None if run_id else row["stem"],
+            experiment_id=self.experiment_id,
+        ):
+            mlflow.set_tags(
+                {
+                    "skore_kind": "experiment",
+                    "skore_experiment_id": row["id"],
+                    "skore_experiment_status": row["status"],
+                }
+            )
+            mlflow.log_dict(row, "experiment.json")
+
+    def objective(self) -> str:
+        """Return the MLflow experiment note."""
+        experiment = self.__mlflow_client.get_experiment(self.experiment_id)
+        tags = experiment.tags or {}
+        return tags.get("mlflow.note.content", "") or ""
+
+    def set_objective(self, text: str) -> None:
+        """Store the objective as the MLflow experiment note."""
+        self.__mlflow_client.set_experiment_tag(
+            self.experiment_id, "mlflow.note.content", text
+        )
 
     @staticmethod
     def delete(*, name: str, tracking_uri: str | None = None) -> None:
