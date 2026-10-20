@@ -53,6 +53,7 @@ from json import dump, load
 from pathlib import Path
 from shutil import move
 from stat import S_IMODE
+from sys import platform
 from tempfile import NamedTemporaryFile, gettempdir
 from typing import TYPE_CHECKING, Any, Final, ParamSpec, TypeVar
 
@@ -62,6 +63,7 @@ from keyring.backends.fail import Keyring as FailBackend
 from keyring.core import recommended
 from keyring.errors import PasswordDeleteError
 
+from skore import console
 from skore._plugins.hub.authentication.uri import normalize
 
 if TYPE_CHECKING:
@@ -183,6 +185,17 @@ def set(*, id: int, host: str, workspace: str, key: str) -> None:
     new = Key(id=id, host=host, workspace=workspace)
 
     if registry["type"] == "secret":
+        # macOS binds a keychain item to the executable that created it. After
+        # switching Python versions, updating that item fails with
+        # errSecInvalidOwnerEdit (-25244). Read it first so macOS can prompt
+        # to authorize the current executable before the update.
+        if platform != "darwin":
+            console.print(
+                "macOS may open a dialog to authorize keychain access. "
+                'Choose "Always Allow" to grant it to this Python executable.'
+            )
+
+        get_password(KEYRING_SERVICE, f"{host}:{workspace}")
         set_password(KEYRING_SERVICE, f"{host}:{workspace}", key)
     else:
         new.key = key
@@ -259,6 +272,17 @@ def delete(*, host: str, workspace: str) -> None:
 
     if registry["type"] == "secret":
         with suppress(PasswordDeleteError):
+            # macOS binds a keychain item to the executable that created it. After
+            # switching Python versions, deleting that item fails with
+            # errSecInvalidOwnerEdit (-25244). Read it first so macOS can prompt
+            # to authorize the current executable before the deletion.
+            if platform != "darwin":
+                console.print(
+                    "macOS may open a dialog to authorize keychain access. "
+                    'Choose "Always Allow" to grant it to this Python executable.'
+                )
+
+            get_password(KEYRING_SERVICE, f"{host}:{workspace}")
             delete_password(KEYRING_SERVICE, f"{host}:{workspace}")
 
     registry["keys"] = [
