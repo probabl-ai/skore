@@ -183,6 +183,11 @@ def set(*, id: int, host: str, workspace: str, key: str) -> None:
     new = Key(id=id, host=host, workspace=workspace)
 
     if registry["type"] == "secret":
+        # macOS binds a keychain item to the executable that created it. After
+        # switching Python versions, updating that item fails with
+        # errSecInvalidOwnerEdit (-25244). Read it first so macOS can prompt
+        # to authorize the current executable before the update.
+        get_password(KEYRING_SERVICE, f"{host}:{workspace}")
         set_password(KEYRING_SERVICE, f"{host}:{workspace}", key)
     else:
         new.key = key
@@ -259,6 +264,11 @@ def delete(*, host: str, workspace: str) -> None:
 
     if registry["type"] == "secret":
         with suppress(PasswordDeleteError):
+            # macOS binds a keychain item to the executable that created it. After
+            # switching Python versions, deleting that item fails with
+            # errSecInvalidOwnerEdit (-25244). Read it first so macOS can prompt
+            # to authorize the current executable before the deletion.
+            get_password(KEYRING_SERVICE, f"{host}:{workspace}")
             delete_password(KEYRING_SERVICE, f"{host}:{workspace}")
 
     registry["keys"] = [
