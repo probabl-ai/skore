@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from collections.abc import Iterable
 from typing import TYPE_CHECKING
 
 import narwhals as nw
@@ -10,55 +9,68 @@ from skore._checks.utils import CheckNotApplicable, cast_report
 
 if TYPE_CHECKING:
     from skore._reports.base import _BaseReport
+    from skore._reports.cross_validation.report import CrossValidationReport
     from skore._reports.estimator.report import EstimatorReport
 
 
-def _count_test_rows_in_train(
-    X_train: nw.DataFrame,
-    X_test: nw.DataFrame,
-    y_train: Iterable | None,
-    y_test: Iterable | None,
-) -> int:
-    """Count test rows whose features and label also appear in train.
+def _full_dataset(
+    report: EstimatorReport | CrossValidationReport,
+) -> tuple[nw.DataFrame, list | None]:
+    """Return the full (unsplit) feature matrix and target of the report.
 
-    Comparison via ``is_duplicated`` treats NaN as equal; labels, when present,
-    are included so rows with matching features but different labels don't count.
+    For cross-validation reports the data is already unsplit (``report.X`` /
+    ``report.y``). For estimator reports, train and test are re-concatenated so
+    the check runs once on the data as it was before splitting.
     """
-    columns = X_train.columns
-    if y_train is not None and y_test is not None:
-        X_train = X_train.with_columns(
-            __skd017_y__=nw.new_series(
-                "__skd017_y__", list(y_train), backend=nw.get_native_namespace(X_train)
+    if report._report_type == "cross-validation":
+        if not nw.dependencies.is_into_dataframe(report.X):
+            raise CheckNotApplicable(
+                "Input data is not a narwhals compatible DataFrame. "
+                f"Got {type(report.X).__name__}."
             )
+        X = nw.from_native(report.X, eager_only=True)
+        return X, (None if report.y is None else list(report.y))
+
+    if report.X_train is None:
+        raise CheckNotApplicable("Train data is unavailable.")
+
+    if not nw.dependencies.is_into_dataframe(report.X_train):
+        raise CheckNotApplicable(
+            "Input data is not a narwhals compatible DataFrame. "
+            f"Got {type(report.X_train).__name__}."
         )
-        X_test = X_test.with_columns(
-            __skd017_y__=nw.new_series(
-                "__skd017_y__", list(y_test), backend=nw.get_native_namespace(X_test)
-            )
+    if not nw.dependencies.is_into_dataframe(report.X_test):
+        raise CheckNotApplicable(
+            "Input data is not a narwhals compatible DataFrame. "
+            f"Got {type(report.X_test).__name__}."
         )
-        columns = X_train.columns
 
-    train_unique = X_train.select(columns).unique()
-    test_unique = X_test.select(columns).unique()
+    X_train = nw.from_native(report.X_train, eager_only=True)
+    X_test = nw.from_native(report.X_test, eager_only=True)
+    if sorted(X_train.columns) != sorted(X_test.columns):
+        raise CheckNotApplicable(
+            "Train and test feature matrices have different columns."
+        )
+    X = nw.concat([X_train, X_test.select(X_train.columns)], how="vertical")
 
-    combined = nw.concat([train_unique, test_unique], how="vertical")
-    shared_mask = combined.is_duplicated().to_list()[len(train_unique) :]
-    matching = test_unique[[i for i, shared in enumerate(shared_mask) if shared]]
-    if len(matching) == 0:
-        return 0
-
-    # Map the matching unique rows back to the number of full test rows they cover.
-    expanded = nw.concat([matching.unique(), X_test.select(columns)], how="vertical")
-    expanded_mask = expanded.is_duplicated().to_list()[len(matching.unique()) :]
-    return sum(expanded_mask)
+    if report.y_train is None or report.y_test is None:
+        return X, None
+    y = list(report.y_train) + list(report.y_test)
+    return X, y
 
 
 class CheckTrainTestDuplicates(Check):
-    """Check for duplicate rows across train and test (SKD017).
+    """Check for duplicate rows in the dataset before splitting (SKD017).
 
-    Detects rows in the test set that are identical to training rows, which leaks
-    training data into the evaluation. Raises :class:`CheckNotApplicable` when
-    train data is unavailable or inputs are not narwhals DataFrames.
+    The only way a row ends up in both the train and the test set after a
+    random split is if the dataset contains duplicate rows in the first place.
+    This check therefore inspects the full, unsplit dataset and flags duplicate
+    rows (identical features and, when available, identical label). Splitting
+    such a dataset without de-duplication is likely to leak training rows into
+    the test set.
+
+    Raises :class:`CheckNotApplicable` when train data is unavailable or inputs
+    are not narwhals DataFrames.
     """
 
     code = "SKD017"
@@ -69,58 +81,34 @@ class CheckTrainTestDuplicates(Check):
     slow = True
 
     def check_function(self, report: _BaseReport) -> str | None:
-        """Detect rows shared between the train and test feature matrices."""
+        """Detect duplicate rows in the full (unsplit) dataset."""
         input_report = cast_report(report)
 
-        reports: list[EstimatorReport] = (
-            input_report.reports_
-            if input_report._report_type == "cross-validation"
-            else [input_report]  # type: ignore[list-item]
-        )
+        X, y = _full_dataset(input_report)
 
-        total_duplicates = 0
-        total_test = 0
-        for fold in reports:
-            if fold.X_train is None:
-                raise CheckNotApplicable("Train data is unavailable.")
-            if not nw.dependencies.is_into_dataframe(fold.X_train):
-                raise CheckNotApplicable(
-                    "Input data is not a narwhals compatible DataFrame. "
-                    f"Got {type(fold.X_train).__name__}."
+        if y is not None:
+            X = X.with_columns(
+                __skd017_y__=nw.new_series(
+                    "__skd017_y__", y, backend=nw.get_native_namespace(X)
                 )
-            if not nw.dependencies.is_into_dataframe(fold.X_test):
-                raise CheckNotApplicable(
-                    "Input data is not a narwhals compatible DataFrame. "
-                    f"Got {type(fold.X_test).__name__}."
-                )
+            )
 
-            X_train = nw.from_native(fold.X_train, eager_only=True)
-            X_test = nw.from_native(fold.X_test, eager_only=True)
+        try:
+            # ``is_duplicated`` marks every row that has at least one identical
+            # twin elsewhere in the dataset (NaN compares equal).
+            duplicated_mask = X.is_duplicated().to_list()
+        except (TypeError, ValueError) as err:
+            raise CheckNotApplicable("Could not compare rows for duplicates.") from err
 
-            if sorted(X_train.columns) != sorted(X_test.columns):
-                raise CheckNotApplicable(
-                    "Train and test feature matrices have different columns."
-                )
-
-            X_test = X_test.select(X_train.columns)
-            try:
-                n_duplicates = _count_test_rows_in_train(
-                    X_train, X_test, fold.y_train, fold.y_test
-                )
-            except (TypeError, ValueError) as err:
-                raise CheckNotApplicable(
-                    "Could not compare train and test rows for duplicates."
-                ) from err
-
-            total_duplicates += n_duplicates
-            total_test += len(X_test)
-
-        if total_duplicates > 0:
-            percent = 100 * total_duplicates / total_test
+        n_duplicated = sum(duplicated_mask)
+        if n_duplicated > 0:
+            percent = 100 * n_duplicated / len(X)
             return (
-                f"{total_duplicates} test row(s) ({percent:.1f}% of the test set) are "
-                "identical to rows in the training set. Duplicate rows shared between "
-                "train and test leak training data into the evaluation and inflate the "
-                "reported score; de-duplicate the dataset before splitting."
+                f"{n_duplicated} row(s) ({percent:.1f}% of the dataset) are "
+                "duplicates of another row. Splitting a dataset with duplicate "
+                "rows without de-duplication leaks training rows into the test "
+                "set and inflates the reported score; de-duplicate the dataset "
+                "before splitting, or use a grouped splitter so identical rows "
+                "stay on the same side of the split."
             )
         return None
