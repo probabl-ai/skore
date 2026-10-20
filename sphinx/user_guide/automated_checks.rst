@@ -723,21 +723,26 @@ SKD017 - Duplicate rows across train and test
 How it is detected
 ^^^^^^^^^^^^^^^^^^
 
-This check only applies when both ``X_train`` and ``X_test`` are
-narwhals-compatible DataFrames sharing the same columns. For each row in
-``X_test``, `skore` checks whether an identical row (across all feature columns)
-exists in ``X_train``. The check reports an issue with the number and share of
-test rows that are duplicated from the training set. For cross-validation
-reports, duplicates are counted across every fold.
+This check only applies when the input features form a narwhals-compatible
+DataFrame. It inspects the **full, unsplit dataset** (for estimator reports the
+train and test sets are re-concatenated first; for cross-validation reports the
+data is already unsplit, so the check runs only once instead of per fold) and
+uses :meth:`narwhals.DataFrame.is_duplicated` to flag every row that has at
+least one identical twin elsewhere in the data (NaN values compare as equal, and
+the target is included when available so rows with identical features but
+different labels are not counted). The check reports an issue with the number
+and share of rows that are duplicates of another row.
 
 Why it matters
 ^^^^^^^^^^^^^^
 
-When rows from the training set also appear in the test set, the model is
-evaluated on samples it was trained on. The reported score becomes optimistic
-and no longer reflects generalization to unseen data. This commonly happens
-when a dataset contains exact duplicates that are split without
-de-duplication.
+A row can only end up in both the train and the test set after a random split
+if the dataset already contains duplicate rows. When that happens, the model is
+evaluated on samples it was effectively trained on: the reported score becomes
+optimistic and no longer reflects generalization to unseen data. Detecting the
+duplicates on the unsplit dataset makes the warning independent of any
+particular split and, for cross-validation, avoids redoing the check for every
+fold.
 
 How to reduce the risk
 ^^^^^^^^^^^^^^^^^^^^^^
@@ -746,3 +751,6 @@ How to reduce the risk
 - if duplicates are legitimate, use a grouped splitter such as
   :class:`~sklearn.model_selection.GroupShuffleSplit` so identical records stay
   on the same side of the split.
+
+Check out the
+:ref:`example for this check <example_skd017_train_test_duplicates>`.
