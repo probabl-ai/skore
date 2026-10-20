@@ -262,6 +262,9 @@ class Project:
                 f"`skore.CrossValidationReport` (found '{type(report)}')."
             )
 
+        from skore._project.experiments import ensure_report_id
+
+        ensure_report_id(report)
         payload: EstimatorReportPayload | CrossValidationReportPayload
 
         if isinstance(report, EstimatorReport):
@@ -444,13 +447,18 @@ class Project:
 
     def experiments(self) -> list[dict[str, Any]]:
         """Return every experiment row stored for this Hub project."""
-        with HUBClient() as hub_client:
-            response = hub_client.request(
-                method="GET",
-                workspace=self.workspace,
-                project=self.name,
-                endpoint="experiments",
-            )
+        try:
+            with HUBClient() as hub_client:
+                response = hub_client.request(
+                    method="GET",
+                    workspace=self.workspace,
+                    project=self.name,
+                    endpoint="experiments",
+                )
+        except HTTPStatusError as exc:
+            if exc.response.status_code == codes.NOT_FOUND:
+                return []
+            raise
         payload = response.json()
         if not isinstance(payload, list):
             raise TypeError("Hub experiments response must be a list.")
@@ -469,13 +477,18 @@ class Project:
 
     def objective(self) -> str:
         """Return the project objective."""
-        with HUBClient() as hub_client:
-            response = hub_client.request(
-                method="GET",
-                workspace=self.workspace,
-                project=self.name,
-                endpoint="objective",
-            )
+        try:
+            with HUBClient() as hub_client:
+                response = hub_client.request(
+                    method="GET",
+                    workspace=self.workspace,
+                    project=self.name,
+                    endpoint="objective",
+                )
+        except HTTPStatusError as exc:
+            if exc.response.status_code == codes.NOT_FOUND:
+                return ""
+            raise
         return response.json().get("objective") or ""
 
     def set_objective(self, text: str) -> None:

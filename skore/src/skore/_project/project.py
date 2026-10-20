@@ -279,7 +279,11 @@ class Project:
         return Experiments(self)
 
     def _experiment_rows(self):
-        return self.__project.experiments()
+        experiments = getattr(self.__project, "experiments", None)
+        if not callable(experiments):
+            return []
+        rows = experiments()
+        return rows if isinstance(rows, list) else []
 
     def _write_experiment(self, row):
         """Validate one transition and persist that row."""
@@ -387,7 +391,10 @@ class Project:
             cache = getattr(report, "_check_results_cache", None) or {}
         if report.id is None:
             return
-        frame = self.experiments.frame
+        try:
+            frame = self.experiments.frame
+        except Exception:
+            return
         for code, result in cache.items():
             section = result.get("section") if isinstance(result, dict) else None
             if section not in {"issue", "tip"}:
@@ -406,7 +413,10 @@ class Project:
             if not matched.empty:
                 existing = normalize_row(matched.iloc[0].to_dict())
                 if existing["status"] == "idea" and existing["question"] != title:
-                    self._write_experiment({**existing, "question": title})
+                    try:
+                        self._write_experiment({**existing, "question": title})
+                    except Exception:
+                        return
                 continue
             stem = f"{key}-{str(code).lower()}"
             suffix = 2
@@ -414,13 +424,16 @@ class Project:
             while stem in taken:
                 stem = f"{key}-{str(code).lower()}-{suffix}"
                 suffix += 1
-            create_experiment(
-                self,
-                stem=stem,
-                question=str(title),
-                source_id=str(report.id),
-                check_code=str(code),
-            )
+            try:
+                create_experiment(
+                    self,
+                    stem=stem,
+                    question=str(title),
+                    source_id=str(report.id),
+                    check_code=str(code),
+                )
+            except Exception:
+                return
             frame = self.experiments.frame
 
     def get(self, id: str) -> EstimatorReport | CrossValidationReport:

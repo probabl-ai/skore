@@ -224,6 +224,9 @@ class Project:
                 f"`skore.CrossValidationReport` (found '{type(report)}')."
             )
 
+        from skore._project.experiments import ensure_report_id
+
+        ensure_report_id(report)
         iterator = (
             iter_estimator(report)
             if isinstance(report, EstimatorReport)

@@ -475,6 +475,9 @@ class Project:
         Path
             The path to the directory where the report was stored.
         """
+        from skore._project.experiments import ensure_report_id
+
+        ensure_report_id(report)
         return _write_report(
             report, workspace=self.workspace, project_name=self.name, name=key
         )
