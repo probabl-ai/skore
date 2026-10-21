@@ -76,6 +76,38 @@ To retrieve a specific report for which you have its ``id`` (as returned by
 :meth:`Project.summarize`), use the :meth:`Project.get` method.
 :meth:`Project.delete` removes the project itself.
 
+Working with experiments
+------------------------
+
+:attr:`Project.experiments` returns an :class:`Experiments` collection. Its
+:attr:`Experiments.frame` attribute is a :class:`pandas.DataFrame` with one row
+per experiment. Retrieve one row with :meth:`Experiments.get`.
+
+Do not construct these objects yourself. :func:`skore.agent.create_experiment`
+appends a row and returns an :class:`Experiment`. Omitting ``plan`` stores an
+idea. Passing ``plan`` stores a backlog row.
+
+.. code-block:: python
+
+   from sklearn.datasets import make_regression
+   from sklearn.dummy import DummyRegressor
+
+   from skore.agent import create_experiment
+
+   X, y = make_regression(n_samples=20, n_features=3, random_state=0)
+   idea = create_experiment(
+       project_local,
+       stem="01_baseline",
+       question="What RMSE does a constant predictor reach?",
+   )
+   experiment = idea.promote("DummyRegressor, 2-fold cross-validation.")
+   report = experiment.run(DummyRegressor(), X, y, splitter=2)
+
+:meth:`Experiment.decide` moves a row among ``idea``, ``aside``, and
+``discarded``. :meth:`Experiment.promote` moves an idea to the backlog.
+:meth:`Experiment.run` evaluates an estimator once and stores the report under
+the experiment id. A second run is rejected.
+
 .. _synchronizing-projects:
 
 Synchronizing projects

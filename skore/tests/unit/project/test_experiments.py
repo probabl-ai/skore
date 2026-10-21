@@ -383,8 +383,11 @@ def test_sync_copies_a_non_empty_objective(tmp_path):
 def test_package_getattr_exposes_the_agent_module():
     import skore
     import skore._project.protocol  # noqa: F401
+    from skore._project.experiments import Experiment, Experiments
 
     assert skore.__getattr__("agent") is skore.agent
     assert skore.agent.__name__ == "skore.agent"
     assert skore.agent.create_experiment
     assert skore.__getattr__("Project") is skore.Project
+    assert skore.Experiment is Experiment
+    assert skore.Experiments is Experiments

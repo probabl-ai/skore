@@ -15,6 +15,7 @@ from skore._project.types import ProjectMode
 
 if TYPE_CHECKING:
     from skore import CrossValidationReport, EstimatorReport
+    from skore._project.experiments import Experiments
 
 
 MODES = get_args(ProjectMode)
@@ -272,8 +273,22 @@ class Project:
         self.__project.set_objective(text)
 
     @property
-    def experiments(self):
-        """The experiments stored in this project."""
+    def experiments(self) -> Experiments:
+        """The experiments stored in this project.
+
+        Returns
+        -------
+        experiments : Experiments
+            The collection of experiment rows. Do not construct this object
+            directly.
+
+        See Also
+        --------
+        Experiments :
+            List and retrieve experiments.
+        Experiment :
+            One experiment and the methods that move it.
+        """
         from skore._project.experiments import Experiments
 
         return Experiments(self)

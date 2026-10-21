@@ -105,7 +105,21 @@ def ensure_report_id(report: Any, report_id: str | None = None) -> str:
 
 
 class Experiment:
-    """Handle on one row of ``project.experiments.frame``."""
+    """One experiment stored in a project.
+
+    An experiment is one row of :attr:`Experiments.frame`. Callers do not
+    construct this object. :func:`skore.agent.create_experiment` appends a row
+    and returns the handle. :meth:`Experiments.get`, :meth:`decide`, and
+    :meth:`promote` return one as well.
+
+    ``status`` is one of ``"idea"``, ``"aside"``, ``"discarded"``,
+    ``"backlog"``, and ``"history"``.
+
+    See Also
+    --------
+    Experiments :
+        The collection that lists every experiment in a project.
+    """
 
     def __init__(self, project: Project, row: ExperimentRow) -> None:
         self._project = project
@@ -113,34 +127,65 @@ class Experiment:
 
     @property
     def id(self) -> str:
+        """The UUID7 of this experiment.
+
+        Once :meth:`run` stores a report, that report carries the same id.
+        """
         return self._row["id"]
 
     @property
     def stem(self) -> str:
+        """The key under which :meth:`run` stores the report."""
         return self._row["stem"]
 
     @property
     def status(self) -> ExperimentStatus:
+        """Where this experiment sits.
+
+        One of ``"idea"``, ``"aside"``, ``"discarded"``, ``"backlog"``, and
+        ``"history"``.
+        """
         return self._row["status"]
 
     @property
     def question(self) -> str:
+        """The question this experiment is meant to answer."""
         return self._row["question"]
 
     @property
     def plan(self) -> str | None:
+        """How to run this experiment, or ``None`` while it is still an idea."""
         return self._row["plan"]
 
     @property
     def source_id(self) -> str | None:
+        """The report id that raised this experiment, when one did."""
         return self._row["source_id"]
 
     @property
     def check_code(self) -> str | None:
+        """The check code that raised this experiment, when one did."""
         return self._row["check_code"]
 
     def decide(self, status: ExperimentStatus) -> Experiment:
-        """Move this row among ``idea``, ``aside``, and ``discarded``."""
+        """Move this row among ``idea``, ``aside``, and ``discarded``.
+
+        Parameters
+        ----------
+        status : {"idea", "aside", "discarded"}
+            The triage status to store.
+
+        Returns
+        -------
+        experiment : Experiment
+            The handle after the row is stored.
+
+        Raises
+        ------
+        ValueError
+            If this experiment is not in triage, or ``status`` is not a triage
+            status.
+        """
         if self.status not in TRIAGE_STATUSES or status not in TRIAGE_STATUSES:
             raise ValueError(
                 f"Cannot decide an experiment from {self.status!r} to {status!r}. "
@@ -149,7 +194,23 @@ class Experiment:
         return self._project._write_experiment({**self._row, "status": status})
 
     def promote(self, plan: str) -> Experiment:
-        """Move an idea to the backlog and store its plan."""
+        """Move an idea to the backlog and store its plan.
+
+        Parameters
+        ----------
+        plan : str
+            How the experiment will be run. A blank plan is rejected.
+
+        Returns
+        -------
+        experiment : Experiment
+            The handle after the row is stored in the backlog.
+
+        Raises
+        ------
+        ValueError
+            If ``plan`` is blank, or this experiment is not an idea.
+        """
         text = _blank(plan)
         if text is None:
             raise ValueError("promote() requires a plan.")
@@ -169,7 +230,35 @@ class Experiment:
         y: Any = None,
         **evaluate_kwargs: Any,
     ) -> EstimatorReport | CrossValidationReport:
-        """Evaluate ``estimator`` and store the report under this experiment's id."""
+        """Evaluate ``estimator`` and store the report under this experiment's id.
+
+        The experiment must be in the backlog, and it can be run only once. The
+        stored report receives this experiment's :attr:`id`.
+
+        Parameters
+        ----------
+        estimator : estimator
+            The scikit-learn compatible estimator to evaluate.
+        X : array-like, default=None
+            The data to evaluate on.
+        y : array-like, default=None
+            The target.
+        **evaluate_kwargs : dict
+            Extra keyword arguments passed to :func:`~skore.evaluate`.
+
+        Returns
+        -------
+        report : EstimatorReport or CrossValidationReport
+            The report stored in the project.
+
+        Raises
+        ------
+        ValueError
+            If this experiment is not in the backlog, or it was already run.
+        TypeError
+            If evaluation does not return an estimator or cross-validation
+            report.
+        """
         if self.status == "history":
             raise ValueError("An experiment can be run only once.")
         if self.status != "backlog":
@@ -194,14 +283,33 @@ class Experiment:
 
 
 class Experiments:
-    """The experiments stored in one project."""
+    """The experiments stored in one project.
+
+    Obtain this collection from :attr:`Project.experiments`. Do not construct
+    it directly.
+
+    See Also
+    --------
+    Experiment :
+        One row and the methods that move it.
+    """
 
     def __init__(self, project: Project) -> None:
         self._project = project
 
     @property
     def frame(self) -> DataFrame:
-        """The stored columns, one row per experiment."""
+        """The stored columns, one row per experiment.
+
+        The columns are ``id``, ``stem``, ``status``, ``question``,
+        ``source_id``, ``check_code``, and ``plan``. An empty project returns
+        a frame with those columns and no rows.
+
+        Returns
+        -------
+        frame : pandas.DataFrame
+            One row per experiment.
+        """
         rows = self._project._experiment_rows()
         if not rows:
             return DataFrame(columns=list(EXPERIMENT_COLUMNS))
@@ -211,7 +319,23 @@ class Experiments:
         return frame
 
     def get(self, experiment_id: str) -> Experiment:
-        """Return the handle for ``experiment_id``."""
+        """Return the handle for ``experiment_id``.
+
+        Parameters
+        ----------
+        experiment_id : str
+            The ``id`` of a stored experiment.
+
+        Returns
+        -------
+        experiment : Experiment
+            The handle for that row.
+
+        Raises
+        ------
+        KeyError
+            If no experiment has this id.
+        """
         matched = self.frame.loc[self.frame["id"].astype(str) == str(experiment_id)]
         if matched.empty:
             raise KeyError(experiment_id)

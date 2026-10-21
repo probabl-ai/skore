@@ -252,6 +252,7 @@ class Project:
             CrossValidationReportPayload,
             EstimatorReportPayload,
         )
+        from skore._project.experiments import ensure_report_id
 
         if not isinstance(key, str):
             raise TypeError(f"Key must be a string (found '{type(key)}').")
@@ -261,8 +262,6 @@ class Project:
                 f"Report must be a `skore.EstimatorReport` or "
                 f"`skore.CrossValidationReport` (found '{type(report)}')."
             )
-
-        from skore._project.experiments import ensure_report_id
 
         ensure_report_id(report)
         payload: EstimatorReportPayload | CrossValidationReportPayload
