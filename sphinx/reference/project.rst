@@ -80,3 +80,11 @@ instantiated directly.
    Experiment.decide
    Experiment.promote
    Experiment.run
+
+.. rubric:: Functions
+
+.. autosummary::
+   :toctree: api/
+   :template: base.rst
+
+   agent.create_experiment

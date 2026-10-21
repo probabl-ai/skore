@@ -27,6 +27,35 @@ def create_experiment(
     Passing ``plan`` creates the row directly in the backlog. Omitting it
     creates an idea. The returned id is the UUID7 the report will carry
     when the experiment is run.
+
+    Parameters
+    ----------
+    project : Project
+        The :class:`~skore.Project` that stores the row.
+    stem : str
+        Unique report key. A duplicate stem is rejected.
+    question : str
+        The question the experiment answers.
+    plan : str or None, default=None
+        How to run the experiment. Passed, the row is ``"backlog"``. Omitted,
+        it is an ``"idea"``.
+    source_id : str or None, default=None
+        Report id that raised this row, or ``None``.
+    check_code : str or None, default=None
+        Check code that raised this row, or ``None``. The same source and
+        check together are rejected.
+
+    Returns
+    -------
+    experiment : Experiment
+        The new row. Its ``id`` is the UUID7 the report will carry.
+
+    See Also
+    --------
+    :class:`~skore.Experiment` :
+        One experiment and the methods that move it.
+    :class:`~skore.Experiments` :
+        The experiments stored in a project.
     """
     text_plan = _blank(plan)
     frame = project.experiments.frame
