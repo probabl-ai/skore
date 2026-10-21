@@ -565,3 +565,30 @@ def test_log_figure_reraises_unexpected_typeerror(monkeypatch):
 
     with pytest.raises(TypeError, match="unexpected failure"):
         project_module._log_figure(object(), "plot.png")
+
+
+def test_experiment_runs_are_skipped_and_the_objective_is_a_note():
+    """Experiment runs are not report metadata, and the note stores the objective."""
+    project = Project("<project>")
+    row = {
+        "id": "experiment-1",
+        "stem": "01_dummy",
+        "status": "idea",
+        "question": "What RMSE?",
+        "source_id": None,
+        "check_code": None,
+        "plan": None,
+    }
+    project.upsert_experiment(row)
+    assert project.experiments()[0]["stem"] == "01_dummy"
+    project.set_objective("Predict the target.")
+    assert project.objective() == "Predict the target."
+    with mlflow.start_run(experiment_id=project.experiment_id):
+        mlflow.set_tags({"skore_status": "completed", "skore_kind": "experiment"})
+    assert project.summarize() == []
+
+    with (
+        mlflow.start_run(experiment_id=project.experiment_id),
+        pytest.raises(RuntimeError, match="active MLflow run"),
+    ):
+        project.upsert_experiment(row)
