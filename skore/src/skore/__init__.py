@@ -17,7 +17,7 @@ from skore._utils.environment import is_environment_notebook_like
 from skore._utils.patch import setup_jupyter_display
 
 if TYPE_CHECKING:
-    from skore import _agent as agent
+    from skore import agent
     from skore._checks import Check, CheckNotApplicable, ChecksSummaryDisplay
     from skore._config import configuration
     from skore._dispatch import compare, evaluate
@@ -113,8 +113,9 @@ except Exception:
 # - in the ``if TYPE_CHECKING`` block, so type checkers can use it,
 # - in ``__all__``, so the F401 linter does not fail,
 # - in the ``lazy_loader.attach`` call below.
-_getattr, __dir__, _ = lazy_loader.attach(
+__getattr__, __dir__, _ = lazy_loader.attach(
     __name__,
+    submodules=["agent"],
     submod_attrs={
         "_checks": ["Check", "CheckNotApplicable", "ChecksSummaryDisplay"],
         "_config": ["configuration"],
@@ -143,11 +144,3 @@ _getattr, __dir__, _ = lazy_loader.attach(
         "_utils.show_versions": ["show_versions"],
     },
 )
-
-
-def __getattr__(name: str):
-    if name == "agent":
-        from skore import _agent as agent
-
-        return agent
-    return _getattr(name)
