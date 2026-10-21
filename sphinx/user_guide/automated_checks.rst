@@ -723,34 +723,29 @@ SKD017 - Duplicate rows across train and test
 How it is detected
 ^^^^^^^^^^^^^^^^^^
 
-This check only applies when the input features form a narwhals-compatible
-DataFrame. It inspects the **full, unsplit dataset** (for estimator reports the
-train and test sets are re-concatenated first; for cross-validation reports the
-data is already unsplit, so the check runs only once instead of per fold) and
-uses :meth:`narwhals.DataFrame.is_duplicated` to flag every row that has at
-least one identical twin elsewhere in the data (NaN values compare as equal, and
-the target is included when available so rows with identical features but
-different labels are not counted). The check reports an issue with the number
-and share of rows that are duplicates of another row.
+`skore` inspects the full, unsplit dataset (features and target) and reports
+how many rows are duplicates of another row.
 
 Why it matters
 ^^^^^^^^^^^^^^
 
-A row can only end up in both the train and the test set after a random split
-if the dataset already contains duplicate rows. When that happens, the model is
-evaluated on samples it was effectively trained on: the reported score becomes
-optimistic and no longer reflects generalization to unseen data. Detecting the
-duplicates on the unsplit dataset makes the warning independent of any
-particular split and, for cross-validation, avoids redoing the check for every
-fold.
+Duplicate rows leak across a train/test split: identical rows end up on both
+sides, so the model is evaluated on rows it was trained on and the reported
+score is overly optimistic.
 
 How to reduce the risk
 ^^^^^^^^^^^^^^^^^^^^^^
 
-- de-duplicate the dataset before splitting into train and test,
-- if duplicates are legitimate, use a grouped splitter such as
-  :class:`~sklearn.model_selection.GroupShuffleSplit` so identical records stay
-  on the same side of the split.
+- if the duplicates are **not legitimate**, de-duplicate the dataset before
+  splitting;
+- if the duplicates **are legitimate** (the data-generating process can really
+  produce identical observations), either:
+
+  - do nothing, if identical samples can also appear in production — the
+    evaluation should then reflect that;
+  - group the duplicated observations so they stay on the same side of the
+    split, e.g. with :class:`~sklearn.model_selection.GroupShuffleSplit`;
+  - or use sample weights to account for the repeated rows.
 
 Check out the
 :ref:`example for this check <example_skd017_train_test_duplicates>`.
