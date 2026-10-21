@@ -597,7 +597,7 @@ class TestProject:
 
         assert summary == [
             {
-                "id": "skore:report:estimator:<report_id_0>",
+                "id": "<report_id_0>",
                 "report_id": "<report_id_0>",
                 "key": "<key>",
                 "date": nowstr,
@@ -622,7 +622,7 @@ class TestProject:
                 "predict_time_std": None,
             },
             {
-                "id": "skore:report:estimator:<report_id_1>",
+                "id": "<report_id_1>",
                 "report_id": "<report_id_1>",
                 "key": "<key>",
                 "date": nowstr,
@@ -647,7 +647,7 @@ class TestProject:
                 "predict_time_std": None,
             },
             {
-                "id": "skore:report:cross-validation:<report_id_2>",
+                "id": "<report_id_2>",
                 "report_id": "<report_id_2>",
                 "key": "<key>",
                 "date": nowstr,
@@ -831,3 +831,77 @@ class TestProject:
 
         monkeypatch.setattr("rich.console.Console", assert_cv_report_url)
         project.put("<key>", cv_binary_classification)
+
+
+def _hub_project(respx_mock):
+    respx_mock.get("/projects/available").mock(Response(200))
+    respx_mock.post("/projects/available/name").mock(
+        Response(200, json={"id": 1, "url": "http://domain/available/name"})
+    )
+    return Project(name="name", workspace="available")
+
+
+@mark.respx()
+@mark.usefixtures("monkeypatch_hub_client")
+def test_hub_experiments_and_objective(respx_mock):
+    respx_mock.get("/projects/available/name/experiments").mock(Response(404))
+    respx_mock.get("/projects/available/name/objective").mock(Response(404))
+    project = _hub_project(respx_mock)
+    assert project.experiments() == []
+    assert project.objective() == ""
+
+
+@mark.respx()
+@mark.usefixtures("monkeypatch_hub_client")
+def test_hub_experiments_reject_a_non_list(respx_mock):
+    respx_mock.get("/projects/available/name/experiments").mock(
+        Response(200, json={"items": []})
+    )
+    project = _hub_project(respx_mock)
+    with raises(TypeError, match="must be a list"):
+        project.experiments()
+
+
+@mark.respx()
+@mark.usefixtures("monkeypatch_hub_client")
+def test_hub_experiment_routes(respx_mock):
+    from httpx import HTTPStatusError
+
+    respx_mock.get("/projects/available/name/experiments").mock(
+        Response(200, json=[{"id": "1", "stem": "01"}])
+    )
+    respx_mock.put("/projects/available/name/experiments/1").mock(Response(200))
+    respx_mock.get("/projects/available/name/objective").mock(
+        Response(200, json={"objective": "Predict."})
+    )
+    respx_mock.put("/projects/available/name/objective").mock(Response(200))
+    respx_mock.get("/projects/available/name/reports").mock(
+        Response(200, json={"items": [{"urn": "skore:report:estimator:7"}]})
+    )
+    respx_mock.get("/projects/available/name/estimator-reports/7").mock(Response(404))
+    project = _hub_project(respx_mock)
+    assert project.experiments() == [{"id": "1", "stem": "01"}]
+    project.upsert_experiment({"id": "1"})
+    assert project.objective() == "Predict."
+    project.set_objective("Next.")
+    with raises(HTTPStatusError):
+        project.get("01900000-0000-7000-8000-000000000001")
+
+
+@mark.respx()
+@mark.usefixtures("monkeypatch_hub_client")
+def test_hub_get_unknown_canonical_id_and_experiment_errors(respx_mock):
+    from httpx import HTTPStatusError
+
+    respx_mock.get("/projects/available/name/reports").mock(
+        Response(200, json={"items": []})
+    )
+    respx_mock.get("/projects/available/name/experiments").mock(Response(500))
+    respx_mock.get("/projects/available/name/objective").mock(Response(500))
+    project = _hub_project(respx_mock)
+    with raises(KeyError):
+        project.get("01900000-0000-7000-8000-000000000001")
+    with raises(HTTPStatusError):
+        project.experiments()
+    with raises(HTTPStatusError):
+        project.objective()

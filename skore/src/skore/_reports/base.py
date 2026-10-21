@@ -32,7 +32,7 @@ from skore._utils.repr.base import (
 )
 from skore._utils.repr.data import MethodHelp
 from skore._utils.repr.paginated_metrics import metrics_summary_html
-from skore._utils.uuid import normalize_report_id, uuid7
+from skore._utils.uuid import normalize_report_id
 
 if TYPE_CHECKING:
     from skore._checks.accessor import _ChecksAccessor
@@ -166,13 +166,15 @@ class _BaseReport(ReportHelpMixin):
     @staticmethod
     def _normalize_metadata(metadata: dict[str, Any]) -> ReportMetadata:
         normalized = metadata.copy()
-        normalized["id"] = normalize_report_id(metadata["id"])
+        raw_id = metadata.get("id")
+        normalized["id"] = None if raw_id in (None, "") else normalize_report_id(raw_id)
         return cast(ReportMetadata, normalized)
 
     def __init__(self) -> None:
         self._checks_registry: list[Check] = list(_BUILTIN_CHECKS)
+        # The id stays empty until Project.put or experiment.run assigns one.
         self._metadata: ReportMetadata = {
-            "id": str(uuid7()),
+            "id": None,
             "skore-version": version("skore"),
             "creation-date": datetime.now(UTC).isoformat(),
             # comparison reports don't have a _report_type yet at init time
@@ -182,7 +184,7 @@ class _BaseReport(ReportHelpMixin):
         }
 
     @property
-    def id(self) -> str:
+    def id(self) -> str | None:
         return self._metadata["id"]
 
     def __setstate__(self, state: dict[str, Any]) -> None:
