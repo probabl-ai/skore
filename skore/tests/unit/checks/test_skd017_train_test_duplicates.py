@@ -1,3 +1,5 @@
+from types import SimpleNamespace
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -8,7 +10,10 @@ from sklearn.model_selection import KFold
 from sklearn.pipeline import make_pipeline
 
 from skore import EstimatorReport, evaluate
-from skore._checks.skd017_train_test_duplicates import CheckTrainTestDuplicates
+from skore._checks.skd017_train_test_duplicates import (
+    CheckTrainTestDuplicates,
+    _full_dataset,
+)
 from skore._checks.utils import CheckNotApplicable
 
 
@@ -160,3 +165,70 @@ def test_not_applicable_when_rows_cannot_be_compared():
     )
     with pytest.raises(CheckNotApplicable):
         CheckTrainTestDuplicates().check_function(report)
+
+
+@pytest.mark.filterwarnings("ignore:X does not have valid feature names:UserWarning")
+def test_not_applicable_when_cv_input_is_not_a_dataframe():
+    """SKD017 needs a narwhals DataFrame for cross-validation input data."""
+    rng = np.random.default_rng(0)
+    X = rng.normal(size=(60, 3))  # ndarray, not a DataFrame
+    y = np.arange(60) % 2
+    report = evaluate(
+        LogisticRegression(), X, y, splitter=KFold(n_splits=3, shuffle=False)
+    )
+    with pytest.raises(CheckNotApplicable, match="Got ndarray"):
+        CheckTrainTestDuplicates().check_function(report)
+
+
+@pytest.mark.filterwarnings("ignore:X does not have valid feature names:UserWarning")
+def test_not_applicable_when_x_train_is_not_a_dataframe():
+    """SKD017 needs a narwhals DataFrame for the train features too."""
+    rng = np.random.default_rng(0)
+    # Both ndarrays: the X_train guard fires before X_test is inspected.
+    X_train_arr = rng.normal(size=(40, 3))
+    X_test_arr = rng.normal(size=(20, 3))
+    report = EstimatorReport(
+        LogisticRegression(),
+        X_train=X_train_arr,
+        y_train=rng.integers(0, 2, size=40),
+        X_test=X_test_arr,
+        y_test=rng.integers(0, 2, size=20),
+    )
+    with pytest.raises(CheckNotApplicable, match="Got ndarray"):
+        CheckTrainTestDuplicates().check_function(report)
+
+
+def test_not_applicable_when_train_test_columns_differ():
+    """Train/test feature matrices with different columns are not applicable.
+
+    A real :class:`EstimatorReport` cannot reach this branch (scikit-learn
+    rejects mismatched columns at predict time), so ``_full_dataset`` is called
+    directly with the minimal report attributes it reads.
+    """
+    report = SimpleNamespace(
+        _report_type="estimator",
+        X_train=pd.DataFrame({"a": [1.0, 2.0], "b": [1.0, 2.0]}),
+        X_test=pd.DataFrame({"a": [1.0], "c": [1.0]}),
+        y_train=[0, 1],
+        y_test=[0],
+    )
+    with pytest.raises(CheckNotApplicable, match="different columns"):
+        _full_dataset(report)
+
+
+def test_full_dataset_returns_none_target_when_labels_missing():
+    """When the train/test labels are missing, the target is dropped (y=None).
+
+    Exercised via ``_full_dataset`` directly because an EstimatorReport with
+    features but no labels is not reachable through the public API.
+    """
+    report = SimpleNamespace(
+        _report_type="estimator",
+        X_train=pd.DataFrame({"a": [1.0, 2.0], "b": [1.0, 2.0]}),
+        X_test=pd.DataFrame({"a": [3.0], "b": [3.0]}),
+        y_train=None,
+        y_test=None,
+    )
+    X, y = _full_dataset(report)
+    assert y is None
+    assert len(X) == 3
