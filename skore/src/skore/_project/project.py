@@ -379,8 +379,8 @@ class Project:
         self, key: str, report: EstimatorReport | CrossValidationReport
     ):
         """Append one idea per issue or tip check, once per source and code."""
-        from skore._agent import create_experiment
         from skore._project.experiments import normalize_row
+        from skore.agent import create_experiment
 
         cache = getattr(report, "_check_results_cache", None) or {}
         if not cache:
