@@ -62,18 +62,18 @@ class Project:
     .. rubric:: Local mode
 
     Otherwise, the project is configured to the ``local`` mode to be persisted on
-    the user machine in a directory called a ``workspace``.
+    the user machine in a skore ``workspace``, which is a directory named 'skore'
+    containing a file named '.SKORE_WORKSPACE'.
 
     | The workspace can be set using kwargs or the environment variable
       ``SKORE_WORKSPACE``.
-    | If not, it will be set to a default location:
+    | If not specified, it will be set to a default location chosen as follows:
 
         - we search the current working directory and its parents for a
-          skore workspace: a directory named 'skore' containing a file named
-          '.SKORE_WORKSPACE'. If found, use that.
-        - otherwise if we are in a Git repository, create 'skore' at the root
-            of the repository.
-        - otherwise create 'skore' in the current working directory.
+          skore workspace. If we find one, we use it.
+        - otherwise, if we are in a Git repository, we create a skore workspace at the
+          root of the repository.
+        - otherwise, we create a skore workspace in the current working directory.
 
     .. rubric:: MLflow mode
 
