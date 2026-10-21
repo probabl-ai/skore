@@ -223,7 +223,7 @@ def test_run_refuses_a_second_report_and_a_non_report(tmp_path, monkeypatch):
 def test_journal_renders_sources_headlines_and_selected_reports(tmp_path):
     from pandas import DataFrame, MultiIndex
 
-    from skore._project.journal import render_journal
+    from skore._project.journal import _headline, render_journal
 
     def pd_index(ids: list[str]) -> MultiIndex:
         return MultiIndex.from_arrays([ids], names=["id"])
@@ -234,7 +234,7 @@ def test_journal_renders_sources_headlines_and_selected_reports(tmp_path):
                 "id": "parent",
                 "stem": "01_dummy",
                 "status": "history",
-                "question": "What RMSE?",
+                "question": "What | RMSE?\nnext",
                 "source_id": None,
                 "check_code": None,
                 "plan": "A plan.",
@@ -281,6 +281,28 @@ def test_journal_renders_sources_headlines_and_selected_reports(tmp_path):
         index=summary.index,
     )
     assert "accuracy=0.5" in render_journal("Objective.", experiments.iloc[:1], other)
+    assert _headline(DataFrame(), "parent") == ""
+    assert _headline(DataFrame({"rmse": [1.0]}), "parent") == ""
+    assert _headline(summary, "missing") == ""
+    nan_auc = DataFrame(
+        {"roc_auc": [float("nan")], "learner": ["dummy"], "rmse": [1.25]},
+        index=pd_index(["parent"]),
+    )
+    assert _headline(nan_auc, "parent") == "rmse=1.25"
+    only_metadata = DataFrame(
+        {"learner": ["dummy"], "blank": [float("nan")]},
+        index=pd_index(["parent"]),
+    )
+    assert _headline(only_metadata, "parent") == ""
+    folded = DataFrame(
+        {"rmse": [1.25, 2.0]},
+        index=MultiIndex.from_arrays(
+            [["parent", "parent"], ["a", "b"]], names=["id", "fold"]
+        ),
+    )
+    assert _headline(folded, "parent") == "rmse=1.25"
+    assert "What RMSE?" not in render_journal("Objective.", DataFrame())
+    assert "rmse=" not in render_journal("Objective.", experiments.iloc[:1])
 
 
 def test_experiment_rows_ignore_a_backend_without_a_list(tmp_path, monkeypatch):
