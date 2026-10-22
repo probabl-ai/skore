@@ -57,7 +57,7 @@ class Project:
 
     .. code-block:: bash
 
-        $ skore hub api-key generate --workspace <workspace>
+        $ skore hub api-key generate --host <host> --workspace <workspace>
 
     .. rubric:: Local mode
 
@@ -99,6 +99,11 @@ class Project:
 
         tracking_uri : str, mode:mlflow only.
             The URI of the MLflow tracking server.
+
+        host : str, optional
+            Hub address when ``mode="hub"`` (for example
+            ``https://skore.probabl.ai``). If omitted,
+            ``SKORE_HUB_URI`` is used. Ignored for other modes.
 
     Attributes
     ----------
@@ -204,6 +209,11 @@ class Project:
                       - otherwise if we are in a Git repository, create
                         'skore' at the root of the repository.
                       - otherwise create 'skore' in the current working directory.
+
+            host : str, optional
+                Hub address when ``mode="hub"`` (for example
+                ``https://skore.probabl.ai``). If omitted,
+                ``SKORE_HUB_URI`` is used. Ignored for other modes.
 
             tracking_uri : str, mode:mlflow only.
                 The URI of the MLflow tracking server.
@@ -471,6 +481,10 @@ class Project:
 
             tracking_uri : str, mode:mlflow only.
                 The URI of the MLflow tracking server.
+
+            host : str, optional
+                Hub address when ``mode="hub"``. See the :class:`Project` class
+                docstring for details.
         """
         plugin, parameters = Project.__setup_plugin(mode, name, **kwargs)
 

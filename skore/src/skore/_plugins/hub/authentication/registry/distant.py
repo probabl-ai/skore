@@ -9,8 +9,8 @@ from typing import Literal
 from urllib.parse import urljoin
 from uuid import uuid4
 
+from skore._plugins.hub.authentication.host import normalize
 from skore._plugins.hub.authentication.login import Token, login
-from skore._plugins.hub.authentication.uri import normalize
 from skore._plugins.hub.client.client import Client
 
 PERMISSIONS = (
