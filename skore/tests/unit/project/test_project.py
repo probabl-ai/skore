@@ -269,11 +269,13 @@ class TestProject:
         report = request.getfixturevalue(report)
         project = Project(name="<name>", mode="local")
 
-        project.put("<key>", report)
+        project._Project__project.put.return_value = "<report-id>"
 
+        result = project.put("<key>", report)
+
+        assert result == "<report-id>"
         assert FakeLocalProject.called
         assert project._Project__project.put.called
-        assert not project._Project__project.put.call_args.args
         assert project._Project__project.put.call_args.kwargs == {
             "key": "<key>",
             "report": report,

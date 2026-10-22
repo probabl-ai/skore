@@ -260,7 +260,7 @@ class Project:
             return self.__project.tracking_uri
         return None
 
-    def put(self, key: str, report: EstimatorReport | CrossValidationReport):
+    def put(self, key: str, report: EstimatorReport | CrossValidationReport) -> str:
         """
         Put a key-report pair to the project.
 
@@ -277,8 +277,9 @@ class Project:
 
         Returns
         -------
-        None
-            The report is persisted in the project backend.
+        report_id : str
+            The ID of the newly persisted report. This ID can be passed to
+            :meth:`Project.get`.
 
         Examples
         --------
@@ -291,7 +292,8 @@ class Project:
         >>> report = evaluate(LinearRegression(), X, y, splitter=0.2)
         >>> tmpdir = TemporaryDirectory()
         >>> project = Project(name="my-xp", mode="local", workspace=Path(tmpdir.name))
-        >>> project.put("my-regression", report)
+        >>> report_id = project.put("my-regression", report)
+        >>> loaded_report = project.get(report_id)
         >>> tmpdir.cleanup()
         """
         from skore import CrossValidationReport, EstimatorReport
