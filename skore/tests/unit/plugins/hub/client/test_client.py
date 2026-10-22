@@ -162,7 +162,7 @@ class TestHUBClient:
     def test_request_without_credentials(self, host):
         message = (
             "No API key found for this workspace; generate one with "
-            "`$ skore hub api-key generate --host <host> --workspace <workspace>`, "
+            "`skore hub api-key generate --host <host> --workspace <workspace>`, "
             "or set the SKORE_HUB_API_KEY environment variable."
         )
 

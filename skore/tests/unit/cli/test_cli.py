@@ -183,7 +183,7 @@ def test_cli_subcommand_help_omits_banner():
 # --------------------------------------------------------------------------- #
 
 
-def test_resolve_hub_uri_without_url_requires_environment(monkeypatch):
+def test_resolve_hub_uri_without_url_doesnt_set_url(monkeypatch):
     monkeypatch.delenv(HOST_ENV_VAR_NAME, raising=False)
 
     with pytest.raises(ValueError, match="You must provide an host"):
