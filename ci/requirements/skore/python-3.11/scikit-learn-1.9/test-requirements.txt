@@ -502,7 +502,7 @@ uuid6==2025.0.1
     # via skore (skore/pyproject.toml)
 uvicorn==0.54.0
     # via mlflow-skinny
-virtualenv==21.14.2
+virtualenv==21.14.13
     # via pre-commit
 wcwidth==0.9.1
     # via
