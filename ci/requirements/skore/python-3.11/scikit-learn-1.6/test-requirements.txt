@@ -31,7 +31,7 @@ cachetools==7.2.3
     # via
     #   mlflow-skinny
     #   mlflow-tracing
-certifi==2026.10.18
+certifi==2026.10.19
     # via
     #   httpcore
     #   httpx
@@ -501,7 +501,7 @@ uuid6==2025.0.1
     # via skore (skore/pyproject.toml)
 uvicorn==0.54.0
     # via mlflow-skinny
-virtualenv==21.14.11
+virtualenv==21.14.13
     # via pre-commit
 wcwidth==0.9.2
     # via
