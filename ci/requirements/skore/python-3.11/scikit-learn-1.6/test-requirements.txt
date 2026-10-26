@@ -82,7 +82,7 @@ executing==2.2.1
     # via stack-data
 fastapi==0.142.2
     # via mlflow-skinny
-filelock==4.0.8
+filelock==4.2.1
     # via
     #   skore (skore/pyproject.toml)
     #   python-discovery
@@ -101,7 +101,7 @@ frozenlist==1.8.0
     #   aiosignal
 gitdb==4.0.12
     # via gitpython
-gitpython==3.2.0
+gitpython==3.2.1
     # via mlflow-skinny
 google-auth==2.59.1
     # via databricks-sdk
@@ -250,7 +250,7 @@ numpy==2.4.6
     #   skrub
 numpy-typing-compat==20251206.2.4
     # via optype
-opentelemetry-api==1.45.0
+opentelemetry-api==1.45.1
     # via
     #   fastapi
     #   mlflow-skinny
