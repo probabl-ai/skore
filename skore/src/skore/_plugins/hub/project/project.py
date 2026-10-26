@@ -323,8 +323,9 @@ class Project:
 
     def get(self, id: str) -> EstimatorReport | CrossValidationReport:
         """Get a persisted report by its canonical id or, for older callers, its URN."""
-        if not re.match(Project.__REPORT_URN_PATTERN, id):
-            with HUBClient() as hub_client:
+        matched = Project.__REPORT_URN_PATTERN.match(id)
+        with HUBClient() as hub_client:
+            if matched is None:
                 response = hub_client.request(
                     method="GET",
                     workspace=self.workspace,
@@ -332,19 +333,17 @@ class Project:
                     endpoint="reports",
                     params={"canonical_report_ids": id, "limit": 1},
                 )
-            items = response.json().get("items", [])
-            if not items:
-                raise KeyError(id)
-            id = items[0]["urn"]
+                items = response.json().get("items", [])
+                if not items:
+                    raise KeyError(id)
+                urn = items[0]["urn"]
+                matched = Project.__REPORT_URN_PATTERN.match(urn)
+                if matched is None:
+                    raise ValueError(
+                        f"Report URN {urn!r} does not match "
+                        f"{Project.__REPORT_URN_PATTERN.pattern!r}."
+                    )
 
-        if not (matched := re.match(Project.__REPORT_URN_PATTERN, id)):
-            raise ValueError(
-                f"Report ID '{id}' format does not match "
-                f"'{Project.__REPORT_URN_PATTERN}'."
-            )
-
-        # Retrieve presigned URL
-        with HUBClient() as hub_client:
             response = hub_client.request(
                 method="GET",
                 workspace=self.workspace,
