@@ -8,7 +8,7 @@ from collections.abc import Callable
 from functools import wraps
 from re import sub as substitute
 from tempfile import TemporaryFile
-from typing import TYPE_CHECKING, Any, ParamSpec, TypedDict, TypeVar, cast
+from typing import TYPE_CHECKING, Any, ParamSpec, TypedDict, TypeVar
 from unicodedata import normalize
 
 from httpx import HTTPStatusError, codes
@@ -86,6 +86,8 @@ def ensure_workspace_is_valid(method: Callable[P, R]) -> Callable[P, R]:
         host = kwargs["host"]
         workspace = kwargs["workspace"]
 
+        assert isinstance(host, str), "ensure_host_is_valid must come first"
+
         if not isinstance(workspace, str):
             raise ValueError("`workspace` must be a str.")
 
@@ -100,11 +102,7 @@ def ensure_workspace_is_valid(method: Callable[P, R]) -> Callable[P, R]:
 
         with HUBClient() as hub_client:
             try:
-                hub_client.request(
-                    method="GET",
-                    host=cast(str, host),  # ensure_host_is_valid comes first.
-                    workspace=workspace,
-                )
+                hub_client.request(method="GET", host=host, workspace=workspace)
             except HTTPStatusError as e:
                 if e.response.status_code == codes.NOT_FOUND:
                     raise NotFoundException(
