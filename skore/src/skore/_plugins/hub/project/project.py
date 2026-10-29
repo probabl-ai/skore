@@ -17,6 +17,7 @@ from rich.progress import Progress, SpinnerColumn, TextColumn, TimeElapsedColumn
 
 from skore import THREADABLE, CrossValidationReport, EstimatorReport, console
 from skore._plugins import switch_plt_backend
+from skore._plugins.hub.authentication.host import ensure_host_is_valid
 from skore._plugins.hub.client.client import Client, HUBClient
 from skore._plugins.hub.exception import ForbiddenException, NotFoundException
 from skore._plugins.hub.json import dumps
@@ -82,7 +83,10 @@ def ensure_workspace_is_valid(method: Callable[P, R]) -> Callable[P, R]:
 
     @wraps(method)
     def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
+        host = kwargs["host"]
         workspace = kwargs["workspace"]
+
+        assert isinstance(host, str), "ensure_host_is_valid must come first"
 
         if not isinstance(workspace, str):
             raise ValueError("`workspace` must be a str.")
@@ -98,7 +102,7 @@ def ensure_workspace_is_valid(method: Callable[P, R]) -> Callable[P, R]:
 
         with HUBClient() as hub_client:
             try:
-                hub_client.request("GET", workspace)
+                hub_client.request(method="GET", host=host, workspace=workspace)
             except HTTPStatusError as e:
                 if e.response.status_code == codes.NOT_FOUND:
                     raise NotFoundException(
@@ -177,22 +181,28 @@ class Project:
         ``skore hub`` interface. It represents an isolated entity managing users,
         projects, and resources. It can be a company, organization, or team that
         operates independently within the system.
+    host : str, optional
+        Hub address (for example ``https://skore.probabl.ai``). If omitted,
+        ``SKORE_HUB_URI`` is used.
 
     Attributes
     ----------
-    workspace : str
-        The workspace of the project.
     name : str
         The name of the project.
+    workspace : str
+        The workspace of the project.
+    host : str
+        Hub address.
     """
 
     __REPORT_URN_PATTERN = re.compile(
         r"skore:report:(?P<type>(estimator|cross-validation)):(?P<id>.+)"
     )
 
+    @ensure_host_is_valid
     @ensure_workspace_is_valid
     @ensure_name_is_valid
-    def __init__(self, *, name: str, workspace: str):
+    def __init__(self, *, name: str, workspace: str, host: str | None = None):
         """
         Initialize a hub project.
 
@@ -201,22 +211,38 @@ class Project:
 
         Parameters
         ----------
-        workspace : Path
+        name : str
+            The name of the project.
+        workspace : str
             The workspace of the project.
 
             A workspace is a ``skore hub`` concept that must be configured on the
             ``skore hub`` interface. It represents an isolated entity managing users,
             projects, and resources. It can be a company, organization, or team that
             operates independently within the system.
-        name : str
-            The name of the project.
+        host : str, optional
+            Hub address (for example ``https://skore.probabl.ai``). If omitted,
+            ``SKORE_HUB_URI`` is used.
         """
-        with HUBClient() as hub_client:
-            response = hub_client.request("POST", workspace, name)
+        assert host is not None
 
-        self.__workspace = workspace
+        with HUBClient() as hub_client:
+            response = hub_client.request(
+                method="POST",
+                host=host,
+                workspace=workspace,
+                project=name,
+            )
+
         self.__name = name
+        self.__workspace = workspace
         self.__frontend_url = response.json()["url"]
+        self.__host = host
+
+    @property
+    def name(self) -> str:
+        """The name of the project."""
+        return self.__name
 
     @property
     def workspace(self) -> str:
@@ -224,9 +250,9 @@ class Project:
         return self.__workspace
 
     @property
-    def name(self) -> str:
-        """The name of the project."""
-        return self.__name
+    def host(self) -> str:
+        """The host of the project."""
+        return self.__host
 
     def put(self, key: str, report: EstimatorReport | CrossValidationReport) -> None:
         """
@@ -303,6 +329,7 @@ class Project:
             with HUBClient() as hub_client:
                 response = hub_client.request(
                     method="POST",
+                    host=self.host,
                     workspace=self.workspace,
                     project=self.name,
                     endpoint=endpoint,
@@ -331,6 +358,7 @@ class Project:
         with HUBClient() as hub_client:
             response = hub_client.request(
                 method="GET",
+                host=self.host,
                 workspace=self.workspace,
                 project=self.name,
                 endpoint=f"{matched['type']}-reports/{matched['id']}",
@@ -407,6 +435,7 @@ class Project:
             while True:
                 response = client.request(
                     method="GET",
+                    host=self.host,
                     workspace=self.workspace,
                     project=self.name,
                     endpoint="reports",
@@ -431,9 +460,10 @@ class Project:
         return f"Project(name='{self.name}', mode='hub', workspace='{self.workspace}')"
 
     @staticmethod
+    @ensure_host_is_valid
     @ensure_workspace_is_valid
     @ensure_name_is_valid
-    def delete(*, name: str, workspace: str) -> None:
+    def delete(*, name: str, workspace: str, host: str | None = None) -> None:
         """
         Delete a hub project.
 
@@ -441,17 +471,27 @@ class Project:
         ----------
         name : str
             The name of the project.
-        workspace : Path
+        workspace : str
             The workspace of the project.
 
             A workspace is a ``skore hub`` concept that must be configured on the
             ``skore hub`` interface. It represents an isolated entity managing users,
             projects, and resources. It can be a company, organization, or team that
             operates independently within the system.
+        host : str, optional
+            Hub address (for example ``https://skore.probabl.ai``). If omitted,
+            ``SKORE_HUB_URI`` is used.
         """
+        assert host is not None
+
         with HUBClient() as hub_client:
             try:
-                hub_client.request("DELETE", workspace, name)
+                hub_client.request(
+                    method="DELETE",
+                    host=host,
+                    workspace=workspace,
+                    project=name,
+                )
             except HTTPStatusError as e:
                 if e.response.status_code == codes.FORBIDDEN:
                     raise ForbiddenException(
