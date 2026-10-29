@@ -125,13 +125,13 @@ def _write_cv_split_reports(
     report: CrossValidationReport, output_dir: Path, workspace: Path
 ) -> None:
     split_reports_dir = output_dir / "reports"
-    split_reports_dir.mkdir()
+    split_reports_dir.mkdir(exist_ok=True)
     n_digits = int(np.ceil(np.log10(len(report.reports_))))
     for split, (sub_report, (train_idx, test_idx)) in enumerate(
         zip(report.reports_, report._split_indices, strict=True)
     ):
         split_dir = split_reports_dir / f"split_{{:0>{n_digits}}}".format(split)
-        split_dir.mkdir()
+        split_dir.mkdir(exist_ok=True)
         _write_estimator_report(sub_report, workspace, split_dir)
         np.savetxt(split_dir / "train_indices.txt", train_idx, fmt="%d")
         np.savetxt(split_dir / "test_indices.txt", test_idx, fmt="%d")
@@ -475,6 +475,9 @@ class Project:
         Path
             The path to the directory where the report was stored.
         """
+        from skore._project.experiments import ensure_report_id
+
+        ensure_report_id(report)
         return _write_report(
             report, workspace=self.workspace, project_name=self.name, name=key
         )
@@ -498,6 +501,35 @@ class Project:
             except Exception as e:
                 warnings.warn(f"Failed to load report at {p}: {e!r}", stacklevel=2)
         return result
+
+    def experiments(self) -> list[dict[str, Any]]:
+        """Return every experiment row stored in this project."""
+        directory = self.path / "experiments"
+        if not directory.is_dir():
+            return []
+        return [
+            json.loads(path.read_text(encoding="UTF-8"))
+            for path in sorted(directory.glob("*.json"))
+        ]
+
+    def upsert_experiment(self, row: dict[str, Any]) -> None:
+        """Write one experiment row."""
+        directory = self.path / "experiments"
+        directory.mkdir(parents=True, exist_ok=True)
+        (directory / f"{row['id']}.json").write_text(
+            json.dumps(row, indent=2), encoding="UTF-8"
+        )
+
+    def objective(self) -> str:
+        """Return the project objective."""
+        path = self.path / "objective.txt"
+        if not path.is_file():
+            return ""
+        return path.read_text(encoding="UTF-8")
+
+    def set_objective(self, text: str) -> None:
+        """Replace the project objective."""
+        (self.path / "objective.txt").write_text(text, encoding="UTF-8")
 
     @staticmethod
     def delete(*, name: str, workspace: str | Path) -> None:

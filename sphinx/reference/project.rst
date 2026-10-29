@@ -53,3 +53,38 @@ The returned object is not intended to be instantiated directly. Always use
    Summary.frame
    Summary.query
    Summary.compare
+
+Skore project's experiments
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+:attr:`Project.experiments` returns an :class:`Experiments` collection. One row
+is an :class:`Experiment`, also returned by
+:func:`skore.agent.create_experiment`. Neither class is meant to be
+instantiated directly.
+
+.. autosummary::
+   :toctree: api/
+   :template: class_with_accessors.rst
+
+   Experiments
+   Experiment
+
+.. rubric:: Methods
+
+.. autosummary::
+   :toctree: api/
+   :template: class_methods_no_index.rst
+
+   Experiments.frame
+   Experiments.get
+   Experiment.decide
+   Experiment.promote
+   Experiment.run
+
+.. rubric:: Functions
+
+.. autosummary::
+   :toctree: api/
+   :template: base.rst
+
+   agent.create_experiment

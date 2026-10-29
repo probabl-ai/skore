@@ -97,8 +97,8 @@ class ReportPayload(BaseModel, ABC, Generic[Report]):
 
     @computed_field  # type: ignore[prop-decorator]
     @property
-    def canonical_report_id(self) -> str:
-        """The canonical skore report ID."""
+    def canonical_report_id(self) -> str | None:
+        """The canonical skore report ID, or none before the report is stored."""
         return self.report.id
 
     @computed_field  # type: ignore[prop-decorator]

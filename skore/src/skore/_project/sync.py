@@ -61,6 +61,27 @@ def _build_result_frame(
     return result
 
 
+def _copy_project_text(source: Project, destination: Project) -> None:
+    """Copy the objective and experiment rows, keeping a history row ahead."""
+    if not hasattr(source, "_experiment_rows") or not hasattr(
+        destination, "_experiment_rows"
+    ):
+        return
+    destination_rows = {str(row["id"]): row for row in destination._experiment_rows()}
+    for row in source._experiment_rows():
+        current = destination_rows.get(str(row["id"]))
+        if (
+            current is not None
+            and current["status"] == "history"
+            and row["status"] != "history"
+        ):
+            continue
+        destination._write_experiment(row)
+    objective = source.objective
+    if objective:
+        destination.objective = objective
+
+
 def synchronize(
     source: Project,
     destination: Project,
@@ -84,8 +105,10 @@ def synchronize(
 
     if not dry_run:
         _transfer(outbound_reports, source, destination)
+        _copy_project_text(source, destination)
         if bidirectional:
             _transfer(inbound_reports, destination, source)
+            _copy_project_text(destination, source)
 
     transfer_status: Status = "planned" if dry_run else "transferred"
     frames = [

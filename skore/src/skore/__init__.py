@@ -17,6 +17,7 @@ from skore._utils.environment import is_environment_notebook_like
 from skore._utils.patch import setup_jupyter_display
 
 if TYPE_CHECKING:
+    from skore import agent
     from skore._checks import Check, CheckNotApplicable, ChecksSummaryDisplay
     from skore._config import configuration
     from skore._dispatch import compare, evaluate
@@ -35,6 +36,7 @@ if TYPE_CHECKING:
     from skore._displays.inspection.permutation_importance import (
         PermutationImportanceDisplay,
     )
+    from skore._project.experiments import Experiment, Experiments
     from skore._project.project import Project
     from skore._project.summary import Summary
     from skore._reports import (
@@ -60,11 +62,14 @@ __all__ = [
     "ChecksSummaryDisplay",
     "Display",
     "EstimatorReport",
+    "Experiment",
+    "Experiments",
     "ImpurityDecreaseDisplay",
     "MetricsSummaryDisplay",
     "PermutationImportanceDisplay",
     "PrecisionRecallCurveDisplay",
     "PredictionErrorDisplay",
+    "agent",
     "Project",
     "RocCurveDisplay",
     "CalibrationDisplay",
@@ -113,6 +118,7 @@ except Exception:
 # - in the ``lazy_loader.attach`` call below.
 __getattr__, __dir__, _ = lazy_loader.attach(
     __name__,
+    submodules=["agent"],
     submod_attrs={
         "_checks": ["Check", "CheckNotApplicable", "ChecksSummaryDisplay"],
         "_config": ["configuration"],
@@ -130,6 +136,7 @@ __getattr__, __dir__, _ = lazy_loader.attach(
         "_displays.inspection.coefficients": ["CoefficientsDisplay"],
         "_displays.inspection.impurity_decrease": ["ImpurityDecreaseDisplay"],
         "_displays.inspection.permutation_importance": ["PermutationImportanceDisplay"],
+        "_project.experiments": ["Experiment", "Experiments"],
         "_project.project": ["Project"],
         "_project.summary": ["Summary"],
         "_reports": [

@@ -2,6 +2,7 @@ from typing import Literal, TypedDict
 
 ProjectMode = Literal["hub", "local", "mlflow"]
 PluginGroup = Literal["skore.plugins.project"]
+ExperimentStatus = Literal["idea", "aside", "discarded", "backlog", "history"]
 
 
 class ReportMetadata(TypedDict):
@@ -32,3 +33,15 @@ class ReportMetadata(TypedDict):
     roc_auc_std: float | None
     fit_time_std: float | None
     predict_time_std: float | None
+
+
+class ExperimentRow(TypedDict):
+    """One stored experiment. Derived columns are not included."""
+
+    id: str
+    stem: str
+    status: ExperimentStatus
+    question: str
+    source_id: str | None
+    check_code: str | None
+    plan: str | None
