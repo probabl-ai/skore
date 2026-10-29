@@ -18,6 +18,7 @@ from skore._utils.index import flatten_multi_index
 
 if TYPE_CHECKING:
     from matplotlib.figure import Figure
+    from numpy.typing import ArrayLike
     from sklearn.base import BaseEstimator
 
     from skore._sklearn.types import Aggregate, ReportType
@@ -101,6 +102,7 @@ class ImpurityDecreaseDisplay(DisplayMixin):
         estimator: BaseEstimator,
         name: str,
         report_type: ReportType,
+        X: ArrayLike | None = None,
     ) -> ImpurityDecreaseDisplay:
         """Compute the data for the display from a single estimator.
 
@@ -116,6 +118,10 @@ class ImpurityDecreaseDisplay(DisplayMixin):
                 "comparison-cross-validation"}
             The type of report to compute the data for.
 
+        X : array-like or None, default=None
+            Features seen by `estimator`, used to name them when the estimator
+            does not expose feature names.
+
         Returns
         -------
         ImpurityDecreaseDisplay
@@ -128,7 +134,10 @@ class ImpurityDecreaseDisplay(DisplayMixin):
 
         n_features = predictor.feature_importances_.shape[0]
         feature_names = _get_feature_names(
-            predictor, transformer=preprocessor, n_features=n_features
+            predictor,
+            transformer=preprocessor,
+            X=X if preprocessor is None else None,
+            n_features=n_features,
         )
 
         importances = pd.DataFrame(

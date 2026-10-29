@@ -1,10 +1,17 @@
 import matplotlib as mpl
 import numpy as np
+import pandas as pd
 import pytest
+import skrub
+from sklearn.base import clone
 from sklearn.datasets import make_regression
 from sklearn.linear_model import LinearRegression, Ridge
 from sklearn.pipeline import Pipeline, make_pipeline
-from sklearn.preprocessing import SplineTransformer, StandardScaler
+from sklearn.preprocessing import (
+    PolynomialFeatures,
+    SplineTransformer,
+    StandardScaler,
+)
 
 from skore import EstimatorReport
 
@@ -212,3 +219,92 @@ def test_scale_features_plot_labels(regression_train_test_split):
     fig = report.inspection.coefficients().plot(scale_features=True)
     assert fig.axes[0].get_xlabel() == "Magnitude of scaled coefficient"
     assert fig.get_suptitle() == "Scaled coefficients of Ridge"
+
+
+def _skrub_regression_data():
+    X, y = make_regression(n_samples=60, n_features=3, random_state=0)
+    X = pd.DataFrame(X, columns=["a", "b", "c"])
+    return X.iloc[:40], X.iloc[40:], y[:40], y[40:]
+
+
+def _skrub_data_op(steps, predictor, *, chained):
+    """Build a DataOp equivalent to ``make_pipeline(*steps, predictor)``."""
+    X = skrub.X()
+    if chained:
+        for step in steps:
+            X = X.skb.apply(clone(step))
+        return X.skb.apply(clone(predictor), y=skrub.y())
+    return X.skb.apply(
+        make_pipeline(*[clone(s) for s in steps], clone(predictor)), y=skrub.y()
+    )
+
+
+def _sklearn_estimator(steps, predictor):
+    if not steps:
+        return clone(predictor)
+    return make_pipeline(*[clone(s) for s in steps], clone(predictor))
+
+
+SKRUB_CASES = [
+    pytest.param(steps, chained, id=f"{name}-{'chained' if chained else 'pipeline'}")
+    for name, steps in [
+        ("no_step", []),
+        ("scaler", [StandardScaler()]),
+        ("poly", [PolynomialFeatures(degree=2, include_bias=False)]),
+    ]
+    for chained in [True, False]
+]
+
+
+@pytest.mark.parametrize("steps, chained", SKRUB_CASES)
+def test_skrub_learner_matches_sklearn_pipeline(steps, chained):
+    """A skrub learner gives the same coefficients and feature stds as the
+    equivalent scikit-learn pipeline."""
+    X_train, X_test, y_train, y_test = _skrub_regression_data()
+    skrub_report = EstimatorReport(
+        _skrub_data_op(steps, Ridge(), chained=chained).skb.make_learner(),
+        train_data={"X": X_train, "y": y_train},
+        test_data={"X": X_test, "y": y_test},
+    )
+    sklearn_report = EstimatorReport(
+        _sklearn_estimator(steps, Ridge()),
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
+    )
+    skrub_display = skrub_report.inspection.coefficients()
+    sklearn_display = sklearn_report.inspection.coefficients()
+    pd.testing.assert_frame_equal(skrub_display.frame(), sklearn_display.frame())
+
+    # feature stds are computed on the predictor input, which skrub gives as a
+    # dataframe (hence with ddof=1)
+    X_predictor = X_train
+    if steps:
+        X_predictor = pd.DataFrame(sklearn_report.estimator_[:-1].transform(X_train))
+    np.testing.assert_allclose(
+        skrub_display.coefficients.query("feature != 'Intercept'")["feature_std"],
+        X_predictor.std(),
+    )
+
+
+def test_skrub_learner_feature_std_uses_predictor_input():
+    """Feature stds are computed on the features seen by the predictor, not on
+    the value of the ``X`` node."""
+    X_train, X_test, y_train, y_test = _skrub_regression_data()
+    X = skrub.X()
+    data_op = (
+        X.assign(d=X["a"] * 10).drop(columns=["c"]).skb.apply(Ridge(), y=skrub.y())
+    )
+    report = EstimatorReport(
+        data_op.skb.make_learner(),
+        train_data={"X": X_train, "y": y_train},
+        test_data={"X": X_test, "y": y_test},
+    )
+    coefficients = report.inspection.coefficients().coefficients
+    features = coefficients.query("feature != 'Intercept'")
+    assert features["feature"].tolist() == ["a", "b", "d"]
+    np.testing.assert_allclose(
+        features["feature_std"],
+        X_train.assign(d=X_train["a"] * 10)[["a", "b", "d"]].std(),
+    )
