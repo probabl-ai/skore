@@ -392,7 +392,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         report.learner_ = state["learner"]
         report.estimator = state["estimator"]
         data = state["data"]
-        report._train_data = data["train_data"]
+        report._train_data = data.get("train_data")
         report._test_data = data["test_data"]
         report._cache = Cache()
         report._cache.update(state["optional"]["cache"])
