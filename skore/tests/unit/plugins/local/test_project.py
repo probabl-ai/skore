@@ -3,6 +3,7 @@ from pathlib import Path
 
 import pandas as pd
 import pytest
+import skrub
 from pytest import fixture
 from sklearn.datasets import make_classification, make_regression
 from sklearn.dummy import DummyRegressor
@@ -123,11 +124,22 @@ def test_put_get_summarize(tmp_path, regression, regression_dummy, cv_regression
     assert Path(next(iter(summary))["local_path"]).is_relative_to(tmp_path)
 
 
-def test_put_get_prefit_report(tmp_path):
+@pytest.mark.parametrize("estimator_type", ["sklearn", "skrub"])
+def test_put_get_prefit_report(tmp_path, estimator_type):
     """Non-regression test for https://github.com/probabl-ai/skore/issues/3346."""
     X, y = make_classification(random_state=42)
-    estimator = RandomForestClassifier(random_state=42).fit(X, y)
-    report = evaluate(estimator, X, y, splitter="prefit")
+    if estimator_type == "sklearn":
+        estimator = RandomForestClassifier(random_state=42).fit(X, y)
+        report = evaluate(estimator, X, y, splitter="prefit")
+    else:
+        learner = (
+            skrub.X()
+            .skb.apply(RandomForestClassifier(random_state=42), y=skrub.y())
+            .skb.make_learner()
+            .fit({"X": X, "y": y})
+        )
+        report = evaluate(learner, data={"X": X, "y": y}, splitter="prefit")
+
     project = Project(name="prefit", workspace=tmp_path)
     project.put("prefit", report)
 
