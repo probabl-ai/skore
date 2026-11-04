@@ -364,6 +364,17 @@ def test_report_with_data_op():
     assert accuracy.name.endswith("_mean")
 
 
+def test_report_with_extra_keys_in_data():
+    """Extra keys in the data are allowed when building a report from a learner."""
+    X, y = make_classification(n_samples=10, random_state=42)
+    data_op = skrub.X(X).skb.apply(LogisticRegression(), y=skrub.y(y))
+    data = {"X": X, "y": y, "unused": None}
+
+    report = CrossValidationReport(data_op.skb.make_learner(), data=data)
+
+    assert report.input_data["_skrub_ignore_extra_keys"] is True
+
+
 def test_cross_validation_report_split_indices_from_data_op_cv():
     """CrossValidationReport derives split indices from skrub iter_cv_splits."""
     df = skrub.datasets.toy_products()
