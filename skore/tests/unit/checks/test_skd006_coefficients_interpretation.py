@@ -58,7 +58,7 @@ def test_tabular_pipeline_with_numpy_X(report_type, estimator, regression_data):
     if isinstance(estimator, SkrubLearner):
         report = evaluate(
             estimator,
-            data={"X": X, "y": y},
+            data={"X": X, "y": y, "_skrub_ignore_extra_keys": True},
             splitter=0.2 if report_type == "estimator" else 3,
         )
     else:
@@ -113,7 +113,9 @@ def test_pipeline_coefficient_interpretation(
     """SKD006 tip reflects preprocessed feature scale in a pipeline."""
     X, y = regression_data
     if isinstance(estimator, SkrubLearner):
-        report = evaluate(estimator, data={"X": X, "y": y})
+        report = evaluate(
+            estimator, data={"X": X, "y": y, "_skrub_ignore_extra_keys": True}
+        )
     else:
         report = evaluate(estimator, X, y)
 
