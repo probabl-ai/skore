@@ -61,6 +61,9 @@ jobs:
           echo "${GITHUB_WORKSPACE}/skore/venv/bin" >> ${GITHUB_PATH}
           echo "VIRTUAL_ENV=${GITHUB_WORKSPACE}/skore/venv" >> ${GITHUB_ENV}
 
+      - name: Upgrade pip
+        run: python -m pip install --upgrade "pip>=26.2.2"
+
       - name: Install dependencies in python-venv
         if: steps.cache-python-venv.outputs.cache-hit != 'true'
         run: python -m pip install --requirement "${LOCKFILE}"

@@ -44,8 +44,15 @@ def test_hub_api_key_no_subcommand_shows_help():
     assert "list" in result.output
 
 
+def test_hub_api_key_revoke_requires_host():
+    result = _invoke(["hub", "api-key", "revoke", "--workspace=team"])
+
+    assert result.exit_code != 0
+    assert "host" in result.output.lower()
+
+
 def test_hub_api_key_revoke_requires_workspace():
-    result = _invoke(["hub", "api-key", "revoke"])
+    result = _invoke(["hub", "api-key", "revoke", "--host=http://hub.test"])
 
     assert result.exit_code != 0
     assert "workspace" in result.output.lower()
@@ -81,22 +88,6 @@ def test_hub_api_key_revoke_stored_key(monkeypatch):
     assert revoked == [("http://hub.test", "team", 42, "http://hub.test")]
 
 
-def test_hub_api_key_revoke_without_host_forwards_none(monkeypatch):
-    revoked = []
-    monkeypatch.setattr(hub_key, "keys", lambda: iter(()))
-    monkeypatch.setattr(
-        hub_key,
-        "revoke",
-        lambda *, host, workspace, timeout: revoked.append((host, workspace, timeout)),
-    )
-
-    result = _invoke(["hub", "api-key", "revoke", "--workspace=team"])
-
-    assert result.exit_code == 0, result.output
-    assert revoked == [(None, "team", 600)]
-    assert "No API key stored." in result.output
-
-
 def test_hub_api_key_revoke_reports_when_nothing_stored():
     result = _invoke(
         ["hub", "api-key", "revoke", "--host=http://hub.test", "--workspace=team"]
@@ -128,8 +119,15 @@ def test_hub_api_key_list_shows_host_and_workspace():
     assert "k2" not in result.output
 
 
+def test_hub_api_key_generate_requires_host():
+    result = _invoke(["hub", "api-key", "generate", "--workspace=team"])
+
+    assert result.exit_code != 0
+    assert "host" in result.output.lower()
+
+
 def test_hub_api_key_generate_requires_workspace():
-    result = _invoke(["hub", "api-key", "generate"])
+    result = _invoke(["hub", "api-key", "generate", "--host=http://hub.test"])
 
     assert result.exit_code != 0
     assert "workspace" in result.output.lower()
@@ -181,11 +179,20 @@ def test_hub_api_key_generate_errors_when_key_already_stored():
 def test_hub_api_key_generate_forwards_force(monkeypatch):
     calls = _patch_generate(monkeypatch)
 
-    result = _invoke(["hub", "api-key", "generate", "--workspace=team", "--force"])
+    result = _invoke(
+        [
+            "hub",
+            "api-key",
+            "generate",
+            "--host=http://hub.test",
+            "--workspace=team",
+            "--force",
+        ]
+    )
 
     assert result.exit_code == 0, result.output
     assert calls[0]["force"] is True
-    assert calls[0]["host"] is None
+    assert calls[0]["host"] == "http://hub.test"
     assert calls[0]["workspace"] == "team"
 
 
@@ -193,7 +200,14 @@ def test_hub_api_key_generate_name_override(monkeypatch):
     calls = _patch_generate(monkeypatch)
 
     result = _invoke(
-        ["hub", "api-key", "generate", "--workspace=team", "--name=ui-laptop"]
+        [
+            "hub",
+            "api-key",
+            "generate",
+            "--host=http://hub.test",
+            "--workspace=team",
+            "--name=ui-laptop",
+        ]
     )
 
     assert result.exit_code == 0, result.output
@@ -204,7 +218,15 @@ def test_hub_api_key_generate_expires_in_three_months(monkeypatch):
     calls = _patch_generate(monkeypatch)
 
     result = _invoke(
-        ["hub", "api-key", "generate", "--workspace=team", "--expires", "3"]
+        [
+            "hub",
+            "api-key",
+            "generate",
+            "--host=http://hub.test",
+            "--workspace=team",
+            "--expires",
+            "3",
+        ]
     )
 
     assert result.exit_code == 0, result.output
@@ -214,7 +236,15 @@ def test_hub_api_key_generate_expires_in_three_months(monkeypatch):
 
 def test_hub_api_key_generate_rejects_unknown_expires():
     result = _invoke(
-        ["hub", "api-key", "generate", "--workspace=team", "--expires", "12"]
+        [
+            "hub",
+            "api-key",
+            "generate",
+            "--host=http://hub.test",
+            "--workspace=team",
+            "--expires",
+            "12",
+        ]
     )
 
     assert result.exit_code != 0
@@ -227,7 +257,9 @@ def test_hub_api_key_generate_unknown_workspace(monkeypatch):
 
     monkeypatch.setattr(hub_key, "generate", generate)
 
-    result = _invoke(["hub", "api-key", "generate", "--workspace=other"])
+    result = _invoke(
+        ["hub", "api-key", "generate", "--host=http://hub.test", "--workspace=other"]
+    )
 
     assert result.exit_code != 0
     assert "not member" in result.output

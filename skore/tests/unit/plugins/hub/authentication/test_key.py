@@ -5,7 +5,6 @@ from pytest import fixture, raises
 from skore._plugins.hub.authentication import key as key_module
 from skore._plugins.hub.authentication.key import KeyExistsError
 from skore._plugins.hub.authentication.registry import distant, local
-from skore._plugins.hub.authentication.uri import DEFAULT as DEFAULT_URI
 
 
 @fixture
@@ -68,12 +67,11 @@ def test_generate_without_host_uses_environment_uri(monkeypatch, hub):
     assert key_module.get(workspace="w1") == "k1"
 
 
-def test_generate_without_host_uses_default_uri(monkeypatch, hub):
+def test_generate_without_host_requires_environment_uri(monkeypatch, hub):
     monkeypatch.delenv("SKORE_HUB_URI", raising=False)
 
-    key_module.generate(workspace="w1")
-
-    assert hub.generated[0]["host"] == DEFAULT_URI
+    with raises(ValueError, match="You must provide an host"):
+        key_module.generate(workspace="w1")
 
 
 def test_generate_refuses_to_overwrite(hub):

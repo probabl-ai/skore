@@ -58,9 +58,9 @@ authenticates with cookies, they send `X-API-Key`. Resolution order is:
 Users provision keys with the Hub CLI, not with `skore.login`:
 
 ```bash
-$ skore hub api-key generate [--host=<host>] --workspace=<workspace>
+$ skore hub api-key generate --host=<host> --workspace=<workspace>
 $ skore hub api-key list
-$ skore hub api-key revoke [--host=<host>] --workspace=<workspace>
+$ skore hub api-key revoke --host=<host> --workspace=<workspace>
 ```
 
 `generate` and `revoke` still open a short-lived device OAuth login so the Hub can

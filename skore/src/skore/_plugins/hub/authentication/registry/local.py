@@ -64,7 +64,7 @@ from keyring.core import recommended
 from keyring.errors import PasswordDeleteError
 
 from skore import console
-from skore._plugins.hub.authentication.uri import normalize
+from skore._plugins.hub.authentication.host import normalize
 
 if TYPE_CHECKING:
     P = ParamSpec("P")

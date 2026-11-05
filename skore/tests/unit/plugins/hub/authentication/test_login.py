@@ -4,7 +4,6 @@ from httpx import Response, TimeoutException
 from pytest import mark, raises
 
 from skore._plugins.hub.authentication import login as login_module
-from skore._plugins.hub.authentication.uri import URI
 
 DATETIME_MIN = datetime.min.replace(tzinfo=UTC).isoformat()
 DATETIME_MAX = datetime.max.replace(tzinfo=UTC).isoformat()
@@ -48,7 +47,7 @@ def test_login_with_token(monkeypatch, respx_mock):
         )
     )
 
-    token = login_module.login(host=URI())
+    token = login_module.login(host="http://localhost")
 
     assert token.access == "D"
 
@@ -95,7 +94,7 @@ def test_login_with_expired_token(monkeypatch, respx_mock):
         )
     )
 
-    token = login_module.login(host=URI())
+    token = login_module.login(host="http://localhost")
 
     assert token.access == "F"
 
@@ -124,4 +123,4 @@ def test_login_with_token_timeout(monkeypatch, respx_mock):
     # - the token can't be acknowledged by the hub until the user is logged in; 400
     # - the token can't be created; timeout
     with raises(TimeoutException):
-        login_module.login(host=URI(), timeout=0)
+        login_module.login(host="http://localhost", timeout=0)

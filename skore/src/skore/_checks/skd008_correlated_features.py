@@ -65,7 +65,7 @@ class CheckCorrelatedFeatures(Check):
                 f"{n_pairs} pair(s) of features have a Spearman correlation "
                 "above 0.9. Highly correlated features can destabilize "
                 "linear model coefficients and feature-importance estimates, "
-                "and may cause collinearity-induced numerical issues."
+                "and may cause collinearity-induced numerical issues. "
                 "Dropping redundant features may also improve model performance."
             )
         return None

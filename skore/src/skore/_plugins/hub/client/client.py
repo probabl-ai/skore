@@ -27,7 +27,7 @@ from httpx import (
 from httpx import Client as HTTPXClient
 from httpx._types import HeaderTypes
 
-from skore._plugins.hub.authentication import ENV_VAR_NAME, URI
+from skore._plugins.hub.authentication import API_KEY_ENV_VAR_NAME
 
 logger = getLogger(__name__)
 
@@ -221,6 +221,7 @@ class HUBClient(Client):
     def request(  # type: ignore[override]
         self,
         method: str,
+        host: str,
         workspace: str,
         project: str | None = None,
         endpoint: str | None = None,
@@ -230,7 +231,6 @@ class HUBClient(Client):
         """Execute request with authorization."""
         from skore._plugins.hub.authentication import key as key_module
 
-        host = URI()
         headers = Headers(headers)
         url = str.rstrip(
             reduce(
@@ -253,14 +253,14 @@ class HUBClient(Client):
         if not JUPYTERLITE:
             if not (
                 key := (
-                    environ.get(ENV_VAR_NAME)
+                    environ.get(API_KEY_ENV_VAR_NAME)
                     or key_module.get(host=host, workspace=workspace)
                 )
             ):
                 raise RuntimeError(
                     "No API key found for this workspace; generate one with "
-                    "`$ skore hub api-key generate --workspace <workspace>`, "
-                    "or set the SKORE_HUB_API_KEY environment variable."
+                    "`skore hub api-key generate --host <host> --workspace <workspace>`"
+                    ", or set the SKORE_HUB_API_KEY environment variable."
                 )
 
             headers.update({"X-API-Key": key})

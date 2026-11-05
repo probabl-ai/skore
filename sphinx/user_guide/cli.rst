@@ -116,14 +116,14 @@ Managing credentials
 ^^^^^^^^^^^^^^^^^^^^
 
 A Hub project and a Hub agent both use a workspace API key stored on your
-machine. Create one for a workspace:
+machine. Create one for a workspace on a Hub host:
 
 .. code-block:: bash
 
-   $ skore hub api-key generate --workspace my-workspace
+   $ skore hub api-key generate --host https://skore.probabl.ai --workspace my-workspace
 
-This opens a device login in the browser, then stores the key for
-``my-workspace``. Key generation also accepts options for the Hub host, key name,
+``--host`` is the Hub address. This opens a device login in the browser, then stores the
+key for ``my-workspace``. Key generation also accepts options for the key name,
 expiration, login timeout, and replacing an existing key; see :ref:`cli-reference`.
 See which keys are already stored:
 
@@ -135,7 +135,7 @@ And drop the key for a workspace, locally and on the Hub:
 
 .. code-block:: bash
 
-   $ skore hub api-key revoke --workspace my-workspace
+   $ skore hub api-key revoke --host https://skore.probabl.ai --workspace my-workspace
 
 :class:`Project` in ``hub`` mode still prefers ``SKORE_HUB_API_KEY`` over this
 registry. See :ref:`project`.

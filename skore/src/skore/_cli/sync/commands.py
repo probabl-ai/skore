@@ -7,7 +7,8 @@ from typing import Any, Literal
 
 import rich_click as click
 
-from skore._cli.skore import URI_ENV, resolve_hub_uri
+from skore._cli.skore import resolve_hub_uri
+from skore._plugins.hub.authentication import HOST_ENV_VAR_NAME
 
 MODES = ("local", "hub", "mlflow")
 Mode = Literal["local", "hub", "mlflow"]
@@ -97,7 +98,7 @@ def _render_result(result, *, dry_run: bool) -> None:
     default=None,
     help=(
         "Hub host (e.g. ``https://skore.probabl.ai``). "
-        f"Defaults to the ``{URI_ENV}`` environment variable or the public Hub."
+        f"Defaults to the ``{HOST_ENV_VAR_NAME}`` environment variable."
     ),
 )
 @click.option(

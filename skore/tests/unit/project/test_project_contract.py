@@ -168,6 +168,7 @@ class TestHubProjectContract:
             name="contract-hub",
             mode="hub",
             workspace="workspace",
+            host="http://localhost",
         )
 
         assert project.mode == "hub"
@@ -184,4 +185,5 @@ class TestHubProjectContract:
             name="contract-hub",
             mode="hub",
             workspace="workspace",
+            host="http://localhost",
         )
