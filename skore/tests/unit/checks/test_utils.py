@@ -280,10 +280,11 @@ def test_get_preprocessed_X_skrub_uses_full_env(regression_data):
     )
     split = learner.data_op.skb.train_test_split({"X": df, "y": y}, random_state=0)
     learner.fit(split["train"])
-    report = EstimatorReport(learner, test_data=split["test"])
+    test_data = {**split["test"], "_skrub_ignore_extra_keys": True}
+    report = EstimatorReport(learner, test_data=test_data)
 
     skrub_X = get_preprocessed_X(report, data_source="test")
-    direct_X, _ = get_predictor_and_input(learner, split["test"])
+    direct_X, _ = get_predictor_and_input(learner, test_data)
 
     assert_array_equal(skrub_X, direct_X)
 
