@@ -15,6 +15,8 @@ extend-ignore-re = [
 fpr = "fpr"
 # acronym for "Mean Absolute Percentage Error"
 mape = "mape"
+# numpy function
+arange = "arange"
 
 # For "words" made up of other words
 # https://github.com/crate-ci/typos/blob/master/docs/design.md#identifiers-and-words
