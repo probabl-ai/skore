@@ -730,7 +730,8 @@ Why it matters
 ^^^^^^^^^^^^^^
 
 Duplicate rows leak across a train/test split: identical rows end up on both
-sides, so the model is evaluated on rows it was trained on and the reported
+Duplicate rows can leak across a train/test split: if identical rows end up on both
+sides, the model is evaluated on rows it was trained on and the reported
 score is overly optimistic.
 
 How to reduce the risk
