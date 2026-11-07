@@ -11,6 +11,7 @@ from skore._displays.utils import (
     _get_adjusted_fig_size,
     _reorder_categoricals_by_appearance,
     _rotate_ticklabels,
+    _threshold_average,
     _validate_style_kwargs,
 )
 
@@ -185,3 +186,25 @@ def test_downsample_thresholds_indices_invalid(max_n):
     """`max_n_thresholds` smaller than 2 raises a clear ``ValueError``."""
     with pytest.raises(ValueError, match="must be at least 2"):
         _downsample_thresholds_indices(10, max_n)
+
+
+def test_threshold_average():
+    """Curves are averaged at each threshold of the union of their thresholds.
+
+    A curve without a point at a given threshold contributes its point at the
+    smallest of its own thresholds above that one.
+    """
+    fprs = [np.array([3, 2, 1]), np.array([3, 2, 1])]
+    tprs = [np.array([3, 2, 1]), np.array([3, 2, 1])]
+    thresholds = [np.array([4, 3, 1]), np.array([5, 3, 2])]
+
+    average_fpr, average_tpr, unique_thresholds = _threshold_average(
+        fprs, tprs, thresholds
+    )
+
+    np.testing.assert_array_equal(unique_thresholds, [5, 4, 3, 2, 1])
+    # at threshold 2 for instance, the first curve is still at its point of threshold 3
+    # (value 2) while the second one has reached its point of threshold 2 (value 1)
+    expected = [3.0, 3.0, 2.0, 1.5, 1.0]
+    np.testing.assert_array_equal(average_fpr, expected)
+    np.testing.assert_array_equal(average_tpr, expected)

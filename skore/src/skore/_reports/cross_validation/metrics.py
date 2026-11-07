@@ -457,6 +457,7 @@ class _MetricsAccessor(BaseMetricsAccessor[CrossValidationReport], DirNamesMixin
         self,
         *,
         data_source: DataSource | Literal["both"] = "test",
+        aggregate: Literal["threshold"] | None = None,
     ) -> RocCurveDisplay:
         """Plot the ROC curve.
 
@@ -468,6 +469,13 @@ class _MetricsAccessor(BaseMetricsAccessor[CrossValidationReport], DirNamesMixin
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
             - "both" : use both the train and test and show them together.
+
+        aggregate : {"threshold"} or None, default=None
+            If "threshold", additionally computes the threshold-averaged ROC curve
+            across the cross-validation splits. The resulting plot displays the
+            individual splits as faded lines in the background, with the bold
+            threshold-averaged curve overlaid on top.
+            Only valid for binary classification.
 
         Returns
         -------
@@ -484,6 +492,17 @@ class _MetricsAccessor(BaseMetricsAccessor[CrossValidationReport], DirNamesMixin
         500 points per class and per split. Sampling is performed by picking
         evenly-spaced indices on the sorted thresholds.
 
+        With `aggregate="threshold"`, the splits are combined at each threshold of the
+        union of their thresholds, following Fawcett, "An introduction to ROC analysis"
+        (2006). The AUC reported for the aggregated curve is the area under that curve,
+        which is not the mean of the AUCs of the splits. Since each split is downsampled
+        independently, its thresholds differ from the other splits, which is why binary
+        classification reports slightly different values for its two labels.
+
+        The individual split lines can be visually suppressed from the plot by passing
+        `relplot_kwargs={"alpha": 0.0}` to the `set_style()` method before calling
+        `plot()`.
+
         Examples
         --------
         >>> from sklearn.datasets import load_breast_cancer
@@ -496,18 +515,23 @@ class _MetricsAccessor(BaseMetricsAccessor[CrossValidationReport], DirNamesMixin
         >>> display.set_style(relplot_kwargs={"color": "tab:red"})
         >>> display.plot()
         """
+        if aggregate not in (None, "threshold"):
+            raise ValueError('aggregate must be "threshold" or None.')
+        if aggregate is not None and self._parent._ml_task != "binary-classification":
+            raise ValueError(
+                "Averaging is not implemented for multiclass classification"
+            )
+
         child_displays = [
             report.metrics.roc(data_source=data_source)
             for report in self._parent.reports_
         ]
-        split_indices = range(len(self._parent.reports_))
-
         display = RocCurveDisplay._concatenate(
             child_displays,
             report_type=self._parent._report_type,
-            column_data={"split": list(split_indices)},
+            column_data={"split": list(range(len(self._parent.reports_)))},
         )
-        return display
+        return display if aggregate is None else display._aggregate_over_splits()
 
     @available_if(_check_estimator_report_has_method("metrics", "precision_recall"))
     def precision_recall(

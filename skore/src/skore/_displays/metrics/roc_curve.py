@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, Any, Literal, cast
 
 import seaborn as sns
 from numpy.typing import NDArray
-from pandas import DataFrame, Series
+from pandas import CategoricalDtype, DataFrame, Series, concat
 from sklearn.metrics import auc, roc_curve
 
 from skore._displays.base import DisplayMixin
@@ -18,6 +18,7 @@ from skore._displays.utils import (
     _get_curve_plot_columns,
     _one_hot_encode,
     _reorder_categoricals_by_appearance,
+    _threshold_average,
     _validate_style_kwargs,
 )
 from skore._sklearn.types import _DEFAULT
@@ -32,6 +33,57 @@ if TYPE_CHECKING:
     from skore._sklearn.types import DataSource, MLTask, PositiveLabel, ReportType
 
 Label = int | float | bool | str
+
+_AGGREGATE_DTYPE = CategoricalDtype(["threshold"])
+
+# Faceting settings that `seaborn.lineplot` does not accept, and per-split settings that
+# must not apply to the curve overlaid on the splits.
+_RELPLOT_ONLY_KWARGS = frozenset(
+    {"height", "aspect", "facet_kws", "col", "col_order", "units", "alpha", "legend"}
+)
+
+
+def _line_kwargs_from_relplot_kwargs(relplot_kwargs: dict[str, Any]) -> dict[str, Any]:
+    """Adapt validated `seaborn.relplot` kwargs to a single `seaborn.lineplot` call.
+
+    Carrying over the styling (palette, dashes, drawstyle, ...) is what makes the
+    aggregated curve match the curves of the splits it is overlaid on. It is drawn
+    thicker, unless the user asked for a specific line width.
+    """
+    line_kwargs = {
+        key: value
+        for key, value in relplot_kwargs.items()
+        if key not in _RELPLOT_ONLY_KWARGS
+    }
+    line_kwargs.setdefault("linewidth", 2.0)
+    return line_kwargs
+
+
+def _concat_aggregate_rows(frame: DataFrame, aggregate_frame: DataFrame) -> DataFrame:
+    """Append aggregated rows to `frame`, flagged in the `aggregate` column.
+
+    The aggregated rows are given the categorical dtypes of `frame` beforehand,
+    otherwise pandas has to reconcile the dtype of the columns that are entirely
+    missing on one side, such as `split`.
+    """
+    categorical_dtypes = {
+        column: dtype
+        for column, dtype in frame.dtypes.items()
+        if isinstance(dtype, CategoricalDtype)
+    }
+    return concat(
+        [
+            frame.assign(
+                aggregate=Series(None, index=frame.index, dtype=_AGGREGATE_DTYPE)
+            ),
+            aggregate_frame.astype(categorical_dtypes).assign(
+                aggregate=Series(
+                    "threshold", index=aggregate_frame.index, dtype=_AGGREGATE_DTYPE
+                )
+            ),
+        ],
+        ignore_index=True,
+    )
 
 
 class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
@@ -48,7 +100,9 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         - `label`
         - `threshold`
         - `fpr`
-        - `tpr`.
+        - `tpr`
+        - `aggregate` (only when the splits have been aggregated, see
+          :meth:`CrossValidationReport.metrics.roc`).
 
     roc_auc : DataFrame
         The ROC AUC data to display. The columns are
@@ -57,7 +111,8 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         - `data_source`
         - `split` (may be null)
         - `label`
-        - `roc_auc`.
+        - `roc_auc`
+        - `aggregate` (only when the splits have been aggregated).
 
     report_pos_label : int, float, bool, str or None
         Default positive label used when `plot(label=...)` is not specified.
@@ -99,6 +154,11 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
     -----
     For multiclass classification, curves are computed in a one-vs-rest
     fashion for each class label.
+
+    When generated from a :class:`~skore.CrossValidationReport` with
+    `aggregate="threshold"`, the plot displays the individual splits as transparent
+    lines behind the bold aggregated curve. You can hide the individual split lines
+    by setting `relplot_kwargs={"alpha": 0.0}` via :meth:`set_style`.
 
     Examples
     --------
@@ -175,6 +235,52 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
             data_source=data_source or first_display.data_source,
             ml_task=first_display.ml_task,
             report_type=report_type,
+        )
+
+    def _aggregate_over_splits(self) -> RocCurveDisplay:
+        """Add the threshold average of the splits to the curves of the splits.
+
+        The averaged curve is held by extra rows, flagged by the `aggregate` column set
+        to "threshold" on those rows and missing on the rows of the splits. Those extra
+        rows have no `split`.
+        """
+        curve_frames: list[DataFrame] = []
+        auc_records: list[dict[str, Any]] = []
+        for (label, data_source), group in self.roc_curve.groupby(
+            ["label", "data_source"], observed=True
+        ):
+            fprs: list[NDArray] = []
+            tprs: list[NDArray] = []
+            thresholds: list[NDArray] = []
+            for _, split_group in group.groupby("split", observed=True):
+                split_group = split_group.sort_values("threshold", ascending=False)
+                fprs.append(split_group["fpr"].to_numpy())
+                tprs.append(split_group["tpr"].to_numpy())
+                thresholds.append(split_group["threshold"].to_numpy())
+
+            fpr, tpr, threshold = _threshold_average(fprs, tprs, thresholds)
+            metadata = {
+                "estimator": self.roc_curve["estimator"].iloc[0],
+                "data_source": data_source,
+                "split": None,
+                "label": label,
+            }
+            curve_frames.append(
+                DataFrame({**metadata, "threshold": threshold, "fpr": fpr, "tpr": tpr})
+            )
+            auc_records.append({**metadata, "roc_auc": auc(fpr, tpr)})
+
+        return RocCurveDisplay(
+            roc_curve=_concat_aggregate_rows(
+                self.roc_curve, concat(curve_frames, ignore_index=True)
+            ),
+            roc_auc=_concat_aggregate_rows(
+                self.roc_auc, DataFrame.from_records(auc_records)
+            ),
+            report_pos_label=self.report_pos_label,
+            data_source=self.data_source,
+            ml_task=self.ml_task,
+            report_type=self.report_type,
         )
 
     @DisplayMixin.style_plot
@@ -287,13 +393,24 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
             # warning. See: https://github.com/mwaskom/seaborn/issues/3891
             plot_data["split"] = plot_data["split"].astype(str)
 
+        is_aggregate = (
+            "aggregate" in plot_data.columns and plot_data["aggregate"].notna().any()
+        )
+        split_data = (
+            plot_data[plot_data["aggregate"].isna()] if is_aggregate else plot_data
+        )
+
+        validated_relplot_kwargs = _validate_style_kwargs(
+            relplot_kwargs, self._default_relplot_kwargs
+        )
+
         facet = sns.relplot(
-            data=plot_data,
+            data=split_data,
             kind="line",
             estimator=None,
             x="fpr",
             y="tpr",
-            **_validate_style_kwargs(relplot_kwargs, self._default_relplot_kwargs),
+            **validated_relplot_kwargs,
         )
 
         figure, axes = facet.figure, facet.axes.flatten()
@@ -317,6 +434,21 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
                 else None
             )
             subplot_data = plot_data[plot_data[col] == col_value] if col else plot_data
+
+            if is_aggregate:
+                # the splits are already drawn by `relplot`; narrowing the data to the
+                # aggregated curve also makes the legend report its statistic
+                subplot_data = subplot_data[subplot_data["aggregate"].notna()]
+                sns.lineplot(
+                    data=subplot_data,
+                    x="fpr",
+                    y="tpr",
+                    ax=ax,
+                    legend=False,
+                    estimator=None,
+                    **_line_kwargs_from_relplot_kwargs(validated_relplot_kwargs),
+                )
+
             _build_custom_legend_with_stats(
                 ax=ax,
                 subplot_data=subplot_data,
@@ -324,9 +456,12 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
                 style=style,
                 hue_order=relplot_kwargs["hue_order"],
                 style_order=relplot_kwargs["style_order"],
-                is_cross_validation="cross-validation" in self.report_type,
+                is_cross_validation=(
+                    "cross-validation" in self.report_type and not is_aggregate
+                ),
                 statistic_column_name="roc_auc",
                 statistic_acronym="AUC",
+                statistic_note="threshold-averaged" if is_aggregate else None,
                 chance_level_label="Chance level (AUC = 0.5)",
             )
 
@@ -346,6 +481,8 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         )
 
         title = "ROC Curve"
+        if is_aggregate:
+            title = "Threshold-Averaged " + title
         if "comparison" not in self.report_type:
             title += f" for {self.roc_curve['estimator'].cat.categories.item()}"
         figure.suptitle("\n".join(filter(None, [title, info_label, info_data_source])))
@@ -508,6 +645,9 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
             - `estimator`: Name of the estimator (when comparing estimators)
             - `split`: Cross-validation split ID (when doing cross-validation)
             - `data_source`: Data source used (when `data_source="both"`)
+            - `aggregate`: "threshold" on the rows of the curve aggregating the splits
+              and missing on the rows of the individual splits (when the splits have
+              been aggregated)
             - `label`: Class label (when plotting one-vs-rest curves)
             - `threshold`: Decision threshold
             - `fpr`: False Positive Rate
@@ -552,6 +692,9 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
 
         if self.data_source == "both":
             indexing_columns += ["data_source"]
+
+        if "aggregate" in df.columns:
+            indexing_columns += ["aggregate"]
 
         if label is not None:
             df = df.query("label == @label").reset_index(drop=True)

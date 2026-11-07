@@ -74,3 +74,37 @@ single value column, :meth:`~skore.MetricsSummaryDisplay.frame` returns a named
 
     df = display.frame()
     df.head()
+
+Aggregating cross-validation curves
+-----------------------------------
+
+Some displays are built with extra parameters passed to the reporter. For a
+:class:`CrossValidationReport` in binary classification,
+:meth:`CrossValidationReport.metrics.roc` can add the threshold-averaged curve of the
+splits to the display, following the threshold averaging described by Fawcett in
+`An introduction to ROC analysis <https://doi.org/10.1016/j.patrec.2005.10.010>`_. Each
+split contributes its operating point at each threshold of the union of their
+thresholds, and those points are then averaged:
+
+.. plot::
+    :context: close-figs
+    :align: center
+
+    X_binary, y_binary = make_classification(
+        n_samples=1_000, class_sep=0.5, random_state=42
+    )
+    report_binary = evaluate(
+        LogisticRegression(), X_binary, y_binary, splitter=5, pos_label=1
+    )
+    display_binary = report_binary.metrics.roc(aggregate="threshold")
+    display_binary.plot()
+
+The splits remain visible as faded lines behind the aggregated curve, and can be hidden
+with ``display_binary.set_style(relplot_kwargs={"alpha": 0.0})``. The AUC reported in the
+legend is the area under the aggregated curve, which is not the mean of the AUCs of the
+splits. Both curves are available from ``frame``, told apart by the ``aggregate``
+column:
+
+.. code-block:: python
+
+    display_binary.frame(with_roc_auc=True)

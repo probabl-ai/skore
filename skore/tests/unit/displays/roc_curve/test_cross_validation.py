@@ -1,5 +1,39 @@
+import re
+
 import matplotlib as mpl
+import numpy as np
 import pytest
+from numpy.testing import assert_allclose
+from sklearn.datasets import make_classification
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import auc
+
+from skore import CrossValidationReport
+from skore._utils.testing import check_roc_curve_display_data
+
+
+@pytest.fixture
+def cross_validation_report_aggregate():
+    """Report whose splits have ROC curves distinct enough to tell them apart.
+
+    The default binary classification data is separable, which makes every AUC 1.00 and
+    therefore makes the aggregated curve indistinguishable from the ones of the splits.
+    """
+    X, y = make_classification(
+        n_samples=200, n_features=4, class_sep=0.5, random_state=42
+    )
+    return CrossValidationReport(LogisticRegression(), X, y, splitter=3)
+
+
+def _lines_matching(ax, curve):
+    """Get the lines of `ax` drawing the (fpr, tpr) points of `curve`."""
+    return [
+        line
+        for line in ax.get_lines()
+        if len(line.get_xdata()) == len(curve)
+        and np.allclose(line.get_xdata(), curve["fpr"])
+        and np.allclose(line.get_ydata(), curve["tpr"])
+    ]
 
 
 def test_legend_binary_classification(
@@ -23,6 +57,179 @@ def test_legend_binary_classification(
         )
     assert len(legend_texts) == len(labels) + 1
     assert legend_texts[-1] == "Chance level (AUC = 0.5)"
+
+
+def test_no_aggregate(cross_validation_reports_binary_classification):
+    """Check that without `aggregate`, only the curves of the splits are computed."""
+    report = cross_validation_reports_binary_classification[0]
+    display = report.metrics.roc()
+
+    check_roc_curve_display_data(display)
+    assert display.roc_curve["split"].notna().all()
+
+
+def test_aggregate_threshold_frame(cross_validation_report_aggregate):
+    """Check the curve that `aggregate="threshold"` adds to the curves of the splits."""
+    display = cross_validation_report_aggregate.metrics.roc(aggregate="threshold")
+
+    check_roc_curve_display_data(display, aggregate=True)
+    curve, roc_auc = display.roc_curve, display.roc_auc
+    assert curve[curve["aggregate"].isna()]["split"].notna().all()
+    assert curve[curve["aggregate"].notna()]["split"].isna().all()
+
+    for label in curve["label"].cat.categories:
+        aggregated = curve[curve["aggregate"].notna() & (curve["label"] == label)]
+        splits = [
+            split_curve.sort_values("threshold", ascending=False)
+            for _, split_curve in curve[
+                curve["aggregate"].isna() & (curve["label"] == label)
+            ].groupby("split", observed=True)
+        ]
+
+        thresholds = sorted(
+            {threshold for split in splits for threshold in split["threshold"]},
+            reverse=True,
+        )
+        assert_allclose(aggregated["threshold"], thresholds)
+
+        # each split contributes the last of its points that is still above the
+        # threshold, and the operating points of the splits are averaged
+        points = (point for _, point in aggregated.iterrows())
+        for threshold, point in zip(thresholds, points, strict=True):
+            above = [split[split["threshold"] >= threshold] for split in splits]
+            assert point["fpr"] == pytest.approx(
+                np.mean([split["fpr"].iloc[-1] for split in above])
+            )
+            assert point["tpr"] == pytest.approx(
+                np.mean([split["tpr"].iloc[-1] for split in above])
+            )
+
+        # the reported AUC is the area under the aggregated curve
+        aggregated_auc = roc_auc[
+            roc_auc["aggregate"].notna() & (roc_auc["label"] == label)
+        ]["roc_auc"]
+        assert aggregated_auc.item() == pytest.approx(
+            auc(aggregated["fpr"], aggregated["tpr"])
+        )
+
+
+def test_aggregate_threshold_plot(cross_validation_report_aggregate):
+    """Check that the aggregated curve is drawn as computed, over the splits."""
+    display = cross_validation_report_aggregate.metrics.roc(aggregate="threshold")
+    curve = display.roc_curve
+    ax = display.plot(label=1).axes[0]
+
+    aggregated = curve[curve["aggregate"].notna() & (curve["label"] == 1)]
+    (line,) = _lines_matching(ax, aggregated)
+    # ROC curves are step functions, and seaborn must not aggregate the points it is
+    # given, which would flatten every vertical rise of the curve and add an error band
+    assert line.get_drawstyle() == "steps-post"
+    assert len(ax.collections) == 0
+
+    for _, split_curve in curve[
+        curve["aggregate"].isna() & (curve["label"] == 1)
+    ].groupby("split", observed=True):
+        (split_line,) = _lines_matching(ax, split_curve)
+        assert split_line.get_alpha() == 0.4
+
+
+@pytest.mark.parametrize(
+    "label, expected_entry",
+    [
+        (1, "AUC={auc} (threshold-averaged)"),
+        (None, "1 (AUC={auc}, threshold-averaged)"),
+    ],
+    ids=["single-label", "one-vs-rest"],
+)
+def test_aggregate_threshold_legend(
+    cross_validation_report_aggregate, label, expected_entry
+):
+    """Check that the legend reports the AUC of the aggregated curve."""
+    display = cross_validation_report_aggregate.metrics.roc(aggregate="threshold")
+    roc_auc = display.roc_auc
+    ax = display.plot(label=label).axes[0]
+
+    label_1 = roc_auc["label"] == 1
+    aggregated_auc = roc_auc[roc_auc["aggregate"].notna() & label_1]["roc_auc"].item()
+    split_aucs = roc_auc[roc_auc["aggregate"].isna() & label_1]["roc_auc"]
+    # without this, the assertion below could not tell the aggregated AUC from the AUC
+    # of the first split
+    assert f"{aggregated_auc:.2f}" != f"{split_aucs.iloc[0]:.2f}"
+
+    legend_texts = [text.get_text() for text in ax.get_legend().get_texts()]
+    assert expected_entry.format(auc=f"{aggregated_auc:.2f}") in legend_texts
+    assert legend_texts[-1] == "Chance level (AUC = 0.5)"
+
+
+def test_aggregate_threshold_style(cross_validation_report_aggregate):
+    """Check that the aggregated curve is styled like the splits it is drawn over."""
+    display = cross_validation_report_aggregate.metrics.roc(aggregate="threshold")
+    display.set_style(relplot_kwargs={"palette": ["red", "green"], "linewidth": 4})
+    curve = display.roc_curve
+    ax = display.plot(label=None).axes[0]
+
+    labels = curve["label"].cat.categories
+    for label, color in zip(labels, ["red", "green"], strict=True):
+        is_label = curve["label"] == label
+        (line,) = _lines_matching(ax, curve[curve["aggregate"].notna() & is_label])
+        assert line.get_color() == color
+        assert line.get_linewidth() == 4
+        # the aggregated curve stands out by being opaque, not by being thicker
+        assert line.get_alpha() is None
+
+
+def test_aggregate_threshold_data_source_both(cross_validation_report_aggregate):
+    """Check that the aggregated curve of a data source is dashed as its splits."""
+    display = cross_validation_report_aggregate.metrics.roc(
+        data_source="both", aggregate="threshold"
+    )
+    curve = display.roc_curve
+    ax = display.plot(label=1).axes[0]
+
+    for data_source in ("train", "test"):
+        is_group = (curve["data_source"] == data_source) & (curve["label"] == 1)
+        (line,) = _lines_matching(ax, curve[curve["aggregate"].notna() & is_group])
+        split_lines = [
+            _lines_matching(ax, split_curve)[0]
+            for _, split_curve in curve[curve["aggregate"].isna() & is_group].groupby(
+                "split", observed=True
+            )
+        ]
+        assert {line.get_linestyle()} == {
+            split_line.get_linestyle() for split_line in split_lines
+        }
+
+
+def test_aggregate_hides_splits(cross_validation_report_aggregate):
+    """Check that the splits can be hidden, leaving only the aggregated curve."""
+    display = cross_validation_report_aggregate.metrics.roc(aggregate="threshold")
+    display.set_style(relplot_kwargs={"alpha": 0.0})
+    curve = display.roc_curve
+    ax = display.plot(label=1).axes[0]
+
+    is_label_1 = curve["label"] == 1
+    (line,) = _lines_matching(ax, curve[curve["aggregate"].notna() & is_label_1])
+    assert line.get_alpha() is None
+    for _, split_curve in curve[
+        curve["aggregate"].isna() & (curve["label"] == 1)
+    ].groupby("split", observed=True):
+        (split_line,) = _lines_matching(ax, split_curve)
+        assert split_line.get_alpha() == 0.0
+
+
+def test_aggregate_invalid_value(cross_validation_report_aggregate):
+    """Check the error message when passing an unknown `aggregate`."""
+    err_msg = 'aggregate must be "threshold" or None.'
+    with pytest.raises(ValueError, match=re.escape(err_msg)):
+        cross_validation_report_aggregate.metrics.roc(aggregate="invalid")
+
+
+def test_aggregate_multiclass(cross_validation_reports_multiclass_classification):
+    """Check the error message when aggregating in multiclass classification."""
+    report = cross_validation_reports_multiclass_classification[0]
+    err_msg = "Averaging is not implemented for multiclass classification"
+    with pytest.raises(ValueError, match=err_msg):
+        report.metrics.roc(aggregate="threshold")
 
 
 def test_legend_multiclass_classification(

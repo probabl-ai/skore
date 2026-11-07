@@ -16,6 +16,7 @@ if TYPE_CHECKING:
     from matplotlib.axes import Axes
     from matplotlib.colors import Colormap
     from matplotlib.figure import Figure
+    from matplotlib.lines import Line2D
     from numpy.typing import NDArray
     from pandas import DataFrame
 
@@ -362,6 +363,7 @@ def _build_custom_legend_with_stats(
     is_cross_validation: bool = False,
     statistic_column_name: Literal["average_precision", "roc_auc"],
     statistic_acronym: Literal["AP", "AUC"],
+    statistic_note: str | None = None,
     chance_level_label: str | None = None,
 ) -> None:
     """Build custom legend with a custom statistic for a single axis."""
@@ -390,20 +392,20 @@ def _build_custom_legend_with_stats(
                         style_value=style_value,
                         hue_value=hue_value,
                         statistic=statistic,
+                        statistic_note=statistic_note,
                     )
                 )
     if chance_level_label is not None:
         legend_labels.append(chance_level_label)
 
     n_entries = len(legend_labels)
-    lines = ax.get_lines()
-    handles = []
-    seen_line_attributes = []
-    for line in lines:
-        line_attributes = (line.get_color(), line.get_linestyle())
-        if line_attributes not in seen_line_attributes:
-            seen_line_attributes.append(line_attributes)
-            handles.append(line)
+    # Keep one line per appearance of a (color, linestyle) pair, in order of first
+    # appearance. The last matching line wins so that, when curves are overlaid on
+    # faded ones, the legend key shows the opaque curve drawn on top.
+    lines_by_attributes: dict[tuple[Any, Any], Line2D] = {}
+    for line in ax.get_lines():
+        lines_by_attributes[line.get_color(), line.get_linestyle()] = line
+    handles = list(lines_by_attributes.values())
 
     fontsize = "small" if n_entries > 4 else "medium"
 
@@ -423,18 +425,22 @@ def _format_legend_label(
     style_value: str | None,
     hue_value: str | None,
     statistic: str,
+    statistic_note: str | None = None,
 ) -> str:
     """Format a legend label based on style and hue."""
     if style_value is None and hue_value is None:
-        return statistic
+        if statistic_note is None:
+            return statistic
+        return f"{statistic} ({statistic_note})"
     if style_column_name == "data_source":
         style_value = cast(str, style_value)
         style_value = style_value.title() + " set"
+    note = "" if statistic_note is None else f", {statistic_note}"
     return (
         " - ".join(
             str(s) for s in filter(lambda x: x is not None, [hue_value, style_value])
         )
-        + f" ({statistic})"
+        + f" ({statistic}{note})"
     )
 
 
@@ -546,3 +552,54 @@ def _downsample_thresholds_indices(n_total: int, max_n: int | None) -> NDArray:
     if max_n is None or n_total <= max_n:
         return np.arange(n_total)
     return np.linspace(0, n_total - 1, max_n).astype(int)
+
+
+def _threshold_average(
+    fprs: list[NDArray], tprs: list[NDArray], thresholds: list[NDArray]
+) -> tuple[NDArray, NDArray, NDArray]:
+    """Average ROC curves at each threshold of the union of their thresholds.
+
+    Every curve is evaluated at each threshold of the union by taking its operating
+    point at the smallest of its own thresholds that is greater than or equal to that
+    threshold, then the operating points are averaged. This is the threshold averaging
+    described by Fawcett, "An introduction to ROC analysis" (2006), section 7.
+
+    Parameters
+    ----------
+    fprs : list of ndarray of shape (n_thresholds,)
+        False positive rates of each curve, ordered by decreasing threshold.
+
+    tprs : list of ndarray of shape (n_thresholds,)
+        True positive rates of each curve, ordered by decreasing threshold.
+
+    thresholds : list of ndarray of shape (n_thresholds,)
+        Thresholds of each curve, in decreasing order.
+
+    Returns
+    -------
+    average_fpr : ndarray of shape (n_unique_thresholds,)
+        The averaged false positive rates.
+
+    average_tpr : ndarray of shape (n_unique_thresholds,)
+        The averaged true positive rates.
+
+    unique_thresholds : ndarray of shape (n_unique_thresholds,)
+        The union of the input thresholds, in decreasing order.
+    """
+    unique_thresholds = np.unique(np.concatenate(thresholds))[::-1]
+
+    average_fpr = np.zeros_like(unique_thresholds, dtype=float)
+    average_tpr = np.zeros_like(unique_thresholds, dtype=float)
+
+    for fpr, tpr, threshold in zip(fprs, tprs, thresholds, strict=True):
+        # Negating makes the arrays increasing, as `searchsorted` requires. Clipping
+        # matters because a negative index would silently wrap around to the last
+        # operating point instead of the first one.
+        indices = np.searchsorted(-threshold, -unique_thresholds, side="right") - 1
+        indices = np.maximum(indices, 0)
+
+        average_fpr += np.asarray(fpr)[indices]
+        average_tpr += np.asarray(tpr)[indices]
+
+    n_curves = len(fprs)
+    return average_fpr / n_curves, average_tpr / n_curves, unique_thresholds
