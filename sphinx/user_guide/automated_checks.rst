@@ -749,4 +749,4 @@ How to reduce the risk
   - or use sample weights to account for the repeated rows.
 
 Check out the
-:ref:`example for this check <example_skd017_train_test_duplicates>`.
+Check out the :ref:`example for this check <example_skd017_train_test_duplicates>`.
