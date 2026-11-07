@@ -7,65 +7,75 @@ SKD017 - Duplicate rows across train and test
 This example shows what check :ref:`SKD017 <skd017-train-test-duplicates>`
 catches and how to fix it.
 
-The idea is simple. The only way the exact same row can end up in both the
-training set and the test set after a random split is if that row appears more
-than once in the original dataset. When this happens, the model is tested on
-rows it has already seen during training, so the score looks better than it
-really is. This is a form of *data leakage*.
+When a row appears more than once in the dataset, a random train/test split can
+send identical copies to both sides. The model is then graded on rows it already
+saw during training, so the test score looks better than it really is: this is a
+form of *data leakage*. SKD017 detects it by counting, in the full dataset before
+splitting, how many rows are exact duplicates of another row.
 
-Instead of comparing the train and test sets after the split, SKD017 looks at
-the **full dataset before splitting** and counts how many rows are duplicates of
-another row. If there are duplicates, splitting without removing them first is
-likely to leak training rows into the test set.
+Mitigations from the :ref:`automated_checks` user guide, shown below:
 
-We use the ``kddcup99`` dataset from scikit-learn: it describes network
-connections and is famous for containing a lot of repeated rows. It is also
-large, so we take a small random sample to keep the example fast.
-
-Mitigations from the :ref:`automated_checks` user guide:
-
-- de-duplicate the dataset before splitting into train and test,
-- if the duplicates are legitimate, use a grouped splitter such as
-  :class:`~sklearn.model_selection.GroupShuffleSplit` so identical rows stay on
-  the same side of the split.
+- if the duplicates are **not legitimate**, de-duplicate before splitting;
+- if they **are legitimate**, either group identical rows so they stay on the
+  same side of the split, or de-duplicate and use sample weights to keep track
+  of the repeated rows.
 """
 
 # %%
-# Load a small sample of the kddcup99 dataset
-# ===========================================
+# Build a dataset with duplicate rows
+# ===================================
 #
-# We load the dataset as a pandas DataFrame and keep only a small random sample
-# (the full dataset has hundreds of thousands of rows). The target tells whether
-# a connection is an attack (``1``) or normal traffic (``0``).
+# We use the German credit dataset: 1000 loan applicants described by financial
+# and personal attributes, where the target marks whether the applicant is a
+# good credit risk (``1``) or a bad one (``0``). It has no duplicate rows on its
+# own, so to demonstrate the pitfall we duplicate a random half of the rows,
+# mimicking a dataset where the same records were recorded twice.
 
-from sklearn.datasets import fetch_kddcup99
+import numpy as np
+import pandas as pd
+from sklearn.datasets import fetch_openml
 
-dataset = fetch_kddcup99(percent10=True, as_frame=True, random_state=0)
-df = dataset.frame.sample(n=3000, random_state=0).reset_index(drop=True)
+dataset = fetch_openml("credit-g", version=1, as_frame=True)
+df = dataset.frame.copy()
+df["target"] = (df["class"] == "good").astype(int)
+df = df.drop(columns=["class"])
 
-y = (df["labels"] != b"normal.").astype(int)
-X = df.drop(columns=["labels"])
+# Remember each original row so we can group duplicates together later on.
+df["row_id"] = df.index
 
-# %%
-# Many rows are exact copies of another row. The percentage below is high: more
-# than half of the sampled rows have at least one identical twin.
+rng = np.random.default_rng(0)
+duplicated_rows = rng.choice(df.index, size=len(df), replace=True)
+df = (
+    pd.concat([df, df.loc[duplicated_rows]], ignore_index=True)
+    .sample(frac=1.0, random_state=0)
+    .reset_index(drop=True)
+)
+
+groups = df["row_id"]
+y = df["target"]
+X = df.drop(columns=["target", "row_id"])
 
 duplicate_share = X.duplicated(keep=False).mean()
 print(f"{duplicate_share:.1%} of the rows are duplicates of another row.")
 
 # %%
-# :class:`~skrub.TableReport` gives a quick overview of the features.
+# A plain shuffle split sends identical rows to both sides. We can see it
+# directly: split the row indices and count how many rows in the test set have
+# an exact twin among the training rows.
 
-from skrub import TableReport
+from sklearn.model_selection import train_test_split
 
-TableReport(X)
+train_idx, test_idx = train_test_split(X.index, test_size=0.25, random_state=0)
+train_rows = X.loc[train_idx]
+leaked = X.loc[test_idx].apply(tuple, axis=1).isin(train_rows.apply(tuple, axis=1))
+print(f"{leaked.mean():.1%} of the test rows also appear in the training set.")
 
 # %%
 # Trigger SKD017 - split without de-duplication
 # =============================================
 #
-# We fit a tabular classifier with a plain random train/test split. Because the
-# dataset is full of duplicates, the same rows land on both sides of the split.
+# We fit a tabular classifier with a plain random train/test split. Because of
+# the duplicates, the same rows land on both sides of the split.
 
 from skore import TrainTestSplit, evaluate
 from skrub import tabular_pipeline
@@ -85,29 +95,25 @@ report
 report.checks.summarize()
 
 # %%
-# The test scores look almost perfect. That is suspicious: the model is being
-# graded on rows it already memorized during training.
+# The test scores look suspiciously high: the model is being graded on rows it
+# already memorized during training.
 
 report.metrics.summarize(data_source="test").frame()
 
 # %%
-# Fix it - de-duplicate before splitting
-# ======================================
+# Fix 1 - de-duplicate before splitting
+# =====================================
 #
-# We drop the duplicate rows so that every row in the dataset is unique, then
-# evaluate again on this cleaned data.
+# If the duplicates are not legitimate, drop them so every row is unique, then
+# evaluate again. This is the right fix when repeated rows are an artifact of
+# data collection rather than something the real world produces.
 
-mask = ~df.duplicated()
-df_unique = df[mask].reset_index(drop=True)
+mask = ~X.duplicated()
+X_unique = X[mask].reset_index(drop=True)
+y_unique = y[mask].reset_index(drop=True)
 
-y_unique = (df_unique["labels"] != b"normal.").astype(int)
-X_unique = df_unique.drop(columns=["labels"])
-
-print(f"Rows before de-duplication: {len(df)}")
-print(f"Rows after de-duplication:  {len(df_unique)}")
-
-# %%
-# Evaluate on the de-duplicated dataset.
+print(f"Rows before de-duplication: {len(X)}")
+print(f"Rows after de-duplication:  {len(X_unique)}")
 
 report_unique = evaluate(
     tabular_pipeline("classifier"),
@@ -123,16 +129,86 @@ report_unique
 report_unique.checks.summarize()
 
 # %%
-# The test scores are now computed on rows the model has never seen, so they are
-# a more honest estimate of how the model generalizes.
+# The test scores drop to a more honest level, computed on rows the model has
+# never seen.
 
 report_unique.metrics.summarize(data_source="test").frame()
+
+# %%
+# Fix 2 - keep duplicates but group them
+# ======================================
+#
+# If the duplicates are legitimate and you want to keep every observation, use a
+# grouped splitter such as :class:`~sklearn.model_selection.GroupShuffleSplit`.
+# Passing the original row identity as the group keeps all copies of a row on the
+# same side of the split, so none can leak. We pass the resulting single split to
+# :func:`~skore.evaluate` directly.
+
+from sklearn.model_selection import GroupShuffleSplit
+
+grouped_split = GroupShuffleSplit(n_splits=1, test_size=0.25, random_state=0)
+report_grouped = evaluate(
+    tabular_pipeline("classifier"),
+    X=X,
+    y=y,
+    splitter=grouped_split.split(X, y, groups),
+)
+report_grouped
+
+# %%
+# SKD017 still flags the duplicates (they really are in the dataset), but the
+# test scores are back to the honest level because no copy crosses the split.
+
+report_grouped.metrics.summarize(data_source="test").frame()
+
+# %%
+# Fix 3 - de-duplicate and use sample weights
+# ===========================================
+#
+# Another option for legitimate duplicates is to collapse identical rows into a
+# single row and weight it by how many times it occurred. The model sees each
+# distinct row once, with a weight that preserves its importance, and no row can
+# leak across the split.
+
+feature_columns = list(X.columns)
+counts = (
+    X.assign(target=y.to_numpy())
+    .groupby(feature_columns + ["target"], dropna=False)
+    .size()
+    .reset_index(name="weight")
+)
+X_weighted = counts[feature_columns]
+y_weighted = counts["target"]
+sample_weight = counts["weight"].to_numpy()
+
+print(f"Distinct rows: {len(X_weighted)}  (total weight: {sample_weight.sum()})")
+
+# %%
+# We split the distinct rows, fit with the per-row weights, and build an
+# :class:`~skore.EstimatorReport` from the fitted model.
+
+from skore import EstimatorReport
+
+X_train, X_test, y_train, y_test, w_train, w_test = train_test_split(
+    X_weighted,
+    y_weighted,
+    sample_weight,
+    test_size=0.25,
+    random_state=0,
+    stratify=y_weighted,
+)
+
+model = tabular_pipeline("classifier")
+model.fit(X_train, y_train, histgradientboostingclassifier__sample_weight=w_train)
+
+report_weighted = EstimatorReport(model, X_test=X_test, y_test=y_test)
+report_weighted.metrics.summarize(data_source="test").frame()
 
 # %%
 # Conclusion
 # ==========
 #
-# SKD017 flags duplicate rows in your dataset before they can leak across a
-# train/test split. The fix is usually to remove the duplicates before
-# splitting. If the repeated rows are meaningful and must be kept, split with a
-# grouped strategy so that identical rows never end up on both sides at once.
+# SKD017 flags duplicate rows before they can leak across a train/test split and
+# inflate your scores. If the duplicates are not legitimate, remove them before
+# splitting. If they are legitimate, either group identical rows so they never
+# split apart, or de-duplicate and carry their count as a sample weight.
