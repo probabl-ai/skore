@@ -443,7 +443,7 @@ def test_summarize_fast_mode_uses_cached_slow_results(regression_report):
 def test_fast_mode_skips_slow_checks_on_cv_report(cv_regression_report):
     """fast_mode=True skips slow uncached checks on a CV report."""
     summary = cv_regression_report.checks.summarize(fast_mode=True)
-    slow_codes = {"SKD009", "SKD010", "SKD011", "SKD012"}
+    slow_codes = {"SKD009", "SKD010", "SKD011", "SKD012", "SKD017"}
     assert slow_codes.isdisjoint(set(summary.frame(section="issue")["code"]))
     assert slow_codes.isdisjoint(set(summary.frame(section="passed")["code"]))
     assert slow_codes == set(summary.frame(section="skipped")["code"])

@@ -254,6 +254,34 @@ def get_report_y(
         raise CheckNotApplicable("Target data is sparse.") from err
 
 
+def get_report_X(
+    report: EstimatorReport | CrossValidationReport,
+    *,
+    data_source: Literal["train", "test", "both"] = "both",
+) -> UserDataFrame:
+    """Return the raw feature matrix as a DataFrame.
+
+    For cross-validation reports, returns the full dataset features and
+    ``data_source`` is ignored.
+    """
+    try:
+        if report._report_type == "cross-validation":
+            return _normalize_X_as_dataframe(report.X)
+        if data_source == "both":
+            if report.X_train is None:
+                raise CheckNotApplicable("Train data is unavailable.")
+            return _normalize_X_as_dataframe(
+                _concat_vertical(report.X_train, report.X_test)
+            )
+        if data_source == "train":
+            if report.X_train is None:
+                raise CheckNotApplicable("Train data is unavailable.")
+            return _normalize_X_as_dataframe(report.X_train)
+        return _normalize_X_as_dataframe(report.X_test)
+    except NotImplementedError as err:
+        raise CheckNotApplicable("Feature data is sparse.") from err
+
+
 def get_fitted_estimator(
     report: EstimatorReport | CrossValidationReport,
 ) -> EstimatorLike:
