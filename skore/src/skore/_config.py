@@ -7,6 +7,32 @@ from threading import current_thread, main_thread
 from threading import local as Local
 
 
+def _normalize_ignore_checks(
+    value: list[str] | tuple[str, ...] | None,
+) -> list[str] | tuple[str, ...] | None:
+    """Return a private copy of ``value``.
+
+    A bare string is rejected so it is not later iterated character by character.
+    """
+    if value is None:
+        return None
+    if isinstance(value, str) or not isinstance(value, (list, tuple)):
+        raise TypeError(
+            "ignore_checks must be None or a list or tuple of strings, "
+            f"got {type(value).__name__}."
+        )
+    codes: list[str] = []
+    for code in value:
+        if not isinstance(code, str):
+            raise TypeError(
+                f"ignore_checks items must be strings, got {type(code).__name__}."
+            )
+        codes.append(code)
+    if isinstance(value, tuple):
+        return tuple(codes)
+    return codes
+
+
 class LocalConfiguration(Local):
     def __init__(
         self,
@@ -17,7 +43,9 @@ class LocalConfiguration(Local):
     ):
         self.show_progress = show_progress
         self.plot_backend = plot_backend
-        self.ignore_checks = ignore_checks
+        # Copy on every thread. threading.local replays these arguments, and the
+        # replay must not share a mutable list with the thread that built it.
+        self.ignore_checks = _normalize_ignore_checks(ignore_checks)
 
 
 class Configuration:
@@ -113,6 +141,7 @@ class Configuration:
 
     @ignore_checks.setter
     def ignore_checks(self, value):
+        value = _normalize_ignore_checks(value)
         if current_thread().ident != main_thread().ident:
             self.local.ignore_checks = value
             return
@@ -150,7 +179,8 @@ class Configuration:
         """
         show_progress_copy = self.show_progress
         plot_backend_copy = self.plot_backend
-        ignore_checks_copy = self.ignore_checks
+        # Copy so an in-place change inside the block is discarded on exit.
+        ignore_checks_copy = _normalize_ignore_checks(self.ignore_checks)
 
         if show_progress is not ...:
             self.show_progress = show_progress

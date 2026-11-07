@@ -315,6 +315,14 @@ def test_ignore_codes_are_normalized(regression_report):
     assert "SKD001" not in set(result.frame(section="issue")["code"])
 
 
+def test_ignore_rejects_a_string_or_non_string_item(regression_report):
+    """A bare string is not a sequence of check codes."""
+    with pytest.raises(TypeError, match="list or tuple of strings"):
+        regression_report.checks.summarize(ignore="SK0093")
+    with pytest.raises(TypeError, match="items must be strings"):
+        regression_report.checks.summarize(ignore=[1])
+
+
 def test_global_ignore(regression_report):
     """Check that checks are ignored when global ignore is set."""
     assert "SKD001" not in set(
