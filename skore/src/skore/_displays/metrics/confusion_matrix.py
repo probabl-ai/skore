@@ -754,8 +754,9 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
         policy : Literal["override", "update"], default="update"
             Policy to use when setting the style parameters.
             If "override", existing settings are set to the provided values.
-            If "update", existing settings are not changed; only settings that were
-            previously unset are changed.
+            If "update", merge provided values into the existing settings.
+            Passed keys replace the previous value. Nested dictionaries are
+            merged the same way, so omitted keys are kept.
 
         heatmap_kwargs : dict, default=None
             Additional keyword arguments to be passed to :func:`seaborn.heatmap`.

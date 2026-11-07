@@ -158,8 +158,9 @@ class StyleDisplayMixin:
         policy : Literal["override", "update"], default="update"
             Policy to use when setting the style parameters.
             If "override", existing settings are set to the provided values.
-            If "update", existing settings are not changed; only settings that were
-            previously unset are changed.
+            If "update", merge provided values into the existing settings.
+            Passed keys replace the previous value. Nested dictionaries are
+            merged the same way, so omitted keys are kept.
 
         **kwargs : dict
             Style parameters to set. Each parameter name should correspond to a
@@ -185,10 +186,23 @@ class StyleDisplayMixin:
                 setattr(self, default_attr, param_value)
             elif policy == "update":
                 current_value = getattr(self, default_attr)
-                if current_value is None:
-                    setattr(self, default_attr, param_value)
-                else:
-                    setattr(self, default_attr, {**current_value, **param_value})
+                if isinstance(current_value, dict) and isinstance(param_value, dict):
+                    merged = dict(current_value)
+                    pending = [(merged, param_value)]
+                    while pending:
+                        target, incoming = pending.pop()
+                        for key, value in incoming.items():
+                            previous = target.get(key)
+                            if isinstance(previous, dict) and isinstance(value, dict):
+                                nested = dict(previous)
+                                target[key] = nested
+                                pending.append((nested, value))
+                            else:
+                                target[key] = value
+                    param_value = merged
+                elif current_value is not None:
+                    param_value = {**current_value, **param_value}
+                setattr(self, default_attr, param_value)
             else:
                 raise ValueError(
                     f"Invalid policy: {policy}. "
