@@ -49,9 +49,8 @@ class CheckTrainTestDuplicates(Check):
             raise CheckNotApplicable("Could not compare rows for duplicates.") from err
 
         if n_duplicated > 0:
-            percent = 100 * n_duplicated / len(data)
             return (
-                f"{n_duplicated} row(s) ({percent:.1f}% of the dataset) are "
+                f"{n_duplicated} row(s) ({100 * n_duplicated / len(data):.1f}% of the dataset) are "
                 "duplicated. Duplicate rows leak across a train/test split and "
                 "inflate the reported score. If they are not legitimate, "
                 "de-duplicate the dataset before splitting."
