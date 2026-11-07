@@ -120,7 +120,7 @@ report_unique
 # %%
 # SKD017 is gone: there are no more duplicate rows to leak across the split.
 
-report_unique.checks.summarize(fast_mode=True)
+report_unique.checks.summarize()
 
 # %%
 # The test scores are now computed on rows the model has never seen, so they are
