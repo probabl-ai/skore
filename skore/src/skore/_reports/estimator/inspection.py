@@ -409,4 +409,5 @@ class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             n_bins=n_bins,
             strategy=strategy,
             report_pos_label=self._parent.pos_label,
+            classes=self._parent.estimator_.classes_,
         )

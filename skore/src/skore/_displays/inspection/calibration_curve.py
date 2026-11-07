@@ -16,6 +16,8 @@ from skore._displays.utils import (
 from skore._sklearn.types import _DEFAULT
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
+
     from matplotlib.figure import Figure
     from numpy.typing import ArrayLike
 
@@ -141,12 +143,17 @@ class CalibrationDisplay(DisplayMixin):
         n_bins: int | Literal["auto"] = "auto",
         strategy: Literal["uniform", "quantile"] = "quantile",
         report_pos_label: PositiveLabel = None,
+        classes: Sequence | np.ndarray | None = None,
     ) -> CalibrationDisplay:
         """Compute the data for the calibration curve display."""
         y_arr = np.asarray(y)
         y_pred_arr = np.asarray(y_pred)
 
-        classes = np.unique(y_arr)
+        if classes is None:
+            classes = np.unique(y_arr)
+        else:
+            classes = np.asarray(classes)
+
         y_true_onehot = _one_hot_encode(y_arr, classes)
 
         curve_dfs = []
