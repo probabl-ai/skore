@@ -746,7 +746,7 @@ How to reduce the risk
   The evaluation should then reflect that;
   - group the duplicated observations so they stay on the same side of the
     split;
-  - or use sample weights to account for the repeated rows.
+  - or remove duplicates and use sample weights to account for the repeated rows.
 
 Check out the
 Check out the :ref:`example for this check <example_skd017_train_test_duplicates>`.
