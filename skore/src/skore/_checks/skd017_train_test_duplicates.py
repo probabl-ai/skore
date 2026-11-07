@@ -41,6 +41,9 @@ class CheckTrainTestDuplicates(Check):
         y = nw.from_native(get_report_y(report, data_source="both"), allow_series=True)
         if isinstance(y, nw.Series):
             y = y.to_frame()
+        y = y.rename(
+            {name: f"__skd017_target_{i}__" for i, name in enumerate(y.columns)}
+        )
         data = nw.concat([X, y], how="horizontal")
 
         try:

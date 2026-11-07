@@ -157,3 +157,18 @@ def test_duplicates_detected_with_numpy_arrays():
     explanation = CheckTrainTestDuplicates().check_function(report)
     assert explanation is not None
     assert "2 row(s)" in explanation
+
+
+def test_target_name_collides_with_feature():
+    X_train = _frame(40, seed=0)
+    X_test = _frame(20, seed=99)
+    y_train = pd.Series(X_train["a"].to_numpy(), name="a")
+    y_test = pd.Series(X_test["a"].to_numpy(), name="a")
+    report = EstimatorReport(
+        LinearRegression(),
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
+    )
+    assert CheckTrainTestDuplicates().check_function(report) is None
