@@ -37,7 +37,7 @@ class CheckTrainTestDuplicates(Check):
         """Detect duplicate rows in the full (unsplit) dataset."""
         report = cast_report(report)
 
-        X = nw.from_native(get_report_X(report, data_source="both"), eager_only=True)
+        X = nw.from_native(get_report_X(report, data_source="both"))
         y = nw.from_native(get_report_y(report, data_source="both"), allow_series=True)
         if isinstance(y, nw.Series):
             y = y.to_frame()
