@@ -128,22 +128,6 @@ BOXPLOT_STYLE = {
 }
 
 
-def _merge_style_kwargs(current: dict[str, Any], new: dict[str, Any]) -> dict[str, Any]:
-    """Merge ``new`` into ``current`` without dropping omitted nested keys.
-
-    Passed keys replace the previous value. When both values are dictionaries,
-    they are merged the same way.
-    """
-    merged = dict(current)
-    for key, value in new.items():
-        previous = merged.get(key)
-        if isinstance(previous, dict) and isinstance(value, dict):
-            merged[key] = _merge_style_kwargs(previous, value)
-        else:
-            merged[key] = value
-    return merged
-
-
 class StyleDisplayMixin:
     """Mixin to control the style plot of a display."""
 
@@ -203,7 +187,19 @@ class StyleDisplayMixin:
             elif policy == "update":
                 current_value = getattr(self, default_attr)
                 if isinstance(current_value, dict) and isinstance(param_value, dict):
-                    param_value = _merge_style_kwargs(current_value, param_value)
+                    merged = dict(current_value)
+                    pending = [(merged, param_value)]
+                    while pending:
+                        target, incoming = pending.pop()
+                        for key, value in incoming.items():
+                            previous = target.get(key)
+                            if isinstance(previous, dict) and isinstance(value, dict):
+                                nested = dict(previous)
+                                target[key] = nested
+                                pending.append((nested, value))
+                            else:
+                                target[key] = value
+                    param_value = merged
                 elif current_value is not None:
                     param_value = {**current_value, **param_value}
                 setattr(self, default_attr, param_value)
