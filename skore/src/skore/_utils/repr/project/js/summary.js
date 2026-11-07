@@ -12,6 +12,58 @@ function skoreInitSummary(containerId) {
 
     const shadowRoot = host.attachShadow({ mode: "closed" });
     shadowRoot.appendChild(template.content.cloneNode(true));
+    // VS Code scrolls the notebook from a window "wheel" listener. That
+    // listener walks parentNode from the event target, which is retargeted to
+    // this shadow host, so it never sees the overflow inside and forwards the
+    // gesture. overscroll-behavior only stops native chaining (JupyterLab, the
+    // browser). Stop the event here while the region under the pointer
+    // actually overflows; a region that fits must still scroll the notebook.
+    shadowRoot.addEventListener(
+        "wheel",
+        (event) => {
+            if (event.ctrlKey || event.metaKey) {
+                return;
+            }
+            if (wheelHitsOverflow(event)) {
+                event.stopPropagation();
+            }
+        },
+        { passive: true }
+    );
+
+    function wheelHitsOverflow(event) {
+        for (const node of event.composedPath()) {
+            if (!(node instanceof Element)) {
+                continue;
+            }
+            if (node === event.currentTarget) {
+                break;
+            }
+            if (
+                axisOverflows(node, "y", event.deltaY) ||
+                axisOverflows(node, "x", event.deltaX)
+            ) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    function axisOverflows(node, axis, delta) {
+        if (!delta) {
+            return false;
+        }
+        const room =
+            axis === "y"
+                ? node.scrollHeight - node.clientHeight
+                : node.scrollWidth - node.clientWidth;
+        if (room <= 1) {
+            return false;
+        }
+        const style = getComputedStyle(node);
+        const mode = axis === "y" ? style.overflowY : style.overflowX;
+        return mode === "auto" || mode === "scroll";
+    }
 
     const container = shadowRoot.querySelector(".container");
     if (container) {

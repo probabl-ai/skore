@@ -1,15 +1,23 @@
+import logging
 from pathlib import Path
 from types import SimpleNamespace
 
 import mlflow
 import pandas as pd
 import pytest
+import skrub
+from mlflow.exceptions import MlflowException
+from sklearn.datasets import make_regression
+from sklearn.dummy import DummyRegressor
 from sklearn.linear_model import LinearRegression
+from sklearn.model_selection import KFold
 
+from skore import CrossValidationReport
 from skore._plugins.mlflow import Project
 from skore._plugins.mlflow import project as project_module
 from skore._plugins.mlflow.project import (
     _log_artifact,
+    _storage_experiment_name,
     format_date,
     report_type,
 )
@@ -18,6 +26,47 @@ from skore._plugins.mlflow.project import (
 def test_format_date() -> None:
     assert format_date(0) == "1970-01-01T00:00:00+00:00"
     assert format_date(None) == ""
+
+
+def test_storage_experiment_name_outside_databricks() -> None:
+    assert _storage_experiment_name("sqlite:///mlflow.db") == "__skore-storage__"
+
+
+@pytest.mark.parametrize("tracking_uri", ["databricks", "databricks://profile"])
+def test_storage_experiment_name_on_databricks(monkeypatch, tracking_uri) -> None:
+    request = {}
+
+    def fake_http_request_safe(host_creds, endpoint, method):
+        request.update(host_creds=host_creds, endpoint=endpoint, method=method)
+        return SimpleNamespace(json=lambda: {"userName": "user@example.com"})
+
+    monkeypatch.setattr(
+        project_module, "get_databricks_host_creds", lambda uri: f"<creds:{uri}>"
+    )
+    monkeypatch.setattr(project_module, "http_request_safe", fake_http_request_safe)
+
+    assert (
+        _storage_experiment_name(tracking_uri)
+        == "/Users/user@example.com/__skore-storage__"
+    )
+    assert request == {
+        "host_creds": f"<creds:{tracking_uri}>",
+        "endpoint": "/api/2.0/preview/scim/v2/Me",
+        "method": "GET",
+    }
+
+
+def test_storage_experiment_name_reports_identity_lookup_failure(monkeypatch) -> None:
+    def fake_http_request_safe(host_creds, endpoint, method):
+        raise MlflowException("PERMISSION_DENIED")
+
+    monkeypatch.setattr(project_module, "get_databricks_host_creds", lambda uri: None)
+    monkeypatch.setattr(project_module, "http_request_safe", fake_http_request_safe)
+
+    with pytest.raises(
+        MlflowException, match="Failed to resolve the Databricks workspace user"
+    ):
+        _storage_experiment_name("databricks")
 
 
 def test_report_type_invalid_report() -> None:
@@ -139,6 +188,33 @@ class TestProject:
         first = Project("first", tracking_uri=tracking_uri)
         second = Project("second", tracking_uri=tracking_uri)
 
+        assert (
+            first._Project__storage_experiment_id
+            == second._Project__storage_experiment_id
+        )
+
+    def test_init_stores_in_databricks_home_directory(
+        self, monkeypatch, mlflow_tracking_uri
+    ):
+        monkeypatch.setattr(project_module, "is_databricks_uri", lambda uri: True)
+        monkeypatch.setattr(
+            project_module, "_databricks_user_name", lambda uri: "user@example.com"
+        )
+
+        project = Project("<project>", tracking_uri=mlflow_tracking_uri())
+        storage_experiment = mlflow.get_experiment(
+            project._Project__storage_experiment_id
+        )
+
+        assert storage_experiment.name == "/Users/user@example.com/__skore-storage__"
+
+    def test_init_reuses_existing_project(self, mlflow_tracking_uri):
+        tracking_uri = mlflow_tracking_uri()
+
+        first = Project("<project>", tracking_uri=tracking_uri)
+        second = Project("<project>", tracking_uri=tracking_uri)
+
+        assert first.experiment_id == second.experiment_id
         assert (
             first._Project__storage_experiment_id
             == second._Project__storage_experiment_id
@@ -268,6 +344,29 @@ class TestProject:
             assert (report_dir / artifact).exists()
         assert (report_dir / "metrics_details" / "per_split.csv").exists()
 
+    def test_put_get_skrub_cross_validation(self) -> None:
+        X, y = make_regression(n_samples=40, n_features=3, random_state=0)
+        learner = (
+            skrub.X(X).skb.apply(DummyRegressor(), y=skrub.y(y)).skb.make_learner()
+        )
+        report = CrossValidationReport(
+            learner,
+            data={"_skrub_X": X, "_skrub_y": y},
+            splitter=KFold(n_splits=2),
+        )
+        project = Project("<project>")
+        project.put("<key>", report)
+
+        (metadata,) = project.summarize()
+        run = mlflow.get_run(metadata["id"])
+        assert run.data.tags["skore_status"] == "completed"
+
+        restored = project.get(metadata["id"])
+        assert isinstance(restored, CrossValidationReport)
+        assert restored.metrics.rmse(aggregate="mean").iloc[0] == pytest.approx(
+            report.metrics.rmse(aggregate="mean").iloc[0]
+        )
+
     def test_get_unknown_id_with_explicit_tracking_uri(self, mlflow_tracking_uri):
         tracking_uri = mlflow_tracking_uri()
         project = Project("<project>", tracking_uri=tracking_uri)
@@ -284,3 +383,176 @@ class TestProject:
 
         with pytest.raises(LookupError):
             Project.delete(name=project.name, tracking_uri=tracking_uri)
+
+
+def test_databricks_user_name_requires_username(monkeypatch):
+    """Service principals identified without ``userName`` are reported."""
+
+    def fake_http_request_safe(host_creds, endpoint, method):
+        return SimpleNamespace(json=lambda: {"applicationId": "service-principal"})
+
+    monkeypatch.setattr(project_module, "get_databricks_host_creds", lambda uri: None)
+    monkeypatch.setattr(project_module, "http_request_safe", fake_http_request_safe)
+
+    with pytest.raises(MlflowException, match="no 'userName' field"):
+        project_module._databricks_user_name("databricks")
+
+
+def test_init_reraises_when_storage_experiment_is_missing(monkeypatch):
+    """A failed storage-experiment lookup is not hidden by the reuse path."""
+
+    def create_experiment(name):
+        raise MlflowException("already exists")
+
+    monkeypatch.setattr(mlflow, "create_experiment", create_experiment)
+    monkeypatch.setattr(mlflow, "get_experiment_by_name", lambda name: None)
+
+    with pytest.raises(MlflowException, match="already exists"):
+        Project("<project>")
+
+
+def test_log_iter_rejects_unknown_item():
+    """The logger only accepts the declared MLflow payload types."""
+    project = Project("<project>")
+
+    with pytest.raises(TypeError, match="object"):
+        project._log_iter([object()])
+
+
+def test_get_rebuilds_cross_validation_report(monkeypatch):
+    """A stored cross-validation payload is rebuilt as a cross-validation report."""
+    project = Project("<project>")
+    state = {"metadata": {"report_type": "cross-validation"}}
+    sentinel = object()
+
+    monkeypatch.setattr(
+        mlflow.artifacts, "download_artifacts", lambda **kwargs: "report.pkl"
+    )
+    monkeypatch.setattr(project_module.joblib, "load", lambda path: state)
+    monkeypatch.setattr(project_module, "internalize", lambda loaded, loader: state)
+    monkeypatch.setattr(
+        project_module.CrossValidationReport,
+        "from_dict",
+        staticmethod(lambda loaded: sentinel),
+    )
+
+    assert project.get("run-id") is sentinel
+
+
+def test_summarize_skips_incomplete_runs(monkeypatch):
+    """Runs that cannot be converted to metadata are omitted from the summary."""
+    project = Project("<project>")
+    runs = [SimpleNamespace(name="bad"), SimpleNamespace(name="good")]
+
+    def run_to_metadata(run):
+        if run.name == "bad":
+            raise KeyError("learner")
+        return {"id": "good"}
+
+    monkeypatch.setattr(mlflow, "search_runs", lambda **kwargs: runs)
+    monkeypatch.setattr(Project, "_run_to_metadata", staticmethod(run_to_metadata))
+
+    assert project.summarize() == [{"id": "good"}]
+
+
+def test_delete_without_tracking_uri():
+    """Deletion uses the active tracking URI when none is passed explicitly."""
+    project = Project("ephemeral-project")
+
+    Project.delete(name=project.name)
+
+    with pytest.raises(LookupError):
+        Project.delete(name=project.name)
+
+
+def test_delete_rejects_active_runs(monkeypatch):
+    """An experiment with a running MLflow run cannot be deleted."""
+    experiment = SimpleNamespace(lifecycle_stage="active", experiment_id="exp")
+    client = SimpleNamespace(get_experiment_by_name=lambda name: experiment)
+    monkeypatch.setattr(project_module, "MlflowClient", lambda: client)
+    monkeypatch.setattr(mlflow, "search_runs", lambda **kwargs: [SimpleNamespace()])
+
+    with pytest.raises(RuntimeError, match="active runs are still in progress"):
+        Project.delete(name="project")
+
+
+def test_load_object_from_storage_missing():
+    """Reading an object that was never stored raises ``FileNotFoundError``."""
+    project = Project("<project>")
+
+    with pytest.raises(FileNotFoundError):
+        project._load_object_from_storage("missing-object")
+
+
+def test_suppress_log_warning_drops_matching_records():
+    """Only log records matching the configured pattern are filtered out."""
+    records = []
+
+    class _ListHandler(logging.Handler):
+        def emit(self, record):
+            records.append(record.getMessage())
+
+    logger = logging.getLogger("skore.test.mlflow")
+    logger.setLevel(logging.WARNING)
+    handler = _ListHandler()
+    logger.addHandler(handler)
+    try:
+        with project_module._suppress_log_warning("skore.test.mlflow", r"pickle"):
+            logger.warning("Saving scikit-learn models in the pickle format")
+            logger.warning("kept")
+    finally:
+        logger.removeHandler(handler)
+
+    assert records == ["kept"]
+
+
+def test_log_artifact_logs_json_payloads(monkeypatch):
+    """Lists and dictionaries are stored as JSON artifacts."""
+    logged = []
+    monkeypatch.setattr(
+        mlflow,
+        "log_dict",
+        lambda payload, artifact_file: logged.append((payload, artifact_file)),
+    )
+
+    _log_artifact(project_module.Artifact("values", ["a", "b"]))
+    _log_artifact(project_module.Artifact("mapping", {"a": 1}))
+
+    assert logged == [
+        ({"values": ["a", "b"]}, "values.json"),
+        ({"a": 1}, "mapping.json"),
+    ]
+
+
+def test_log_figure_falls_back_when_save_kwargs_are_unsupported(monkeypatch):
+    """Older MLflow builds save the figure locally before logging the artifact."""
+
+    class _Figure:
+        def savefig(self, path, **kwargs):
+            path.write_bytes(b"png")
+
+    logged = []
+
+    def log_figure(*args, **kwargs):
+        raise TypeError("unexpected keyword argument 'save_kwargs'")
+
+    monkeypatch.setattr(mlflow, "log_figure", log_figure)
+    monkeypatch.setattr(mlflow, "log_artifact", lambda **kwargs: logged.append(kwargs))
+
+    project_module._log_figure(_Figure(), "nested/plot.png")
+    project_module._log_figure(_Figure(), "plot.png")
+
+    assert logged[0]["artifact_path"] == "nested"
+    assert logged[1]["artifact_path"] is None
+
+
+def test_log_figure_reraises_unexpected_typeerror(monkeypatch):
+    """Figure logging only translates the missing ``save_kwargs`` failure."""
+
+    def log_figure(*args, **kwargs):
+        raise TypeError("unexpected failure")
+
+    monkeypatch.setattr(mlflow, "log_figure", log_figure)
+
+    with pytest.raises(TypeError, match="unexpected failure"):
+        project_module._log_figure(object(), "plot.png")

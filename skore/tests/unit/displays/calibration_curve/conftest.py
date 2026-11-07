@@ -2,6 +2,11 @@ import pytest
 
 
 @pytest.fixture(scope="module")
+def estimator_type():
+    return "linear"
+
+
+@pytest.fixture(scope="module")
 def estimator_reports_binary_classification_figure_axes(
     estimator_reports_binary_classification,
 ):

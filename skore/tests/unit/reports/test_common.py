@@ -61,7 +61,7 @@ def test_metrics_add_scorer(report):
     report.metrics.add(scorer)
 
     display = report.metrics.summarize()
-    assert "Mean Squared Error" in display.summary["verbose_name"].values
+    assert "mean_squared_error" in display.summary["verbose_name"].values
 
 
 def test_metrics_failure(report):
@@ -74,9 +74,9 @@ def test_metrics_failure(report):
 
     display = report.metrics.summarize()
 
-    assert "Fail" in set(display.summary["verbose_name"])
+    assert "fail" in set(display.summary["verbose_name"])
     assert (
-        display.summary[display.summary["verbose_name"] == "Fail"]["score"].isna().all()
+        display.summary[display.summary["verbose_name"] == "fail"]["score"].isna().all()
     )
 
     err_msg = r"Metric 'fail' has failed: Exception\('test error'\)"

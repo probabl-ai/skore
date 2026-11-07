@@ -1,9 +1,15 @@
 import numpy as np
+import pytest
 from sklearn.datasets import make_classification
 from sklearn.linear_model import LinearRegression, LogisticRegression
+from sklearn.model_selection import ShuffleSplit
 
-from skore import evaluate
-from skore._sklearn._checks.model_checks import CheckMetricsConsistencyAcrossSplits
+from skore import CrossValidationReport, evaluate
+from skore._checks.skd003_metrics_consistency import (
+    CheckMetricsConsistencyAcrossSplits,
+    detect_outliers_modified_zscore,
+)
+from skore._checks.utils import CheckNotApplicable
 
 
 def test_passes_when_splits_are_consistent(regression_data):
@@ -34,3 +40,32 @@ def test_detects_inconsistent_splits():
         - 2  # -2 for the timing metrics
     )
     assert f"for {n_metrics}/{n_metrics} metrics" in explanation
+
+
+def test_not_applicable_for_single_split(regression_data):
+    """SKD003 does not run when the report has a single split."""
+    X, y = regression_data
+    report = CrossValidationReport(
+        LinearRegression(),
+        X,
+        y,
+        splitter=ShuffleSplit(n_splits=1, random_state=0),
+    )
+    with pytest.raises(
+        CheckNotApplicable,
+        match="Dispersion across splits is undefined with a single split",
+    ):
+        CheckMetricsConsistencyAcrossSplits().check_function(report)
+
+
+def test_detect_outliers_modified_zscore_flags_extreme_value():
+    scores = np.array([1.0, 1.1, 0.9, 1.05, 50.0])
+    outliers = detect_outliers_modified_zscore(scores)
+    assert outliers.tolist() == [False, False, False, False, True]
+
+
+def test_detect_outliers_modified_zscore_zero_mad_returns_no_outliers():
+    """When all scores are identical, MAD is 0 and nothing is flagged."""
+    scores = np.array([1.0, 1.0, 1.0, 1.0])
+    outliers = detect_outliers_modified_zscore(scores)
+    assert not outliers.any()

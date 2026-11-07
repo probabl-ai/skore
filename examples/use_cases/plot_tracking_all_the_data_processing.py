@@ -1,4 +1,6 @@
 """
+.. _example_data_processing:
+
 Tracking all the data processing
 ================================
 

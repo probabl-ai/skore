@@ -1,4 +1,4 @@
-from skore._utils._show_versions import (
+from skore._utils.show_versions import (
     _get_deps_info,
     _get_sys_info,
     _show_extra_section,

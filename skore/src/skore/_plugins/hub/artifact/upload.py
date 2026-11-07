@@ -102,8 +102,12 @@ def upload(project: Project, content: str | bytes, content_type: str) -> str:
         Client() as standard_client,
     ):
         # Ask for upload urls.
-        response = hub_client.post(
-            url=f"projects/{project.workspace}/{project.name}/artifacts",
+        response = hub_client.request(
+            method="POST",
+            host=project.host,
+            workspace=project.workspace,
+            project=project.name,
+            endpoint="artifacts",
             json=[
                 {
                     "checksum": serializer.checksum,
@@ -158,8 +162,12 @@ def upload(project: Project, content: str | bytes, content_type: str) -> str:
             )
 
             # Acknowledge the upload, to let the hub/storage rebuild the whole.
-            hub_client.post(
-                url=f"projects/{project.workspace}/{project.name}/artifacts/complete",
+            hub_client.request(
+                method="POST",
+                host=project.host,
+                workspace=project.workspace,
+                project=project.name,
+                endpoint="artifacts/complete",
                 json=[
                     {
                         "checksum": serializer.checksum,

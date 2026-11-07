@@ -9,7 +9,7 @@ from sklearn.base import BaseEstimator
 from sklearn.utils.validation import _num_features
 
 if TYPE_CHECKING:
-    from .._utils._dataframe import UserDataFrame
+    from skore._utils.dataframe import UserDataFrame
 
 
 def _function_call_succeeds(func: Callable) -> bool:

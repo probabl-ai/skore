@@ -4,7 +4,7 @@ from time import sleep
 from pytest import raises
 
 from skore import configuration
-from skore._utils._progress_bar import ProgressBar, track
+from skore._utils.progress_bar import ProgressBar, track
 
 
 def test_standalone_progress():
@@ -143,7 +143,7 @@ def test_track(monkeypatch):
         progress = ProgressBar(*args, **kwargs)
         return progress
 
-    monkeypatch.setattr("skore._utils._progress_bar.ProgressBar", RegisteredProgressBar)
+    monkeypatch.setattr("skore._utils.progress_bar.ProgressBar", RegisteredProgressBar)
 
     results = list(track(range(10), description="track", total=10))
 
@@ -156,6 +156,17 @@ def test_track(monkeypatch):
     assert progress._progress.live._started is False
     assert progress._progress.finished
     assert progress._progress.tasks[0].finished
+
+
+def test_progress_bar_setters():
+    """Description and total can be updated after the bar is created."""
+    with ProgressBar(description="progress", total=1) as progress:
+        progress.description = "updated"
+        progress.total = 3
+        progress.advance()
+
+    assert progress.description == "updated"
+    assert progress.total == 3
 
 
 def test_disable_progress_bar():

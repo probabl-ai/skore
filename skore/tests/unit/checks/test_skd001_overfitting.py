@@ -3,8 +3,8 @@ from sklearn.linear_model import LinearRegression
 from sklearn.tree import DecisionTreeRegressor
 
 from skore import EstimatorReport, evaluate
-from skore._sklearn._checks._utils import CheckNotApplicable
-from skore._sklearn._checks.model_checks import CheckOverfitting
+from skore._checks.skd001_overfitting import CheckOverfitting
+from skore._checks.utils import CheckNotApplicable
 
 
 @pytest.mark.parametrize("report_type", ["estimator", "cross-validation"])
@@ -63,11 +63,7 @@ def test_uses_custom_metrics(report_type, regression_data):
     )
     report.metrics.add("root_mean_squared_error")
     n_metrics = len(
-        [
-            m
-            for m in report.metrics.available()
-            if m not in ["score", "fit_time", "predict_time"]
-        ]
+        [m for m in report.metrics.available() if m not in ["fit_time", "predict_time"]]
     )
 
     explanation = CheckOverfitting().check_function(report)

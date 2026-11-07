@@ -5,7 +5,7 @@
 {% if show_header %}
     <header class="title">{{ header | e }}</header>
 {% endif %}
-{% include "display/_checks_summary_tabset.html.j2" %}
+{% include "display/checks_summary_tabset.html.j2" %}
 <p class="report-hint-note" role="note">
 {% if fast_mode %}
     <span class="report-hint-note-line">Fast mode is on: expensive checks are skipped unless already cached.</span>

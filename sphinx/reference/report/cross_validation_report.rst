@@ -22,6 +22,7 @@ functionalities of the report are exposed through accessors.
    CrossValidationReport.help
    CrossValidationReport.create_estimator_report
    CrossValidationReport.get_predictions
+   CrossValidationReport.to_markdown
 
 .. rubric:: Accessors
 

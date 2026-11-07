@@ -4,6 +4,7 @@
   ![python](https://img.shields.io/badge/python-3.11%20%7C%203.12%20%7C%203.13%20%7C%203.14-blue?style=flat&logo=python)
   [![downloads](https://static.pepy.tech/badge/skore/month)](https://pepy.tech/projects/skore)
   [![pypi](https://img.shields.io/pypi/v/skore)](https://pypi.org/project/skore/)
+  [![Coverage](https://codecov.io/gh/probabl-ai/skore/branch/main/graph/badge.svg)](https://codecov.io/gh/probabl-ai/skore)
   [![Discord](https://img.shields.io/discord/1275821367324840119?label=Discord)](https://discord.probabl.ai/)
 
 </div>
@@ -52,7 +53,7 @@ The core mission of **Skore** is to turn uneven ML development into structured, 
 
 #### With pip
 
-We recommend using a [virtual environment (venv)](https://docs.python.org/3/tutorial/venv.html). You need `python>=3.11`.
+We recommend using a [virtual environment (venv)](https://docs.python.org/3/tutorial/venv.html). You need `python>=3.11.4`.
 
 Then, you can install skore by using `pip`:
 ```bash
@@ -81,13 +82,13 @@ Evaluate your model and get comprehensive insights in one line:
 ```python
 from sklearn.datasets import make_classification
 from sklearn.linear_model import LogisticRegression
-from skore import CrossValidationReport
+from skore import evaluate
 
 X, y = make_classification(n_classes=2, n_samples=100_000, n_informative=4)
 clf = LogisticRegression()
 
 # Get structured insights that matter for your use case
-cv_report = CrossValidationReport(clf, X, y)
+cv_report = evaluate(clf, X, y, splitter=5)
 
 # See what insights are available
 cv_report.help()

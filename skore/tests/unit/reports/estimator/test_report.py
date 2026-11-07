@@ -20,6 +20,7 @@ from sklearn.svm import SVC
 from sklearn.utils.validation import check_is_fitted
 
 from skore import EstimatorReport, evaluate
+from skore._utils.repr.paginated_metrics import METRICS_HTML_PAGE_SIZE
 
 
 def test_estimator_not_fitted():
@@ -450,6 +451,41 @@ def test_prefit_no_train_data_repr_methods(prefit_regression_report_no_train_dat
 
     fragments = prefit_regression_report_no_train_data._html_repr_fragments()
     assert "R²" in fragments["metrics_summary"]
+    assert "skore-metrics-pager" not in fragments["metrics_summary"]
+
+
+def test_metrics_summary_html_paginates_multiclass(
+    forest_multiclass_classification_with_test,
+):
+    """Multi-class default metrics exceed one page in the report Results tab."""
+    estimator, X_test, y_test = forest_multiclass_classification_with_test
+    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
+    html = report._html_repr_fragments()["metrics_summary"]
+    n_rows = len(
+        report.metrics.summarize(data_source="test").frame(
+            verbose_name=True, flat_index=False
+        )
+    )
+    assert n_rows > METRICS_HTML_PAGE_SIZE
+    assert "skore-metrics-pager" in html
+    tbody = html[html.find("<tbody>") : html.find("</tbody>")]
+    assert tbody.count("<tr") == n_rows
+    assert 'data-page="1"' in html
+    assert "skore-metrics-pager-next" in html
+    full = report._repr_html_()
+    assert "skoreInitMetricsPagers" in full
+    assert ".skore-metrics-pager.is-ready tbody tr" in full
+
+
+def test_non_html_reprs_have_no_pager(forest_multiclass_classification_with_test):
+    """Pagination is HTML-only: frame, text, and markdown stay complete."""
+    estimator, X_test, y_test = forest_multiclass_classification_with_test
+    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
+    display = report.metrics.summarize()
+    assert "skore-metrics-pager" not in repr(display)
+    assert "skore-metrics-pager" not in repr(report)
+    assert "skore-metrics-pager" not in report.to_markdown()
+    assert "skore-metrics-pager" not in display.frame().to_string()
 
 
 def test_text_repr(forest_binary_classification_data):

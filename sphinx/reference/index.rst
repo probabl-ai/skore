@@ -22,9 +22,8 @@ Project Management
 
    * - :class:`Project`
      - Main class for managing a skore project and its reports
-   * - :func:`login`
-     - Login to remote backend (e.g. Skore Hub) to later use the project management
-       features.
+   * - :class:`Summary`
+     - Summary of the reports stored in a project
 
 
 ML Assistance
@@ -87,6 +86,18 @@ Inspection
      - Display for visualizing feature importance via Mean Decrease in Impurity (MDI)
    * - :class:`PermutationImportanceDisplay`
      - Display for visualizing feature importance via permutation importance
+   * - :class:`CalibrationDisplay`
+     - Display for visualizing classifier calibration curves
+
+
+General
+"""""""
+
+.. list-table::
+   :widths: 30 70
+
+   * - :class:`Display`
+     - Protocol implemented by every visualization display
 
 
 Checks
@@ -115,6 +126,16 @@ Utilities
      - Print version information for skore and its dependencies
 
 
+Command-line interface
+^^^^^^^^^^^^^^^^^^^^^^
+
+.. list-table::
+   :widths: 30 70
+
+   * - :ref:`skore <cli-reference>`
+     - Synchronize projects, install agent skills, and connect a coding agent to Skore Hub
+
+
 .. toctree::
    :maxdepth: 2
    :hidden:
@@ -122,3 +143,4 @@ Utilities
    Managing a project <project>
    ML Assistance <report/index>
    Utilities <utils>
+   Command-line interface <cli/index>

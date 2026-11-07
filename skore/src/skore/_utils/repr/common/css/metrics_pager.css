@@ -1,0 +1,66 @@
+.skore-metrics-pager:not(.is-ready) .skore-metrics-pager-nav {
+    display: none;
+}
+
+.skore-metrics-pager.is-ready tbody tr {
+    display: none;
+}
+
+.skore-metrics-pager.is-ready tbody tr.is-active {
+    display: table-row;
+}
+
+.skore-metrics-table-wrap table {
+    table-layout: fixed;
+}
+
+.skore-metrics-pager-nav {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.25em;
+    margin: 0.35em 0 0;
+}
+
+.skore-metrics-pager-nav button {
+    cursor: pointer;
+    font: inherit;
+    font-weight: 600;
+    line-height: 1.5em;
+    padding: 0.2em 0.55em;
+    color: inherit;
+    background: transparent;
+    border: 1px solid color-mix(in srgb, currentColor 25%, transparent);
+    border-radius: 4px;
+}
+
+.skore-metrics-pager-nav button:hover:not(:disabled) {
+    background-color: color-mix(in srgb, currentColor 8%, transparent);
+}
+
+.skore-metrics-pager-nav button:disabled {
+    cursor: default;
+    opacity: 0.45;
+}
+
+.skore-metrics-pager-nav button:focus-visible {
+    outline: 2px solid currentColor;
+    outline-offset: 2px;
+}
+
+.skore-metrics-pager-status {
+    margin-left: 0.5em;
+    font-size: 11px;
+    font-style: italic;
+    opacity: 0.88;
+}
+
+@media print {
+    .skore-metrics-pager.is-ready tbody tr {
+        display: table-row !important;
+    }
+
+    .skore-metrics-pager-nav {
+        display: none !important;
+    }
+}

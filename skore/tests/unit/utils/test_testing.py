@@ -1,10 +1,10 @@
-"""Unit tests for ``skore._utils._testing``."""
+"""Unit tests for ``skore._utils.testing``."""
 
 import numpy as np
 import pytest
 from matplotlib.figure import Figure
 
-from skore._utils._testing import (
+from skore._utils.testing import (
     MockAccessor,
     MockDisplay,
     MockEstimator,

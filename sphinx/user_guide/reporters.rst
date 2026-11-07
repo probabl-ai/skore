@@ -98,18 +98,18 @@ three methods:
 2. `set_style` that sets some graphical settings instead of passing them to the `plot`
    method at each call,
 
-3. `frame` that returns a `pandas.DataFrame` or, for metrics summaries in wide
-   layout with a single value column, a named `pandas.Series` with the
-   information contained in the display.
+3. `frame` that returns the information contained in the display as a
+   `pandas.DataFrame` or `pandas.Series`.
 
 We provide the :meth:`EstimatorReport.metrics.summarize` method that aggregates
 metrics in a single table, available through a :class:`~skore.Display`. The table
 is returned by :meth:`~skore.MetricsSummaryDisplay.frame` as a
-:class:`pandas.DataFrame`, or as a :class:`pandas.Series` when the wide layout
-has only one value column (for example a single-estimator report). In the
-Series case, metrics are indexed by name, e.g. ``result.loc["accuracy"]``. By
-default, skore computes some built-in metrics based on the ML task
-(classification or regression).
+:class:`pandas.DataFrame`, or as a :class:`pandas.Series` when the resulting table has
+only one value column (for example a single-estimator report). By default, metric
+dimensions are flattened into labels such as ``"precision_0"``; pass
+``flat_index=False`` to preserve them as a :class:`pandas.MultiIndex`. In the Series
+case, metrics are indexed by name, e.g. ``result.loc["accuracy"]``. By default, skore
+computes some built-in metrics based on the ML task (classification or regression).
 
 Users can register their own metrics with :meth:`~skore.EstimatorReport.metrics.add`
 followed by :meth:`~skore.EstimatorReport.metrics.summarize`. We accept different
@@ -166,8 +166,9 @@ cross-validation strategy and an estimator report is created for each split. The
 a :class:`CrossValidationReport` is a collection of :class:`EstimatorReport` instances,
 available through the `reports_` attribute.
 
-For metrics and displays, the same API is exposed with an extra
-parameter, `aggregate`, to aggregate the metrics across the splits.
+Summary tables and feature-importance displays accept an extra `aggregate`
+parameter to combine values across splits. Curve and matrix displays keep one
+result per split.
 
 The :class:`CrossValidationReport` also comes with a caching mechanism by leveraging
 the :class:`EstimatorReport` caching mechanism and exposes the same methods.
@@ -199,13 +200,13 @@ have different data types, they will be considered as different.
 
 The caching mechanism is also available and exposes the same methods.
 
-Refer to the :ref:`cross_validation_metrics` section for more details on the
+Refer to the :ref:`comparison_metrics` section for more details on the
 metrics available in `skore` for comparison.
 
 Checks
 ------
 
-:meth:`~skore.EstimatorReport.checks` is the entry point to run checks that
+:obj:`EstimatorReport.checks` is the entry point to run checks that
 detect common modeling pitfalls. It provides the following methods:
 
 - :meth:`~skore.EstimatorReport.checks.summarize` to run checks and get a summary

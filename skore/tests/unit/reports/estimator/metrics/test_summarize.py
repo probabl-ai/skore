@@ -18,12 +18,12 @@ from sklearn.datasets import make_classification
 from sklearn.decomposition import PCA
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import precision_score, recall_score
+from sklearn.metrics import make_scorer, precision_score, r2_score, recall_score
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import make_pipeline
 
 from skore import EstimatorReport, MetricsSummaryDisplay
-from skore._utils._testing import check_cache_changed, check_cache_unchanged
+from skore._utils.testing import check_cache_changed, check_cache_unchanged
 
 
 def check_display_structure(
@@ -75,6 +75,7 @@ def test_default(forest_binary_classification_with_test, metric):
     check_display_structure(
         display,
         expected_metrics={
+            "Default estimator score",
             "Accuracy",
             "Precision",
             "Recall",
@@ -98,6 +99,7 @@ def test_default_binary_classification_svc(svc_binary_classification_with_test):
     check_display_structure(
         display,
         expected_metrics={
+            "Default estimator score",
             "Accuracy",
             "Precision",
             "Recall",
@@ -120,6 +122,7 @@ def test_default_multiclass_classification_forest(
     check_display_structure(
         display,
         expected_metrics={
+            "Default estimator score",
             "Accuracy",
             "Log loss",
             "Precision",
@@ -132,7 +135,7 @@ def test_default_multiclass_classification_forest(
         expected_average={"macro"},
     )
 
-    assert "precision_macro" in report.metrics.available()
+    assert "precision_avg" in report.metrics.available()
 
     assert display.summary["output"].isna().all()
     data = display.summary.set_index("verbose_name")
@@ -140,6 +143,20 @@ def test_default_multiclass_classification_forest(
     assert len(per_label) == 3
     assert len(data.loc["Recall"].dropna(subset=["label"])) == 3
     assert set(per_label["label"]) == {0, 1, 2}
+
+
+def test_name_is_registry_key(forest_multiclass_classification_with_test):
+    """Rows are named after the registry key, for built-in and custom metrics alike."""
+    estimator, X_test, y_test = forest_multiclass_classification_with_test
+    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
+    report.metrics.add(
+        make_scorer(precision_score, average="weighted"), name="precision_weighted"
+    )
+
+    names = set(report.metrics.summarize().summary["name"])
+
+    assert names == set(report.metrics.available())
+    assert {"precision", "precision_avg", "precision_weighted"} <= names
 
 
 def test_default_multiclass_classification_svc(svc_multiclass_classification_with_test):
@@ -151,6 +168,7 @@ def test_default_multiclass_classification_svc(svc_multiclass_classification_wit
     check_display_structure(
         display,
         expected_metrics={
+            "Default estimator score",
             "Accuracy",
             "Precision",
             "Recall",
@@ -177,6 +195,7 @@ def test_default_regression(linear_regression_with_test):
     check_display_structure(
         display,
         expected_metrics={
+            "Default estimator score",
             "R²",
             "RMSE",
             "MAE",
@@ -200,6 +219,7 @@ def test_default_multioutput_regression(linear_regression_multioutput_with_test)
     check_display_structure(
         display,
         expected_metrics={
+            "Default estimator score",
             "R²",
             "RMSE",
             "MAE",
@@ -217,6 +237,36 @@ def test_default_multioutput_regression(linear_regression_multioutput_with_test)
     assert set(data.loc["R²", "output"]) == {0, 1}
 
 
+@pytest.mark.parametrize(
+    "multioutput, expected_average",
+    [
+        ("raw_values", None),
+        ("uniform_average", "uniform_average"),
+        ("variance_weighted", "variance_weighted"),
+        ([0.3, 0.7], "weighted"),
+        (np.array([0.3, 0.7]), "weighted"),
+    ],
+)
+def test_multioutput_regression_average(
+    linear_regression_multioutput_with_test, multioutput, expected_average
+):
+    """`multioutput` aggregation modes are reported in the `average` column."""
+    estimator, X_test, y_test = linear_regression_multioutput_with_test
+    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
+    report.metrics.add(make_scorer(r2_score, multioutput=multioutput), name="r2_custom")
+
+    data = report.metrics.summarize().summary
+    rows = data[data["name"] == "r2_custom"]
+
+    if expected_average is None:
+        assert set(rows["output"]) == {0, 1}
+        assert rows["average"].isna().all()
+    else:
+        assert len(rows) == 1
+        assert rows["output"].isna().all()
+        assert rows["average"].iloc[0] == expected_average
+
+
 def test_default_without_predict_proba(custom_classifier_no_predict_proba_with_test):
     """Default metrics skip roc_auc, log_loss, and brier_score without predict_proba."""
     estimator, X_test, y_test = custom_classifier_no_predict_proba_with_test
@@ -226,6 +276,7 @@ def test_default_without_predict_proba(custom_classifier_no_predict_proba_with_t
     check_display_structure(
         display,
         expected_metrics={
+            "Default estimator score",
             "Accuracy",
             "Precision",
             "Recall",
@@ -241,9 +292,7 @@ def test_default_without_predict_proba(custom_classifier_no_predict_proba_with_t
 def test_default_non_standard_score(
     binary_classification_data, wrap_in_pipeline, has_custom_score
 ):
-    """
-    If the estimator has a non-standard `.score` method, `summarize` will include it.
-    """
+    """``default_score`` is reported for mixin and custom ``score`` methods."""
 
     class CustomScoreEstimator(RandomForestClassifier):
         def score(self, X, y):
@@ -256,6 +305,7 @@ def test_default_non_standard_score(
     display = report.metrics.summarize()
 
     expected_metrics = {
+        "Default estimator score",
         "Brier score",
         "Log loss",
         "ROC AUC",
@@ -265,8 +315,6 @@ def test_default_non_standard_score(
         "Fit time (s)",
         "Predict time (s)",
     }
-    if has_custom_score:
-        expected_metrics.add("Score")
     check_display_structure(
         display,
         expected_metrics=expected_metrics,
@@ -303,6 +351,7 @@ def test_pos_label(forest_binary_classification_with_test):
     check_display_structure(
         display,
         expected_metrics={
+            "Default estimator score",
             "Accuracy",
             "Precision",
             "Recall",
@@ -334,6 +383,7 @@ def test_pos_label_strings(forest_binary_classification_with_test):
     display = report.metrics.summarize()
     assert isinstance(display.summary, pd.DataFrame)
     assert set(display.summary["verbose_name"]) == {
+        "Default estimator score",
         "Accuracy",
         "Precision",
         "Recall",
@@ -361,6 +411,7 @@ def test_pos_label_bool(forest_binary_classification_with_test):
     display = report.metrics.summarize()
     assert isinstance(display.summary, pd.DataFrame)
     assert set(display.summary["verbose_name"]) == {
+        "Default estimator score",
         "Accuracy",
         "Precision",
         "Recall",

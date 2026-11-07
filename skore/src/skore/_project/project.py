@@ -8,8 +8,9 @@ from typing import TYPE_CHECKING, Any, get_args
 from pandas import DataFrame, Index, MultiIndex, RangeIndex
 
 from skore._project import plugin
-from skore._project._summary import Summary
 from skore._project.dependencies import assert_optional_dependencies_installed
+from skore._project.summary import Summary
+from skore._project.sync import synchronize
 from skore._project.types import ProjectMode
 
 if TYPE_CHECKING:
@@ -27,41 +28,52 @@ class Project:
     existing one.
 
     The class main methods are :func:`~skore.Project.put`,
-    :func:`~skore.Project.summarize` and :func:`~skore.Project.get`, respectively to
-    insert a key-report pair into the project, to obtain the metadata/metrics of the
-    inserted reports and to get a specific report by its id.
+    :func:`~skore.Project.summarize`, :func:`~skore.Project.get`, and
+    :func:`~skore.Project.sync`, respectively to insert a key-report pair into the
+    project, obtain the metadata/metrics of the inserted reports, get a specific report
+    by its id, and synchronize reports between projects.
+    :func:`~skore.Project.delete` removes the project.
 
     Three mutually exclusive modes are available and can be configured using the
     ``mode`` parameter of the constructor:
 
     .. rubric:: Hub mode
 
-    The project is configured to communicate with ``skore hub``.
+    The project is configured to communicate with Skore Hub.
 
-    In this mode, ``workspace`` is a ``skore hub`` concept that must be configured on
-    the ``skore hub`` interface. It represents an isolated entity managing users,
+    In this mode, ``workspace`` is a Skore Hub concept that must be configured on
+    the Skore Hub interface. It represents an isolated entity managing users,
     projects, and resources. It can be a company, organization, or team that operates
     independently within the system.
 
-    Note: Using Project in ``hub`` mode requires an account on ``skore hub``, with
-    access rights to the specified workspace. Authentication to ``skore hub`` is done by
-    running ``skore.login()`` before instantiating the Project.
+    Note: Using Project in ``hub`` mode requires an account on Skore Hub, with
+    access rights to the specified workspace. Authentication uses an API key, in
+    this order:
+
+    - the ``SKORE_HUB_API_KEY`` environment variable, which always wins. The key
+      is bound to a workspace; using it against another workspace fails at
+      runtime.
+    - otherwise the local credentials registry for the hub host and workspace:
+
+    .. code-block:: bash
+
+        $ skore hub api-key generate --host <host> --workspace <workspace>
 
     .. rubric:: Local mode
 
     Otherwise, the project is configured to the ``local`` mode to be persisted on
-    the user machine in a directory called a ``workspace``.
+    the user machine in a skore ``workspace``, which is a directory named 'skore'
+    containing a file named '.SKORE_WORKSPACE'.
 
     | The workspace can be set using kwargs or the environment variable
       ``SKORE_WORKSPACE``.
-    | If not, it will be set to a default location:
+    | If not specified, it will be set to a default location chosen as follows:
 
         - we search the current working directory and its parents for a
-          skore workspace: a directory named 'skore' containing a file named
-          '.SKORE_WORKSPACE'. If found, use that.
-        - otherwise if we are in a Git repository, create 'skore' at the root
-            of the repository.
-        - otherwise create 'skore' in the current working directory.
+          skore workspace. If we find one, we use it.
+        - otherwise, if we are in a Git repository, we create a skore workspace at the
+          root of the repository.
+        - otherwise, we create a skore workspace in the current working directory.
 
     .. rubric:: MLflow mode
 
@@ -87,6 +99,11 @@ class Project:
 
         tracking_uri : str, mode:mlflow only.
             The URI of the MLflow tracking server.
+
+        host : str, optional
+            Hub address when ``mode="hub"`` (for example
+            ``https://skore.probabl.ai``). If omitted,
+            ``SKORE_HUB_URI`` is used. Ignored for other modes.
 
     Attributes
     ----------
@@ -193,6 +210,11 @@ class Project:
                         'skore' at the root of the repository.
                       - otherwise create 'skore' in the current working directory.
 
+            host : str, optional
+                Hub address when ``mode="hub"`` (for example
+                ``https://skore.probabl.ai``). If omitted,
+                ``SKORE_HUB_URI`` is used. Ignored for other modes.
+
             tracking_uri : str, mode:mlflow only.
                 The URI of the MLflow tracking server.
 
@@ -211,7 +233,7 @@ class Project:
         """
         plugin, parameters = Project.__setup_plugin(mode, name, **kwargs)
 
-        self.__mode = mode
+        self.__mode: ProjectMode = mode
         self.__project = plugin(**parameters)
 
         ml_tasks = {report["ml_task"] for report in self.__project.summarize()}
@@ -373,6 +395,70 @@ class Project:
             )
         return Summary(frame, self.__project)
 
+    def sync(
+        self,
+        other: Project | ProjectMode,
+        *,
+        bidirectional: bool = False,
+        dry_run: bool = False,
+        **kwargs: Any,
+    ) -> DataFrame:
+        """Copy missing reports to another project.
+
+        Reports are matched using the ``report_id`` column returned by
+        ``Project.summarize().frame()``. Set ``bidirectional=True`` to copy missing
+        reports in both directions.
+
+        Parameters
+        ----------
+        other : Project or {"hub", "local", "mlflow"}
+            Destination project. When a mode is given, build the destination with this
+            project's name and the mode-specific keyword arguments.
+        bidirectional : bool, default=False
+            If ``False``, transfer reports from this project to ``other``. If ``True``,
+            also transfer reports missing from this project.
+        dry_run : bool, default=False
+            Return the planned operations without loading or storing reports.
+        **kwargs : dict
+            Mode-specific arguments used to build the destination when ``other`` is a
+            mode string. For example, pass ``workspace`` for ``"hub"`` or
+            ``tracking_uri`` for ``"mlflow"``.
+
+        Returns
+        -------
+        result : pandas.DataFrame
+            Synchronization status indexed by ``report_id``. The ``direction`` column
+            is ``"outbound"`` from this project to ``other``, ``"inbound"`` from
+            ``other`` to this project, or missing for skipped reports. The ``status``
+            column is ``"planned"``, ``"transferred"``, or ``"skipped"``.
+        """
+        if isinstance(other, str):
+            other = Project(self.name, mode=other, **kwargs)
+        elif kwargs:
+            raise TypeError(
+                "Extra keyword arguments are only supported when `other` is a mode "
+                "string."
+            )
+        elif not isinstance(other, Project):
+            raise TypeError(f"`other` must be a Project (found {type(other)!r}).")
+        if (
+            self.mode == other.mode == "mlflow"
+            and self.tracking_uri != other.tracking_uri
+        ):
+            # MLflow uses process-global tracking state. Crossing stores could
+            # therefore read from or write to the wrong backend.
+            raise ValueError(
+                "Synchronization between MLflow projects requires the same "
+                "tracking URI."
+            )
+
+        return synchronize(
+            self,
+            other,
+            bidirectional=bidirectional,
+            dry_run=dry_run,
+        )
+
     def __repr__(self) -> str:  # noqa: D105
         return self.__project.__repr__()
 
@@ -395,6 +481,10 @@ class Project:
 
             tracking_uri : str, mode:mlflow only.
                 The URI of the MLflow tracking server.
+
+            host : str, optional
+                Hub address when ``mode="hub"``. See the :class:`Project` class
+                docstring for details.
         """
         plugin, parameters = Project.__setup_plugin(mode, name, **kwargs)
 
