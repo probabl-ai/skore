@@ -742,8 +742,8 @@ How to reduce the risk
 - if the duplicates **are legitimate** (the data-generating process can really
   produce identical observations), either:
 
-  - do nothing, if identical samples can also appear in production — the
-    evaluation should then reflect that;
+  - do nothing, if samples seen during training can also appear in production.
+  The evaluation should then reflect that;
   - group the duplicated observations so they stay on the same side of the
     split, e.g. with :class:`~sklearn.model_selection.GroupShuffleSplit`;
   - or use sample weights to account for the repeated rows.
