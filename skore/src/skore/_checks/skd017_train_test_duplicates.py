@@ -20,7 +20,8 @@ class CheckTrainTestDuplicates(Check):
     """Check for duplicate rows in the dataset before splitting (SKD017).
 
     Duplicate rows in the dataset leak across a train/test split: identical rows
-    end up on both sides, so the model is evaluated on rows it was trained on and
+    Duplicate rows in the dataset can leak across a train/test split: if identical rows
+    end up on both sides, the model is evaluated on rows it was trained on and
     the reported score is overly optimistic. The check inspects the full, unsplit
     dataset (features and target) and reports how many rows are duplicated.
     """
