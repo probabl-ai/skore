@@ -1,7 +1,7 @@
 import re
 from copy import deepcopy
 from io import BytesIO
-from uuid import UUID, uuid4
+from uuid import uuid4
 
 import joblib
 import numpy as np
@@ -610,15 +610,16 @@ def test_from_dict_bypasses_init_and_restores_state(
     assert "F1" in df.index.get_level_values("Metric").to_numpy()
 
 
-def test_new_report_id_is_uuid7(logistic_binary_classification_with_test):
+def test_new_report_has_no_id_until_it_is_stored(
+    logistic_binary_classification_with_test,
+):
     estimator, X_test, y_test = logistic_binary_classification_with_test
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test, pos_label=1)
 
-    assert isinstance(report.id, str)
-    assert UUID(report.id).version == 7
+    assert report.id is None
     state = report.to_dict()
-    assert state["metadata"]["id"] == report.id
-    assert EstimatorReport.from_dict(state).id == report.id
+    assert state["metadata"]["id"] is None
+    assert EstimatorReport.from_dict(state).id is None
 
 
 def test_from_dict_migrates_legacy_integer_report_id(

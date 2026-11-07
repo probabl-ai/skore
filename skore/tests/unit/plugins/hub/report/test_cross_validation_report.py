@@ -1331,7 +1331,7 @@ class TestCrossValidationReportPayload:
 
         assert payload_dict == {
             "key": "<key>",
-            "canonical_report_id": str(small_cv_binary_classification.id),
+            "canonical_report_id": small_cv_binary_classification.id,
             "estimator_class_name": "RandomForestClassifier",
             "dataset_fingerprint": hash(small_cv_binary_classification.y),
             "ml_task": "binary-classification",
@@ -1352,6 +1352,13 @@ class TestCrossValidationReportPayload:
         self, project, small_cv_binary_classification, monkeypatch
     ):
         calls = []
+        from skore._utils.uuid import uuid7
+
+        # Orphan reports share ``id is None``. Give each report an id so the
+        # call log can tell the parent from its folds.
+        small_cv_binary_classification._metadata["id"] = str(uuid7())
+        for fold in small_cv_binary_classification.reports_:
+            fold._metadata["id"] = str(uuid7())
 
         # wrap each computed field to mark calls
         for cls, field in chain(

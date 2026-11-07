@@ -159,10 +159,18 @@ class TestHubProjectContract:
                 "projects/workspace/contract-hub/reports",
                 Response(200, json={"next_cursor": None, "items": []}),
             ),
+            (
+                "get",
+                "projects/workspace/contract-hub/experiments",
+                Response(200, json=[]),
+            ),
             ("delete", "/projects/workspace/contract-hub", Response(204)),
         ]
         for method, url, response in mocks:
             respx_mock.request(method=method, url=url).mock(response)
+        respx_mock.put(url__regex=r".*/experiments/.+").mock(
+            return_value=Response(200, json={})
+        )
 
         project = Project(
             name="contract-hub",

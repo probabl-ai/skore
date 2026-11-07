@@ -278,6 +278,7 @@ class Project:
             CrossValidationReportPayload,
             EstimatorReportPayload,
         )
+        from skore._project.experiments import ensure_report_id
 
         if not isinstance(key, str):
             raise TypeError(f"Key must be a string (found '{type(key)}').")
@@ -288,6 +289,7 @@ class Project:
                 f"`skore.CrossValidationReport` (found '{type(report)}')."
             )
 
+        ensure_report_id(report)
         payload: EstimatorReportPayload | CrossValidationReportPayload
 
         if isinstance(report, EstimatorReport):
@@ -347,15 +349,28 @@ class Project:
         console.print(f"Consult your report at [link={report_url}]{report_url}[/link]")
 
     def get(self, id: str) -> EstimatorReport | CrossValidationReport:
-        """Get a persisted report by its ID (hub URN)."""
-        if not (matched := re.match(Project.__REPORT_URN_PATTERN, id)):
-            raise ValueError(
-                f"Report ID '{id}' format does not match "
-                f"'{Project.__REPORT_URN_PATTERN}'."
-            )
-
-        # Retrieve presigned URL
+        """Get a persisted report by its canonical id or, for older callers, its URN."""
+        matched = Project.__REPORT_URN_PATTERN.match(id)
         with HUBClient() as hub_client:
+            if matched is None:
+                response = hub_client.request(
+                    method="GET",
+                    workspace=self.workspace,
+                    project=self.name,
+                    endpoint="reports",
+                    params={"canonical_report_ids": id, "limit": 1},
+                )
+                items = response.json().get("items", [])
+                if not items:
+                    raise KeyError(id)
+                urn = items[0]["urn"]
+                matched = Project.__REPORT_URN_PATTERN.match(urn)
+                if matched is None:
+                    raise ValueError(
+                        f"Report URN {urn!r} does not match "
+                        f"{Project.__REPORT_URN_PATTERN.pattern!r}."
+                    )
+
             response = hub_client.request(
                 method="GET",
                 host=self.host,
@@ -397,9 +412,10 @@ class Project:
                 if metric["data_source"] in (None, "test")
             }
 
+            canonical_report_id = summary.get("canonical_report_id")
             return {
-                "id": summary["urn"],
-                "report_id": summary.get("canonical_report_id"),
+                "id": canonical_report_id or summary["urn"],
+                "report_id": canonical_report_id,
                 "key": summary["key"],
                 "date": summary["created_at"],
                 "learner": summary["estimator_class_name"],
@@ -455,6 +471,63 @@ class Project:
                     break
 
         return reports
+
+    def experiments(self) -> list[dict[str, Any]]:
+        """Return every experiment row stored for this Hub project."""
+        try:
+            with HUBClient() as hub_client:
+                response = hub_client.request(
+                    method="GET",
+                    workspace=self.workspace,
+                    project=self.name,
+                    endpoint="experiments",
+                )
+        except HTTPStatusError as exc:
+            if exc.response.status_code == codes.NOT_FOUND:
+                return []
+            raise
+        payload = response.json()
+        if not isinstance(payload, list):
+            raise TypeError("Hub experiments response must be a list.")
+        return payload
+
+    def upsert_experiment(self, row: dict[str, Any]) -> None:
+        """Upsert one experiment row."""
+        with HUBClient() as hub_client:
+            hub_client.request(
+                method="PUT",
+                workspace=self.workspace,
+                project=self.name,
+                endpoint=f"experiments/{row['id']}",
+                json=row,
+            )
+
+    def objective(self) -> str:
+        """Return the project objective."""
+        try:
+            with HUBClient() as hub_client:
+                response = hub_client.request(
+                    method="GET",
+                    workspace=self.workspace,
+                    project=self.name,
+                    endpoint="objective",
+                )
+        except HTTPStatusError as exc:
+            if exc.response.status_code == codes.NOT_FOUND:
+                return ""
+            raise
+        return response.json().get("objective") or ""
+
+    def set_objective(self, text: str) -> None:
+        """Replace the project objective."""
+        with HUBClient() as hub_client:
+            hub_client.request(
+                method="PUT",
+                workspace=self.workspace,
+                project=self.name,
+                endpoint="objective",
+                json={"objective": text},
+            )
 
     def __repr__(self) -> str:  # noqa: D105
         return f"Project(name='{self.name}', mode='hub', workspace='{self.workspace}')"
