@@ -9,7 +9,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import auc
 
 from skore import CrossValidationReport
-from skore._utils._testing import check_roc_curve_display_data
+from skore._utils.testing import check_roc_curve_display_data
 
 
 @pytest.fixture
