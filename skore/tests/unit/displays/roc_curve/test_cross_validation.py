@@ -2,6 +2,7 @@ import re
 
 import matplotlib as mpl
 import numpy as np
+import pandas as pd
 import pytest
 from numpy.testing import assert_allclose
 from sklearn.datasets import make_classification
@@ -9,6 +10,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import auc
 
 from skore import CrossValidationReport
+from skore._displays import RocCurveDisplay
 from skore._utils.testing import check_roc_curve_display_data
 
 
@@ -111,6 +113,50 @@ def test_aggregate_threshold_frame(cross_validation_report_aggregate):
         assert aggregated_auc.item() == pytest.approx(
             auc(aggregated["fpr"], aggregated["tpr"])
         )
+
+
+def test_aggregate_threshold_clips_when_split_starts_lower():
+    """A split with no point above a threshold contributes its first point.
+
+    ``searchsorted`` returns -1 when every threshold of a split is below the one being
+    evaluated. Without clipping, that index wraps around to the last point of the
+    split. Real ROC curves never hit this: each one starts at an infinite threshold,
+    which downsampling keeps.
+    """
+    # The operating points are not rates. At threshold 5 the first split is still at
+    # its point of threshold 4 (value 3), so the average is 3 rather than 2.
+    splits = {
+        0: {"threshold": [4, 3, 1], "value": [3, 2, 1]},
+        1: {"threshold": [5, 3, 2], "value": [3, 2, 1]},
+    }
+    curve_rows = [
+        {"split": split, "threshold": threshold, "fpr": value, "tpr": value}
+        for split, points in splits.items()
+        for threshold, value in zip(points["threshold"], points["value"], strict=True)
+    ]
+    curve = pd.DataFrame(curve_rows)
+    curve["estimator"] = "estimator"
+    curve["data_source"] = "test"
+    curve["label"] = 1
+    for column in ("estimator", "data_source", "split", "label"):
+        curve[column] = curve[column].astype("category")
+
+    auc_frame = curve.drop_duplicates("split").drop(columns=["threshold", "fpr", "tpr"])
+    auc_frame["roc_auc"] = 0.0
+
+    display = RocCurveDisplay(
+        roc_curve=curve,
+        roc_auc=auc_frame,
+        report_pos_label=1,
+        data_source="test",
+        ml_task="binary-classification",
+        report_type="cross-validation",
+    )._aggregate_over_splits()
+
+    aggregated = display.roc_curve[display.roc_curve["aggregate"].notna()]
+    assert_allclose(aggregated["threshold"], [5, 4, 3, 2, 1])
+    assert_allclose(aggregated["fpr"], [3, 3, 2, 1.5, 1])
+    assert_allclose(aggregated["tpr"], [3, 3, 2, 1.5, 1])
 
 
 def test_aggregate_threshold_plot(cross_validation_report_aggregate):

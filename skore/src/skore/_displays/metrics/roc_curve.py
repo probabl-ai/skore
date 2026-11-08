@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Literal, cast
 
+import numpy as np
 import seaborn as sns
 from numpy.typing import NDArray
 from pandas import CategoricalDtype, DataFrame, Series, concat
@@ -18,7 +19,6 @@ from skore._displays.utils import (
     _get_curve_plot_columns,
     _one_hot_encode,
     _reorder_categoricals_by_appearance,
-    _threshold_average,
     _validate_style_kwargs,
 )
 from skore._sklearn.types import _DEFAULT
@@ -34,30 +34,6 @@ if TYPE_CHECKING:
 
 Label = int | float | bool | str
 
-_AGGREGATE_DTYPE = CategoricalDtype(["threshold"])
-
-# Faceting settings that `seaborn.lineplot` does not accept, and per-split settings that
-# must not apply to the curve overlaid on the splits.
-_RELPLOT_ONLY_KWARGS = frozenset(
-    {"height", "aspect", "facet_kws", "col", "col_order", "units", "alpha", "legend"}
-)
-
-
-def _line_kwargs_from_relplot_kwargs(relplot_kwargs: dict[str, Any]) -> dict[str, Any]:
-    """Adapt validated `seaborn.relplot` kwargs to a single `seaborn.lineplot` call.
-
-    Carrying over the styling (palette, dashes, drawstyle, ...) is what makes the
-    aggregated curve match the curves of the splits it is overlaid on. It is drawn
-    thicker, unless the user asked for a specific line width.
-    """
-    line_kwargs = {
-        key: value
-        for key, value in relplot_kwargs.items()
-        if key not in _RELPLOT_ONLY_KWARGS
-    }
-    line_kwargs.setdefault("linewidth", 2.0)
-    return line_kwargs
-
 
 def _concat_aggregate_rows(frame: DataFrame, aggregate_frame: DataFrame) -> DataFrame:
     """Append aggregated rows to `frame`, flagged in the `aggregate` column.
@@ -66,6 +42,7 @@ def _concat_aggregate_rows(frame: DataFrame, aggregate_frame: DataFrame) -> Data
     otherwise pandas has to reconcile the dtype of the columns that are entirely
     missing on one side, such as `split`.
     """
+    aggregate_dtype = CategoricalDtype(["threshold"])
     categorical_dtypes = {
         column: dtype
         for column, dtype in frame.dtypes.items()
@@ -74,11 +51,11 @@ def _concat_aggregate_rows(frame: DataFrame, aggregate_frame: DataFrame) -> Data
     return concat(
         [
             frame.assign(
-                aggregate=Series(None, index=frame.index, dtype=_AGGREGATE_DTYPE)
+                aggregate=Series(None, index=frame.index, dtype=aggregate_dtype)
             ),
             aggregate_frame.astype(categorical_dtypes).assign(
                 aggregate=Series(
-                    "threshold", index=aggregate_frame.index, dtype=_AGGREGATE_DTYPE
+                    "threshold", index=aggregate_frame.index, dtype=aggregate_dtype
                 )
             ),
         ],
@@ -258,7 +235,25 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
                 tprs.append(split_group["tpr"].to_numpy())
                 thresholds.append(split_group["threshold"].to_numpy())
 
-            fpr, tpr, threshold = _threshold_average(fprs, tprs, thresholds)
+            unique_thresholds = np.unique(np.concatenate(thresholds))[::-1]
+            average_fpr = np.zeros_like(unique_thresholds, dtype=float)
+            average_tpr = np.zeros_like(unique_thresholds, dtype=float)
+            for fpr, tpr, threshold in zip(fprs, tprs, thresholds, strict=True):
+                # Negating makes the arrays increasing, as `searchsorted` requires.
+                # Clipping matters because a negative index would silently wrap around
+                # to the last operating point instead of the first one.
+                indices = (
+                    np.searchsorted(-threshold, -unique_thresholds, side="right") - 1
+                )
+                indices = np.maximum(indices, 0)
+                average_fpr += np.asarray(fpr)[indices]
+                average_tpr += np.asarray(tpr)[indices]
+            n_curves = len(fprs)
+            fpr, tpr, threshold = (
+                average_fpr / n_curves,
+                average_tpr / n_curves,
+                unique_thresholds,
+            )
             metadata = {
                 "estimator": self.roc_curve["estimator"].iloc[0],
                 "data_source": data_source,
@@ -415,6 +410,21 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
 
         figure, axes = facet.figure, facet.axes.flatten()
 
+        # Faceting settings that `seaborn.lineplot` does not accept, and per-split
+        # settings that must not apply to the curve overlaid on the splits.
+        relplot_only_kwargs = frozenset(
+            {
+                "height",
+                "aspect",
+                "facet_kws",
+                "col",
+                "col_order",
+                "units",
+                "alpha",
+                "legend",
+            }
+        )
+
         # Create space under the plot to fit the manually created legends.
         n_legend_rows = plot_data[hue].nunique() if hue else 1
         legend_height_inches = (
@@ -439,6 +449,14 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
                 # the splits are already drawn by `relplot`; narrowing the data to the
                 # aggregated curve also makes the legend report its statistic
                 subplot_data = subplot_data[subplot_data["aggregate"].notna()]
+                # Carry over the styling of the splits. Draw the overlaid curve thicker,
+                # unless the user asked for a specific line width.
+                line_kwargs = {
+                    key: value
+                    for key, value in validated_relplot_kwargs.items()
+                    if key not in relplot_only_kwargs
+                }
+                line_kwargs.setdefault("linewidth", 2.0)
                 sns.lineplot(
                     data=subplot_data,
                     x="fpr",
@@ -446,7 +464,7 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
                     ax=ax,
                     legend=False,
                     estimator=None,
-                    **_line_kwargs_from_relplot_kwargs(validated_relplot_kwargs),
+                    **line_kwargs,
                 )
 
             _build_custom_legend_with_stats(
