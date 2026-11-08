@@ -111,3 +111,24 @@ class TestCalibrationDisplay:
         assert ax.get_ylabel() == "Custom Y"
         assert tuple(ax.get_xlim()) == (0.2, 0.8)
         assert tuple(ax.get_ylim()) == (0.1, 0.9)
+
+
+def test_calibration_curve_missing_class_in_test_set():
+    """Test that calibration_curve aligns classes when a class is absent from y_test."""
+    from sklearn.linear_model import LogisticRegression
+
+    from skore import EstimatorReport
+
+    X_train = np.array([[1.0], [2.0], [3.0], [4.0], [5.0], [6.0]])
+    y_train = np.array([0, 0, 1, 1, 2, 2])
+    clf = LogisticRegression().fit(X_train, y_train)
+
+    X_test = np.array([[3.5], [4.5], [5.5], [6.5]])
+    y_test = np.array([1, 1, 2, 2])
+
+    rep = EstimatorReport(clf, X_test=X_test, y_test=y_test)
+    disp = rep.inspection.calibration_curve(strategy="uniform", n_bins=2)
+
+    assert disp.labels == [0, 1, 2]
+    frame = disp.frame(label=None)
+    assert frame["label"].unique().tolist() == [0, 1, 2]
