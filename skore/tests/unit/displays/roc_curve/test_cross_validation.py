@@ -77,21 +77,26 @@ def test_legend_binary_classification(
     assert legend_texts[-1] == "Chance level (AUC = 0.5)"
 
 
-def test_no_aggregate(cross_validation_reports_binary_classification):
-    """Check that without `aggregate`, only the curves of the splits are computed."""
+def test_frame_omits_the_stored_average(cross_validation_reports_binary_classification):
+    """Check that the average is stored, and omitted unless `frame` asks for it."""
     report = cross_validation_reports_binary_classification[0]
     display = report.metrics.roc()
 
-    check_roc_curve_display_data(display)
-    assert display.roc_curve["split"].notna().all()
+    check_roc_curve_display_data(display, aggregate=True)
+    split_rows = display.roc_curve[display.roc_curve["aggregate"].isna()]
+    assert split_rows["split"].notna().all()
+    frame = display.frame(label=None)
+    assert "aggregate" not in frame.columns
+    assert frame["split"].notna().all()
 
 
 def test_aggregate_threshold_frame(cross_validation_report_aggregate):
     """Check the curve that `aggregate="threshold"` adds to the curves of the splits."""
-    display = cross_validation_report_aggregate.metrics.roc(aggregate="threshold")
+    display = cross_validation_report_aggregate.metrics.roc()
 
     check_roc_curve_display_data(display, aggregate=True)
-    curve, roc_auc = display.roc_curve, display.roc_auc
+    curve = display.frame(aggregate="threshold", label=None)
+    roc_auc = display.roc_auc
     assert curve[curve["aggregate"].isna()]["split"].notna().all()
     assert curve[curve["aggregate"].notna()]["split"].isna().all()
 
@@ -188,9 +193,9 @@ def test_aggregate_threshold_nearest_on_the_union():
 
 def test_aggregate_threshold_plot(cross_validation_report_aggregate):
     """Check that the aggregated curve is drawn as computed, over the splits."""
-    display = cross_validation_report_aggregate.metrics.roc(aggregate="threshold")
+    display = cross_validation_report_aggregate.metrics.roc()
     curve = display.roc_curve
-    ax = display.plot(label=1).axes[0]
+    ax = display.plot(label=1, aggregate="threshold").axes[0]
 
     aggregated = curve[curve["aggregate"].notna() & (curve["label"] == 1)]
     (line,) = _lines_matching(ax, aggregated)
@@ -218,10 +223,10 @@ def test_aggregate_threshold_legend(
     cross_validation_report_aggregate, label, expected_entry
 ):
     """Check that the legend reports the mean and std of the per-split AUCs."""
-    display = cross_validation_report_aggregate.metrics.roc(aggregate="threshold")
-    ax = display.plot(label=label).axes[0]
+    display = cross_validation_report_aggregate.metrics.roc()
+    ax = display.plot(label=label, aggregate="threshold").axes[0]
 
-    plot_data = display.frame(with_roc_auc=True, label=label)
+    plot_data = display.frame(with_roc_auc=True, label=label, aggregate="threshold")
     split_auc = plot_data[plot_data["aggregate"].isna()]
     if "label" in split_auc.columns:
         split_auc = split_auc[split_auc["label"] == 1]
@@ -235,10 +240,10 @@ def test_aggregate_threshold_legend(
 
 def test_aggregate_threshold_style(cross_validation_report_aggregate):
     """Check that the aggregated curve is styled like the splits it is drawn over."""
-    display = cross_validation_report_aggregate.metrics.roc(aggregate="threshold")
+    display = cross_validation_report_aggregate.metrics.roc()
     display.set_style(relplot_kwargs={"palette": ["red", "green"], "linewidth": 4})
     curve = display.roc_curve
-    ax = display.plot(label=None).axes[0]
+    ax = display.plot(label=None, aggregate="threshold").axes[0]
 
     labels = curve["label"].cat.categories
     for label, color in zip(labels, ["red", "green"], strict=True):
@@ -252,11 +257,9 @@ def test_aggregate_threshold_style(cross_validation_report_aggregate):
 
 def test_aggregate_threshold_data_source_both(cross_validation_report_aggregate):
     """Check that the aggregated curve of a data source is dashed as its splits."""
-    display = cross_validation_report_aggregate.metrics.roc(
-        data_source="both", aggregate="threshold"
-    )
+    display = cross_validation_report_aggregate.metrics.roc(data_source="both")
     curve = display.roc_curve
-    ax = display.plot(label=1).axes[0]
+    ax = display.plot(label=1, aggregate="threshold").axes[0]
 
     for data_source in ("train", "test"):
         is_group = (curve["data_source"] == data_source) & (curve["label"] == 1)
@@ -274,10 +277,10 @@ def test_aggregate_threshold_data_source_both(cross_validation_report_aggregate)
 
 def test_aggregate_hides_splits(cross_validation_report_aggregate):
     """Check that the splits can be hidden, leaving only the aggregated curve."""
-    display = cross_validation_report_aggregate.metrics.roc(aggregate="threshold")
+    display = cross_validation_report_aggregate.metrics.roc()
     display.set_style(relplot_kwargs={"alpha": 0.0})
     curve = display.roc_curve
-    ax = display.plot(label=1).axes[0]
+    ax = display.plot(label=1, aggregate="threshold").axes[0]
 
     is_label_1 = curve["label"] == 1
     (line,) = _lines_matching(ax, curve[curve["aggregate"].notna() & is_label_1])
@@ -291,17 +294,25 @@ def test_aggregate_hides_splits(cross_validation_report_aggregate):
 
 def test_aggregate_invalid_value(cross_validation_report_aggregate):
     """Check the error message when passing an unknown `aggregate`."""
+    display = cross_validation_report_aggregate.metrics.roc()
     err_msg = 'aggregate must be "threshold" or None.'
     with pytest.raises(ValueError, match=re.escape(err_msg)):
-        cross_validation_report_aggregate.metrics.roc(aggregate="invalid")
+        display.plot(aggregate="invalid")
+    with pytest.raises(ValueError, match=re.escape(err_msg)):
+        display.frame(aggregate="invalid")
 
 
 def test_aggregate_multiclass(cross_validation_reports_multiclass_classification):
-    """Check the error message when aggregating in multiclass classification."""
+    """Check that each one-vs-rest label gets a threshold average."""
     report = cross_validation_reports_multiclass_classification[0]
-    err_msg = "Averaging is not implemented for multiclass classification"
-    with pytest.raises(ValueError, match=err_msg):
-        report.metrics.roc(aggregate="threshold")
+    display = report.metrics.roc()
+    frame = display.frame(aggregate="threshold", label=None)
+
+    labels = frame["label"].cat.categories
+    assert len(labels) > 1
+    for label in labels:
+        aggregated = frame[(frame["aggregate"].notna()) & (frame["label"] == label)]
+        assert not aggregated.empty
 
 
 def test_legend_multiclass_classification(

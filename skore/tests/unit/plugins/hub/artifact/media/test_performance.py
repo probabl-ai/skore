@@ -290,7 +290,7 @@ def test_roc_cross_validation_binary_uploads_threshold_average(
     assert values == {"threshold", "NaN"}
 
 
-def test_roc_cross_validation_multiclass_is_not_averaged(project):
+def test_roc_cross_validation_multiclass_uploads_threshold_average(project):
     X, y = make_classification(
         n_classes=3, n_informative=4, n_samples=30, random_state=0
     )
@@ -300,4 +300,10 @@ def test_roc_cross_validation_multiclass_is_not_averaged(project):
     ).content_to_upload()
 
     frame = json.loads(content)
-    assert "aggregate" not in frame["columns"]
+    aggregate = frame["columns"].index("aggregate")
+    label = frame["columns"].index("label")
+    assert {row[aggregate] for row in frame["data"]} == {"threshold", "NaN"}
+    labels_with_average = {
+        row[label] for row in frame["data"] if row[aggregate] == "threshold"
+    }
+    assert len(labels_with_average) > 1
