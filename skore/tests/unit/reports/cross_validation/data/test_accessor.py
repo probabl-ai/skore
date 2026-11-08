@@ -39,8 +39,13 @@ def test_summarize_without_y(x_container, y_container):
     y = convert_container(y, y_container, minversion="0.20.23")
     report = CrossValidationReport(LinearRegression(), X, y, splitter=2)
 
+    expected_features = (
+        [f"Feature #{i}" for i in range(X.shape[1])]
+        if x_container == "array"
+        else feature_columns
+    )
     display = report.data.summarize(with_y=False)
-    assert list(display.summary["dataframe"].columns) == feature_columns
+    assert list(display.summary["dataframe"].columns) == expected_features
 
 
 @pytest.mark.parametrize(
@@ -71,12 +76,17 @@ def test_summarize_with_y(n_targets, target_column_names, x_container, y_contain
     )
     report = CrossValidationReport(LinearRegression(), X, y, splitter=2)
 
+    expected_features = (
+        [f"Feature #{i}" for i in range(X.shape[1])]
+        if x_container == "array"
+        else feature_columns
+    )
     display = report.data.summarize(with_y=False)
-    assert list(display.summary["dataframe"].columns) == feature_columns
+    assert list(display.summary["dataframe"].columns) == expected_features
 
     display = report.data.summarize(with_y=True)
     assert list(display.summary["dataframe"].columns) == (
-        feature_columns + target_column_names
+        expected_features + target_column_names
     )
 
 

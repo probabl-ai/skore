@@ -20,6 +20,11 @@ def _function_call_succeeds(func: Callable) -> bool:
         return False
 
 
+def _fallback_feature_names(n_features: int) -> list[str]:
+    """Names used when the estimator and the data have no feature names."""
+    return [f"Feature #{i}" for i in range(n_features)]
+
+
 def _get_feature_names(
     estimator: BaseEstimator,
     *,
@@ -50,11 +55,11 @@ def _get_feature_names(
         if nw.dependencies.is_into_dataframe(X):
             return nw.from_native(X).columns
         else:
-            return [f"Feature #{i}" for i in range(_num_features(X))]
+            return _fallback_feature_names(_num_features(X))
 
     if n_features is None:
         raise ValueError(
             "Feature names cannot be inferred from the estimator or transformer. "
             "At least one of X or n_features must be provided to infer feature names."
         )
-    return [f"Feature #{i}" for i in range(n_features)]
+    return _fallback_feature_names(n_features)

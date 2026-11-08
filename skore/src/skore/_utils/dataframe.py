@@ -7,6 +7,7 @@ import scipy.sparse as sp
 from numpy.typing import ArrayLike
 
 from skore._externals.sklearn_compat import check_array
+from skore._sklearn.feature_names import _fallback_feature_names
 
 if TYPE_CHECKING:
     import polars as pl
@@ -18,6 +19,20 @@ else:
     UserSeries: TypeAlias = pd.Series
 
 UserTarget: TypeAlias = UserSeries | UserDataFrame
+
+
+def _with_string_column_names(X: ArrayLike | None) -> ArrayLike | None:
+    """Copy a dataframe and stringify columns that are not strings.
+
+    The caller's frame is left unchanged. Arrays and frames that already use
+    string column names are returned as-is.
+    """
+    if X is None or not nw.dependencies.is_into_dataframe(X):
+        return X
+    frame = nw.from_native(X)
+    if all(isinstance(column, str) for column in frame.columns):
+        return X
+    return _ensure_string_column_names(frame).to_native()
 
 
 def _ensure_string_column_names(df: nw.DataFrame[Any]) -> nw.DataFrame[Any]:
@@ -43,7 +58,7 @@ def _normalize_X_as_dataframe(X: ArrayLike) -> UserDataFrame:
             dtype=None,
         )
         X = cast(np.ndarray, X)
-        columns = [f"Feature {i}" for i in range(X.shape[1])]
+        columns = _fallback_feature_names(X.shape[1])
         return pd.DataFrame(X, columns=columns)
 
     return _ensure_string_column_names(nw.from_native(X)).to_native()
