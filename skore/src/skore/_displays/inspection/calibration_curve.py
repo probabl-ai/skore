@@ -139,11 +139,11 @@ class CalibrationDisplay(DisplayMixin):
         name: str,
         y_pred: ArrayLike,
         y: ArrayLike,
+        classes: Sequence | np.ndarray,
         report_type: ReportType,
         n_bins: int | Literal["auto"] = "auto",
         strategy: Literal["uniform", "quantile"] = "quantile",
         report_pos_label: PositiveLabel = None,
-        classes: Sequence | np.ndarray,
     ) -> CalibrationDisplay:
         """Compute the data for the calibration curve display."""
         y_arr = np.asarray(y)
