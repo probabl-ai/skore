@@ -78,6 +78,9 @@ class _ChecksAccessor(_BaseAccessor[_BaseReport], DirNamesMixin):
         """Register additional checks for this report.
 
         Checks are defined by implementing the :class:`~skore.Check` protocol.
+        A check whose code is already used is rejected, so the registered
+        check stays in place. Codes are compared case-insensitively, ignoring
+        surrounding whitespace.
 
         Parameters
         ----------
@@ -89,6 +92,10 @@ class _ChecksAccessor(_BaseAccessor[_BaseReport], DirNamesMixin):
             "estimator",
             "comparison-estimator",
             "comparison-cross-validation",
+        }
+        taken = {
+            registry_check.code.strip().upper()
+            for registry_check in self._parent._checks_registry
         }
         for check in checks:
             if not isinstance(check, Check):
@@ -107,6 +114,13 @@ class _ChecksAccessor(_BaseAccessor[_BaseReport], DirNamesMixin):
                     f"The check's report_types contains unsupported values: "
                     f"{invalid_types}. "
                 )
+            code = check.code.strip().upper()
+            if code in taken:
+                raise ValueError(
+                    f"Code {check.code!r} is already used by a registered check. "
+                    "Please use a different code."
+                )
+            taken.add(code)
         self._parent._checks_registry.extend(checks)
 
     def available(self) -> list[str]:
