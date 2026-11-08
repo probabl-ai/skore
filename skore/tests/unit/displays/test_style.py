@@ -1,10 +1,26 @@
 import pytest
 
 from skore._displays.base import StyleDisplayMixin
+from skore._displays.data.table_report import TableReportDisplay
+from skore._displays.inspection.calibration_curve import CalibrationDisplay
+from skore._displays.inspection.coefficients import CoefficientsDisplay
+from skore._displays.inspection.impurity_decrease import ImpurityDecreaseDisplay
+from skore._displays.inspection.permutation_importance import (
+    PermutationImportanceDisplay,
+)
+from skore._displays.metrics.confusion_matrix import ConfusionMatrixDisplay
+from skore._displays.metrics.precision_recall_curve import PrecisionRecallCurveDisplay
+from skore._displays.metrics.prediction_error import PredictionErrorDisplay
+from skore._displays.metrics.roc_curve import RocCurveDisplay
 
 
 class TestDisplay(StyleDisplayMixin):
     _default_some_kwargs = None
+
+
+class MultiGroupDisplay(StyleDisplayMixin):
+    _default_curve_kwargs = {"color": "C0"}
+    _default_line_kwargs = {"color": "k", "linestyle": "--"}
 
 
 def test_style_mixin():
@@ -125,3 +141,54 @@ def test_style_policy_invalid():
     )
     with pytest.raises(ValueError, match=err_msg):
         display.set_style(some_kwargs=1, policy="invalid_policy")
+
+
+def test_override_leaves_omitted_groups():
+    """Override replaces only the groups that were passed."""
+    display = MultiGroupDisplay()
+
+    display.set_style(curve_kwargs={"color": "tab:red"}, policy="override")
+
+    assert display._default_curve_kwargs == {"color": "tab:red"}
+    assert display._default_line_kwargs == {"color": "k", "linestyle": "--"}
+
+
+def test_override_empty_dict_clears_only_that_group():
+    """An explicit empty dict clears that group and no other."""
+    display = MultiGroupDisplay()
+
+    display.set_style(curve_kwargs={}, policy="override")
+
+    assert display._default_curve_kwargs == {}
+    assert display._default_line_kwargs == {"color": "k", "linestyle": "--"}
+
+
+@pytest.mark.parametrize(
+    "display_cls, passed, untouched",
+    [
+        (RocCurveDisplay, "relplot_kwargs", "_default_chance_level_kwargs"),
+        (PredictionErrorDisplay, "relplot_kwargs", "_default_perfect_model_kwargs"),
+        (ConfusionMatrixDisplay, "heatmap_kwargs", "_default_facet_grid_kwargs"),
+        (
+            PermutationImportanceDisplay,
+            "boxplot_kwargs",
+            "_default_stripplot_kwargs",
+        ),
+        (CoefficientsDisplay, "barplot_kwargs", "_default_stripplot_kwargs"),
+        (ImpurityDecreaseDisplay, "barplot_kwargs", "_default_boxplot_kwargs"),
+        (CalibrationDisplay, "line_kwargs", "_default_ax_set_kwargs"),
+        (TableReportDisplay, "histplot_kwargs", "_default_scatterplot_kwargs"),
+        (PrecisionRecallCurveDisplay, "relplot_kwargs", None),
+    ],
+)
+def test_display_override_keeps_omitted_style_groups(display_cls, passed, untouched):
+    """Display wrappers must not turn omitted arguments into an empty override."""
+    display = display_cls.__new__(display_cls)
+    before = None if untouched is None else dict(getattr(display, untouched))
+
+    display.set_style(**{passed: {"color": "tab:red"}}, policy="override")
+
+    assert getattr(display, f"_default_{passed}") == {"color": "tab:red"}
+    if untouched is not None:
+        assert untouched not in display.__dict__
+        assert getattr(display, untouched) == before
