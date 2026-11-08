@@ -129,6 +129,6 @@ def test_calibration_curve_missing_class_in_test_set():
     rep = EstimatorReport(clf, X_test=X_test, y_test=y_test)
     disp = rep.inspection.calibration_curve(strategy="uniform", n_bins=2)
 
-    assert set(disp.labels) == {0, 1, 2}
+    assert disp.labels == [0, 1, 2]
     frame = disp.frame(label=None)
-    assert set(frame["label"].unique()) == {0, 1, 2}
+    assert frame["label"].unique().tolist() == [0, 1, 2]
