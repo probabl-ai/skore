@@ -1,6 +1,7 @@
 import numpy as np
 import pytest
 import skrub
+from sklearn.datasets import make_classification
 from sklearn.dummy import DummyClassifier
 from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.model_selection import (
@@ -135,8 +136,6 @@ def test_list_or_dict_X_raises(regression_data):
 
 def test_list_of_rows_matches_array():
     """A list of rows is one feature matrix, same as the original array."""
-    from sklearn.datasets import make_classification
-
     X, y = make_classification(n_samples=40, n_features=4, random_state=0)
     array_report = evaluate(LogisticRegression(), X, y, splitter=0.25)
     list_report = evaluate(LogisticRegression(), X.tolist(), y.tolist(), splitter=0.25)
