@@ -129,7 +129,12 @@ def test_multiple_estimators_cv(regression_data):
 def test_list_or_dict_X_raises(regression_data):
     """A dict or a list of datasets is rejected; a list of rows is accepted."""
     X, y = regression_data
-    for invalid_x in ([X], {"a": X}):
+
+    class _UnconvertibleRow:
+        def __array__(self, dtype=None, copy=None):
+            raise TypeError("cannot convert")
+
+    for invalid_x in ([X], {"a": X}, [], [{"a": 1}], [_UnconvertibleRow()]):
         with pytest.raises(TypeError, match="single array-like or None"):
             evaluate(LinearRegression(), invalid_x, y)
 
