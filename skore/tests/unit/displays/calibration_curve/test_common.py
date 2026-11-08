@@ -116,6 +116,7 @@ class TestCalibrationDisplay:
 def test_calibration_curve_missing_class_in_test_set():
     """Test that calibration_curve aligns classes when a class is absent from y_test."""
     from sklearn.linear_model import LogisticRegression
+
     from skore import EstimatorReport
 
     X_train = np.array([[1.0], [2.0], [3.0], [4.0], [5.0], [6.0]])
@@ -131,4 +132,3 @@ def test_calibration_curve_missing_class_in_test_set():
     assert set(disp.labels) == {0, 1, 2}
     frame = disp.frame(label=None)
     assert set(frame["label"].unique()) == {0, 1, 2}
-

@@ -143,16 +143,12 @@ class CalibrationDisplay(DisplayMixin):
         n_bins: int | Literal["auto"] = "auto",
         strategy: Literal["uniform", "quantile"] = "quantile",
         report_pos_label: PositiveLabel = None,
-        classes: Sequence | np.ndarray | None = None,
+        classes: Sequence | np.ndarray,
     ) -> CalibrationDisplay:
         """Compute the data for the calibration curve display."""
         y_arr = np.asarray(y)
         y_pred_arr = np.asarray(y_pred)
-
-        if classes is None:
-            classes = np.unique(y_arr)
-        else:
-            classes = np.asarray(classes)
+        classes = np.asarray(classes)
 
         y_true_onehot = _one_hot_encode(y_arr, classes)
 
