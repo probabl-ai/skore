@@ -226,34 +226,70 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         for (label, data_source), group in self.roc_curve.groupby(
             ["label", "data_source"], observed=True
         ):
-            fprs: list[NDArray] = []
-            tprs: list[NDArray] = []
-            thresholds: list[NDArray] = []
-            for _, split_group in group.groupby("split", observed=True):
-                split_group = split_group.sort_values("threshold", ascending=False)
-                fprs.append(split_group["fpr"].to_numpy())
-                tprs.append(split_group["tpr"].to_numpy())
-                thresholds.append(split_group["threshold"].to_numpy())
-
-            unique_thresholds = np.unique(np.concatenate(thresholds))[::-1]
-            average_fpr = np.zeros_like(unique_thresholds, dtype=float)
-            average_tpr = np.zeros_like(unique_thresholds, dtype=float)
-            for fpr, tpr, threshold in zip(fprs, tprs, thresholds, strict=True):
-                # Negating makes the arrays increasing, as `searchsorted` requires.
-                # Clipping matters because a negative index would silently wrap around
-                # to the last operating point instead of the first one.
-                indices = (
-                    np.searchsorted(-threshold, -unique_thresholds, side="right") - 1
+            splits = [
+                split_group.sort_values("threshold", ascending=True)
+                for _, split_group in group.groupby("split", observed=True)
+            ]
+            # Finite thresholds shared by every split. `+inf` starts every ROC curve,
+            # so it is not a decision threshold the splits have in common. The union
+            # is the fallback when the splits share none, which is the usual case
+            # after each split is downsampled on its own.
+            threshold_sets = [
+                {
+                    threshold
+                    for threshold in split["threshold"].tolist()
+                    if np.isfinite(threshold)
+                }
+                for split in splits
+            ]
+            shared = set.intersection(*threshold_sets)
+            if shared:
+                grid = np.array(sorted(shared), dtype=float)
+            else:
+                grid = np.unique(
+                    np.concatenate(
+                        [
+                            thresholds[np.isfinite(thresholds)]
+                            for thresholds in (
+                                split["threshold"].to_numpy() for split in splits
+                            )
+                        ]
+                    )
                 )
-                indices = np.maximum(indices, 0)
-                average_fpr += np.asarray(fpr)[indices]
-                average_tpr += np.asarray(tpr)[indices]
-            n_curves = len(fprs)
-            fpr, tpr, threshold = (
-                average_fpr / n_curves,
-                average_tpr / n_curves,
-                unique_thresholds,
-            )
+
+            average_fpr = np.zeros(grid.shape, dtype=float)
+            average_tpr = np.zeros(grid.shape, dtype=float)
+            for split in splits:
+                thresholds = split["threshold"].to_numpy()
+                # First position at or above the target, then the neighbour when that
+                # one is strictly closer. An equal distance keeps the higher threshold.
+                # Infinite thresholds compare by identity, so `inf - inf` is never
+                # formed.
+                insertion = np.searchsorted(thresholds, grid, side="left")
+                insertion = np.clip(insertion, 0, len(thresholds) - 1)
+                previous = np.maximum(insertion - 1, 0)
+                higher = thresholds[insertion]
+                lower = thresholds[previous]
+                pick_higher = higher == grid
+                finite = np.isfinite(higher) & np.isfinite(lower) & np.isfinite(grid)
+                compare = ~pick_higher & finite
+                pick_higher[compare] = np.abs(
+                    higher[compare] - grid[compare]
+                ) <= np.abs(lower[compare] - grid[compare])
+                # A finite candidate wins when the other one is infinite, so a finite
+                # grid never snaps to the leading +inf of a curve.
+                pick_higher[~pick_higher & ~finite & np.isfinite(higher)] = True
+                indices = np.where(pick_higher, insertion, previous)
+                average_fpr += split["fpr"].to_numpy()[indices]
+                average_tpr += split["tpr"].to_numpy()[indices]
+            n_curves = len(splits)
+            average_fpr /= n_curves
+            average_tpr /= n_curves
+            # Decreasing threshold order, so the step plot walks the curve as usual.
+            grid = grid[::-1]
+            average_fpr = average_fpr[::-1]
+            average_tpr = average_tpr[::-1]
+
             metadata = {
                 "estimator": self.roc_curve["estimator"].iloc[0],
                 "data_source": data_source,
@@ -261,9 +297,20 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
                 "label": label,
             }
             curve_frames.append(
-                DataFrame({**metadata, "threshold": threshold, "fpr": fpr, "tpr": tpr})
+                DataFrame(
+                    {
+                        **metadata,
+                        "threshold": grid,
+                        "fpr": average_fpr,
+                        "tpr": average_tpr,
+                    }
+                )
             )
-            auc_records.append({**metadata, "roc_auc": auc(fpr, tpr)})
+            split_auc = self.roc_auc[
+                (self.roc_auc["label"] == label)
+                & (self.roc_auc["data_source"] == data_source)
+            ]["roc_auc"]
+            auc_records.append({**metadata, "roc_auc": split_auc.mean()})
 
         return RocCurveDisplay(
             roc_curve=_concat_aggregate_rows(
@@ -445,9 +492,11 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
             )
             subplot_data = plot_data[plot_data[col] == col_value] if col else plot_data
 
+            legend_data = subplot_data
             if is_aggregate:
-                # the splits are already drawn by `relplot`; narrowing the data to the
-                # aggregated curve also makes the legend report its statistic
+                # The splits are already drawn by `relplot`. The legend keeps their
+                # AUC, mean and standard deviation, while the line is the average.
+                legend_data = subplot_data[subplot_data["aggregate"].isna()]
                 subplot_data = subplot_data[subplot_data["aggregate"].notna()]
                 # Carry over the styling of the splits. Draw the overlaid curve thicker,
                 # unless the user asked for a specific line width.
@@ -469,14 +518,12 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
 
             _build_custom_legend_with_stats(
                 ax=ax,
-                subplot_data=subplot_data,
+                subplot_data=legend_data,
                 hue=hue,
                 style=style,
                 hue_order=relplot_kwargs["hue_order"],
                 style_order=relplot_kwargs["style_order"],
-                is_cross_validation=(
-                    "cross-validation" in self.report_type and not is_aggregate
-                ),
+                is_cross_validation="cross-validation" in self.report_type,
                 statistic_column_name="roc_auc",
                 statistic_acronym="AUC",
                 statistic_note="threshold-averaged" if is_aggregate else None,

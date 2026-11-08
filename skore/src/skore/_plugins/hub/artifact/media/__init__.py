@@ -18,6 +18,8 @@ from .performance import (
     PrecisionRecallDataFrameTrain,
     PredictionErrorDataFrameTest,
     PredictionErrorDataFrameTrain,
+    RocDataFrameCrossValidationTest,
+    RocDataFrameCrossValidationTrain,
     RocDataFrameTest,
     RocDataFrameTrain,
 )
@@ -37,6 +39,8 @@ __all__ = [
     "PrecisionRecallDataFrameTrain",
     "PredictionErrorDataFrameTest",
     "PredictionErrorDataFrameTrain",
+    "RocDataFrameCrossValidationTest",
+    "RocDataFrameCrossValidationTrain",
     "RocDataFrameTest",
     "RocDataFrameTrain",
     "TableReportTest",

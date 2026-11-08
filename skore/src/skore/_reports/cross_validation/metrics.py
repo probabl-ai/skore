@@ -492,12 +492,15 @@ class _MetricsAccessor(BaseMetricsAccessor[CrossValidationReport], DirNamesMixin
         500 points per class and per split. Sampling is performed by picking
         evenly-spaced indices on the sorted thresholds.
 
-        With `aggregate="threshold"`, the splits are combined at each threshold of the
-        union of their thresholds, following Fawcett, "An introduction to ROC analysis"
-        (2006). The AUC reported for the aggregated curve is the area under that curve,
-        which is not the mean of the AUCs of the splits. Since each split is downsampled
-        independently, its thresholds differ from the other splits, which is why binary
-        classification reports slightly different values for its two labels.
+        With `aggregate="threshold"`, each split contributes the operating point at the
+        threshold nearest to each finite threshold shared by every split. `+inf`, which
+        starts every ROC curve, is not treated as a shared threshold. When the splits
+        share no finite threshold, the union of their finite thresholds is used
+        instead. On an equal distance, the higher threshold is kept. The AUC reported
+        for the aggregated curve is the mean of the AUCs of the splits. Since each
+        split is downsampled independently, its thresholds differ from the other
+        splits, which is why binary classification reports slightly different values
+        for its two labels.
 
         The individual split lines can be visually suppressed from the plot by passing
         `relplot_kwargs={"alpha": 0.0}` to the `set_style()` method before calling

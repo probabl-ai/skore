@@ -7,7 +7,6 @@ import pytest
 from numpy.testing import assert_allclose
 from sklearn.datasets import make_classification
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import auc
 
 from skore import CrossValidationReport
 from skore._displays import RocCurveDisplay
@@ -25,6 +24,23 @@ def cross_validation_report_aggregate():
         n_samples=200, n_features=4, class_sep=0.5, random_state=42
     )
     return CrossValidationReport(LogisticRegression(), X, y, splitter=3)
+
+
+def _nearest_index(thresholds: np.ndarray, target: float) -> int:
+    """Index of the nearest threshold, matching the display's aggregation rule."""
+    insertion = int(np.searchsorted(thresholds, target, side="left"))
+    insertion = min(insertion, len(thresholds) - 1)
+    if thresholds[insertion] == target or insertion == 0:
+        return insertion
+    previous = insertion - 1
+    higher, lower = thresholds[insertion], thresholds[previous]
+    if np.isfinite(higher) and np.isfinite(lower) and np.isfinite(target):
+        if abs(higher - target) <= abs(lower - target):
+            return insertion
+        return previous
+    # +inf is farther from a finite target than the last finite threshold is, and a
+    # target at +inf falls on the largest threshold of a split that has no +inf.
+    return insertion if np.isfinite(higher) else previous
 
 
 def _lines_matching(ax, curve):
@@ -88,46 +104,50 @@ def test_aggregate_threshold_frame(cross_validation_report_aggregate):
             ].groupby("split", observed=True)
         ]
 
-        thresholds = sorted(
-            {threshold for split in splits for threshold in split["threshold"]},
-            reverse=True,
-        )
-        assert_allclose(aggregated["threshold"], thresholds)
+        threshold_sets = [
+            {
+                threshold
+                for threshold in split["threshold"].tolist()
+                if np.isfinite(threshold)
+            }
+            for split in splits
+        ]
+        shared = set.intersection(*threshold_sets)
+        grid = sorted(shared or set.union(*threshold_sets), reverse=True)
+        assert_allclose(aggregated["threshold"], grid)
 
-        # each split contributes the last of its points that is still above the
-        # threshold, and the operating points of the splits are averaged
+        # each split contributes the point at its nearest threshold; an equal
+        # distance keeps the higher one
+        splits_ascending = [split.sort_values("threshold") for split in splits]
         points = (point for _, point in aggregated.iterrows())
-        for threshold, point in zip(thresholds, points, strict=True):
-            above = [split[split["threshold"] >= threshold] for split in splits]
-            assert point["fpr"] == pytest.approx(
-                np.mean([split["fpr"].iloc[-1] for split in above])
-            )
-            assert point["tpr"] == pytest.approx(
-                np.mean([split["tpr"].iloc[-1] for split in above])
-            )
+        for threshold, point in zip(grid, points, strict=True):
+            fprs, tprs = [], []
+            for split in splits_ascending:
+                index = _nearest_index(split["threshold"].to_numpy(), threshold)
+                fprs.append(split["fpr"].iloc[index])
+                tprs.append(split["tpr"].iloc[index])
+            assert point["fpr"] == pytest.approx(np.mean(fprs))
+            assert point["tpr"] == pytest.approx(np.mean(tprs))
 
-        # the reported AUC is the area under the aggregated curve
+        # the reported AUC is the mean of the per-split AUCs
+        split_auc = roc_auc[roc_auc["aggregate"].isna() & (roc_auc["label"] == label)][
+            "roc_auc"
+        ]
         aggregated_auc = roc_auc[
             roc_auc["aggregate"].notna() & (roc_auc["label"] == label)
         ]["roc_auc"]
-        assert aggregated_auc.item() == pytest.approx(
-            auc(aggregated["fpr"], aggregated["tpr"])
-        )
+        assert aggregated_auc.item() == pytest.approx(split_auc.mean())
 
 
-def test_aggregate_threshold_clips_when_split_starts_lower():
-    """A split with no point above a threshold contributes its first point.
+def test_aggregate_threshold_nearest_on_the_union():
+    """With no shared threshold, each split contributes its nearest point.
 
-    ``searchsorted`` returns -1 when every threshold of a split is below the one being
-    evaluated. Without clipping, that index wraps around to the last point of the
-    split. Real ROC curves never hit this: each one starts at an infinite threshold,
-    which downsampling keeps.
+    The operating points are not rates. At threshold 1 the second split is equally
+    far from 0 and 2, and the higher threshold wins, so it contributes 3 rather than 1.
     """
-    # The operating points are not rates. At threshold 5 the first split is still at
-    # its point of threshold 4 (value 3), so the average is 3 rather than 2.
     splits = {
-        0: {"threshold": [4, 3, 1], "value": [3, 2, 1]},
-        1: {"threshold": [5, 3, 2], "value": [3, 2, 1]},
+        0: {"threshold": [0, 4], "value": [1, 5]},
+        1: {"threshold": [2, 5], "value": [3, 7]},
     }
     curve_rows = [
         {"split": split, "threshold": threshold, "fpr": value, "tpr": value}
@@ -142,7 +162,7 @@ def test_aggregate_threshold_clips_when_split_starts_lower():
         curve[column] = curve[column].astype("category")
 
     auc_frame = curve.drop_duplicates("split").drop(columns=["threshold", "fpr", "tpr"])
-    auc_frame["roc_auc"] = 0.0
+    auc_frame["roc_auc"] = [0.2, 0.4]
 
     display = RocCurveDisplay(
         roc_curve=curve,
@@ -154,9 +174,16 @@ def test_aggregate_threshold_clips_when_split_starts_lower():
     )._aggregate_over_splits()
 
     aggregated = display.roc_curve[display.roc_curve["aggregate"].notna()]
-    assert_allclose(aggregated["threshold"], [5, 4, 3, 2, 1])
-    assert_allclose(aggregated["fpr"], [3, 3, 2, 1.5, 1])
-    assert_allclose(aggregated["tpr"], [3, 3, 2, 1.5, 1])
+    # union is 0, 2, 4, 5, stored in decreasing order
+    # t=5 -> split 0 at 4 (5), split 1 at 5 (7)
+    # t=4 -> split 0 at 4 (5), split 1 at 5 (7); 5 is closer than 2
+    # t=2 -> split 0 at 0 or 4, equal distance, higher wins (5); split 1 at 2 (3)
+    # t=0 -> split 0 at 0 (1), split 1 at 2 (3)
+    assert_allclose(aggregated["threshold"], [5, 4, 2, 0])
+    assert_allclose(aggregated["fpr"], [6, 6, 4, 2])
+    assert_allclose(aggregated["tpr"], [6, 6, 4, 2])
+    aggregated_auc = display.roc_auc[display.roc_auc["aggregate"].notna()]["roc_auc"]
+    assert aggregated_auc.item() == pytest.approx(0.3)
 
 
 def test_aggregate_threshold_plot(cross_validation_report_aggregate):
@@ -190,20 +217,19 @@ def test_aggregate_threshold_plot(cross_validation_report_aggregate):
 def test_aggregate_threshold_legend(
     cross_validation_report_aggregate, label, expected_entry
 ):
-    """Check that the legend reports the AUC of the aggregated curve."""
+    """Check that the legend reports the mean and std of the per-split AUCs."""
     display = cross_validation_report_aggregate.metrics.roc(aggregate="threshold")
-    roc_auc = display.roc_auc
     ax = display.plot(label=label).axes[0]
 
-    label_1 = roc_auc["label"] == 1
-    aggregated_auc = roc_auc[roc_auc["aggregate"].notna() & label_1]["roc_auc"].item()
-    split_aucs = roc_auc[roc_auc["aggregate"].isna() & label_1]["roc_auc"]
-    # without this, the assertion below could not tell the aggregated AUC from the AUC
-    # of the first split
-    assert f"{aggregated_auc:.2f}" != f"{split_aucs.iloc[0]:.2f}"
+    plot_data = display.frame(with_roc_auc=True, label=label)
+    split_auc = plot_data[plot_data["aggregate"].isna()]
+    if "label" in split_auc.columns:
+        split_auc = split_auc[split_auc["label"] == 1]
+    split_auc = split_auc["roc_auc"]
+    statistic = f"{split_auc.mean():.2f}±{split_auc.std():.2f}"
 
     legend_texts = [text.get_text() for text in ax.get_legend().get_texts()]
-    assert expected_entry.format(auc=f"{aggregated_auc:.2f}") in legend_texts
+    assert expected_entry.format(auc=statistic) in legend_texts
     assert legend_texts[-1] == "Chance level (AUC = 0.5)"
 
 

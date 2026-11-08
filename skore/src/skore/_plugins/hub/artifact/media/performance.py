@@ -7,7 +7,7 @@ from collections.abc import Callable
 from functools import reduce
 from typing import ClassVar, Literal, cast
 
-from skore import Display
+from skore import CrossValidationReport, Display
 from skore._plugins.hub.artifact.media.media import Media, Report
 from skore._plugins.hub.json import dumps
 
@@ -25,12 +25,15 @@ class PerformanceDataFrame(Media[Report], ABC):  # noqa: D101
         except AttributeError:
             return None
 
-        display = function(data_source=self.data_source)
+        display = function(**self._call_kwargs())
         frame = display.frame(**(self.parameters or {}))  # type: ignore[arg-type]
 
         return dumps(
             frame.astype(object).where(frame.notna(), "NaN").to_dict(orient="tight")
         )
+
+    def _call_kwargs(self) -> dict[str, str | None]:
+        return {"data_source": self.data_source}
 
 
 class PrecisionRecallDataFrame(PerformanceDataFrame[Report], ABC):  # noqa: D101
@@ -73,6 +76,22 @@ class RocDataFrameTrain(RocDataFrame[Report]):  # noqa: D101
 
 
 class RocDataFrameTest(RocDataFrame[Report]):  # noqa: D101
+    data_source: Literal["test"] = "test"
+
+
+class RocDataFrameCrossValidation(RocDataFrame[CrossValidationReport], ABC):  # noqa: D101
+    def _call_kwargs(self) -> dict[str, str | None]:
+        kwargs = super()._call_kwargs()
+        if self.report.ml_task == "binary-classification":
+            kwargs["aggregate"] = "threshold"
+        return kwargs
+
+
+class RocDataFrameCrossValidationTrain(RocDataFrameCrossValidation):  # noqa: D101
+    data_source: Literal["train"] = "train"
+
+
+class RocDataFrameCrossValidationTest(RocDataFrameCrossValidation):  # noqa: D101
     data_source: Literal["test"] = "test"
 
 

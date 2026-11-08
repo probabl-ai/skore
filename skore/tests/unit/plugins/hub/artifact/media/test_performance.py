@@ -1,6 +1,11 @@
+import json
+
 from pydantic import ValidationError
 from pytest import mark, param, raises
+from sklearn.datasets import make_classification
+from sklearn.linear_model import LogisticRegression
 
+from skore import CrossValidationReport
 from skore._plugins.hub.artifact.media import (
     ConfusionMatrixDataFrameTestAll,
     ConfusionMatrixDataFrameTestNone,
@@ -10,6 +15,7 @@ from skore._plugins.hub.artifact.media import (
     PrecisionRecallDataFrameTrain,
     PredictionErrorDataFrameTest,
     PredictionErrorDataFrameTrain,
+    RocDataFrameCrossValidationTest,
     RocDataFrameTest,
     RocDataFrameTrain,
 )
@@ -269,3 +275,29 @@ def test_performance(
         match=f"Input should be an instance of {report.__class__.__name__}",
     ):
         Media(project=project, report=None)
+
+
+def test_roc_cross_validation_binary_uploads_threshold_average(
+    project, small_cv_binary_classification
+):
+    content = RocDataFrameCrossValidationTest(
+        project=project, report=small_cv_binary_classification
+    ).content_to_upload()
+
+    frame = json.loads(content)
+    aggregate = frame["columns"].index("aggregate")
+    values = {row[aggregate] for row in frame["data"]}
+    assert values == {"threshold", "NaN"}
+
+
+def test_roc_cross_validation_multiclass_is_not_averaged(project):
+    X, y = make_classification(
+        n_classes=3, n_informative=4, n_samples=30, random_state=0
+    )
+    report = CrossValidationReport(LogisticRegression(), X, y, splitter=2)
+    content = RocDataFrameCrossValidationTest(
+        project=project, report=report
+    ).content_to_upload()
+
+    frame = json.loads(content)
+    assert "aggregate" not in frame["columns"]
