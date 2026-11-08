@@ -1,5 +1,5 @@
-Checks
-======
+Methodological checks
+=====================
 
 .. currentmodule:: skore
 

@@ -37,9 +37,6 @@ ML Assistance
      - Evaluate one or more estimators on the given data.
    * - :func:`compare`
      - Compare pre-existing reports with a :class:`~skore.ComparisonReport`
-   * - :class:`TrainTestSplit`
-     - Single train-test splitter compatible with the `scikit-learn CV splitter
-       API <https://scikit-learn.org/stable/glossary.html#term-CV-splitter>`_
 
 .. include:: api/accessor_tables.rst
 
@@ -89,8 +86,8 @@ Inspection
      - Display for visualizing feature importance via permutation importance
 
 
-Checks
-^^^^^^
+Methodological checks
+^^^^^^^^^^^^^^^^^^^^^^
 
 .. list-table::
    :widths: 30 70
@@ -113,6 +110,9 @@ Utilities
      - Global configuration for `skore` also usable as a context manager
    * - :func:`show_versions`
      - Print version information for skore and its dependencies
+   * - :class:`TrainTestSplit`
+     - Single train-test splitter compatible with the `scikit-learn CV splitter
+       API <https://scikit-learn.org/stable/glossary.html#term-CV-splitter>`_
 
 
 .. toctree::

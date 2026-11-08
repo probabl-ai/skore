@@ -6,21 +6,19 @@ ML Assistance
 This section contains documentation for skore features that enhance the ML development
 process.
 
-Get assistance when developing ML/DS projects
----------------------------------------------
+Creating reports
+----------------
 
-These functions and classes build upon scikit-learn's functionality.
+:func:`evaluate` and :func:`compare` are the entry points for building reports.
 
-.. autosummary::
-    :toctree: ../api/
-    :template: base.rst
+.. toctree::
+   :maxdepth: 2
+   :hidden:
 
-    evaluate
-    compare
-    TrainTestSplit
+   creating_reports
 
-Single Estimator Report
------------------------
+Estimator report
+----------------
 
 :class:`skore.EstimatorReport` provides comprehensive reporting capabilities for
 individual scikit-learn estimators, including metrics, visualizations, and evaluation
@@ -32,7 +30,7 @@ tools.
 
    estimator_report
 
-Cross-validation Report
+Cross-validation report
 -----------------------
 
 :class:`skore.CrossValidationReport` provides comprehensive capabilities for evaluating
@@ -44,7 +42,7 @@ scikit-learn estimators by cross-validation, and reporting the results.
 
    cross_validation_report
 
-Comparison Report
+Comparison report
 -----------------
 
 :class:`skore.ComparisonReport` provides comprehensive capabilities for comparing
@@ -57,7 +55,7 @@ reporting the results.
 
    comparison_report
 
-Visualization Displays
+Visualization displays
 ----------------------
 
 A set of displays are available through the different reports. Find in this section
@@ -69,8 +67,8 @@ the API of each display.
 
    displays
 
-Checks
-------
+Methodological checks
+---------------------
 
 Checks classes used by the ``checks`` accessor on reports.
 
