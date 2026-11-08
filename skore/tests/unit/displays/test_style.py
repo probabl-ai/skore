@@ -1,3 +1,5 @@
+from collections import UserDict
+
 import pytest
 
 from skore._displays.base import StyleDisplayMixin
@@ -78,6 +80,16 @@ def test_style_policy_update(initial_state, update_value, expected_result):
 
     display.set_style(some_kwargs=update_value, policy="update")
     assert display._default_some_kwargs == expected_result
+
+
+def test_style_policy_update_merges_non_dict_mapping():
+    """A stored mapping that is not a dict is shallow-merged on update."""
+    display = TestDisplay()
+    display._default_some_kwargs = UserDict({"a": 1, "b": 2})
+
+    display.set_style(some_kwargs={"b": 3, "c": 4}, policy="update")
+
+    assert display._default_some_kwargs == {"a": 1, "b": 3, "c": 4}
 
 
 def test_style_policy_update_does_not_mutate_nested_input():
