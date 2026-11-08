@@ -74,10 +74,8 @@ Checks
 
 Checks classes used by the ``checks`` accessor on reports.
 
-.. autosummary::
-    :toctree: ../api/
-    :template: base.rst
+.. toctree::
+   :maxdepth: 2
+   :hidden:
 
-    ChecksSummaryDisplay
-    Check
-    CheckNotApplicable
+   checks
