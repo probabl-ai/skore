@@ -8,6 +8,7 @@ from skore._externals.pandas_accessors import DirNamesMixin
 from skore._reports.base import _BaseAccessor
 from skore._reports.estimator.report import EstimatorReport
 from skore._utils.dataframe import (
+    _align_frame_backend,
     _normalize_X_as_dataframe,
     _normalize_y_as_dataframe,
 )
@@ -166,12 +167,12 @@ class _DataAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             X, y = self._retrieve_data_as_frame("train", with_y_task_aware, data_source)
             X = nw.from_native(X)
             if with_y_task_aware:
-                y = nw.from_native(y)
+                y = _align_frame_backend(nw.from_native(y), X)
         elif data_source == "test":
             X, y = self._retrieve_data_as_frame("test", with_y_task_aware, data_source)
             X = nw.from_native(X)
             if with_y_task_aware:
-                y = nw.from_native(y)
+                y = _align_frame_backend(nw.from_native(y), X)
         else:
             X_train, y_train = self._retrieve_data_as_frame(
                 "train", with_y_task_aware, data_source
@@ -184,9 +185,12 @@ class _DataAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
                 how="vertical",
             )
             if with_y_task_aware:
-                y = nw.concat(
-                    [nw.from_native(y_train), nw.from_native(y_test)],
-                    how="vertical",
+                y = _align_frame_backend(
+                    nw.concat(
+                        [nw.from_native(y_train), nw.from_native(y_test)],
+                        how="vertical",
+                    ),
+                    X,
                 )
 
         if with_y_task_aware:

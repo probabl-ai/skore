@@ -20,6 +20,17 @@ else:
 UserTarget: TypeAlias = UserSeries | UserDataFrame
 
 
+def _align_frame_backend(
+    frame: nw.DataFrame[Any], like: nw.DataFrame[Any]
+) -> nw.DataFrame[Any]:
+    """Return ``frame`` on the same dataframe implementation as ``like``."""
+    if frame.implementation == like.implementation:
+        return frame
+    if like.implementation.is_polars():
+        return nw.from_native(frame.to_polars())
+    return nw.from_native(frame.to_pandas())
+
+
 def _ensure_string_column_names(df: nw.DataFrame[Any]) -> nw.DataFrame[Any]:
     if all(isinstance(col, str) for col in df.columns):
         return df
