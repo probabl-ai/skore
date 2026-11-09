@@ -1,5 +1,5 @@
-Comparing multiple reports
-==========================
+Comparison report
+=================
 
 .. currentmodule:: skore
 
