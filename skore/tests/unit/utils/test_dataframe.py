@@ -11,6 +11,12 @@ from skore._utils.dataframe import (
 )
 
 
+def test_normalize_X_array_uses_shared_fallback_names():
+    X = np.ones((2, 2))
+    result = _normalize_X_as_dataframe(X)
+    assert list(result.columns) == ["Feature #0", "Feature #1"]
+
+
 def test_normalize_X_polars_dataframe():
     X = pl.DataFrame({"a": [1.0, 2.0], "b": [3.0, 4.0]})
     result = _normalize_X_as_dataframe(X)

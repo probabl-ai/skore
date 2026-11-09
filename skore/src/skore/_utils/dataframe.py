@@ -7,6 +7,7 @@ import scipy.sparse as sp
 from numpy.typing import ArrayLike
 
 from skore._externals.sklearn_compat import check_array
+from skore._sklearn.feature_names import _fallback_feature_names
 
 if TYPE_CHECKING:
     import polars as pl
@@ -43,7 +44,7 @@ def _normalize_X_as_dataframe(X: ArrayLike) -> UserDataFrame:
             dtype=None,
         )
         X = cast(np.ndarray, X)
-        columns = [f"Feature {i}" for i in range(X.shape[1])]
+        columns = _fallback_feature_names(X.shape[1])
         return pd.DataFrame(X, columns=columns)
 
     return _ensure_string_column_names(nw.from_native(X)).to_native()

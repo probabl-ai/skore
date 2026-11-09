@@ -73,5 +73,10 @@ def test_data_summarize_plot_with_containers(report_cls, x_container, y_containe
         display = report.data.summarize()
 
     assert isinstance(display, TableReportDisplay)
-    fig = display.plot(x=feature_columns[0], y=feature_columns[1])
+    plot_columns = (
+        [f"Feature #{i}" for i in range(X.shape[1])]
+        if x_container == "array"
+        else feature_columns
+    )
+    fig = display.plot(x=plot_columns[0], y=plot_columns[1])
     assert fig.axes
