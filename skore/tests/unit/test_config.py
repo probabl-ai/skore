@@ -33,6 +33,56 @@ def test_configuration_ignore_checks():
     configuration.ignore_checks = ["SKD001", "SKD002"]
 
     assert configuration.ignore_checks == ["SKD001", "SKD002"]
+    configuration.ignore_checks = None
+
+
+def test_ignore_checks_is_copied_from_the_caller():
+    """Mutating the list passed in must not change the stored codes."""
+    codes = ["SKD001"]
+    configuration.ignore_checks = codes
+    codes.append("SKD002")
+
+    assert configuration.ignore_checks == ["SKD001"]
+    configuration.ignore_checks = None
+
+
+def test_ignore_checks_context_drops_in_place_changes():
+    """An append inside the context manager does not survive the block."""
+    configuration.ignore_checks = ["SKD001"]
+    try:
+        with configuration(show_progress=False):
+            configuration.ignore_checks.append("LEAK")
+            assert configuration.ignore_checks == ["SKD001", "LEAK"]
+        assert configuration.ignore_checks == ["SKD001"]
+    finally:
+        configuration.ignore_checks = None
+        configuration.show_progress = True
+
+
+def test_ignore_checks_rejects_a_string_and_non_strings():
+    with raises(TypeError, match="list or tuple of strings"):
+        configuration.ignore_checks = "SK0093"
+    with raises(TypeError, match="items must be strings"):
+        configuration.ignore_checks = [1]
+    assert configuration.ignore_checks is None
+
+
+def test_ignore_checks_worker_has_its_own_list():
+    """A threading task that appends must not change the main thread's list."""
+    configuration.ignore_checks = ["SKD001"]
+
+    def append_ignore_check():
+        configuration.ignore_checks.append("FROM_WORKER")
+        return list(configuration.ignore_checks)
+
+    try:
+        wrapper, args, kwargs = delayed(append_ignore_check)()
+        with ThreadPoolExecutor(max_workers=1) as executor:
+            result = executor.submit(wrapper, *args, **kwargs).result()
+        assert result == ["SKD001", "FROM_WORKER"]
+        assert configuration.ignore_checks == ["SKD001"]
+    finally:
+        configuration.ignore_checks = None
 
 
 def test_configuration_call():

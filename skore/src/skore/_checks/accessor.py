@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from skore._checks.base import Check, CheckCode, ChecksSummaryDisplay
-from skore._config import configuration
+from skore._config import _normalize_ignore_checks, configuration
 from skore._externals.pandas_accessors import DirNamesMixin
 from skore._reports.base import _BaseAccessor, _BaseReport
 
@@ -56,15 +56,12 @@ class _ChecksAccessor(_BaseAccessor[_BaseReport], DirNamesMixin):
         True
         """
         ignored_codes: set[CheckCode] = set()
-        if ignore:
+        for codes in (ignore, configuration.ignore_checks):
+            normalized = _normalize_ignore_checks(codes)
+            if normalized is None:
+                continue
             ignored_codes.update(
-                code.strip().upper() for code in ignore if code.strip()
-            )
-        if configuration.ignore_checks:
-            ignored_codes.update(
-                code.strip().upper()
-                for code in configuration.ignore_checks
-                if code.strip()
+                code.strip().upper() for code in normalized if code.strip()
             )
         return ChecksSummaryDisplay(
             self._parent._get_checks_results(ignored_codes, fast_mode=fast_mode),
