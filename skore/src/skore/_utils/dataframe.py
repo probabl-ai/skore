@@ -31,9 +31,6 @@ def _disambiguate_target_columns(
     used = set(features.columns)
     mapping: dict[Any, str] = {}
     for name in target.columns:
-        if name not in used:
-            used.add(name)
-            continue
         candidate = name
         while candidate in used:
             candidate = f"{candidate}__y"
