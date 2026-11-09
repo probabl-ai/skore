@@ -5,6 +5,7 @@ from uuid import UUID, uuid4
 
 import joblib
 import numpy as np
+import pandas as pd
 import pytest
 import skrub
 from sklearn.base import clone
@@ -670,6 +671,19 @@ def test_learner_report_root_node_not_an_estimator():
         data_op.skb.make_learner(), train_data=split["train"], test_data=split["test"]
     )
     report.metrics.summarize(metric="accuracy")
+
+
+def test_duplicate_pandas_columns_raise_before_fit():
+    """Duplicated pandas columns are named in a ValueError before any fit."""
+    X, y = make_classification(n_samples=40, n_features=4, random_state=0)
+    duplicated = pd.DataFrame(X, columns=["f0", "f0", "f1", "f2"])
+    with pytest.raises(ValueError, match=r"X_train has duplicated column names: 'f0'"):
+        evaluate(LogisticRegression(), duplicated, y, splitter=0.25)
+
+    clean = pd.DataFrame(X, columns=["f0", "f1", "f2", "f3"])
+    fitted = LogisticRegression().fit(clean, y)
+    with pytest.raises(ValueError, match=r"X_test has duplicated column names: 'f0'"):
+        EstimatorReport(fitted, X_test=duplicated, y_test=y)
 
 
 def test_no_data_error():
