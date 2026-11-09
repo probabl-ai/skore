@@ -34,13 +34,11 @@ def _disambiguate_target_columns(
         if name not in used:
             used.add(name)
             continue
-        candidate = f"{name}__y"
+        candidate = name
         while candidate in used:
             candidate = f"{candidate}__y"
         mapping[name] = candidate
         used.add(candidate)
-    if not mapping:
-        return target
     return target.rename(mapping)
 
 

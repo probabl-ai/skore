@@ -1,3 +1,4 @@
+import narwhals as nw
 import numpy as np
 import pandas as pd
 import polars as pl
@@ -6,9 +7,22 @@ import scipy.sparse as sp
 
 from skore._utils.dataframe import (
     _concat_vertical,
+    _disambiguate_target_columns,
     _normalize_X_as_dataframe,
     _normalize_y_as_dataframe,
 )
+
+
+def test_disambiguate_target_columns_appends_y_until_unique():
+    """A colliding target name grows a ``__y`` suffix until it is free."""
+    features = nw.from_native(
+        pd.DataFrame({"target": [1], "target__y": [2], "other": [3]})
+    )
+    target = nw.from_native(pd.DataFrame({"target": [4], "free": [5]}))
+
+    result = _disambiguate_target_columns(features, target)
+
+    assert result.columns == ["target__y__y", "free"]
 
 
 def test_normalize_X_polars_dataframe():
