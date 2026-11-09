@@ -158,13 +158,15 @@ def test_numpy_fallback_feature_names(report_type):
     ],
 )
 def test_integer_column_names_are_stringified_on_a_copy(report_type):
-    """Non-string column names are copied to strings before fit."""
+    """Non-string column names are shown as strings and the stored frame is kept."""
     X, y = make_regression(n_samples=40, n_features=3, random_state=0)
     frame = pd.DataFrame(X)
     original_columns = list(frame.columns)
     report = _make_report(report_type, frame, y)
 
     assert list(frame.columns) == original_columns
+    if isinstance(report, EstimatorReport):
+        assert list(report.X_train.columns) == original_columns
     assert _coefficient_features(report) == ["0", "1", "2"]
     dataset_columns = _dataset_feature_columns(report)
     if dataset_columns is not None:

@@ -21,20 +21,6 @@ else:
 UserTarget: TypeAlias = UserSeries | UserDataFrame
 
 
-def _with_string_column_names(X: ArrayLike | None) -> ArrayLike | None:
-    """Copy a dataframe and stringify columns that are not strings.
-
-    The caller's frame is left unchanged. Arrays and frames that already use
-    string column names are returned as-is.
-    """
-    if X is None or not nw.dependencies.is_into_dataframe(X):
-        return X
-    frame = nw.from_native(X)
-    if all(isinstance(column, str) for column in frame.columns):
-        return X
-    return _ensure_string_column_names(frame).to_native()
-
-
 def _ensure_string_column_names(df: nw.DataFrame[Any]) -> nw.DataFrame[Any]:
     if all(isinstance(col, str) for col in df.columns):
         return df

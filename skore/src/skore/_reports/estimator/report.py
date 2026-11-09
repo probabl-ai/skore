@@ -23,7 +23,6 @@ from skore._reports.base import _BaseReport
 from skore._sklearn.find_ml_task import _find_ml_task
 from skore._utils.cache import Cache
 from skore._utils.cache_key import make_cache_key
-from skore._utils.dataframe import _with_string_column_names
 from skore._utils.measure_time import MeasureTime
 from skore._utils.repr.data import get_documentation_url
 from skore._utils.repr.html_repr import render_template
@@ -85,8 +84,6 @@ def _check_estimator_and_data(
                 "Provide X_train, y_train, X_test, y_test instead."
             )
         estimator = to_learner(estimator)
-        X_train = _with_string_column_names(X_train)
-        X_test = _with_string_column_names(X_test)
         if X_test is None or y_test is None:
             raise TypeError(
                 "Test data must be provided (unless estimator is a "
