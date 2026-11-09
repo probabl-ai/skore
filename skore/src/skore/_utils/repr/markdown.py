@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
+import pandas as pd
 import skrub
 from sklearn.base import MetaEstimatorMixin
 from sklearn.pipeline import Pipeline
@@ -11,6 +12,12 @@ from skore._utils.skrub import is_skrub_learner
 
 if TYPE_CHECKING:
     from skore._sklearn.types import EstimatorLike
+
+
+def format_std(value: Any) -> str:
+    if pd.isna(value):
+        return "NA"
+    return f"{value:.3f}"
 
 
 def _markdown_estimator_kind(estimator: EstimatorLike) -> str:
@@ -58,11 +65,11 @@ def _subreport_estimator_metadata(report: Any) -> dict[str, str | None]:
     if report._report_type == "cross-validation":
         metadata["fit time"] = (
             f"{timings.loc['Fit time (s)', 'mean']:.3f} s"
-            f" (± {timings.loc['Fit time (s)', 'std']:.3f})"
+            f" (± {format_std(timings.loc['Fit time (s)', 'std'])})"
         )
         metadata["predict time (on test set)"] = (
             f"{timings.loc['Predict time test (s)', 'mean']:.3f} s"
-            f" (± {timings.loc['Predict time test (s)', 'std']:.3f})"
+            f" (± {format_std(timings.loc['Predict time test (s)', 'std'])})"
         )
         metadata["cross-validation folds"] = str(len(report.reports_))
         metadata["splitter"] = (

@@ -32,7 +32,7 @@ this example with the following command:
 
 .. code-block:: bash
 
-    WORKSPACE=<workspace> PROJECT=<project> python plot_getting_started.py
+    WORKSPACE=<workspace> PROJECT=<project> HOST=<host> python plot_getting_started.py
 
 In this gallery, we are going to push the different reports into a public
 workspace.
@@ -351,23 +351,35 @@ _ = cv_coefficients.plot(select_k=15, sorting_order="descending")
 #
 # .. note::
 #    Here, we are using Skore Hub to store and analyze the reports that we computed.
-#    Note that you can store reports as well locally using `mode="local"` when creating
-#    or loading projects via `skore.Project`.
+#    Authentication uses an API key, in this order:
+#
+#    - the ``SKORE_HUB_API_KEY`` environment variable, which always wins. The
+#      key is bound to a workspace; using it against another workspace fails at
+#      runtime.
+#    - otherwise the local credentials registry for the hub host and workspace:
+#
+#    .. code-block:: bash
+#
+#        $ skore hub api-key generate --host https://skore.probabl.ai --workspace <workspace>
+#
+#    You can also store reports locally using `mode="local"` when creating or loading
+#    projects via `skore.Project`.
 
 # sphinx_gallery_start_ignore
 #
 # Configure the context variables and ensure that the example is run with sufficient
-# credentials. This is a useful consistency check for CI where you can't have
-# interactive login.
+# credentials. This is a useful consistency check for CI where an API key must
+# be provided non-interactively.
 import os
 
 if os.environ.get("SPHINX_BUILD"):
     GITHUB = os.environ.get("GITHUB_ACTIONS")
     API_KEY = os.environ.get("SPHINX_EXAMPLE_API_KEY")
     WORKSPACE = os.environ.get("SPHINX_EXAMPLE_WORKSPACE")
+    HOST = os.environ.get("SPHINX_EXAMPLE_HOST")
     VERSION = os.environ.get("SPHINX_VERSION")
 
-    if not (GITHUB and API_KEY and WORKSPACE and VERSION):
+    if not (GITHUB and API_KEY and WORKSPACE and HOST and VERSION):
         raise RuntimeError("Required environment variables not set.")
 
     PROJECT = f"example-getting-started-{VERSION}"
@@ -375,11 +387,8 @@ if os.environ.get("SPHINX_BUILD"):
 else:
     assert (WORKSPACE := os.environ.get("WORKSPACE")), "`WORKSPACE` must be defined."
     assert (PROJECT := os.environ.get("PROJECT")), "`PROJECT` must be defined."
+    assert (HOST := os.environ.get("HOST")), "`HOST` must be defined."
 # sphinx_gallery_end_ignore
-
-from skore import login
-
-login()
 
 # sphinx_gallery_start_ignore
 #
@@ -388,7 +397,7 @@ from httpx import HTTPStatusError, codes
 from skore import Project
 
 try:
-    Project.delete(name=PROJECT, mode="hub", workspace=WORKSPACE)
+    Project.delete(name=PROJECT, mode="hub", workspace=WORKSPACE, host=HOST)
 except HTTPStatusError as e:
     if e.response.status_code != codes.NOT_FOUND:
         raise
@@ -397,7 +406,7 @@ except HTTPStatusError as e:
 # %%
 # We load or create a hub project:
 
-project = Project(name=PROJECT, mode="hub", workspace=WORKSPACE)
+project = Project(name=PROJECT, mode="hub", workspace=WORKSPACE, host=HOST)
 
 # %%
 # We store our reports with descriptive keys:

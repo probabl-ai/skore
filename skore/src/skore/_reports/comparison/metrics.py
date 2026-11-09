@@ -27,6 +27,7 @@ from skore._utils.accessor import (
 from skore._utils.fixes import _validate_joblib_parallel_params
 from skore._utils.parallel import delayed
 from skore._utils.progress_bar import track
+from skore._utils.repr.paginated_metrics import metrics_summary_html
 
 DataSource = Literal["test", "train", "both"]
 
@@ -141,14 +142,9 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
 
     def _repr_html_(self) -> str:
         frame = self._formatted_summary_frame()
-        html = (
-            frame.to_frame()._repr_html_()
-            if isinstance(frame, pd.Series)
-            else frame._repr_html_()
-        )
         return (
             "<p>Metrics summary:</p>"
-            f"{html}"
+            f"{metrics_summary_html(frame, inline_assets=True)}"
             '<p role="note">Explore available methods with '
             "<code>.help()</code>.</p>"
         )
@@ -244,8 +240,7 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
 
         verbose_name : str or None, default=None
             Custom verbose name for the metric which will be used for display
-            purposes. If ``None``, the verbose name is inferred from the metric
-            name.
+            purposes. If ``None``, the verbose name is the name unchanged.
 
         greater_is_better : bool, default=True
             Whether higher values are better (only for callables).
@@ -269,7 +264,8 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
         >>> estimator_2 = LogisticRegression(max_iter=10_000, C=2)
         >>> report = evaluate([estimator_1, estimator_2], X, y, splitter=0.2)
         >>> report.metrics.add(
-        ...     make_scorer(mean_absolute_error, response_method="predict")
+        ...     make_scorer(mean_absolute_error, response_method="predict"),
+        ...     verbose_name="Mean Absolute Error",
         ... )
         >>> report.metrics.summarize(metric="mean_absolute_error").frame(
         ...     verbose_name=True, flat_index=False
@@ -436,8 +432,8 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
 
             return timings
 
-    @available_if(_check_any_sub_report_has_metric("score"))
-    def score(
+    @available_if(_check_any_sub_report_has_metric("default_score"))
+    def default_score(
         self,
         *,
         data_source: DataSource = "test",
@@ -476,12 +472,12 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
         >>> estimator_1 = LogisticRegression(max_iter=10000, random_state=42)
         >>> estimator_2 = LogisticRegression(max_iter=10000, random_state=43)
         >>> comparison_report = evaluate([estimator_1, estimator_2], X, y, splitter=0.2)
-        >>> comparison_report.metrics.score()
-        Estimator      LogisticRegression_1  LogisticRegression_2
+        >>> comparison_report.metrics.default_score()
+        Estimator              LogisticRegression_1  LogisticRegression_2
         Metric
-        Score                       0.94...               0.94...
+        Default estimator score             0.94...               0.94...
         """
-        return self._metric("score", data_source=data_source).frame(
+        return self._metric("default_score", data_source=data_source).frame(
             aggregate=aggregate,
             verbose_name=True,
             flat_index=False,

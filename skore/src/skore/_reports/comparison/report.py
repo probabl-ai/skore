@@ -19,6 +19,7 @@ from skore._utils.repr.markdown import (
     comparison_data_markdown_context,
     comparison_estimator_markdown_context,
 )
+from skore._utils.repr.paginated_metrics import metrics_summary_html
 
 if TYPE_CHECKING:
     from numpy.typing import ArrayLike
@@ -527,7 +528,16 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         na_on_any: set[CheckCode] = set()
         skipped_on_any: set[CheckCode] = set()
         for report_name, report in self.reports_.items():
-            report.checks.add(self._checks_registry)
+            registered_codes = {
+                check.code.strip().upper() for check in report._checks_registry
+            }
+            missing_checks = [
+                check
+                for check in self._checks_registry
+                if check.code.strip().upper() not in registered_codes
+            ]
+            if missing_checks:
+                report.checks.add(missing_checks)
             sub_summary = report._get_checks_results(ignored_codes, fast_mode=fast_mode)
 
             for code, result in sub_summary.items():
@@ -635,8 +645,9 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
 
     def _repr_html_(self) -> str:
         """HTML representation with a selector to inspect one compared report."""
-        metrics_frame = self.metrics._formatted_summary_frame(data_source="test")
-        metrics_html = metrics_frame.reset_index().to_html(index=False)
+        metrics_html = metrics_summary_html(
+            self.metrics._formatted_summary_frame(data_source="test")
+        )
 
         comparison_reports = []
         for label, report in self.reports_.items():

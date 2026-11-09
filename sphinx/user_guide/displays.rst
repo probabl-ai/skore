@@ -66,9 +66,9 @@ tweak the rendering of the display. For instance, customize the appearance of th
 Any subsequent call to ``plot`` uses the style settings set by ``set_style``.
 
 The ``frame`` method retrieves the underlying data used to generate the plot.
-Most displays return a :class:`pandas.DataFrame`. For metrics summaries in wide
-layout with a single value column, :meth:`~skore.MetricsSummaryDisplay.frame`
-returns a named :class:`pandas.Series` instead:
+Most displays return a :class:`pandas.DataFrame`. When a metrics summary table has a
+single value column, :meth:`~skore.MetricsSummaryDisplay.frame` returns a named
+:class:`pandas.Series` instead:
 
 .. code-block:: python
 

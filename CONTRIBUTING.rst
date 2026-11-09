@@ -63,7 +63,7 @@ Development
 Quick start
 -----------
 
-You will need ``python >=3.11``.
+You will need ``python >=3.11.4``.
 
 Setting up your development environment
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -93,7 +93,7 @@ Once your environment is set up, install the development dependencies and setup 
 
         make install-skore
 
-    On `old CPU architecture <https://github.com/pola-rs/polars?tab=readme-ov-file#legacy>`_ to get the support of ``polars``:
+    On old CPU architectures, use `polars-lts-cpu <https://pypi.org/project/polars-lts-cpu/>`_:
 
     .. code-block:: bash
 
@@ -282,7 +282,7 @@ Contributing to the README
 --------------------------
 
 The `README.md` file can be modified and is part of the documentation (although it is not included in the online documentation).
-This file is used to be presented on `PyPI <https://pypi.org/project/skore/#description>`_.
+This file is used to be presented on `PyPI <https://pypi.org/project/skore/>`_.
 
 
 Pull Request Checklist

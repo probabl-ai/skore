@@ -31,6 +31,7 @@ from skore._utils.repr.base import (
     render_panel_to_plain_text,
 )
 from skore._utils.repr.data import MethodHelp
+from skore._utils.repr.paginated_metrics import metrics_summary_html
 from skore._utils.uuid import normalize_report_id, uuid7
 
 if TYPE_CHECKING:
@@ -242,7 +243,7 @@ class BaseMetricsAccessor(_BaseAccessor, Generic[ParentT]):
     # into Metrics by ``_build_help_data``.
     _HELP_METHOD_GROUPS: ClassVar[dict[str, tuple[str, ...]]] = {
         "Registry": ("available", "add", "remove", "get"),
-        "Metrics": ("fit_time", "predict_time", "score", "timings"),
+        "Metrics": ("fit_time", "predict_time", "default_score", "timings"),
         "Displays": (
             "summarize",
             "roc",
@@ -421,14 +422,9 @@ class BaseMetricsAccessor(_BaseAccessor, Generic[ParentT]):
 
     def _repr_html_(self) -> str:
         frame = self.summarize().frame(verbose_name=True, flat_index=False)
-        html = (
-            frame.to_frame()._repr_html_()
-            if isinstance(frame, pd.Series)
-            else frame._repr_html_()
-        )
         return (
             "<p>Metrics summary:</p>"
-            f"{html}"
+            f"{metrics_summary_html(frame, inline_assets=True)}"
             '<p role="note">Explore available methods with '
             "<code>.help()</code>.</p>"
         )

@@ -9,7 +9,7 @@ Local projects used to be saved on disk in SQLite databases via the `diskcache` 
 .. code-block:: python
 
     p = skore.Project("demo")
-    p.put("my-report", EstimatorReport(estimator, X, y))
+    p.put("my-report", skore.evaluate(estimator, X, y))
 
     # ./skore/
     # └── projects/demo/reports/latest__my-report/
@@ -20,7 +20,7 @@ Local projects used to be saved on disk in SQLite databases via the `diskcache` 
 Project synchronisation
 -----------------------
 
-It is now possible to synchronise the contents of Projects, including between a local Project and a Skore Hub project. Note that this is a one-time operation; it does not keep Projects in sync with eachother. More information about project synchronization is available at :ref:`synchronizing-projects` in the user guide. See :pr:`3201` by :user:`Aljutor`.
+It is now possible to synchronise the contents of Projects, including between a local Project and a Skore Hub project. Note that this is a one-time operation; it does not keep Projects in sync with each other. More information about project synchronization is available at :ref:`synchronizing-projects` in the user guide. See :pr:`3201` by :user:`Aljutor`.
 
 .. code-block:: python
 

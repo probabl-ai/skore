@@ -198,8 +198,7 @@ class _MetricsAccessor(BaseMetricsAccessor[CrossValidationReport], DirNamesMixin
 
         verbose_name : str or None, default=None
             Custom verbose name for the metric which will be used for display
-            purposes. If ``None``, the verbose name is inferred from the metric
-            name.
+            purposes. If ``None``, the verbose name is the name unchanged.
 
         greater_is_better : bool, default=True
             Whether higher values are better (only for callables).
@@ -222,7 +221,8 @@ class _MetricsAccessor(BaseMetricsAccessor[CrossValidationReport], DirNamesMixin
         >>> classifier = LogisticRegression(max_iter=10_000)
         >>> report = evaluate(classifier, X, y, splitter=2, pos_label=1)
         >>> report.metrics.add(
-        ...     make_scorer(mean_absolute_error, response_method="predict")
+        ...     make_scorer(mean_absolute_error, response_method="predict"),
+        ...     verbose_name="Mean Absolute Error",
         ... )
         >>> report.metrics.summarize(metric="mean_absolute_error").frame(
         ...     verbose_name=True, flat_index=False
@@ -352,6 +352,8 @@ class _MetricsAccessor(BaseMetricsAccessor[CrossValidationReport], DirNamesMixin
             if isinstance(aggregate, str):
                 aggregate = [aggregate]
             timings = timings.aggregate(func=aggregate, axis=1)
+            if len(self._parent.reports_) == 1 and "std" in aggregate:
+                timings["std"] = pd.Series(pd.NA, index=timings.index, dtype="Float64")
 
         timings.index = timings.index.str.replace("_", " ").str.capitalize()
         timings.index = pd.Index([f"{idx} (s)" for idx in timings.index])
@@ -396,8 +398,8 @@ class _MetricsAccessor(BaseMetricsAccessor[CrossValidationReport], DirNamesMixin
             rows, report_type="cross-validation", errors=[]
         )
 
-    @available_if(_check_estimator_report_has_method("metrics", "score"))
-    def score(
+    @available_if(_check_estimator_report_has_method("metrics", "default_score"))
+    def default_score(
         self,
         *,
         data_source: DataSource = "test",
@@ -434,13 +436,13 @@ class _MetricsAccessor(BaseMetricsAccessor[CrossValidationReport], DirNamesMixin
         >>> X, y = load_breast_cancer(return_X_y=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
         >>> report = evaluate(classifier, X, y, splitter=2)
-        >>> report.metrics.score()
+        >>> report.metrics.default_score()
         Estimator LogisticRegression
-        Aggregate               mean      std
+        Aggregate                         mean      std
         Metric
-        Score               0.94...  0.00...
+        Default estimator score       0.94...  0.00...
         """
-        return self._metric("score", data_source=data_source).frame(
+        return self._metric("default_score", data_source=data_source).frame(
             aggregate=aggregate,
             verbose_name=True,
             flat_index=False,

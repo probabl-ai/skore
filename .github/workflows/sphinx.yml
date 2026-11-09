@@ -81,7 +81,7 @@ jobs:
       pull-requests: read
     steps:
       - name: Checkout code
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Define if at least one file has changed
         uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
@@ -106,14 +106,14 @@ jobs:
       contents: read
     steps:
       - name: Checkout code
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 2
 
       - name: Install uv
-        uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
+        uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
         with:
-          version: "0.12.8"
+          version: ">=0.13.4"
 
       - name: Check lockfiles are not obsolete
         run: |
@@ -188,7 +188,7 @@ jobs:
       contents: read
     steps:
       - name: Checkout code
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           lfs: 'true'
 
@@ -223,6 +223,9 @@ jobs:
           echo "${GITHUB_WORKSPACE}/skore/venv/bin" >> ${GITHUB_PATH}
           echo "VIRTUAL_ENV=${GITHUB_WORKSPACE}/skore/venv" >> ${GITHUB_ENV}
 
+      - name: Upgrade pip
+        run: python -m pip install --upgrade "pip>=26.2.2"
+
       - name: Install dependencies in python-venv
         if: steps.cache-python-venv.outputs.cache-hit != 'true'
         run: python -m pip install --requirement "${LOCKFILE}"
@@ -252,10 +255,11 @@ jobs:
           SPHINX_URL: ${{ vars.DOCUMENTATION_URL }}
           SPHINX_EXAMPLE_API_KEY: ${{ secrets.DOCUMENTATION_EXAMPLE_API_KEY }}
           SPHINX_EXAMPLE_WORKSPACE: ${{ vars.DOCUMENTATION_EXAMPLE_WORKSPACE }}
+          SPHINX_EXAMPLE_HOST: ${{ vars.DOCUMENTATION_EXAMPLE_HOST }}
           SPHINX_EXAMPLE_BASE_URL: ${{ vars.DOCUMENTATION_EXAMPLE_BASE_URL }}
 
       - name: Upload documentation
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: sphinx-html-artifact
           path: sphinx/build/html/
@@ -270,12 +274,12 @@ jobs:
       id-token: write
     steps:
       - name: Checkout code
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           sparse-checkout: .github
 
       - name: Download HTML artifacts
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: sphinx-html-artifact
           path: html/
@@ -310,7 +314,7 @@ jobs:
       preferred: ${{ steps.write-root-files.outputs.preferred }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           sparse-checkout: .github
 
@@ -394,12 +398,12 @@ jobs:
       id-token: write
     steps:
       - name: Checkout code
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           sparse-checkout: .github
 
       - name: Download HTML artifacts
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: sphinx-html-artifact
           path: html/
@@ -429,7 +433,7 @@ jobs:
     needs: [sphinx-deploy-html, sphinx-deploy-root-files, sphinx-deploy-stable]
     steps:
       - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@e6de054238d6b7531b4efff3b6587d9aade6a06c # v6.2.3
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
         with:
           role-to-assume: ${{ vars.AWS_ROLE }}
           aws-region: ${{ vars.AWS_REGION }}

@@ -1,9 +1,6 @@
 from datetime import UTC, datetime
 
-from httpx import (
-    Response,
-    TimeoutException,
-)
+from httpx import Response, TimeoutException
 from pytest import mark, raises
 
 from skore._plugins.hub.authentication import login as login_module
@@ -19,21 +16,10 @@ TOKEN_URL = "identity/oauth/device/token"
 
 
 @mark.respx()
-def test_login_with_api_key(monkeypatch, respx_mock):
-    monkeypatch.setenv("SKORE_HUB_API_KEY", "<api-key>")
-
-    assert login_module.credentials is None
-
-    login_module.login()
-
-    assert login_module.credentials is not None
-    assert login_module.credentials() == {"X-API-Key": "<api-key>"}
-
-
-@mark.respx()
 def test_login_with_token(monkeypatch, respx_mock):
+    login_module.login.cache_clear()
     monkeypatch.setattr(
-        "skore._plugins.hub.authentication.token.open_webbrowser",
+        "skore._plugins.hub.authentication.login.open_webbrowser",
         lambda _: True,
     )
     respx_mock.get(LOGIN_URL).mock(
@@ -61,18 +47,16 @@ def test_login_with_token(monkeypatch, respx_mock):
         )
     )
 
-    assert login_module.credentials is None
+    token = login_module.login(host="http://localhost")
 
-    login_module.login()
-
-    assert login_module.credentials is not None
-    assert login_module.credentials() == {"Authorization": "Bearer D"}
+    assert token.access == "D"
 
 
 @mark.respx()
 def test_login_with_expired_token(monkeypatch, respx_mock):
+    login_module.login.cache_clear()
     monkeypatch.setattr(
-        "skore._plugins.hub.authentication.token.open_webbrowser",
+        "skore._plugins.hub.authentication.login.open_webbrowser",
         lambda _: True,
     )
     respx_mock.get(LOGIN_URL).mock(
@@ -110,18 +94,16 @@ def test_login_with_expired_token(monkeypatch, respx_mock):
         )
     )
 
-    assert login_module.credentials is None
+    token = login_module.login(host="http://localhost")
 
-    login_module.login()
-
-    assert login_module.credentials is not None
-    assert login_module.credentials() == {"Authorization": "Bearer F"}
+    assert token.access == "F"
 
 
 @mark.respx()
 def test_login_with_token_timeout(monkeypatch, respx_mock):
+    login_module.login.cache_clear()
     monkeypatch.setattr(
-        "skore._plugins.hub.authentication.token.open_webbrowser",
+        "skore._plugins.hub.authentication.login.open_webbrowser",
         lambda _: True,
     )
 
@@ -137,10 +119,8 @@ def test_login_with_token_timeout(monkeypatch, respx_mock):
     )
     respx_mock.get(PROBE_URL).mock(Response(400))
 
-    assert login_module.credentials is None
-
     # Simulate a user who does not complete the authentication process:
     # - the token can't be acknowledged by the hub until the user is logged in; 400
     # - the token can't be created; timeout
     with raises(TimeoutException):
-        login_module.login(timeout=0)
+        login_module.login(host="http://localhost", timeout=0)

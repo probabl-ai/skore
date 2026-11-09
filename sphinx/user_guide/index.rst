@@ -44,3 +44,4 @@ Table of contents
    automated_checks
    displays
    project
+   cli

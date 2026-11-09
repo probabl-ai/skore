@@ -8,10 +8,12 @@ import scipy.sparse as sp
 import skrub
 from numpy.testing import assert_array_equal
 from sklearn.linear_model import LinearRegression, LogisticRegression, Ridge
+from sklearn.model_selection import LeaveOneGroupOut
 from sklearn.pipeline import Pipeline, make_pipeline
 from sklearn.preprocessing import StandardScaler
 
 from skore import CrossValidationReport, EstimatorReport
+from skore._checks.skd002_underfitting import CheckUnderfitting
 from skore._checks.utils import (
     CheckNotApplicable,
     adaptive_threshold,
@@ -389,3 +391,33 @@ def test_baseline_estimator_report_creation_fails_cv(small_cv_report, monkeypatc
     monkeypatch.setattr(EstimatorReport, "_fit_estimator", failing_fit)
     with pytest.raises(CheckNotApplicable, match="Failed to create baseline report."):
         baseline_estimator_report(small_cv_report, kind="dummy")
+
+
+def test_baseline_estimator_report_reuses_split_indices_with_split_kwargs():
+    """A splitter that needs extra split kwargs is replayed from the stored folds."""
+    frame = pd.DataFrame(
+        {
+            "x": np.arange(12, dtype=float),
+            "group": np.repeat([0, 1, 2], 4),
+            "y": np.tile([0, 1], 6),
+        }
+    )
+    data = skrub.var("frame", frame)
+    X = data[["x"]].skb.mark_as_X(
+        cv=LeaveOneGroupOut(), split_kwargs={"groups": data["group"]}
+    )
+    y = data["y"].skb.mark_as_y()
+    report = CrossValidationReport(
+        X.skb.apply(LogisticRegression(), y=y).skb.make_learner(),
+        data={"frame": frame},
+    )
+
+    baseline = baseline_estimator_report(report, kind="dummy")
+    assert len(baseline.split_indices) == len(report.split_indices)
+    for (train_baseline, test_baseline), (train_report, test_report) in zip(
+        baseline.split_indices, report.split_indices, strict=True
+    ):
+        assert_array_equal(train_baseline, train_report)
+        assert_array_equal(test_baseline, test_report)
+
+    CheckUnderfitting().check_function(report)

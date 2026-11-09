@@ -18,8 +18,10 @@ for _thread_env_var in (
 
 import matplotlib
 import matplotlib.pyplot
+import pytest
 
 import skore
+from skore._config import LocalConfiguration
 
 
 def pytest_configure(config):
@@ -32,6 +34,71 @@ def pytest_configure(config):
     # Disable progress bars during tests to avoid rich interfering with
     # doctest stdout capture.
     skore.configuration.show_progress = False
+
+
+@pytest.fixture(autouse=True)
+def monkeypatch_tmpdir(monkeypatch, tmp_path):
+    """
+    Change ``TMPDIR`` used by ``tempfile.gettempdir()`` to point to ``tmp_path``, so
+    that it is automatically deleted after use, with no impact on user's environment.
+
+    Force the reload of the ``tempfile`` module to change the cached return of
+    ``tempfile.gettempdir()``.
+
+    https://docs.python.org/3/library/tempfile.html#tempfile.gettempdir
+    """
+    import importlib
+    import tempfile
+
+    monkeypatch.setenv("TMPDIR", str(tmp_path))
+    importlib.reload(tempfile)
+
+
+@pytest.fixture(autouse=True)
+def monkeypatch_home(monkeypatch, tmp_path):
+    """
+    Change ``HOME`` used by ``os.path.expanduser()`` to point to ``tmp_path``, so
+    that it is automatically deleted after use, with no impact on user's environment.
+
+    https://docs.python.org/3/library/os.path.html#os.path.expanduser
+    """
+    monkeypatch.setenv("HOME", str(tmp_path))
+    monkeypatch.setenv("USERPROFILE", str(tmp_path))
+
+
+@pytest.fixture(autouse=True)
+def monkeypatch_keyring(monkeypatch):
+    """
+    Make the system keyring unavailable, so that tests can't read and write into the
+    user's real keyring.
+
+    Force a re-init of the keyring backend, ``keyring.get_keyring()`` caching the
+    backend in ``keyring.core``.
+
+    https://github.com/jaraco/keyring#disabling-keyring
+    https://github.com/jaraco/keyring/blob/7603e7cadc254b4c6e3fc2b2f0916a005e78087d/keyring/core.py#L32
+    """
+    import keyring.core
+
+    monkeypatch.setenv("PYTHON_KEYRING_BACKEND", "keyring.backends.null.Keyring")
+    keyring.core.init_backend()
+
+
+@pytest.fixture(autouse=True)
+def monkeypatch_skore_hub_envars(monkeypatch):
+    """
+    Change environment variables that can be used to reach the production's or user's
+    HUB instance, disabling potential impacts on user's environment.
+    """
+    monkeypatch.setenv("SKORE_HUB_URI", "http://localhost")
+    monkeypatch.delenv("SKORE_HUB_API_KEY", raising=False)
+
+
+@pytest.fixture(autouse=True)
+def monkeypatch_configuration(monkeypatch):
+    """Ensure that the test gets the default configuration,
+    independently of the others."""
+    monkeypatch.setattr("skore._config.configuration.local", LocalConfiguration())
 
 
 def pytest_runtest_teardown(item):

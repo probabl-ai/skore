@@ -30,6 +30,8 @@ function skoreInitComparisonReport(containerId) {
         });
     });
 
+    skoreInitMetricsPagers(shadowRoot);
+
     const selects = shadowRoot.querySelectorAll(".skore-comparison-report-select");
     if (selects.length === 0) {
         return;

@@ -1,3 +1,4 @@
+import numpy as np
 import pandas as pd
 import pytest
 import skrub
@@ -7,7 +8,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.tree import DecisionTreeRegressor
 from skrub import SkrubLearner, tabular_pipeline
 
-from skore import evaluate
+from skore import TrainTestSplit, evaluate
 from skore._checks.skd006_coefficients_interpretation import (
     CheckCoefficientsInterpretation,
 )
@@ -119,6 +120,30 @@ def test_pipeline_coefficient_interpretation(
     explanation = CheckCoefficientsInterpretation().check_function(report)
     assert explanation is not None
     assert expected_message in explanation
+
+
+def test_standardized_pipeline_ignores_test_set_variance():
+    """SKD006 judges a scaled pipeline on the training split only."""
+    rng = np.random.default_rng(0)
+    n_train, n_test = 80, 40
+    X_train = rng.normal(size=(n_train, 2))
+    X_test = np.column_stack(
+        [
+            rng.normal(size=n_test),
+            rng.normal(scale=10, size=n_test),
+        ]
+    )
+    X = np.vstack([X_train, X_test])
+    y = rng.normal(size=n_train + n_test)
+    report = evaluate(
+        make_pipeline(StandardScaler(), LinearRegression()),
+        X,
+        y,
+        splitter=TrainTestSplit(test_size=n_test, shuffle=False),
+    )
+    explanation = CheckCoefficientsInterpretation().check_function(report)
+    assert explanation is not None
+    assert "Features appear to be standardized" in explanation
 
 
 def test_tabular_pipeline_predictor():

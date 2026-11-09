@@ -35,7 +35,6 @@ if TYPE_CHECKING:
     from skore._displays.inspection.permutation_importance import (
         PermutationImportanceDisplay,
     )
-    from skore._project.login import login
     from skore._project.project import Project
     from skore._project.summary import Summary
     from skore._reports import (
@@ -75,7 +74,6 @@ __all__ = [
     "compare",
     "configuration",
     "evaluate",
-    "login",
     "show_versions",
 ]
 
@@ -132,7 +130,6 @@ __getattr__, __dir__, _ = lazy_loader.attach(
         "_displays.inspection.coefficients": ["CoefficientsDisplay"],
         "_displays.inspection.impurity_decrease": ["ImpurityDecreaseDisplay"],
         "_displays.inspection.permutation_importance": ["PermutationImportanceDisplay"],
-        "_project.login": ["login"],
         "_project.project": ["Project"],
         "_project.summary": ["Summary"],
         "_reports": [

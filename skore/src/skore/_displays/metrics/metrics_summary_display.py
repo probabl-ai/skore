@@ -8,9 +8,9 @@ import pandas as pd
 from sklearn.utils.validation import _is_arraylike
 
 from skore._displays.base import DisplayMixin
-from skore._metrics.metrics import _to_verbose
 from skore._sklearn.types import Aggregate
 from skore._utils.index import flatten_multi_index, squeeze_single_column
+from skore._utils.repr.paginated_metrics import metrics_summary_html
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -27,6 +27,11 @@ METRIC_INDEX_KEYS: tuple[MetricIndexKey, ...] = ("metric", "label", "output", "a
 METRIC_DIMENSION_KEYS = METRIC_INDEX_KEYS[1:]
 PIVOT_VALUE_COLUMN = "score"
 PIVOT_META_COLUMN = "greater_is_better"
+
+
+def _to_verbose(name: str) -> str:
+    """Title-case an axis level name for ``frame(verbose_name=True)``."""
+    return name.replace("_", " ").title()
 
 
 class MetricsSummaryRow(TypedDict):
@@ -221,6 +226,8 @@ class MetricsSummaryDisplay(DisplayMixin):
             table = df.groupby(index_cols, dropna=False, sort=False)[
                 PIVOT_VALUE_COLUMN
             ].agg(agg_list)
+            if "std" in agg_list and df["split"].nunique() == 1:
+                table["std"] = pd.Series(pd.NA, index=table.index, dtype="Float64")
             table.columns = pd.MultiIndex.from_tuples(
                 [(estimator, str(col)) for col in table.columns]
             )
@@ -323,10 +330,22 @@ class MetricsSummaryDisplay(DisplayMixin):
                 sort=False,
             )
             estimators = list(dict.fromkeys(df["estimator"]))
-            table = table[
-                [(str(agg), estimator) for agg in agg_list for estimator in estimators]
-            ]
-            table.columns.names = [None, "estimator"]
+            table = table.reindex(
+                columns=pd.MultiIndex.from_tuples(
+                    [
+                        (str(agg), estimator)
+                        for agg in agg_list
+                        for estimator in estimators
+                    ],
+                    names=[None, "estimator"],
+                )
+            )
+            if "std" in agg_list:
+                single_split = df.groupby("estimator", sort=False)["split"].nunique()
+                for estimator_name in single_split.index[single_split == 1]:
+                    table[("std", estimator_name)] = pd.Series(
+                        pd.NA, index=table.index, dtype="Float64"
+                    )
         return table
 
     def _finalize(
@@ -355,7 +374,7 @@ class MetricsSummaryDisplay(DisplayMixin):
             if isinstance(table.columns, pd.MultiIndex):
                 table.columns = flatten_multi_index(table.columns, lowercase=True)
             if isinstance(table.index, pd.MultiIndex):
-                table.index = flatten_multi_index(table.index, lowercase=True)
+                table.index = flatten_multi_index(table.index, lowercase=False)
         elif isinstance(table.index, pd.MultiIndex):
             levels = list(table.index.levels)
             for level_index, name in enumerate(table.index.names):
@@ -524,13 +543,8 @@ class MetricsSummaryDisplay(DisplayMixin):
             verbose_name=True,
             flat_index=False,
         )
-        html = (
-            frame.to_frame()._repr_html_()
-            if isinstance(frame, pd.Series)
-            else frame._repr_html_()
-        )
         lines = [
-            html,
+            metrics_summary_html(frame, inline_assets=True),
             (
                 '<p role="note">Use <code>.frame()</code> to control the format'
                 " of the output.</p>"

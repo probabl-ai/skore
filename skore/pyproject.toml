@@ -6,7 +6,7 @@ Skore's open-source Python library accelerates ML model development with automat
 smart methodological guidance, and comprehensive cross-validation analysis.\
 """
 dynamic = ["license-files", "readme", "version"]
-requires-python = ">=3.11"
+requires-python = ">=3.11.4,<3.15"
 maintainers = [{ name = "skore developers", email = "skore@signal.probabl.ai" }]
 license = "MIT"
 classifiers = [
@@ -27,6 +27,7 @@ classifiers = [
   "Programming Language :: Python :: 3.14",
 ]
 dependencies = [
+  "click",
   "jinja2",
   "joblib>=1.4",
   "matplotlib",
@@ -35,10 +36,13 @@ dependencies = [
   "packaging>=24.2",
   "pandas",
   "plotly",
+  "rich-click>=1.9",
   "rich>=14.2",
   "scikit-learn",
   "seaborn",
+  "skore-skills",
   "skrub>=0.10",
+  "textual",
   "uuid6>=2025.0.0; python_version < '3.14'",
 ]
 
@@ -52,6 +56,7 @@ test-base = [
   "mypy",
   "pre-commit",
   "pytest",
+  "pytest-asyncio",
   "pytest-cov",
   "pytest-order",
   "pytest-randomly",
@@ -71,6 +76,7 @@ sphinx-base = [
   "pydata-sphinx-theme",
   "seaborn",
   "skrub",
+  "sphinx-click",
   "sphinx-copybutton",
   "sphinx-design",
   "sphinx-gallery",
@@ -85,16 +91,18 @@ sphinx = ["mlflow", "polars", "skore[sphinx-base, hub, mlflow]"]
 sphinx-lts-cpu = ["mlflow", "polars-lts-cpu", "skore[sphinx-base, hub, mlflow]"]
 dev = ["ipykernel", "nbformat"]
 hub = [
+  "filelock",
   "httpx",
+  "keyring>=25.7",
   "orjson",
   "pydantic",
   "rich[jupyter]>=14.2",
   "scipy",
 ]
-mlflow = ["mlflow>=2.20.4"]
+mlflow = ["mlflow>=3.2.0"]
 
-[project.entry-points."skore.plugins.login"]
-hub = "skore._plugins.hub.authentication.login:login"
+[project.scripts]
+skore = "skore._cli:cli"
 
 [project.entry-points."skore.plugins.project"]
 local = "skore._plugins.local:Project"
@@ -138,6 +146,8 @@ addopts = [
   "--durations=25",
 ]
 xfail_strict = true
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
 log_cli_level = "info"
 filterwarnings = [
   "error",
@@ -150,6 +160,13 @@ filterwarnings = [
   # mlflow writes its YAML and requirement files through `codecs.open()`, which
   # Python 3.14 deprecates. Reached by every test that logs a report.
   'ignore:codecs\.open\(\) is deprecated:DeprecationWarning:mlflow',
+  # mlflow calls ``DataFrame.all(0)``, but pandas (>=3) warns that the arguments of
+  # ``all`` become keyword-only in pandas 4.
+  'ignore:Starting with pandas version 4\.0 all arguments of all will be keyword-only::mlflow',
+  # MLflow still maps a relationship with ``lazy="noload"``. SQLAlchemy (>=2.1)
+  # deprecates that loader during ``configure_mappers()`` and attributes the
+  # warning to the MLflow caller. Hit by every test that opens a tracking store.
+  'ignore:The ``noload`` loader strategy is deprecated:sqlalchemy.exc.SADeprecationWarning:mlflow',
   # sklearn (<=1.9) still passes ``iprint``/``disp`` to scipy's L-BFGS-B.
   # SciPy (<=1.17) emits a DeprecationWarning; SciPy (>=1.18) treats them as
   # unknown options (OptimizeWarning). Do not pin module to ``scipy``: the
@@ -252,7 +269,10 @@ module = [
   "pandas.*",
   "plotly.*",
   "pyodide.*",
+  "rich_click.*",
   "seaborn.*",
   "sklearn.*",
+  "skore_skills.*",
   "skrub.*",
+  "textual.*",
 ]

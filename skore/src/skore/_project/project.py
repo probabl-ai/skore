@@ -32,38 +32,48 @@ class Project:
     :func:`~skore.Project.sync`, respectively to insert a key-report pair into the
     project, obtain the metadata/metrics of the inserted reports, get a specific report
     by its id, and synchronize reports between projects.
+    :func:`~skore.Project.delete` removes the project.
 
     Three mutually exclusive modes are available and can be configured using the
     ``mode`` parameter of the constructor:
 
     .. rubric:: Hub mode
 
-    The project is configured to communicate with ``skore hub``.
+    The project is configured to communicate with Skore Hub.
 
-    In this mode, ``workspace`` is a ``skore hub`` concept that must be configured on
-    the ``skore hub`` interface. It represents an isolated entity managing users,
+    In this mode, ``workspace`` is a Skore Hub concept that must be configured on
+    the Skore Hub interface. It represents an isolated entity managing users,
     projects, and resources. It can be a company, organization, or team that operates
     independently within the system.
 
-    Note: Using Project in ``hub`` mode requires an account on ``skore hub``, with
-    access rights to the specified workspace. Authentication to ``skore hub`` is done by
-    running ``skore.login()`` before instantiating the Project.
+    Note: Using Project in ``hub`` mode requires an account on Skore Hub, with
+    access rights to the specified workspace. Authentication uses an API key, in
+    this order:
+
+    - the ``SKORE_HUB_API_KEY`` environment variable, which always wins. The key
+      is bound to a workspace; using it against another workspace fails at
+      runtime.
+    - otherwise the local credentials registry for the hub host and workspace:
+
+    .. code-block:: bash
+
+        $ skore hub api-key generate --host <host> --workspace <workspace>
 
     .. rubric:: Local mode
 
     Otherwise, the project is configured to the ``local`` mode to be persisted on
-    the user machine in a directory called a ``workspace``.
+    the user machine in a skore ``workspace``, which is a directory named 'skore'
+    containing a file named '.SKORE_WORKSPACE'.
 
     | The workspace can be set using kwargs or the environment variable
       ``SKORE_WORKSPACE``.
-    | If not, it will be set to a default location:
+    | If not specified, it will be set to a default location chosen as follows:
 
         - we search the current working directory and its parents for a
-          skore workspace: a directory named 'skore' containing a file named
-          '.SKORE_WORKSPACE'. If found, use that.
-        - otherwise if we are in a Git repository, create 'skore' at the root
-            of the repository.
-        - otherwise create 'skore' in the current working directory.
+          skore workspace. If we find one, we use it.
+        - otherwise, if we are in a Git repository, we create a skore workspace at the
+          root of the repository.
+        - otherwise, we create a skore workspace in the current working directory.
 
     .. rubric:: MLflow mode
 
@@ -89,6 +99,11 @@ class Project:
 
         tracking_uri : str, mode:mlflow only.
             The URI of the MLflow tracking server.
+
+        host : str, optional
+            Hub address when ``mode="hub"`` (for example
+            ``https://skore.probabl.ai``). If omitted,
+            ``SKORE_HUB_URI`` is used. Ignored for other modes.
 
     Attributes
     ----------
@@ -194,6 +209,11 @@ class Project:
                       - otherwise if we are in a Git repository, create
                         'skore' at the root of the repository.
                       - otherwise create 'skore' in the current working directory.
+
+            host : str, optional
+                Hub address when ``mode="hub"`` (for example
+                ``https://skore.probabl.ai``). If omitted,
+                ``SKORE_HUB_URI`` is used. Ignored for other modes.
 
             tracking_uri : str, mode:mlflow only.
                 The URI of the MLflow tracking server.
@@ -461,6 +481,10 @@ class Project:
 
             tracking_uri : str, mode:mlflow only.
                 The URI of the MLflow tracking server.
+
+            host : str, optional
+                Hub address when ``mode="hub"``. See the :class:`Project` class
+                docstring for details.
         """
         plugin, parameters = Project.__setup_plugin(mode, name, **kwargs)
 

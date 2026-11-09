@@ -4,7 +4,10 @@ What's new in skore — July 2026
 `summarize().frame()` is now a long-format table
 --------------------------------------------------
 
-The default format of :meth:`~skore.EstimatorReport.metrics.summarize`'s :meth:`~skore.Summary.frame` is now long-format rather than wide-format. It is now easier to retrieve data from the default DataFrame since its index is no longer a :class:`pandas.MultiIndex`. See :pr:`3094` by :user:`glemaitre`.
+The default format of :meth:`~skore.EstimatorReport.metrics.summarize`'s
+:meth:`~skore.MetricsSummaryDisplay.frame` is now long-format rather than
+wide-format. It is now easier to retrieve data from the default table since its index
+is no longer a :class:`pandas.MultiIndex`. See :pr:`3094` by :user:`glemaitre`.
 
 .. code-block:: python
 

@@ -1,8 +1,8 @@
 """
 .. _example_skd007_mdi_cardinality_bias:
 
-SKD007 - MDI feature importance is biased for high-cardinality features
-=======================================================================
+SKD007 - MDI biased for high-cardinality features
+=================================================
 
 This example demonstrates the limitations that
 :ref:`SKD007 <skd007-mdi-cardinality-bias>` warns against on tree models. Mean

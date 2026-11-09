@@ -47,7 +47,7 @@ def evaluate(
     Parameters
     ----------
     estimator : estimator object, list of estimators, or dict of estimators
-        The estimator to evaluate of several estimators to compare. An estimator can
+        The estimator to evaluate, or several estimators to compare. An estimator can
         be one of the following:
 
         - a scikit-learn compatible estimator as a :class:`~sklearn.base.BaseEstimator`;
@@ -87,6 +87,9 @@ def evaluate(
           :class:`~skore.CrossValidationReport`).
         - cross-validation splitter (e.g. ``KFold``, ``StratifiedKFold``):
           passed directly to :class:`~skore.CrossValidationReport`.
+
+        A splitter that yields a single split returns an
+        :class:`~skore.EstimatorReport`.
 
     pos_label : int, float, bool or str, default=None
         The positive class label for binary classification metrics. Forwarded
@@ -194,7 +197,7 @@ def evaluate(
     if splitter is _DEFAULT:
         data_op = get_data_op(estimator)
         if data_op is not None and data_op_has_explicit_cv(data_op):
-            return CrossValidationReport(
+            report = CrossValidationReport(
                 estimator,
                 X,
                 y,
@@ -203,6 +206,9 @@ def evaluate(
                 splitter=None,
                 n_jobs=n_jobs,
             )
+            if len(report.reports_) == 1:
+                return report.reports_[0]
+            return report
         splitter = 0.2
 
     if isinstance(splitter, str):
@@ -222,30 +228,28 @@ def evaluate(
     if isinstance(splitter, float):
         splitter = TrainTestSplit(test_size=splitter)
 
-    if isinstance(splitter, TrainTestSplit):
-        # It's easier to make a 1-split CrossValidationReport
-        # and extract an EstimatorReport from it,
-        # than to make an EstimatorReport from scratch
-        with configuration(show_progress=False):
-            report = CrossValidationReport(
-                estimator,
-                X,
-                y,
-                data=data,
-                pos_label=pos_label,
-                splitter=splitter,
-                n_jobs=n_jobs,
-            )
+    n_splits = None
+    get_n_splits = getattr(splitter, "get_n_splits", None)
+    if get_n_splits is not None:
+        try:
+            n_splits = get_n_splits()
+        except (TypeError, ValueError):
+            try:
+                n_splits = get_n_splits(X, y)
+            except (TypeError, ValueError):
+                n_splits = None
+    show_progress = configuration.show_progress and n_splits != 1
+
+    with configuration(show_progress=show_progress):
+        report = CrossValidationReport(
+            estimator,
+            X,
+            y,
+            data=data,
+            pos_label=pos_label,
+            splitter=cast(int | SKLearnCrossValidator | Generator, splitter),
+            n_jobs=n_jobs,
+        )
+    if len(report.reports_) == 1:
         return report.reports_[0]
-
-    splitter = cast(int | SKLearnCrossValidator | Generator, splitter)
-
-    return CrossValidationReport(
-        estimator,
-        X,
-        y,
-        data=data,
-        pos_label=pos_label,
-        splitter=splitter,
-        n_jobs=n_jobs,
-    )
+    return report

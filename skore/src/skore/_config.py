@@ -32,7 +32,7 @@ class Configuration:
     ----------
     show_progress : bool
         Whether to show progress bars for long-running operations.
-        Default is ``True`` (or ``False`` when joblib < 1.4).
+        Default is ``True``.
 
     plot_backend : str
         Backend used for rendering plots (e.g. ``"matplotlib"``).

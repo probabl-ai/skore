@@ -5,7 +5,7 @@ name: pytest
 #
 # The workflow runs `pytest` jobs on all the repository packages, identified by the JSON
 # list `env.PACKAGES`. If you want to run this workflow on a new package, you only have
-# to add its name in the above list, and in the `pr-display-code-coverage.yml` workflow.
+# to add its name in the above list.
 #
 # It's important to notice that only one workflow is triggered for all packages.
 #
@@ -51,7 +51,7 @@ jobs:
       pull-requests: read
     steps:
       - name: Checkout code
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Create dynamically filtering file, based on `env.PACKAGES`
         id: setup
@@ -85,14 +85,14 @@ jobs:
       contents: read
     steps:
       - name: Checkout code
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 2
 
       - name: Install uv
-        uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
+        uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
         with:
-          version: "0.12.8"
+          version: ">=0.13.4"
 
       - name: Check lockfiles are not obsolete
         run: |
@@ -134,7 +134,7 @@ jobs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Set matrix for pytest-test
         id: set-matrix
@@ -198,7 +198,7 @@ jobs:
       contents: read
     steps:
       - name: Checkout code
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Setup Python
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
@@ -236,6 +236,9 @@ jobs:
               echo "VIRTUAL_ENV=${GITHUB_WORKSPACE}\\${{ matrix.package }}\\venv" >> ${GITHUB_ENV}
           fi
 
+      - name: Upgrade pip
+        run: python -m pip install --upgrade "pip>=26.2.2"
+
       - name: Install dependencies in python-venv
         working-directory: ${{ format('ci/requirements/{0}/python-{1}/{2}', matrix.package, matrix.python, matrix.dependencies) }}
         if: steps.cache-python-venv.outputs.cache-hit != 'true'
@@ -268,17 +271,19 @@ jobs:
         working-directory: ${{ matrix.package }}/
         run: |
           mkdir coverage
-          python -m pytest src/ tests/ --junitxml=coverage/pytest.xml --cov-config=pyproject.toml --cov-report=xml:coverage/pytest-coverage.xml --cov
+          python -m pytest src/ tests/ --cov-config=pyproject.toml --cov-report=xml:coverage/pytest-coverage.xml --cov
           sed -i -E "s/filename=\"venv\/lib\/python[^/]*\/site-packages\/${PACKAGE//-/_}/filename=\"${PACKAGE}\/src\/${PACKAGE//-/_}/g" coverage/pytest-coverage.xml
         env:
           PACKAGE: ${{ matrix.package }}
 
-      - name: Upload coverage reports
-        if: ${{ (github.repository == 'probabl-ai/skore') && matrix.coverage && (github.event_name == 'pull_request') }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - name: Upload coverage reports to Codecov
+        if: ${{ (github.repository == 'probabl-ai/skore') && matrix.coverage && (github.event_name == 'pull_request' || github.event_name == 'push') }}
+        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
         with:
-          name: ${{ matrix.package }}-coverage
-          path: ${{ matrix.package }}/coverage/
+          token: ${{ secrets.CODECOV_TOKEN }}
+          slug: probabl-ai/skore
+          files: skore/coverage/pytest-coverage.xml
+          disable_search: true
 
   pytest:
     needs:

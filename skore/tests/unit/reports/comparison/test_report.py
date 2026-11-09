@@ -22,6 +22,7 @@ from skore import (
 )
 from skore._externals.sklearn_compat import convert_container
 from skore._utils.dataframe import _concat_vertical
+from skore._utils.repr.paginated_metrics import METRICS_HTML_PAGE_SIZE
 
 
 def test_pickle(tmp_path, report):
@@ -545,3 +546,21 @@ def test_report_repr_html(comparison_fixture, request):
     assert "report-tabset" in html_out
     assert "ComparisonReport.metrics" in html_out
     assert "skore-comparison-report-select" in html_out
+
+
+def test_metrics_summary_html_paginates_multiclass(
+    comparison_estimator_reports_multiclass_classification,
+):
+    html = comparison_estimator_reports_multiclass_classification._repr_html_()
+    assert "skore-metrics-pager" in html
+    assert 'data-page="1"' in html
+    tbody = html[html.find("<tbody>") : html.find("</tbody>")]
+    n_rows = len(
+        comparison_estimator_reports_multiclass_classification.metrics.summarize(
+            data_source="test"
+        ).frame(verbose_name=True, flat_index=False)
+    )
+    assert n_rows > METRICS_HTML_PAGE_SIZE
+    assert tbody.count("<tr") == n_rows
+    assert "skoreInitMetricsPagers" in html
+    assert ".skore-metrics-pager.is-ready tbody tr" in html

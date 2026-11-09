@@ -62,7 +62,7 @@ def _predictor_test_scores(
             clone(predictor),
             X=X,
             y=y,
-            splitter=report.splitter,
+            splitter=(split for split in report.split_indices),
             pos_label=report.pos_label,
             n_jobs=report.n_jobs,
         )

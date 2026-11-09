@@ -158,6 +158,17 @@ def test_track(monkeypatch):
     assert progress._progress.tasks[0].finished
 
 
+def test_progress_bar_setters():
+    """Description and total can be updated after the bar is created."""
+    with ProgressBar(description="progress", total=1) as progress:
+        progress.description = "updated"
+        progress.total = 3
+        progress.advance()
+
+    assert progress.description == "updated"
+    assert progress.total == 3
+
+
 def test_disable_progress_bar():
     with ProgressBar(description="progress1", total=0) as progress1:
         assert configuration.show_progress is True

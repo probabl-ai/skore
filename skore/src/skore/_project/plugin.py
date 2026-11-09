@@ -13,10 +13,8 @@ def get(*, group: PluginGroup, mode: ProjectMode) -> Any:
     """
     Load and return a ``skore`` plugin implementation for the given group and mode.
 
-    There are currently two types of plugins allowed:
-    - the classes implementing the ``Project`` API, registered under the
-      ``skore.plugins.project`` group,
-    - the functions used to login, registered under the ``skore.plugins.login`` group.
+    Plugins currently allowed are the classes implementing the ``Project`` API,
+    registered under the ``skore.plugins.project`` group.
 
     This function uses internally the python entry points mechanism: each package
     compatible with ``skore`` could expose its own plugins, as long as they are
@@ -25,9 +23,8 @@ def get(*, group: PluginGroup, mode: ProjectMode) -> Any:
     Parameters
     ----------
     group : PluginGroup
-        The group of plugin to search for. Must be one of:
+        The group of plugin to search for. Must be:
         - "skore.plugins.project"
-        - "skore.plugins.login"
 
     mode : ProjectMode
         The project mode used to select the plugin implementation.
@@ -39,9 +36,7 @@ def get(*, group: PluginGroup, mode: ProjectMode) -> Any:
     Returns
     -------
     Any
-        The loaded plugin object corresponding to the given group and mode.
-        The exact return type depends on the registered plugin implementation: class or
-        function.
+        The loaded plugin class corresponding to the given group and mode.
     """
     assert group in GROUPS, f"`group` must be in {GROUPS} (found {group})"
     assert mode in MODES, f"`mode` must be in {MODES} (found {mode})"

@@ -1,0 +1,159 @@
+"""Fetch and parse the skill catalog from a GitHub skills release."""
+
+from __future__ import annotations
+
+import json
+import shutil
+import tarfile
+from io import BytesIO
+from pathlib import Path
+from tempfile import mkdtemp
+from typing import Any
+from urllib.request import Request, urlopen
+
+GITHUB_REPO = "probabl-ai/skore-skills"
+_USER_AGENT = "skore-skills-cli"
+CATALOG_FILENAME = ".catalog.json"
+
+
+def normalize_github_repo(value: str) -> str:
+    """Return a canonical ``owner/name`` GitHub repository identifier.
+
+    Parameters
+    ----------
+    value : str
+        User-supplied repository string, possibly with extra whitespace.
+
+    Returns
+    -------
+    str
+        ``owner/name`` with surrounding slashes and whitespace stripped.
+
+    Raises
+    ------
+    ValueError
+        If ``value`` is not exactly ``owner/name`` with both parts non-empty.
+    """
+    repo = value.strip().strip("/")
+    owner, sep, name = repo.partition("/")
+    if not sep or "/" in name or not owner or not name:
+        raise ValueError(f"GitHub repository must be owner/name, got {value!r}")
+    return f"{owner}/{name}"
+
+
+def _fetch_bytes(url: str) -> bytes:
+    """Download ``url`` and return its raw content.
+
+    Parameters
+    ----------
+    url : str
+        The URL to download.
+
+    Returns
+    -------
+    bytes
+        The raw content of the response.
+    """
+    request = Request(url, headers={"User-Agent": _USER_AGENT})
+    with urlopen(request, timeout=30) as response:
+        return response.read()
+
+
+def latest_release_tag(repo: str = GITHUB_REPO) -> str:
+    """Return the tag name of the latest release of ``repo``.
+
+    Parameters
+    ----------
+    repo : str, default="probabl-ai/skore-skills"
+        The ``owner/name`` of the GitHub repository.
+
+    Returns
+    -------
+    str
+        The ``tag_name`` of the latest release.
+    """
+    url = f"https://api.github.com/repos/{repo}/releases/latest"
+    payload = json.loads(_fetch_bytes(url))
+    return payload["tag_name"]
+
+
+def download_release(tag: str, repo: str = GITHUB_REPO) -> Path:
+    """Download and extract the source tarball of ``repo`` at ``tag``.
+
+    Parameters
+    ----------
+    tag : str
+        The release tag to download.
+    repo : str, default="probabl-ai/skore-skills"
+        The ``owner/name`` of the GitHub repository.
+
+    Returns
+    -------
+    Path
+        The path to the extracted repository root.
+    """
+    url = f"https://api.github.com/repos/{repo}/tarball/{tag}"
+    archive = _fetch_bytes(url)
+    destination = Path(mkdtemp(prefix="skore-skills-"))
+    try:
+        with tarfile.open(fileobj=BytesIO(archive), mode="r:gz") as tar:
+            tar.extractall(destination, filter="data")
+        # GitHub source tarballs always contain a single top-level directory.
+        (root,) = destination.iterdir()
+    except Exception:
+        shutil.rmtree(destination, ignore_errors=True)
+        raise
+    return root
+
+
+def load_catalog(root: Path) -> dict[str, Any]:
+    """Load ``.catalog.json`` from an extracted repository ``root``.
+
+    Parameters
+    ----------
+    root : Path
+        The path to the extracted repository root.
+
+    Returns
+    -------
+    dict
+        The parsed content of the catalog file.
+
+    Raises
+    ------
+    FileNotFoundError
+        If ``.catalog.json`` is not present under ``root``.
+    """
+    path = root / CATALOG_FILENAME
+    if not path.is_file():
+        raise FileNotFoundError(f"No catalog file found in {root} ({CATALOG_FILENAME})")
+    return json.loads(path.read_text())
+
+
+def fetch_release(repo: str = GITHUB_REPO) -> tuple[str, Path, dict[str, Any]]:
+    """Resolve, download and parse the latest release of ``repo``.
+
+    Parameters
+    ----------
+    repo : str, default="probabl-ai/skore-skills"
+        The ``owner/name`` of the GitHub repository.
+
+    Returns
+    -------
+    tag : str
+        The tag name of the latest release.
+    root : Path
+        The path to the extracted repository root.
+    catalog : dict
+        The parsed catalog. Its ``version`` is the release tag, replacing any
+        version stored in the archive.
+    """
+    tag = latest_release_tag(repo)
+    root = download_release(tag, repo)
+    try:
+        catalog = load_catalog(root)
+    except Exception:
+        shutil.rmtree(root.parent, ignore_errors=True)
+        raise
+    catalog["version"] = tag
+    return tag, root, catalog

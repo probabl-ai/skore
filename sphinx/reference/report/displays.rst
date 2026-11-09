@@ -1,4 +1,4 @@
-Visualization Displays
+Visualization displays
 ======================
 
 .. currentmodule:: skore
@@ -33,6 +33,7 @@ the API of each display.
    :template: base.rst
 
    CoefficientsDisplay
+   CalibrationDisplay
    ImpurityDecreaseDisplay
    PermutationImportanceDisplay
 
