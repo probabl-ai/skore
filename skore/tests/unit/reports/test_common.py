@@ -1,7 +1,13 @@
 import jedi
+import pandas as pd
+import polars as pl
 import pytest
 from pandas.testing import assert_frame_equal
+from sklearn.datasets import make_regression
+from sklearn.linear_model import LinearRegression
 from sklearn.metrics import make_scorer, mean_squared_error
+
+from skore import CrossValidationReport, EstimatorReport
 
 
 @pytest.fixture(
@@ -84,3 +90,40 @@ def test_metrics_failure(report):
         display.frame()
         display.frame(flat_index=False)
     assert display.summary["name"].str.contains("fail", case=False).any()
+
+
+@pytest.mark.parametrize("container", ["pandas", "polars"])
+@pytest.mark.parametrize("report_cls", [EstimatorReport, CrossValidationReport])
+def test_colliding_target_column_uses_stable_suffix(report_cls, container):
+    """A feature named like the target is renamed with ``__y``, not ``_right``."""
+    X, y = make_regression(n_samples=40, n_features=4, random_state=0)
+    names = ["target", "f1", "f2", "f3"]
+    if container == "pandas":
+        features = pd.DataFrame(X, columns=names)
+        target = pd.Series(y, name="target")
+    else:
+        features = pl.DataFrame({name: X[:, i] for i, name in enumerate(names)})
+        target = pl.Series("target", y)
+
+    if report_cls is EstimatorReport:
+        report = EstimatorReport(
+            LinearRegression(),
+            X_train=features,
+            y_train=target,
+            X_test=features,
+            y_test=target,
+        )
+        summarize_kwargs = ({}, {"data_source": "test"})
+    else:
+        report = CrossValidationReport(LinearRegression(), features, target, splitter=2)
+        summarize_kwargs = ({},)
+
+    expected = ["target", "f1", "f2", "f3", "target__y"]
+    for kwargs in summarize_kwargs:
+        columns = list(
+            report.data.summarize(with_plots=False, **kwargs)
+            .summary["dataframe"]
+            .columns
+        )
+        assert columns == expected
+        assert "target_right" not in columns
