@@ -753,7 +753,8 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
         ----------
         policy : Literal["override", "update"], default="update"
             Policy to use when setting the style parameters.
-            If "override", existing settings are set to the provided values.
+            If "override", each provided group replaces the previous value.
+            Omitted groups are left unchanged.
             If "update", merge provided values into the existing settings.
             Passed keys replace the previous value. Nested dictionaries are
             merged the same way, so omitted keys are kept.
@@ -775,6 +776,6 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
         """
         return super().set_style(
             policy=policy,
-            heatmap_kwargs=heatmap_kwargs or {},
-            facet_grid_kwargs=facet_grid_kwargs or {},
+            heatmap_kwargs=heatmap_kwargs,
+            facet_grid_kwargs=facet_grid_kwargs,
         )

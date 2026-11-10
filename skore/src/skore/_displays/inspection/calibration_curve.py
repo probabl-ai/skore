@@ -288,7 +288,8 @@ class CalibrationDisplay(DisplayMixin):
         ----------
         policy : {"override", "update"}, default="update"
             Policy to use when setting the style parameters.
-            If "override", existing settings are set to the provided values.
+            If "override", each provided group replaces the previous value.
+            Omitted groups are left unchanged.
             If "update", merge provided values into the existing settings.
             Passed keys replace the previous value. Nested dictionaries are
             merged the same way, so omitted keys are kept.
@@ -306,6 +307,6 @@ class CalibrationDisplay(DisplayMixin):
         """
         return super().set_style(
             policy=policy,
-            line_kwargs=line_kwargs or {},
-            ax_set_kwargs=ax_set_kwargs or {},
+            line_kwargs=line_kwargs,
+            ax_set_kwargs=ax_set_kwargs,
         )
