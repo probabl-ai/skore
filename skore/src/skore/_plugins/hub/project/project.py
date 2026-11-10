@@ -367,23 +367,39 @@ class Project:
             metadata = response.json()
             presigned_url = metadata["pickle"]["presigned_url"]
 
+        checks_summary_url = next(
+            (
+                media["presigned_url"]
+                for media in metadata.get("medias") or []
+                if media.get("name") == "checks_summary" and media.get("presigned_url")
+            ),
+            None,
+        )
+
         report: EstimatorReport | CrossValidationReport
 
         # Download pickled report before unpickling it.
         #
         # It uses streaming responses that do not load the entire response body into
         # memory at once.
-        with (
-            TemporaryFile(mode="w+b") as tmpfile,
-            Client() as client,
-            client.stream(method="GET", url=presigned_url, timeout=30) as response,
-        ):
-            for data in response.iter_bytes():
-                tmpfile.write(data)
+        with TemporaryFile(mode="w+b") as tmpfile, Client() as client:
+            with client.stream(method="GET", url=presigned_url, timeout=30) as response:
+                for data in response.iter_bytes():
+                    tmpfile.write(data)
 
-            tmpfile.seek(0)
+                tmpfile.seek(0)
 
-            report = joblib_load(tmpfile)
+                report = joblib_load(tmpfile)
+
+            if checks_summary_url is not None:
+                from skore._plugins.hub.artifact.media.checks import (
+                    check_results_cache_from_summary,
+                )
+
+                checks_response = client.get(checks_summary_url, timeout=30)
+                report._check_results_cache = check_results_cache_from_summary(
+                    report, checks_response.content
+                )
 
         return report
 

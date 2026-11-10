@@ -16,6 +16,8 @@ from skore._displays.utils import (
 from skore._sklearn.types import _DEFAULT
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
+
     from matplotlib.figure import Figure
     from numpy.typing import ArrayLike
 
@@ -137,6 +139,7 @@ class CalibrationDisplay(DisplayMixin):
         name: str,
         y_pred: ArrayLike,
         y: ArrayLike,
+        classes: Sequence | np.ndarray,
         report_type: ReportType,
         n_bins: int | Literal["auto"] = "auto",
         strategy: Literal["uniform", "quantile"] = "quantile",
@@ -145,8 +148,8 @@ class CalibrationDisplay(DisplayMixin):
         """Compute the data for the calibration curve display."""
         y_arr = np.asarray(y)
         y_pred_arr = np.asarray(y_pred)
+        classes = np.asarray(classes)
 
-        classes = np.unique(y_arr)
         y_true_onehot = _one_hot_encode(y_arr, classes)
 
         curve_dfs = []
@@ -286,8 +289,9 @@ class CalibrationDisplay(DisplayMixin):
         policy : {"override", "update"}, default="update"
             Policy to use when setting the style parameters.
             If "override", existing settings are set to the provided values.
-            If "update", existing settings are not changed; only settings that were
-            previously unset are changed.
+            If "update", merge provided values into the existing settings.
+            Passed keys replace the previous value. Nested dictionaries are
+            merged the same way, so omitted keys are kept.
 
         line_kwargs : dict, default=None
             Keyword arguments passed to :func:`seaborn.lineplot`.

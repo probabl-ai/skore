@@ -2,11 +2,13 @@ from io import BytesIO
 from json import dumps, loads
 
 import joblib
+import pandas as pd
 from httpx import Response
 from pytest import fixture, mark, raises, warns
 
 from skore import CrossValidationReport, EstimatorReport
 from skore._plugins.hub.exception import ForbiddenException, NotFoundException
+from skore._plugins.hub.json import dumps as hub_dumps
 from skore._plugins.hub.project.project import Project
 from skore._plugins.hub.report import (
     CrossValidationReportPayload,
@@ -40,6 +42,33 @@ def monkeypatch_table_report_representation(monkeypatch):
         "skore._plugins.hub.artifact.media.data.TableReport.content_to_upload",
         lambda self: None,
     )
+
+
+def _checks_summary_payload(report):
+    explanation = "Train score is far above test score."
+    frame = pd.DataFrame(
+        [
+            {
+                "code": "SKD001",
+                "title": "uploaded title",
+                "section": "issue",
+                "explanation": explanation,
+                "documentation_url": "https://docs.example/skd001",
+            }
+        ]
+    )
+    content = hub_dumps(
+        frame.astype(object).where(frame.notna(), "NaN").to_dict(orient="tight")
+    )
+    check = next(check for check in report._checks_registry if check.code == "SKD001")
+    return content, {
+        "SKD001": {
+            "title": "uploaded title",
+            "docs_url": check.docs_url,
+            "explanation": explanation,
+            "section": "issue",
+        }
+    }
 
 
 @mark.filterwarnings(
@@ -438,7 +467,20 @@ class TestProject:
         assert content == desired
 
     @mark.respx()
-    def test_get_estimator_report(self, respx_mock, regression, host):
+    @mark.parametrize("with_checks", [False, True])
+    def test_get_estimator_report(self, respx_mock, regression, host, with_checks):
+        content, expected_cache = _checks_summary_payload(regression)
+        metadata = {"pickle": {"presigned_url": "http://url.com"}}
+        if with_checks:
+            metadata["medias"] = [
+                {
+                    "name": "checks_summary",
+                    "content_type": "application/vnd.dataframe",
+                    "parameters": {"fast_mode": True},
+                    "presigned_url": "http://checks.example",
+                }
+            ]
+
         with BytesIO() as stream:
             joblib.dump(regression, stream)
 
@@ -455,10 +497,14 @@ class TestProject:
                 (
                     "get",
                     "projects/workspace/name/estimator-reports/<report_id>",
-                    Response(200, json={"pickle": {"presigned_url": "http://url.com"}}),
+                    Response(200, json=metadata),
                 ),
                 ("get", "http://url.com", Response(200, content=stream.getvalue())),
             ]
+            if with_checks:
+                mocks.append(
+                    ("get", "http://checks.example", Response(200, content=content))
+                )
 
             for method, url, response in mocks:
                 respx_mock.request(method=method, url=url).mock(response)
@@ -469,9 +515,14 @@ class TestProject:
         assert isinstance(report, EstimatorReport)
         assert report.estimator_name_ == regression.estimator_name_
         assert report.ml_task == regression.ml_task
+        if with_checks:
+            assert report._check_results_cache == expected_cache
+        else:
+            assert not hasattr(report, "_check_results_cache")
 
     @mark.respx()
     def test_reports_get_cross_validation_report(self, respx_mock, cv_regression, host):
+        content, expected_cache = _checks_summary_payload(cv_regression)
         with BytesIO() as stream:
             joblib.dump(cv_regression, stream)
 
@@ -488,9 +539,23 @@ class TestProject:
                 (
                     "get",
                     "projects/workspace/name/cross-validation-reports/<report_id>",
-                    Response(200, json={"pickle": {"presigned_url": "http://url.com"}}),
+                    Response(
+                        200,
+                        json={
+                            "pickle": {"presigned_url": "http://url.com"},
+                            "medias": [
+                                {
+                                    "name": "checks_summary",
+                                    "content_type": "application/vnd.dataframe",
+                                    "parameters": {"fast_mode": True},
+                                    "presigned_url": "http://checks.example",
+                                }
+                            ],
+                        },
+                    ),
                 ),
                 ("get", "http://url.com", Response(200, content=stream.getvalue())),
+                ("get", "http://checks.example", Response(200, content=content)),
             ]
 
             for method, url, response in mocks:
@@ -502,6 +567,10 @@ class TestProject:
         assert isinstance(report, CrossValidationReport)
         assert report.estimator_name_ == cv_regression.estimator_name_
         assert report.ml_task == cv_regression.ml_task
+        assert report._check_results_cache == expected_cache
+        assert all(
+            not hasattr(fold, "_check_results_cache") for fold in report.reports_
+        )
 
     @mark.respx()
     def test_summarize(self, nowstr, respx_mock, host):
