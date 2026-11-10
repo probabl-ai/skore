@@ -157,7 +157,8 @@ class StyleDisplayMixin:
         ----------
         policy : Literal["override", "update"], default="update"
             Policy to use when setting the style parameters.
-            If "override", existing settings are set to the provided values.
+            If "override", each provided group replaces the previous value.
+            Omitted groups are left unchanged.
             If "update", merge provided values into the existing settings.
             Passed keys replace the previous value. Nested dictionaries are
             merged the same way, so omitted keys are kept.
@@ -182,6 +183,10 @@ class StyleDisplayMixin:
                     f"Unknown style parameter: {param_name}. "
                     f"The parameter name should be one of {self._style_params}."
                 )
+            # None means the caller omitted this group. An empty dict is a real
+            # value and still replaces or merges that group.
+            if param_value is None:
+                continue
             if policy == "override":
                 setattr(self, default_attr, param_value)
             elif policy == "update":
