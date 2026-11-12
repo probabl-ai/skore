@@ -244,8 +244,56 @@ class Summary(ReprHTMLMixin):
         """
         raise NotImplementedError
 
+    def to_markdown(self, *, with_reports: bool = False) -> str:
+        """Render the journal for the objective and the selected reports.
+
+        Parameters
+        ----------
+        with_reports : bool, default=False
+            When ``True``, append each selected report's ``to_markdown()``.
+            On a Hub project that downloads every selected report, so filter
+            with :meth:`query` first.
+
+        Returns
+        -------
+        str
+            The journal as Markdown.
+        """
+        from skore._project.journal import render_journal
+
+        objective = ""
+        experiments = DataFrame(
+            columns=[
+                "id",
+                "stem",
+                "status",
+                "question",
+                "source_id",
+                "check_code",
+                "plan",
+            ]
+        )
+        project = self.project
+        if project is not None and hasattr(project, "objective"):
+            objective = project.objective or ""
+        if project is not None and hasattr(project, "experiments"):
+            experiments = project.experiments.frame
+        report_markdown = None
+        if with_reports and project is not None and not self._summary.empty:
+            report_markdown = {}
+            for report_id in self._summary.index.get_level_values("id"):
+                report_markdown[str(report_id)] = project.get(
+                    str(report_id)
+                ).to_markdown()
+        return render_journal(
+            objective,
+            experiments,
+            None if self._summary.empty else self.frame(),
+            report_markdown=report_markdown,
+        )
+
     def __repr__(self) -> str:
-        return repr(self._summary)
+        return f"{self.to_markdown()}\n{self._summary!r}"
 
     @staticmethod
     def _cell(record: dict[str, Any], column: str) -> dict[str, str]:
@@ -275,6 +323,7 @@ class Summary(ReprHTMLMixin):
         """Show the HTML representation of the summary as a table."""
         container_id = f"skore-summary-{uuid.uuid4().hex[:8]}"
 
+        journal_markdown = self.to_markdown()
         if self._summary.empty:
             return render_template(
                 "project/summary.html.j2",
@@ -285,6 +334,7 @@ class Summary(ReprHTMLMixin):
                     "rows": [],
                     "filters": [],
                     "has_rows": False,
+                    "journal_markdown": journal_markdown,
                 },
             )
 
@@ -345,5 +395,6 @@ class Summary(ReprHTMLMixin):
                 "rows": rows,
                 "filters": filters,
                 "has_rows": bool(rows),
+                "journal_markdown": journal_markdown,
             },
         )

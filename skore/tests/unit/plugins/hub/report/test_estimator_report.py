@@ -559,7 +559,7 @@ class TestEstimatorReportPayload:
 
         assert payload_dict == {
             "key": "<key>",
-            "canonical_report_id": str(binary_classification.id),
+            "canonical_report_id": binary_classification.id,
             "estimator_class_name": "RandomForestClassifier",
             "dataset_fingerprint": hash(binary_classification.y_test),
             "ml_task": "binary-classification",
