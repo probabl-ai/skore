@@ -23,6 +23,7 @@ from skore._utils.accessor import (
     _check_supported_ml_task,
 )
 from skore._utils.cache_key import make_cache_key
+from skore._utils.skrub import get_predictor_and_input, resolve_fitted_predictor
 
 
 class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
@@ -33,6 +34,19 @@ class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
 
     def __init__(self, parent: EstimatorReport) -> None:
         super().__init__(parent)
+
+    def _get_estimator_and_input(self, data: dict | None):
+        """Return the scikit-learn estimator to inspect and its input on ``data``.
+
+        For a skrub learner, this is the final predictor and the features it sees.
+        """
+        estimator = self._parent.estimator_
+        if not self._parent._initialized_with_data_op:
+            return estimator, None if data is None else data["_skrub_X"]
+        if data is None:
+            return resolve_fitted_predictor(estimator), None
+        X, predictor = get_predictor_and_input(estimator, data)
+        return predictor, X
 
     @available_if(_check_estimator_has_coef())
     def coefficients(self) -> CoefficientsDisplay:
@@ -72,11 +86,12 @@ class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         10  Feature #9      102.2...
         >>> display.plot() # shows plot
         """
+        estimator, X = self._get_estimator_and_input(self._parent.train_data)
         return CoefficientsDisplay._compute_data_for_display(
-            estimator=self._parent.estimator_,
+            estimator=estimator,
             name=self._parent.estimator_name_,
             report_type=self._parent._report_type,
-            X=self._parent.X_train,
+            X=X,
         )
 
     @available_if(_check_estimator_has_feature_importances())
@@ -116,10 +131,12 @@ class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         3  Feature #3     0.48...
         4  Feature #4     0.00...
         """
+        estimator, X = self._get_estimator_and_input(self._parent.train_data)
         return ImpurityDecreaseDisplay._compute_data_for_display(
-            estimator=self._parent.estimator_,
+            estimator=estimator,
             name=self._parent.estimator_name_,
             report_type=self._parent._report_type,
+            X=X,
         )
 
     def permutation_importance(

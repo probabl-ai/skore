@@ -3,12 +3,18 @@ from __future__ import annotations
 import functools
 from typing import TYPE_CHECKING, Any, TypeGuard
 
+import narwhals as nw
+import numpy as np
+import pandas as pd
+import scipy.sparse as sp
 from sklearn.base import BaseEstimator
 from sklearn.pipeline import Pipeline
 from sklearn.utils.validation import NotFittedError, check_is_fitted
 from skrub import DataOp, as_data_op
 from skrub._data_ops._data_ops import Apply
 from skrub._data_ops._evaluation import _DataOpTraversal, find_first_apply
+
+from skore._sklearn.feature_names import _get_feature_names
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -121,7 +127,9 @@ def get_predictor_and_input(
     ``CrossValidationReport.input_data``), not a reconstructed X/y-only dict.
 
     The returned input is the value seen by the fitted predictor after all
-    upstream graph steps have been evaluated on ``env``.
+    upstream graph steps have been evaluated on ``env``. When the leading steps
+    of a pipeline in the supervised apply output an array, it is returned as a
+    dataframe named after their output features.
     """
     apply_node = supervised_apply_node(learner.data_op)
     impl = apply_node._skrub_impl
@@ -131,10 +139,23 @@ def get_predictor_and_input(
     )
     input_value = truncated.transform(env)
     applied = impl.estimator_
+    predictor = fitted_predictor_from_apply(apply_node)
     if isinstance(applied, Pipeline) and len(applied) > 1:
-        input_value = applied[:-1].transform(input_value)
+        preprocessor = applied[:-1]
+        input_value = preprocessor.transform(input_value)
+        if not nw.dependencies.is_into_dataframe(input_value) and not sp.issparse(
+            input_value
+        ):
+            input_value = pd.DataFrame(
+                input_value,
+                columns=_get_feature_names(
+                    predictor,
+                    transformer=preprocessor,
+                    n_features=np.shape(input_value)[1],
+                ),
+            )
 
-    return input_value, fitted_predictor_from_apply(apply_node)
+    return input_value, predictor
 
 
 def find_fitted_estimators(learner: SkrubLearner) -> list[BaseEstimator]:
