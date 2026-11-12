@@ -2,9 +2,10 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Literal, cast
 
+import numpy as np
 import seaborn as sns
 from numpy.typing import NDArray
-from pandas import DataFrame, Series
+from pandas import CategoricalDtype, DataFrame, Series, concat
 from sklearn.metrics import auc, roc_curve
 
 from skore._displays.base import DisplayMixin
@@ -34,6 +35,34 @@ if TYPE_CHECKING:
 Label = int | float | bool | str
 
 
+def _concat_aggregate_rows(frame: DataFrame, aggregate_frame: DataFrame) -> DataFrame:
+    """Append aggregated rows to `frame`, flagged in the `aggregate` column.
+
+    The aggregated rows are given the categorical dtypes of `frame` beforehand,
+    otherwise pandas has to reconcile the dtype of the columns that are entirely
+    missing on one side, such as `split`.
+    """
+    aggregate_dtype = CategoricalDtype(["threshold"])
+    categorical_dtypes = {
+        column: dtype
+        for column, dtype in frame.dtypes.items()
+        if isinstance(dtype, CategoricalDtype)
+    }
+    return concat(
+        [
+            frame.assign(
+                aggregate=Series(None, index=frame.index, dtype=aggregate_dtype)
+            ),
+            aggregate_frame.astype(categorical_dtypes).assign(
+                aggregate=Series(
+                    "threshold", index=aggregate_frame.index, dtype=aggregate_dtype
+                )
+            ),
+        ],
+        ignore_index=True,
+    )
+
+
 class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
     """Plot the ROC curve.
 
@@ -48,7 +77,8 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         - `label`
         - `threshold`
         - `fpr`
-        - `tpr`.
+        - `tpr`
+        - `aggregate` (binary cross-validation only)
 
     roc_auc : DataFrame
         The ROC AUC data to display. The columns are
@@ -57,7 +87,8 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         - `data_source`
         - `split` (may be null)
         - `label`
-        - `roc_auc`.
+        - `roc_auc`
+        - `aggregate` (only when the splits have been aggregated).
 
     report_pos_label : int, float, bool, str or None
         Default positive label used when `plot(label=...)` is not specified.
@@ -99,6 +130,12 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
     -----
     For multiclass classification, curves are computed in a one-vs-rest
     fashion for each class label.
+
+    A :class:`~skore.CrossValidationReport` stores the threshold average of the
+    splits, one curve per label. Pass `aggregate="threshold"` to :meth:`plot`
+    or :meth:`frame` to use it. The plot then shows the individual splits as
+    transparent lines behind the bold aggregated curve. Hide the splits by setting
+    `relplot_kwargs={"alpha": 0.0}` via :meth:`set_style`.
 
     Examples
     --------
@@ -177,6 +214,117 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
             report_type=report_type,
         )
 
+    def _aggregate_over_splits(self) -> RocCurveDisplay:
+        """Add the threshold average of the splits to the curves of the splits.
+
+        The averaged curve is held by extra rows, flagged by the `aggregate` column set
+        to "threshold" on those rows and missing on the rows of the splits. Those extra
+        rows have no `split`.
+        """
+        curve_frames: list[DataFrame] = []
+        auc_records: list[dict[str, Any]] = []
+        for (label, data_source), group in self.roc_curve.groupby(
+            ["label", "data_source"], observed=True
+        ):
+            splits = [
+                split_group.sort_values("threshold", ascending=True)
+                for _, split_group in group.groupby("split", observed=True)
+            ]
+            # Finite thresholds shared by every split. `+inf` starts every ROC curve,
+            # so it is not a decision threshold the splits have in common. The union
+            # is the fallback when the splits share none, which is the usual case
+            # after each split is downsampled on its own.
+            threshold_sets = [
+                {
+                    threshold
+                    for threshold in split["threshold"].tolist()
+                    if np.isfinite(threshold)
+                }
+                for split in splits
+            ]
+            shared = set.intersection(*threshold_sets)
+            if shared:
+                grid = np.array(sorted(shared), dtype=float)
+            else:
+                grid = np.unique(
+                    np.concatenate(
+                        [
+                            thresholds[np.isfinite(thresholds)]
+                            for thresholds in (
+                                split["threshold"].to_numpy() for split in splits
+                            )
+                        ]
+                    )
+                )
+
+            average_fpr = np.zeros(grid.shape, dtype=float)
+            average_tpr = np.zeros(grid.shape, dtype=float)
+            for split in splits:
+                thresholds = split["threshold"].to_numpy()
+                # First position at or above the target, then the neighbour when that
+                # one is strictly closer. An equal distance keeps the higher threshold.
+                # Infinite thresholds compare by identity, so `inf - inf` is never
+                # formed.
+                insertion = np.searchsorted(thresholds, grid, side="left")
+                insertion = np.clip(insertion, 0, len(thresholds) - 1)
+                previous = np.maximum(insertion - 1, 0)
+                higher = thresholds[insertion]
+                lower = thresholds[previous]
+                pick_higher = higher == grid
+                finite = np.isfinite(higher) & np.isfinite(lower) & np.isfinite(grid)
+                compare = ~pick_higher & finite
+                pick_higher[compare] = np.abs(
+                    higher[compare] - grid[compare]
+                ) <= np.abs(lower[compare] - grid[compare])
+                # A finite candidate wins when the other one is infinite, so a finite
+                # grid never snaps to the leading +inf of a curve.
+                pick_higher[~pick_higher & ~finite & np.isfinite(higher)] = True
+                indices = np.where(pick_higher, insertion, previous)
+                average_fpr += split["fpr"].to_numpy()[indices]
+                average_tpr += split["tpr"].to_numpy()[indices]
+            n_curves = len(splits)
+            average_fpr /= n_curves
+            average_tpr /= n_curves
+            # Decreasing threshold order, so the step plot walks the curve as usual.
+            grid = grid[::-1]
+            average_fpr = average_fpr[::-1]
+            average_tpr = average_tpr[::-1]
+
+            metadata = {
+                "estimator": self.roc_curve["estimator"].iloc[0],
+                "data_source": data_source,
+                "split": None,
+                "label": label,
+            }
+            curve_frames.append(
+                DataFrame(
+                    {
+                        **metadata,
+                        "threshold": grid,
+                        "fpr": average_fpr,
+                        "tpr": average_tpr,
+                    }
+                )
+            )
+            split_auc = self.roc_auc[
+                (self.roc_auc["label"] == label)
+                & (self.roc_auc["data_source"] == data_source)
+            ]["roc_auc"]
+            auc_records.append({**metadata, "roc_auc": split_auc.mean()})
+
+        return RocCurveDisplay(
+            roc_curve=_concat_aggregate_rows(
+                self.roc_curve, concat(curve_frames, ignore_index=True)
+            ),
+            roc_auc=_concat_aggregate_rows(
+                self.roc_auc, DataFrame.from_records(auc_records)
+            ),
+            report_pos_label=self.report_pos_label,
+            data_source=self.data_source,
+            ml_task=self.ml_task,
+            report_type=self.report_type,
+        )
+
     @DisplayMixin.style_plot
     def plot(
         self,
@@ -187,6 +335,7 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         plot_chance_level: bool = True,
         despine: bool = True,
         label: PositiveLabel = _DEFAULT,
+        aggregate: Literal["threshold"] | None = None,
     ) -> Figure:
         """Plot the ROC curve.
 
@@ -218,10 +367,32 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
             the positive class in binary classification. This lets you display only
             the curve of the desired class. Use `None` to show them all.
 
+        aggregate : {"threshold"} or None, default=None
+            If "threshold", overlay the threshold-averaged ROC curve of the
+            cross-validation splits. The individual splits are drawn as faded lines
+            with the bold averaged curve on top. Available for cross-validation,
+            with one curve per label in multiclass classification. `None` plots the
+            splits only.
+
         Returns
         -------
         matplotlib.figure.Figure
             Figure containing the ROC curve.
+
+        Notes
+        -----
+        With `aggregate="threshold"`, each split contributes the operating point at the
+        threshold nearest to each finite threshold shared by every split. `+inf`, which
+        starts every ROC curve, is not treated as a shared threshold. When the splits
+        share no finite threshold, the union of their finite thresholds is used
+        instead. On an equal distance, the higher threshold is kept. The AUC reported
+        for the aggregated curve is the mean of the AUCs of the splits. Since each
+        split is downsampled independently, its thresholds differ from the other
+        splits, which is why binary classification reports slightly different values
+        for its two labels.
+
+        The individual split lines can be visually suppressed by passing
+        `relplot_kwargs={"alpha": 0.0}` to :meth:`set_style` before calling `plot`.
 
         Examples
         --------
@@ -230,10 +401,10 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         >>> from skore import evaluate
         >>> X, y = load_breast_cancer(return_X_y=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
-        >>> report = evaluate(classifier, X, y, splitter=0.2)
+        >>> report = evaluate(classifier, X, y, splitter=2)
         >>> display = report.metrics.roc()
         >>> display.set_style(relplot_kwargs={"color": "tab:red"})
-        >>> display.plot()
+        >>> display.plot(aggregate="threshold")
         """
         label = _check_label(self.labels, label, self.report_pos_label)
         return self._plot(
@@ -241,6 +412,7 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
             plot_chance_level=plot_chance_level,
             despine=despine,
             label=label,
+            aggregate=aggregate,
         )
 
     def _plot_matplotlib(
@@ -250,9 +422,10 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         plot_chance_level: bool,
         despine: bool,
         label: PositiveLabel,
+        aggregate: Literal["threshold"] | None,
     ) -> Figure:
         """Matplotlib implementation of the `plot` method."""
-        plot_data = self.frame(with_roc_auc=True, label=label)
+        plot_data = self.frame(with_roc_auc=True, label=label, aggregate=aggregate)
 
         col, hue, style = _get_curve_plot_columns(
             plot_data=plot_data,
@@ -287,16 +460,42 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
             # warning. See: https://github.com/mwaskom/seaborn/issues/3891
             plot_data["split"] = plot_data["split"].astype(str)
 
+        is_aggregate = (
+            "aggregate" in plot_data.columns and plot_data["aggregate"].notna().any()
+        )
+        split_data = (
+            plot_data[plot_data["aggregate"].isna()] if is_aggregate else plot_data
+        )
+
+        validated_relplot_kwargs = _validate_style_kwargs(
+            relplot_kwargs, self._default_relplot_kwargs
+        )
+
         facet = sns.relplot(
-            data=plot_data,
+            data=split_data,
             kind="line",
             estimator=None,
             x="fpr",
             y="tpr",
-            **_validate_style_kwargs(relplot_kwargs, self._default_relplot_kwargs),
+            **validated_relplot_kwargs,
         )
 
         figure, axes = facet.figure, facet.axes.flatten()
+
+        # Faceting settings that `seaborn.lineplot` does not accept, and per-split
+        # settings that must not apply to the curve overlaid on the splits.
+        relplot_only_kwargs = frozenset(
+            {
+                "height",
+                "aspect",
+                "facet_kws",
+                "col",
+                "col_order",
+                "units",
+                "alpha",
+                "legend",
+            }
+        )
 
         # Create space under the plot to fit the manually created legends.
         n_legend_rows = plot_data[hue].nunique() if hue else 1
@@ -317,9 +516,34 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
                 else None
             )
             subplot_data = plot_data[plot_data[col] == col_value] if col else plot_data
+
+            legend_data = subplot_data
+            if is_aggregate:
+                # The splits are already drawn by `relplot`. The legend keeps their
+                # AUC, mean and standard deviation, while the line is the average.
+                legend_data = subplot_data[subplot_data["aggregate"].isna()]
+                subplot_data = subplot_data[subplot_data["aggregate"].notna()]
+                # Carry over the styling of the splits. Draw the overlaid curve thicker,
+                # unless the user asked for a specific line width.
+                line_kwargs = {
+                    key: value
+                    for key, value in validated_relplot_kwargs.items()
+                    if key not in relplot_only_kwargs
+                }
+                line_kwargs.setdefault("linewidth", 2.0)
+                sns.lineplot(
+                    data=subplot_data,
+                    x="fpr",
+                    y="tpr",
+                    ax=ax,
+                    legend=False,
+                    estimator=None,
+                    **line_kwargs,
+                )
+
             _build_custom_legend_with_stats(
                 ax=ax,
-                subplot_data=subplot_data,
+                subplot_data=legend_data,
                 hue=hue,
                 style=style,
                 hue_order=relplot_kwargs["hue_order"],
@@ -327,6 +551,7 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
                 is_cross_validation="cross-validation" in self.report_type,
                 statistic_column_name="roc_auc",
                 statistic_acronym="AUC",
+                statistic_note="threshold-averaged" if is_aggregate else None,
                 chance_level_label="Chance level (AUC = 0.5)",
             )
 
@@ -346,6 +571,8 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         )
 
         title = "ROC Curve"
+        if is_aggregate:
+            title = "Threshold-Averaged " + title
         if "comparison" not in self.report_type:
             title += f" for {self.roc_curve['estimator'].cat.categories.item()}"
         figure.suptitle("\n".join(filter(None, [title, info_label, info_data_source])))
@@ -485,6 +712,7 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         *,
         with_roc_auc: bool = False,
         label: PositiveLabel = _DEFAULT,
+        aggregate: Literal["threshold"] | None = None,
     ) -> DataFrame:
         """Get the data used to create the ROC curve plot.
 
@@ -499,6 +727,12 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
             the positive class in binary classification. This lets you display only
             the curve of the desired class. Use `None` to show them all.
 
+        aggregate : {"threshold"} or None, default=None
+            If "threshold", include the threshold-averaged curve of the
+            cross-validation splits together with the curves of the splits.
+            Available for cross-validation, with one curve per label in multiclass
+            classification. `None` returns the splits only.
+
         Returns
         -------
         DataFrame
@@ -508,11 +742,26 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
             - `estimator`: Name of the estimator (when comparing estimators)
             - `split`: Cross-validation split ID (when doing cross-validation)
             - `data_source`: Data source used (when `data_source="both"`)
+            - `aggregate`: "threshold" on the rows of the curve aggregating the splits
+              and missing on the rows of the individual splits (when
+              `aggregate="threshold"`)
             - `label`: Class label (when plotting one-vs-rest curves)
             - `threshold`: Decision threshold
             - `fpr`: False Positive Rate
             - `tpr`: True Positive Rate
             - `roc_auc`: Area Under the Curve (when `with_roc_auc=True`)
+
+        Notes
+        -----
+        With `aggregate="threshold"`, each split contributes the operating point at the
+        threshold nearest to each finite threshold shared by every split. `+inf`, which
+        starts every ROC curve, is not treated as a shared threshold. When the splits
+        share no finite threshold, the union of their finite thresholds is used
+        instead. On an equal distance, the higher threshold is kept. The AUC reported
+        for the aggregated curve is the mean of the AUCs of the splits. Since each
+        split is downsampled independently, its thresholds differ from the other
+        splits, which is why binary classification reports slightly different values
+        for its two labels.
 
         Examples
         --------
@@ -526,6 +775,10 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         >>> df = display.frame()
         """
         label = _check_label(self.labels, label, self.report_pos_label)
+        if aggregate not in (None, "threshold"):
+            raise ValueError('aggregate must be "threshold" or None.')
+        if aggregate == "threshold" and "aggregate" not in self.roc_curve.columns:
+            raise ValueError("Averaging is only available for cross-validation.")
 
         if with_roc_auc:  # noqa: SIM108
             # The merge between the ROC curve and the ROC AUC is done without
@@ -536,6 +789,9 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
             df = self.roc_curve.merge(self.roc_auc)
         else:
             df = self.roc_curve
+
+        if aggregate is None and "aggregate" in df.columns:
+            df = df[df["aggregate"].isna()].drop(columns="aggregate")
 
         statistical_columns = ["threshold", "fpr", "tpr"]
         if with_roc_auc:
@@ -552,6 +808,9 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
 
         if self.data_source == "both":
             indexing_columns += ["data_source"]
+
+        if "aggregate" in df.columns:
+            indexing_columns += ["aggregate"]
 
         if label is not None:
             df = df.query("label == @label").reset_index(drop=True)

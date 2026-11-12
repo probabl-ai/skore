@@ -36,8 +36,8 @@ from skore._plugins.hub.artifact.media import (
     PrecisionRecallDataFrameTrain,
     PredictionErrorDataFrameTest,
     PredictionErrorDataFrameTrain,
-    RocDataFrameTest,
-    RocDataFrameTrain,
+    RocDataFrameCrossValidationTest,
+    RocDataFrameCrossValidationTrain,
 )
 from skore._plugins.hub.artifact.media.data import TableReport
 from skore._plugins.hub.artifact.media.media import Media
@@ -131,8 +131,8 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
         PrecisionRecallDataFrameTrain,
         PredictionErrorDataFrameTest,
         PredictionErrorDataFrameTrain,
-        RocDataFrameTest,
-        RocDataFrameTrain,
+        RocDataFrameCrossValidationTest,
+        RocDataFrameCrossValidationTrain,
         TableReport,
     )
 

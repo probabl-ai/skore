@@ -16,6 +16,7 @@ if TYPE_CHECKING:
     from matplotlib.axes import Axes
     from matplotlib.colors import Colormap
     from matplotlib.figure import Figure
+    from matplotlib.lines import Line2D
     from numpy.typing import NDArray
     from pandas import DataFrame
 
@@ -362,6 +363,7 @@ def _build_custom_legend_with_stats(
     is_cross_validation: bool = False,
     statistic_column_name: Literal["average_precision", "roc_auc"],
     statistic_acronym: Literal["AP", "AUC"],
+    statistic_note: str | None = None,
     chance_level_label: str | None = None,
 ) -> None:
     """Build custom legend with a custom statistic for a single axis."""
@@ -390,20 +392,20 @@ def _build_custom_legend_with_stats(
                         style_value=style_value,
                         hue_value=hue_value,
                         statistic=statistic,
+                        statistic_note=statistic_note,
                     )
                 )
     if chance_level_label is not None:
         legend_labels.append(chance_level_label)
 
     n_entries = len(legend_labels)
-    lines = ax.get_lines()
-    handles = []
-    seen_line_attributes = []
-    for line in lines:
-        line_attributes = (line.get_color(), line.get_linestyle())
-        if line_attributes not in seen_line_attributes:
-            seen_line_attributes.append(line_attributes)
-            handles.append(line)
+    # Keep one line per appearance of a (color, linestyle) pair, in order of first
+    # appearance. The last matching line wins so that, when curves are overlaid on
+    # faded ones, the legend key shows the opaque curve drawn on top.
+    lines_by_attributes: dict[tuple[Any, Any], Line2D] = {}
+    for line in ax.get_lines():
+        lines_by_attributes[line.get_color(), line.get_linestyle()] = line
+    handles = list(lines_by_attributes.values())
 
     fontsize = "small" if n_entries > 4 else "medium"
 
@@ -423,18 +425,22 @@ def _format_legend_label(
     style_value: str | None,
     hue_value: str | None,
     statistic: str,
+    statistic_note: str | None = None,
 ) -> str:
     """Format a legend label based on style and hue."""
     if style_value is None and hue_value is None:
-        return statistic
+        if statistic_note is None:
+            return statistic
+        return f"{statistic} ({statistic_note})"
     if style_column_name == "data_source":
         style_value = cast(str, style_value)
         style_value = style_value.title() + " set"
+    note = "" if statistic_note is None else f", {statistic_note}"
     return (
         " - ".join(
             str(s) for s in filter(lambda x: x is not None, [hue_value, style_value])
         )
-        + f" ({statistic})"
+        + f" ({statistic}{note})"
     )
 
 

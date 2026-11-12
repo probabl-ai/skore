@@ -189,8 +189,19 @@ class MockDisplay:
         pass
 
 
-def check_roc_curve_display_data(display: RocCurveDisplay):
-    """Check the structure of the display's internal data."""
+def check_roc_curve_display_data(display: RocCurveDisplay, *, aggregate: bool = False):
+    """Check the structure of the display's internal data.
+
+    Parameters
+    ----------
+    display : RocCurveDisplay
+        The display to check.
+
+    aggregate : bool, default=False
+        Whether the splits of the display have been aggregated, which adds an
+        `aggregate` column to both frames.
+    """
+    extra_columns = ["aggregate"] if aggregate else []
     assert list(display.roc_curve.columns) == [
         "estimator",
         "data_source",
@@ -199,6 +210,7 @@ def check_roc_curve_display_data(display: RocCurveDisplay):
         "threshold",
         "fpr",
         "tpr",
+        *extra_columns,
     ]
     assert list(display.roc_auc.columns) == [
         "estimator",
@@ -206,6 +218,7 @@ def check_roc_curve_display_data(display: RocCurveDisplay):
         "split",
         "label",
         "roc_auc",
+        *extra_columns,
     ]
 
 

@@ -37,8 +37,8 @@ from skore._plugins.hub.artifact.media import (
     PermutationImportanceTrain,
     PrecisionRecallDataFrameTest,
     PrecisionRecallDataFrameTrain,
-    RocDataFrameTest,
-    RocDataFrameTrain,
+    RocDataFrameCrossValidationTest,
+    RocDataFrameCrossValidationTrain,
 )
 from skore._plugins.hub.artifact.media.data import TableReport
 from skore._plugins.hub.artifact.serializer import Serializer
@@ -1302,8 +1302,8 @@ class TestCrossValidationReportPayload:
             PermutationImportanceTrain,
             PrecisionRecallDataFrameTest,
             PrecisionRecallDataFrameTrain,
-            RocDataFrameTest,
-            RocDataFrameTrain,
+            RocDataFrameCrossValidationTest,
+            RocDataFrameCrossValidationTrain,
             TableReport,
         ]
 
