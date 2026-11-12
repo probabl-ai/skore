@@ -117,10 +117,7 @@ class _InspectionAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
 
             If a string, will be searched among the pipeline's `named_steps`.
 
-            For a :class:`~skrub.SkrubLearner`, only 0 (the importance of the ``X``
-            node features) and -1 (the importance of the features seen by the final
-            predictor) are supported. Has no effect for any other estimator that
-            is not a :class:`~sklearn.pipeline.Pipeline`.
+            Has no effect if the estimator is not a :class:`~sklearn.pipeline.Pipeline`.
 
         metric : str, callable, scorer, or list of such instances or dict of such \
                 instances, default=None

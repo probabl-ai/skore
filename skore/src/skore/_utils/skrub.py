@@ -274,49 +274,6 @@ class _LearnerAdapter(BaseEstimator):
         return self.estimator.__sklearn_tags__()
 
 
-class _XNodeEstimatorAdapter(BaseEstimator):
-    """Wrap a fitted skrub learner to accept the value of the ``X`` node directly.
-
-    Every other variable of the environment is kept from ``environment``, so that
-    ``X`` can be permuted, for instance in
-    :func:`~sklearn.inspection.permutation_importance`.
-    """
-
-    def __init__(self, learner, environment):
-        self.learner = learner
-        self.environment = environment
-
-    def fit(self, X, y=None):
-        # the learner is already fitted; defined to satisfy scikit-learn validation
-        return self
-
-    def __getattr__(self, name):
-        if name not in ["predict", "decision_function", "predict_proba", "score"]:
-            raise AttributeError(
-                f"{type(self).__name__!r} object has no attribute {name!r}"
-            )
-        learner_method = getattr(self.learner, name)
-
-        @functools.wraps(learner_method)
-        def estimator_method(X, y=None):
-            environment = self.environment | {"_skrub_X": X}
-            if name == "score":
-                environment["_skrub_y"] = y
-            return learner_method(environment)
-
-        return estimator_method
-
-    @property
-    def classes_(self):
-        return self.learner.classes_
-
-    def __sklearn_is_fitted__(self):
-        return True
-
-    def __sklearn_tags__(self):
-        return self.learner.__sklearn_tags__()
-
-
 def to_learner(estimator: EstimatorLike) -> _LearnerAdapter:
     return _LearnerAdapter(estimator)
 

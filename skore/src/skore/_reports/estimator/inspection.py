@@ -23,11 +23,7 @@ from skore._utils.accessor import (
     _check_supported_ml_task,
 )
 from skore._utils.cache_key import make_cache_key
-from skore._utils.skrub import (
-    _XNodeEstimatorAdapter,
-    get_predictor_and_input,
-    resolve_fitted_predictor,
-)
+from skore._utils.skrub import get_predictor_and_input, resolve_fitted_predictor
 
 
 class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
@@ -189,10 +185,7 @@ class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
 
             If a string, will be searched among the pipeline's `named_steps`.
 
-            For a :class:`~skrub.SkrubLearner`, only 0 (the importance of the ``X``
-            node features) and -1 (the importance of the features seen by the final
-            predictor) are supported. Has no effect for any other estimator that
-            is not a :class:`~sklearn.pipeline.Pipeline`.
+            Has no effect if the estimator is not a :class:`~sklearn.pipeline.Pipeline`.
 
         metric : str, callable, scorer, or list of such instances or dict of such \
                 instances, default=None
@@ -318,6 +311,10 @@ class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         -----
         Even if pipeline components output sparse arrays, these will be made dense.
         """
+        if self._parent._initialized_with_data_op:
+            raise TypeError(
+                "Permutation importance is not yet supported for skrub dataops."
+            )
         data_, y_true = self._parent._get_data_and_y_true(data_source=data_source)
 
         # NOTE: to temporary improve the `project.put` UX, we always store the
@@ -349,29 +346,13 @@ class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         # earlier.
         display = None if seed is None else self._parent._cache.get(cache_key)
         if display is None:
-            display_at_step = at_step
-            if not self._parent._initialized_with_data_op:
-                estimator, X = self._parent.estimator_, data_["_skrub_X"]
-            elif at_step == 0:
-                # permute the value of the `X` node, predicting with the whole learner
-                estimator = _XNodeEstimatorAdapter(self._parent.estimator_, data_)
-                X = data_["_skrub_X"]
-            elif at_step == -1:
-                # the predictor input is already preprocessed
-                estimator, X = self._get_estimator_and_input(data_)
-                display_at_step = 0
-            else:
-                raise ValueError(
-                    "at_step must be 0 or -1 when the estimator is a skrub learner; "
-                    f"got {at_step!r}"
-                )
             display = PermutationImportanceDisplay._compute_data_for_display(
                 data_source=data_source,
-                estimator=estimator,
+                estimator=self._parent.estimator_,
                 name=self._parent.estimator_name_,
-                X=X,
+                X=data_["_skrub_X"],
                 y=y_true,
-                at_step=display_at_step,
+                at_step=at_step,
                 metric=metric,
                 n_repeats=n_repeats,
                 max_samples=max_samples,
