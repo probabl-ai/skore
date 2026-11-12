@@ -787,7 +787,7 @@ class CoefficientsDisplay(DisplayMixin):
             else:
                 std = (
                     nw.from_native(X_transformed)
-                    .select(nw.all().std())
+                    .select(nw.all().std(ddof=0))
                     .to_numpy()
                     .ravel()
                 )
