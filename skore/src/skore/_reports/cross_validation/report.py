@@ -242,7 +242,9 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
                     "data must be provided when estimator is a SkrubLearner"
                 )
             self.learner_ = estimator
-            X_y_cv = skrub.as_data_op(estimator.data_op.skb.find_X_y()).skb.eval(data)
+            X_y_cv = skrub.as_data_op(estimator.data_op.skb.find_X_y()).skb.eval(
+                data | {"_skrub_ignore_extra_keys": True}
+            )
             X, y = X_y_cv["X"], X_y_cv["y"]
             self._data = data | {"_skrub_X": X, "_skrub_y": y}
             if splitter is None and (cv := X_y_cv.get("cv")) is not None:
