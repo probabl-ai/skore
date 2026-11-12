@@ -364,10 +364,14 @@ def test_pos_label(forest_binary_classification_with_test):
         expected_estimator="RandomForestClassifier",
     )
 
-    assert len(display.summary[display.summary["verbose_name"] == "Precision"]) == 1
-    assert len(display.summary[display.summary["verbose_name"] == "Recall"]) == 1
-    assert display.summary["label"].isna().all()
-    assert display.summary["output"].isna().all()
+    summary = display.summary
+    assert len(summary[summary["verbose_name"] == "Precision"]) == 1
+    assert len(summary[summary["verbose_name"] == "Recall"]) == 1
+    assert summary.loc[summary["verbose_name"] == "Precision", "label"].iloc[0] == 1
+    assert summary.loc[summary["verbose_name"] == "Recall", "label"].iloc[0] == 1
+    other_rows = summary[~summary["verbose_name"].isin(["Precision", "Recall"])]
+    assert other_rows["label"].isna().all()
+    assert summary["output"].isna().all()
 
 
 def test_pos_label_strings(forest_binary_classification_with_test):
@@ -450,6 +454,7 @@ def test_pos_label_overwrite(metric, metric_fn):
     report = EstimatorReport(classifier, X_test=X, y_test=y, pos_label="B")
     display = report.metrics.summarize(metric=metric)
     assert len(display.summary) == 1
+    assert display.summary["label"].values[0] == "B"
     score_B = display.summary["score"].values[0]
     assert score_B == pytest.approx(metric_fn(y, classifier.predict(X), pos_label="B"))
 
@@ -457,6 +462,7 @@ def test_pos_label_overwrite(metric, metric_fn):
     report = EstimatorReport(classifier, X_test=X, y_test=y, pos_label="A")
     display = report.metrics.summarize(metric=metric)
     assert len(display.summary) == 1
+    assert display.summary["label"].values[0] == "A"
     score_A = display.summary["score"].values[0]
     assert score_A == pytest.approx(metric_fn(y, classifier.predict(X), pos_label="A"))
 

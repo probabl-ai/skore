@@ -382,11 +382,6 @@ class Metric:
         if self.function is None:
             raise ValueError(f"Metric {self.name!r} has no scoring function.")
 
-        metric_params = inspect.signature(self.function).parameters
-        call_kwargs = kwargs.copy()
-        if "pos_label" in metric_params and "pos_label" not in call_kwargs:
-            call_kwargs["pos_label"] = report.pos_label
-
         if self.function_kind == FunctionKind.METRIC:
             assert self.response_method is not None
 
@@ -394,10 +389,10 @@ class Metric:
             y_pred = report._get_predictions(
                 data_source=data_source,
                 response_method=self.response_method,
-                pos_label=call_kwargs.get("pos_label", None),
+                pos_label=kwargs.get("pos_label"),
             )
 
-            return cast(MetricCallable, self.function)(y_true, y_pred, **call_kwargs)
+            return cast(MetricCallable, self.function)(y_true, y_pred, **kwargs)
 
         assert self.function_kind == FunctionKind.SCORER
 
@@ -407,7 +402,7 @@ class Metric:
             report.estimator_,
             X,
             y_true,
-            **call_kwargs,
+            **kwargs,
         )
 
     def _raw_cached(
@@ -532,6 +527,21 @@ class Metric:
             The computed metric value(s).
         """
         merged_kwargs = self.kwargs | kwargs
+        if self.function is not None:
+            params = inspect.signature(self.function).parameters
+            if "pos_label" in params and "pos_label" not in merged_kwargs:
+                merged_kwargs["pos_label"] = report.pos_label
+
+            if (
+                report._ml_task == "binary-classification"
+                and "average" in params
+                and merged_kwargs.get("average") is None
+                and merged_kwargs.get("pos_label") is not None
+            ):
+                merged_kwargs["average"] = "binary"
+            elif merged_kwargs.get("average") != "binary":
+                merged_kwargs.pop("pos_label", None)
+
         score = self._raw_cached(
             report=report, data_source=data_source, **merged_kwargs
         )
@@ -637,15 +647,6 @@ class Precision(Metric):
     def available(report: EstimatorReport) -> bool:
         return report._ml_task in ("binary-classification", "multiclass-classification")
 
-    def _raw(self, *, report: EstimatorReport, data_source="test", **kwargs):
-        if report._ml_task == "binary-classification":
-            if kwargs["average"] is None and report.pos_label is not None:
-                kwargs["average"] = "binary"
-            elif kwargs["average"] != "binary":
-                kwargs["pos_label"] = None
-
-        return super()._raw(report=report, data_source=data_source, **kwargs)
-
 
 class PrecisionAvg(Precision):
     name = "precision_avg"
@@ -668,15 +669,6 @@ class Recall(Metric):
     @staticmethod
     def available(report: EstimatorReport) -> bool:
         return report._ml_task in ("binary-classification", "multiclass-classification")
-
-    def _raw(self, *, report: EstimatorReport, data_source="test", **kwargs):
-        if report._ml_task == "binary-classification":
-            if kwargs["average"] is None and report.pos_label is not None:
-                kwargs["average"] = "binary"
-            elif kwargs["average"] != "binary":
-                kwargs["pos_label"] = None
-
-        return super()._raw(report=report, data_source=data_source, **kwargs)
 
 
 class RecallAvg(Recall):
@@ -709,8 +701,7 @@ class Brier(Metric):
         return super()._raw(
             report=report,
             data_source=data_source,
-            pos_label=report.learner_.classes_[-1],
-            **kwargs,
+            **(kwargs | {"pos_label": report.learner_.classes_[-1]}),
         )
 
 
