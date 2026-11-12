@@ -1,4 +1,5 @@
 import pickle
+import warnings
 
 import joblib
 import numpy as np
@@ -371,7 +372,9 @@ def test_report_with_extra_keys_in_data():
 
     # Should not raise a warning
     env = {"X": X, "y": y, "a": 1}
-    CrossValidationReport(data_op.skb.make_learner(), data=env)
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        CrossValidationReport(data_op.skb.make_learner(), data=env)
 
     # Should raise a warning about unused keys
     env = {"X": X, "y": y, "a": 1, "something really extra": 0}
