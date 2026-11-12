@@ -24,6 +24,8 @@ def _get_space_bound(
         owner = owner.get_params(deep=True)[step_name]
     if not hasattr(owner, "_parameter_constraints"):
         return None
+    if leaf_param not in owner._parameter_constraints:
+        return None
     for constraint in owner._parameter_constraints[leaf_param]:
         if isinstance(constraint, Interval) and constraint.closed in [side, "both"]:
             return float(getattr(constraint, side))
