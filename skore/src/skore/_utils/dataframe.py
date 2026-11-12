@@ -20,6 +20,25 @@ else:
 UserTarget: TypeAlias = UserSeries | UserDataFrame
 
 
+def _disambiguate_target_columns(
+    features: nw.DataFrame[Any], target: nw.DataFrame[Any]
+) -> nw.DataFrame[Any]:
+    """Rename target columns that already exist on the feature frame.
+
+    A horizontal concat or row-index join otherwise suffixes the target copy
+    with ``_right``.
+    """
+    used = set(features.columns)
+    mapping: dict[Any, str] = {}
+    for name in target.columns:
+        candidate = name
+        while candidate in used:
+            candidate = f"{candidate}__y"
+        mapping[name] = candidate
+        used.add(candidate)
+    return target.rename(mapping)
+
+
 def _ensure_string_column_names(df: nw.DataFrame[Any]) -> nw.DataFrame[Any]:
     if all(isinstance(col, str) for col in df.columns):
         return df

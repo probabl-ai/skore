@@ -70,7 +70,7 @@ def test_generate_without_host_uses_environment_uri(monkeypatch, hub):
 def test_generate_without_host_requires_environment_uri(monkeypatch, hub):
     monkeypatch.delenv("SKORE_HUB_URI", raising=False)
 
-    with raises(ValueError, match="You must provide an host"):
+    with raises(ValueError, match="You must provide a host"):
         key_module.generate(workspace="w1")
 
 

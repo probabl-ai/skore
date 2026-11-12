@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from skore._checks.base import Check, CheckCode, ChecksSummaryDisplay
-from skore._config import configuration
+from skore._config import _normalize_ignore_checks, configuration
 from skore._externals.pandas_accessors import DirNamesMixin
 from skore._reports.base import _BaseAccessor, _BaseReport
 
@@ -56,15 +56,12 @@ class _ChecksAccessor(_BaseAccessor[_BaseReport], DirNamesMixin):
         True
         """
         ignored_codes: set[CheckCode] = set()
-        if ignore:
+        for codes in (ignore, configuration.ignore_checks):
+            normalized = _normalize_ignore_checks(codes)
+            if normalized is None:
+                continue
             ignored_codes.update(
-                code.strip().upper() for code in ignore if code.strip()
-            )
-        if configuration.ignore_checks:
-            ignored_codes.update(
-                code.strip().upper()
-                for code in configuration.ignore_checks
-                if code.strip()
+                code.strip().upper() for code in normalized if code.strip()
             )
         return ChecksSummaryDisplay(
             self._parent._get_checks_results(ignored_codes, fast_mode=fast_mode),
@@ -78,6 +75,9 @@ class _ChecksAccessor(_BaseAccessor[_BaseReport], DirNamesMixin):
         """Register additional checks for this report.
 
         Checks are defined by implementing the :class:`~skore.Check` protocol.
+        A check whose code is already used is rejected, so the registered
+        check stays in place. Codes are compared case-insensitively, ignoring
+        surrounding whitespace.
 
         Parameters
         ----------
@@ -89,6 +89,10 @@ class _ChecksAccessor(_BaseAccessor[_BaseReport], DirNamesMixin):
             "estimator",
             "comparison-estimator",
             "comparison-cross-validation",
+        }
+        taken = {
+            registry_check.code.strip().upper()
+            for registry_check in self._parent._checks_registry
         }
         for check in checks:
             if not isinstance(check, Check):
@@ -107,6 +111,13 @@ class _ChecksAccessor(_BaseAccessor[_BaseReport], DirNamesMixin):
                     f"The check's report_types contains unsupported values: "
                     f"{invalid_types}. "
                 )
+            code = check.code.strip().upper()
+            if code in taken:
+                raise ValueError(
+                    f"Code {check.code!r} is already used by a registered check. "
+                    "Please use a different code."
+                )
+            taken.add(code)
         self._parent._checks_registry.extend(checks)
 
     def available(self) -> list[str]:

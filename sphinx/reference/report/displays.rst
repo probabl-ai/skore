@@ -1,4 +1,4 @@
-Visualization Displays
+Visualization displays
 ======================
 
 .. currentmodule:: skore

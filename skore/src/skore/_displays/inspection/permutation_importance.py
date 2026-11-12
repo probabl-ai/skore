@@ -709,9 +709,11 @@ class PermutationImportanceDisplay(DisplayMixin):
         ----------
         policy : {"override", "update"}, default="update"
             Policy to use when setting the style parameters.
-            If "override", existing settings are set to the provided values.
-            If "update", existing settings are not changed; only settings that were
-            previously unset are changed.
+            If "override", each provided group replaces the previous value.
+            Omitted groups are left unchanged.
+            If "update", merge provided values into the existing settings.
+            Passed keys replace the previous value. Nested dictionaries are
+            merged the same way, so omitted keys are kept.
 
         boxplot_kwargs : dict, default=None
             Keyword arguments to be passed to :func:`seaborn.boxplot` for
@@ -732,6 +734,6 @@ class PermutationImportanceDisplay(DisplayMixin):
         """
         return super().set_style(
             policy=policy,
-            boxplot_kwargs=boxplot_kwargs or {},
-            stripplot_kwargs=stripplot_kwargs or {},
+            boxplot_kwargs=boxplot_kwargs,
+            stripplot_kwargs=stripplot_kwargs,
         )

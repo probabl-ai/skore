@@ -1,7 +1,7 @@
 import pandas as pd
 import pytest
 
-from skore._checks.base import ChecksSummaryDisplay
+from skore._checks.base import Check, ChecksSummaryDisplay
 
 
 @pytest.fixture(
@@ -76,6 +76,23 @@ def test_fast_mode_surfaces_skipped_slow_checks(
     slow_codes = {"SKD009", "SKD010", "SKD011", "SKD012"}
     assert slow_codes <= set(skipped.index)
     assert skipped["explanation"].isna().all()
+
+
+def test_summarize_twice_with_custom_check(comparison_estimator_reports_regression):
+    """Summarizing twice must not reject a custom check already copied onto children."""
+
+    class Propagated(Check):
+        code = "PROP1"
+        title = "Propagated"
+        report_types = ["estimator"]
+
+        def check_function(self, report):
+            return "propagated finding"
+
+    report = comparison_estimator_reports_regression
+    report.checks.add([Propagated()])
+    report.checks.summarize(fast_mode=True)
+    report.checks.summarize(fast_mode=True)
 
 
 def test_ignore_surfaces_muted_checks(comparison_estimator_reports_regression):
