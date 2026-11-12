@@ -129,6 +129,7 @@ def get_predictor_and_input(
     truncated = learner.truncated_after(
         lambda node, target=predictor_input_node: node is target
     )
+    env["_skrub_ignore_extra_keys"] = True
     input_value = truncated.transform(env)
     applied = impl.estimator_
     if isinstance(applied, Pipeline) and len(applied) > 1:

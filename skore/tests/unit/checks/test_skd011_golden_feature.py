@@ -40,7 +40,7 @@ def test_detects_golden_feature(report_type, estimator):
     if isinstance(estimator, SkrubLearner):
         report = evaluate(
             estimator,
-            data={"X": X, "y": y, "_skrub_ignore_extra_keys": True},
+            data={"X": X, "y": y},
             splitter=0.2 if report_type == "estimator" else 3,
         )
     else:

@@ -241,8 +241,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
                 raise TypeError(
                     "data must be provided when estimator is a SkrubLearner"
                 )
-            if "_skrub_ignore_extra_keys" not in data:
-                data["_skrub_ignore_extra_keys"] = True
+            data.setdefault("_skrub_ignore_extra_keys", True)
             self.learner_ = estimator
             X_y_cv = skrub.as_data_op(estimator.data_op.skb.find_X_y()).skb.eval(data)
             X, y = X_y_cv["X"], X_y_cv["y"]

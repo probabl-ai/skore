@@ -58,7 +58,7 @@ def test_tabular_pipeline_with_numpy_X(report_type, estimator, regression_data):
     if isinstance(estimator, SkrubLearner):
         report = evaluate(
             estimator,
-            data={"X": X, "y": y, "_skrub_ignore_extra_keys": True},
+            data={"X": X, "y": y},
             splitter=0.2 if report_type == "estimator" else 3,
         )
     else:
