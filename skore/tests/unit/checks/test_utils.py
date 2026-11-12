@@ -23,6 +23,7 @@ from skore._checks.utils import (
     collect_scores,
     get_fitted_estimator,
     get_preprocessed_X,
+    get_report_X,
     get_report_y,
     majority_vote,
     split_preprocessor_estimator,
@@ -210,6 +211,62 @@ def test_get_report_y_raises_not_applicable_for_sparse_target():
     report._report_type = "estimator"
     with pytest.raises(CheckNotApplicable, match="Target data is sparse"):
         get_report_y(report, data_source="train")
+
+
+# get_report_X
+
+
+def test_get_report_X_estimator_both_concatenates_train_and_test(
+    small_estimator_report,
+):
+    X = get_report_X(small_estimator_report, data_source="both")
+    assert len(X) == len(small_estimator_report.X_train) + len(
+        small_estimator_report.X_test
+    )
+
+
+def test_get_report_X_estimator_train_only(small_estimator_report):
+    X = get_report_X(small_estimator_report, data_source="train")
+    assert len(X) == len(small_estimator_report.X_train)
+
+
+def test_get_report_X_estimator_test_only(small_estimator_report):
+    X = get_report_X(small_estimator_report, data_source="test")
+    assert len(X) == len(small_estimator_report.X_test)
+
+
+def test_get_report_X_cv_report_ignores_data_source(small_cv_report):
+    """For CV reports the full dataset features are returned regardless of source."""
+    X_both = get_report_X(small_cv_report, data_source="both")
+    X_train = get_report_X(small_cv_report, data_source="train")
+    assert len(X_both) == len(X_train) == len(small_cv_report.X)
+
+
+@pytest.mark.parametrize("data_source", ["both", "train"])
+def test_get_report_X_raises_not_applicable_when_train_missing(
+    regression_data, data_source
+):
+    X, y = regression_data
+    fitted = LinearRegression().fit(X, y)
+    report = EstimatorReport(fitted, X_test=X, y_test=y)
+    with pytest.raises(CheckNotApplicable, match="Train data is unavailable"):
+        get_report_X(report, data_source=data_source)
+
+
+def test_get_report_X_raises_not_applicable_for_sparse_features():
+    """Sparse features cannot be normalized into a dense DataFrame."""
+    X_sparse = sp.random(10, 2, density=0.5, format="csr")
+    y = np.random.default_rng(0).normal(size=10)
+    report = MockReport(
+        LinearRegression().fit(X_sparse, y),
+        X_train=X_sparse,
+        y_train=y,
+        X_test=X_sparse,
+        y_test=y,
+    )
+    report._report_type = "estimator"
+    with pytest.raises(CheckNotApplicable, match="Feature data is sparse"):
+        get_report_X(report, data_source="train")
 
 
 # get_preprocessed_X
