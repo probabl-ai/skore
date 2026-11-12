@@ -373,7 +373,7 @@ def test_report_with_extra_keys_in_data():
     # Should not raise a warning
     env = {"X": X, "y": y, "a": 1}
     with warnings.catch_warnings():
-        warnings.simplefilter("ignore")
+        warnings.simplefilter("error", UserWarning)
         CrossValidationReport(data_op.skb.make_learner(), data=env)
 
     # Should raise a warning about unused keys
