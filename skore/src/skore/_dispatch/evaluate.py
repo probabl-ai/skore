@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections.abc import Generator
 from typing import TYPE_CHECKING, Literal, cast
 
+import numpy as np
 from numpy.typing import ArrayLike
 
 from skore._config import configuration
@@ -21,6 +22,26 @@ from skore._utils.skrub import data_op_has_explicit_cv, get_data_op
 
 if TYPE_CHECKING:
     from skore._sklearn.types import EstimatorLike
+
+
+def _is_dataset_collection(X: object) -> bool:
+    """Return whether ``X`` is a dict or a list of datasets, not a list of rows."""
+    if isinstance(X, dict):
+        return True
+    if not isinstance(X, list):
+        return False
+    if not X:
+        return True
+    first = X[0]
+    if isinstance(first, dict):
+        return True
+    ndim = getattr(first, "ndim", None)
+    if isinstance(ndim, int):
+        return ndim > 1
+    try:
+        return np.asarray(first).ndim > 1
+    except (ValueError, TypeError):
+        return True
 
 
 def evaluate(
@@ -150,7 +171,7 @@ def evaluate(
     >>> list(report.reports_)
     ['m1', 'm2']
     """
-    if isinstance(X, (list, dict)):
+    if _is_dataset_collection(X):
         raise TypeError(
             "X must be a single array-like or None. To compare estimators "
             "evaluated on different feature matrices, call evaluate() once per "

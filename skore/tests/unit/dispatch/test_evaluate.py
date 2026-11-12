@@ -1,6 +1,7 @@
 import numpy as np
 import pytest
 import skrub
+from sklearn.datasets import make_classification
 from sklearn.dummy import DummyClassifier
 from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.model_selection import (
@@ -126,11 +127,26 @@ def test_multiple_estimators_cv(regression_data):
 
 
 def test_list_or_dict_X_raises(regression_data):
-    """Passing list or dict X raises TypeError."""
+    """A dict or a list of datasets is rejected; a list of rows is accepted."""
     X, y = regression_data
-    for invalid_x in ([X], {"a": X}):
+
+    class _UnconvertibleRow:
+        def __array__(self, dtype=None, copy=None):
+            raise TypeError("cannot convert")
+
+    for invalid_x in ([X], {"a": X}, [], [{"a": 1}], [_UnconvertibleRow()]):
         with pytest.raises(TypeError, match="single array-like or None"):
             evaluate(LinearRegression(), invalid_x, y)
+
+
+def test_list_of_rows_matches_array():
+    """A list of rows is one feature matrix, same as the original array."""
+    X, y = make_classification(n_samples=40, n_features=4, random_state=0)
+    array_report = evaluate(LogisticRegression(), X, y, splitter=0.25)
+    list_report = evaluate(LogisticRegression(), X.tolist(), y.tolist(), splitter=0.25)
+    np.testing.assert_allclose(
+        list_report.estimator_.predict(X), array_report.estimator_.predict(X)
+    )
 
 
 def test_multiple_estimators_dict(regression_data):
