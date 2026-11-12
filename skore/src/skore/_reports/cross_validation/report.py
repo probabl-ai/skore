@@ -246,11 +246,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
                 data | {"_skrub_ignore_extra_keys": True}
             )
             X, y = X_y_cv["X"], X_y_cv["y"]
-            self._data = data | {
-                "_skrub_X": X,
-                "_skrub_y": y,
-                "_skrub_ignore_extra_keys": True,
-            }
+            self._data = data | {"_skrub_X": X, "_skrub_y": y}
             if splitter is None and (cv := X_y_cv.get("cv")) is not None:
                 self._splitter = cv
                 split_kwargs = X_y_cv["split_kwargs"]
@@ -270,11 +266,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
                     "SkrubLearner and data is provided instead)."
                 )
             self.learner_ = to_learner(estimator)
-            self._data = {
-                "_skrub_X": X,
-                "_skrub_y": y,
-                "_skrub_ignore_extra_keys": True,
-            }
+            self._data = {"_skrub_X": X, "_skrub_y": y}
         if getattr(self, "_splitter", None) is None:
             self._splitter = check_cv(splitter, y, classifier=is_classifier(estimator))
             self._split_indices = tuple(self._splitter.split(X, y))

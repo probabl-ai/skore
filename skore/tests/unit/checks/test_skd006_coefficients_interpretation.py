@@ -113,9 +113,7 @@ def test_pipeline_coefficient_interpretation(
     """SKD006 tip reflects preprocessed feature scale in a pipeline."""
     X, y = regression_data
     if isinstance(estimator, SkrubLearner):
-        report = evaluate(
-            estimator, data={"X": X, "y": y, "_skrub_ignore_extra_keys": True}
-        )
+        report = evaluate(estimator, data={"X": X, "y": y})
     else:
         report = evaluate(estimator, X, y)
 
