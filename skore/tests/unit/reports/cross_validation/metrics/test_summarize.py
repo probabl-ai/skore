@@ -345,7 +345,7 @@ def test_pos_label_overwrite(metric, logistic_binary_classification_data):
     display = report.metrics.summarize(metric=metric)
 
     assert len(display.summary) == 2  # One line per split
-    assert display.summary["label"].isna().all()
+    assert display.summary["label"].to_list() == ["A", "A"]
 
 
 def test_non_default_n_jobs(forest_binary_classification_data):
