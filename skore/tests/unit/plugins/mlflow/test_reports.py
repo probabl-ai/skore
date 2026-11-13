@@ -25,6 +25,7 @@ from skore._plugins.mlflow.reports import (
     iter_estimator,
     iter_estimator_metrics,
 )
+from skore._utils.skrub import SKRUB_X_KEY, SKRUB_Y_KEY
 
 REPORT_FIXTURES = ["clf_report", "mclf_report", "reg_report", "mreg_report"]
 CV_REPORT_FIXTURES = [
@@ -139,7 +140,7 @@ def test_iter_cv_skrub_learner_fits_environment() -> None:
     learner = skrub.X(X).skb.apply(DummyRegressor(), y=skrub.y(y)).skb.make_learner()
     report = CrossValidationReport(
         learner,
-        data={"_skrub_X": X, "_skrub_y": y},
+        data={SKRUB_X_KEY: X, SKRUB_Y_KEY: y},
         splitter=KFold(n_splits=2),
     )
 

@@ -23,6 +23,7 @@ from skore._utils.accessor import (
     _check_supported_ml_task,
 )
 from skore._utils.cache_key import make_cache_key
+from skore._utils.skrub import SKRUB_X_KEY
 
 
 class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
@@ -333,7 +334,7 @@ class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
                 data_source=data_source,
                 estimator=self._parent.estimator_,
                 name=self._parent.estimator_name_,
-                X=data_["_skrub_X"],
+                X=data_[SKRUB_X_KEY],
                 y=y_true,
                 at_step=at_step,
                 metric=metric,
