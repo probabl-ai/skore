@@ -15,6 +15,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.svm import SVC
 
 from skore import EstimatorReport
+from skore._utils.skrub import SKRUB_X_KEY, SKRUB_Y_KEY
 
 
 def deep_contain(value, test_value):
@@ -209,7 +210,7 @@ def test_score_skrub_learner(with_scoring):
     report = skrub_report(with_scoring=with_scoring)
 
     assert report.metrics.default_score() == report.estimator_.score(
-        {"_skrub_X": report.X_test, "_skrub_y": report.y_test}
+        {SKRUB_X_KEY: report.X_test, SKRUB_Y_KEY: report.y_test}
     )
 
 
