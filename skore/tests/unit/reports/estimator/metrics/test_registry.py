@@ -748,7 +748,7 @@ class TestStringScorerNames:
         assert "mean_squared_error" in report._metric_registry
 
     def test_summarize_with_neg(self, regression_report):
-        """``.summarize()` accepts prefixed name with 'neg_' and does no conversion."""
+        """``.summarize()` accepts unregistered metrics on the fly."""
         report = regression_report
 
         report.metrics.add("neg_mean_absolute_percentage_error")
@@ -757,18 +757,22 @@ class TestStringScorerNames:
 
         report.metrics.summarize(metric="neg_mean_absolute_percentage_error")
 
-        with pytest.raises(KeyError, match="mean_absolute_percentage_error"):
-            report.metrics.summarize(metric="mean_absolute_percentage_error")
+        # Unregistered metrics can be summarized on the fly without mutating registry
+        display = report.metrics.summarize(metric="mean_absolute_percentage_error")
+        assert "mean_absolute_percentage_error" in display.summary["name"].values
+        assert "mean_absolute_percentage_error" not in report._metric_registry
 
     def test_get_with_neg_prefix(self, regression_report):
-        """``.get()` accepts prefixed name with 'neg_' and does no conversion."""
+        """``.get()` computes unregistered metrics on the fly."""
         report = regression_report
 
         report.metrics.add("neg_mean_absolute_percentage_error")
         report.metrics.get("neg_mean_absolute_percentage_error")
 
-        with pytest.raises(KeyError, match="mean_absolute_percentage_error"):
-            report.metrics.get("mean_absolute_percentage_error")
+        # Unregistered metrics can be retrieved on the fly without mutating registry
+        score = report.metrics.get("mean_absolute_percentage_error")
+        assert isinstance(score, float)
+        assert "mean_absolute_percentage_error" not in report._metric_registry
 
     def test_unknown_metric_still_raises_key_error(self, regression_report):
         """Test that really a unknown metric name still raises KeyError after the
@@ -787,6 +791,29 @@ class TestStringScorerNames:
 
         with pytest.raises(ValueError, match="Invalid metric: 'xyz'"):
             report.metrics.add("xyz")
+
+    def test_on_the_fly_unregistered_metric(self, regression_report):
+        """Test that unregistered metrics can be summarized and retrieved on the fly
+        without mutating the registry. Non-regression for #2903."""
+        report = regression_report
+        initial_keys = set(report._metric_registry.keys())
+
+        # sklearn metric string
+        display = report.metrics.summarize(metric="explained_variance")
+        assert "explained_variance" in display.summary["name"].values
+        assert set(report._metric_registry.keys()) == initial_keys
+
+        score = report.metrics.get("explained_variance")
+        assert isinstance(score, float)
+        assert set(report._metric_registry.keys()) == initial_keys
+
+        # callable scorer
+        def custom_scorer(estimator, X, y):
+            return 42.0
+
+        display_custom = report.metrics.summarize(metric=custom_scorer)
+        assert "custom_scorer" in display_custom.summary["name"].values
+        assert set(report._metric_registry.keys()) == initial_keys
 
 
 class TestMetric:

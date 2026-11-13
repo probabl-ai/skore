@@ -145,10 +145,10 @@ class _MetricsAccessor(BaseMetricsAccessor[EstimatorReport], DirNamesMixin):
             )
 
         registry = self._parent._metric_registry
-        if isinstance(metric, str):
-            parsed_metrics = [registry[metric]]
+        if isinstance(metric, (str, Metric)) or callable(metric):
+            parsed_metrics = [self._get_metric(metric)]
         elif isinstance(metric, Iterable) and metric:
-            parsed_metrics = [registry[m] for m in metric]
+            parsed_metrics = [self._get_metric(m) for m in metric]
         else:
             parsed_metrics = list(registry.values())
 
@@ -202,7 +202,7 @@ class _MetricsAccessor(BaseMetricsAccessor[EstimatorReport], DirNamesMixin):
         **kwargs: Any,
     ) -> MetricsSummaryDisplay:
         """Compute a single metric, forwarding ``kwargs`` to the score function."""
-        metric = self._parent._metric_registry[metric_name]
+        metric = self._get_metric(metric_name)
         rows = [
             cast(
                 MetricsSummaryRow,
@@ -235,6 +235,16 @@ class _MetricsAccessor(BaseMetricsAccessor[EstimatorReport], DirNamesMixin):
             The list of available metric names.
         """
         return list(self._parent._metric_registry)
+
+    def _get_metric(self, metric: MetricLike | str) -> Metric:
+        if isinstance(metric, Metric):
+            return metric
+        if isinstance(metric, str) and metric in self._parent._metric_registry:
+            return self._parent._metric_registry[metric]
+        try:
+            return Metric.new(metric)
+        except (ValueError, TypeError):
+            raise KeyError(metric) from None
 
     def _resolve_metric(self, name: str) -> Metric | None:
         """Return the :class:`~skore._metrics.Metric` for ``name``, or None."""
@@ -383,7 +393,7 @@ class _MetricsAccessor(BaseMetricsAccessor[EstimatorReport], DirNamesMixin):
         >>> report.metrics.precision()
         {0: 0.90..., 1: 0.98...}
         """
-        metric = self._parent._metric_registry[name]
+        metric = self._get_metric(name)
         return metric.pretty(report=self._parent, data_source=data_source, **kwargs)
 
     def fit_time(self, *, cast: bool = True) -> float | None:

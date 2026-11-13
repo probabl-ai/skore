@@ -373,7 +373,7 @@ class _MetricsAccessor(BaseMetricsAccessor[CrossValidationReport], DirNamesMixin
         """
         rows: list[MetricsSummaryRow] = []
         for split_idx, report in enumerate(self._parent.reports_):
-            metric = report._metric_registry[metric_name]
+            metric = report.metrics._get_metric(metric_name)
             metric_rows = metric.rows(report=report, data_source=data_source, **kwargs)
             rows.extend(
                 cast(
