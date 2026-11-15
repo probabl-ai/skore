@@ -111,7 +111,7 @@ class CalibrationDisplay(DisplayMixin):
         aggregate : ("mean", "std") or None, default=("mean", "std")
             Aggregation over cross-validation splits. When ``None``, one curve
             per split is returned for cross-validation reports. When ``("mean",
-            "std")``, calibration values are aggregated across splits.åå
+            "std")``, calibration values are aggregated across splits.
 
         Returns
         -------
