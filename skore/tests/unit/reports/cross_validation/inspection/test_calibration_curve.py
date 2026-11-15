@@ -52,12 +52,12 @@ def test_data_source(binary_classification_data, data_source):
     assert set(display.calibration_report["data_source"]) == {data_source}
 
 
-def test_frame_default_aggregate(binary_classification_data):
+def test_frame_preserves_splits(binary_classification_data):
     X, y = binary_classification_data
     report = CrossValidationReport(LogisticRegression(), X, y, splitter=2)
 
     frame = report.inspection.calibration_curve().frame()
 
-    assert "split" not in frame.columns
-    assert "predicted_probability_mean" in frame.columns
-    assert "fraction_of_positives_std" in frame.columns
+    assert set(frame["split"]) == {0, 1}
+    assert "predicted_probability" in frame.columns
+    assert "fraction_of_positives" in frame.columns

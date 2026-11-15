@@ -14,18 +14,12 @@ from skore._displays.utils import (
     _one_hot_encode,
 )
 from skore._sklearn.types import _DEFAULT
-from skore._utils.index import flatten_multi_index
 
 if TYPE_CHECKING:
     from matplotlib.figure import Figure
     from numpy.typing import ArrayLike
 
-    from skore._sklearn.types import (
-        Aggregate,
-        DataSource,
-        PositiveLabel,
-        ReportType,
-    )
+    from skore._sklearn.types import DataSource, PositiveLabel, ReportType
 
 
 class CalibrationDisplay(DisplayMixin):
@@ -99,7 +93,6 @@ class CalibrationDisplay(DisplayMixin):
         self,
         *,
         label: PositiveLabel = _DEFAULT,
-        aggregate: Aggregate | None = ("mean", "std"),
     ) -> pd.DataFrame:
         """Return the data used for the display as a DataFrame.
 
@@ -115,22 +108,19 @@ class CalibrationDisplay(DisplayMixin):
 
         Returns
         -------
-        DataFrame The returned frame always contains: - `predicted_probability`
-        - `fraction_of_positives` - `data_source`
-
-        It also contains `label` when `label=None` (one-vs-rest view). When a
-        specific label is selected, the `label` column is dropped from the
-        output to provide a single-curve table.
-
-        Depending on the report type, `estimator` and/or `split` metadata may be
-        removed from the returned frame.
+         DataFrame
+        The returned frame always contains:
+        - `predicted_probability`
+        - `fraction_of_positives`
+        - `data_source`
+        It also contains `label` when `label=None` (one-vs-rest view).
+        When a specific label is selected, the `label` column is dropped from
+        the output to provide a single-curve table.
+        Depending on the report type, `estimator` and/or `split` metadata may
+        be removed from the returned frame.
+        Cross-validation reports retain one curve per split without aggregation.
         """
         label = _check_label(self.labels, label, self.report_pos_label)
-
-        if aggregate is not None and tuple(aggregate) != ("mean", "std"):
-            raise ValueError(
-                f"aggregate must be None or ('mean', 'std'); got {aggregate!r}."
-            )
 
         if self.report_type == "estimator":
             columns_to_drop = ["estimator", "split"]
@@ -146,26 +136,6 @@ class CalibrationDisplay(DisplayMixin):
         if label is not None:
             df = df.query("label == @label").reset_index(drop=True)
             df = df.drop(columns=["label"])
-
-        if aggregate is not None and "split" in df.columns:
-            df = df.copy()
-            curve_keys = [
-                c for c in ["estimator", "data_source", "label", "split"] if c in df
-            ]
-            df["_bin"] = df.groupby(curve_keys, sort=False).cumcount()
-
-            aggregate_columns = ["predicted_probability", "fraction_of_positives"]
-            group_by = [
-                c for c in ["estimator", "data_source", "label", "_bin"] if c in df
-            ]
-            df = (
-                df.groupby(group_by, sort=False, dropna=False)[aggregate_columns]
-                .aggregate(aggregate)
-                .reset_index()
-            )
-            if isinstance(df.columns, pd.MultiIndex):
-                df.columns = flatten_multi_index(df.columns)
-            df = df.drop(columns=["_bin"], errors="ignore")
 
         return df
 
@@ -222,20 +192,15 @@ class CalibrationDisplay(DisplayMixin):
         self,
         *,
         label: PositiveLabel = _DEFAULT,
-        aggregate: Aggregate | None = ("mean", "std"),
     ) -> Figure:
         """Plot the calibration curve.
+
+        Cross-validation reports show one curve per split, colored by label.
 
         Parameters
         ----------
         label : int, float, bool, str or None, default=report pos_label
             The class whose curve to plot. Use ``None`` to show all classes.
-
-        aggregate : ("mean", "std") or None, default=("mean", "std")
-            Aggregation over cross-validation splits. When ``None``, one curve
-            per split is shown for cross-validation reports. When ``("mean",
-            "std")``, a mean curve is plotted with a standard-deviation
-            interval.
 
         Returns
         -------
@@ -254,25 +219,23 @@ class CalibrationDisplay(DisplayMixin):
         >>> display.plot()
         """
         label = _check_label(self.labels, label, self.report_pos_label)
-        return self._plot(label=label, aggregate=aggregate)
+        return self._plot(label=label)
 
     def _plot_matplotlib(
         self,
         *,
         label: PositiveLabel,
-        aggregate: Aggregate | None = ("mean", "std"),
     ) -> Figure:
         """Dispatch the plotting function for matplotlib backend."""
         lineplot_kwargs = self._default_line_kwargs.copy()
         ax_set_kwargs = self._default_ax_set_kwargs.copy()
-        plot_data = self.frame(label=label, aggregate=aggregate)
+        plot_data = self.frame(label=label)
         return self._plot_calibration_curve_single_estimator(
             frame=plot_data,
             estimator_name=self.calibration_report["estimator"].iloc[0],
             lineplot_kwargs=lineplot_kwargs,
             ax_set_kwargs=ax_set_kwargs,
             label=label,
-            aggregate=aggregate,
         )
 
     def _plot_calibration_curve_single_estimator(
@@ -283,27 +246,24 @@ class CalibrationDisplay(DisplayMixin):
         lineplot_kwargs: dict[str, Any],
         ax_set_kwargs: dict[str, Any],
         label: PositiveLabel = None,
-        aggregate: Aggregate | None = ("mean", "std"),
     ):
-        is_aggregated = aggregate is not None and "fraction_of_positives_mean" in frame
-        x_col = (
-            "predicted_probability_mean" if is_aggregated else "predicted_probability"
-        )
-        y_col = (
-            "fraction_of_positives_mean" if is_aggregated else "fraction_of_positives"
-        )
+        x_col = "predicted_probability"
+        y_col = "fraction_of_positives"
 
-        if "split" in frame.columns and aggregate is None:
+        if "cross-validation" in self.report_type:
             relplot_kwargs = {
                 "data": frame,
                 "kind": "line",
                 "x": x_col,
                 "y": y_col,
-                "hue": "split",
                 **lineplot_kwargs,
+                "hue": "label" if "label" in frame.columns else None,
+                "estimator": None,
             }
-            if "label" in frame.columns:
-                relplot_kwargs["style"] = "label"
+            relplot_kwargs["units"] = "split"
+            relplot_kwargs["alpha"] = 0.4
+            if "label" not in frame.columns:
+                relplot_kwargs.pop("palette", None)
             facet = sns.relplot(**relplot_kwargs)
         elif "label" in frame.columns:
             facet = sns.relplot(
@@ -330,27 +290,6 @@ class CalibrationDisplay(DisplayMixin):
 
         figure = facet.figure
         ax = facet.ax
-
-        if is_aggregated and "fraction_of_positives_std" in frame.columns:
-            if "label" in frame.columns:
-                for _, curve_frame in frame.groupby("label", sort=False):
-                    curve_frame = curve_frame.sort_values(by=x_col)
-                    lower = curve_frame["fraction_of_positives_mean"] - curve_frame[
-                        "fraction_of_positives_std"
-                    ].fillna(0)
-                    upper = curve_frame["fraction_of_positives_mean"] + curve_frame[
-                        "fraction_of_positives_std"
-                    ].fillna(0)
-                    ax.fill_between(curve_frame[x_col], lower, upper, alpha=0.15)
-            else:
-                curve_frame = frame.sort_values(by=x_col)
-                lower = curve_frame["fraction_of_positives_mean"] - curve_frame[
-                    "fraction_of_positives_std"
-                ].fillna(0)
-                upper = curve_frame["fraction_of_positives_mean"] + curve_frame[
-                    "fraction_of_positives_std"
-                ].fillna(0)
-                ax.fill_between(curve_frame[x_col], lower, upper, alpha=0.15)
 
         ref_line_label = "Perfectly calibrated"
         ax.plot([0, 1], [0, 1], "k:", label=ref_line_label)
