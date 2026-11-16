@@ -49,9 +49,13 @@ def test_summarize_without_y(x_container, y_container):
         (1, ["Target"], "array", "array"),
         (1, ["Target"], "pandas", "series"),
         (1, ["Target"], "polars", "polars_series"),
+        (1, ["Target"], "array", "polars_series"),
+        (1, ["Target"], "polars", "array"),
         (2, ["Target 0", "Target 1"], "array", "array"),
         (2, ["Target 0", "Target 1"], "pandas", "pandas"),
         (2, ["Target 0", "Target 1"], "polars", "polars"),
+        (2, ["Target 0", "Target 1"], "array", "polars"),
+        (2, ["Target 0", "Target 1"], "polars", "array"),
     ],
 )
 def test_summarize_with_y(n_targets, target_column_names, x_container, y_container):

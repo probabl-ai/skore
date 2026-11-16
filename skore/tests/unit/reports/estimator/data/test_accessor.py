@@ -117,9 +117,13 @@ def test_summarize_sequence(X, y):
         (1, ["Target"], "array", "array"),
         (1, ["Target"], "pandas", "series"),
         (1, ["Target"], "polars", "polars_series"),
+        (1, ["Target"], "array", "polars_series"),
+        (1, ["Target"], "polars", "array"),
         (2, ["Target 0", "Target 1"], "array", "array"),
         (2, ["Target 0", "Target 1"], "pandas", "pandas"),
         (2, ["Target 0", "Target 1"], "polars", "polars"),
+        (2, ["Target 0", "Target 1"], "array", "polars"),
+        (2, ["Target 0", "Target 1"], "polars", "array"),
     ],
 )
 def test_summarize_numpy_array(

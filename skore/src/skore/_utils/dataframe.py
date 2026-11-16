@@ -39,6 +39,25 @@ def _disambiguate_target_columns(
     return target.rename(mapping)
 
 
+def _align_target_to_features(
+    features: UserDataFrame, target: UserDataFrame
+) -> UserDataFrame:
+    """Ensure target uses the same DataFrame backend as features."""
+    if nw.dependencies.is_polars_dataframe(
+        features
+    ) and not nw.dependencies.is_polars_dataframe(target):
+        import polars as pl
+
+        return pl.from_pandas(cast(pd.DataFrame, target))
+
+    if nw.dependencies.is_pandas_dataframe(
+        features
+    ) and not nw.dependencies.is_pandas_dataframe(target):
+        return target.to_pandas()  # type: ignore[union-attr]
+
+    return target
+
+
 def _ensure_string_column_names(df: nw.DataFrame[Any]) -> nw.DataFrame[Any]:
     if all(isinstance(col, str) for col in df.columns):
         return df

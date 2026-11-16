@@ -8,6 +8,7 @@ from skore._externals.pandas_accessors import DirNamesMixin
 from skore._reports.base import _BaseAccessor
 from skore._reports.cross_validation.report import CrossValidationReport
 from skore._utils.dataframe import (
+    _align_target_to_features,
     _disambiguate_target_columns,
     _normalize_X_as_dataframe,
     _normalize_y_as_dataframe,
@@ -53,6 +54,7 @@ class _DataAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
                 raise ValueError("y is required when `with_y=True`.")
 
             y = _normalize_y_as_dataframe(y)
+            y = _align_target_to_features(X, y)
 
         return X, y
 
