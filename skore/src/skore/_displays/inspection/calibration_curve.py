@@ -191,8 +191,6 @@ class CalibrationDisplay(DisplayMixin):
     ) -> Figure:
         """Plot the calibration curve.
 
-        Cross-validation reports show one curve per split, colored by label.
-
         Parameters
         ----------
         label : int, float, bool, str or None, default=report pos_label
