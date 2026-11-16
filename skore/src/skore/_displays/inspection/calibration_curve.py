@@ -97,11 +97,6 @@ class CalibrationDisplay(DisplayMixin):
         label : int, float, bool, str or None, default=report pos_label
             The class whose curve to select. Use ``None`` to show all classes.
 
-        aggregate : ("mean", "std") or None, default=("mean", "std")
-            Aggregation over cross-validation splits. When ``None``, one curve
-            per split is returned for cross-validation reports. When ``("mean",
-            "std")``, calibration values are aggregated across splits.
-
         Returns
         -------
          DataFrame
