@@ -89,11 +89,7 @@ class CalibrationDisplay(DisplayMixin):
         """Return the list of labels available in the calibration data."""
         return self.calibration_report["label"].unique().tolist()
 
-    def frame(
-        self,
-        *,
-        label: PositiveLabel = _DEFAULT,
-    ) -> pd.DataFrame:
+    def frame(self, *, label: PositiveLabel = _DEFAULT) -> pd.DataFrame:
         """Return the data used for the display as a DataFrame.
 
         Parameters
