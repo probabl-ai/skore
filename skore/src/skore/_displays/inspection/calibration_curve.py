@@ -99,17 +99,18 @@ class CalibrationDisplay(DisplayMixin):
 
         Returns
         -------
-         DataFrame
+        DataFrame
         The returned frame always contains:
         - `predicted_probability`
         - `fraction_of_positives`
         - `data_source`
+
         It also contains `label` when `label=None` (one-vs-rest view).
         When a specific label is selected, the `label` column is dropped from
         the output to provide a single-curve table.
+
         Depending on the report type, `estimator` and/or `split` metadata may
         be removed from the returned frame.
-        Cross-validation reports retain one curve per split without aggregation.
         """
         label = _check_label(self.labels, label, self.report_pos_label)
 
