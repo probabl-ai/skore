@@ -128,22 +128,23 @@ def test_multiple_estimators_cv(regression_data):
     assert isinstance(report, ComparisonReport)
 
 
-def test_unsupported_X_and_y_raise(regression_data):
+@pytest.mark.parametrize(
+    "make_inputs",
+    [
+        pytest.param(lambda X, y: (X.tolist(), y), id="list-X"),
+        pytest.param(lambda X, y: (tuple(X), y), id="tuple-X"),
+        pytest.param(lambda X, y: ({"a": X}, y), id="dict-X"),
+        pytest.param(lambda X, y: (sp.csr_matrix(X), y), id="sparse-X"),
+        pytest.param(lambda X, y: (X, y.tolist()), id="list-y"),
+        pytest.param(lambda X, y: (X, tuple(y)), id="tuple-y"),
+        pytest.param(lambda X, y: (X, sp.csr_matrix(y.reshape(-1, 1))), id="sparse-y"),
+    ],
+)
+def test_unsupported_X_and_y_raise(regression_data, make_inputs):
     """Lists, tuples, a dict, and sparse data raise."""
-    X, y = regression_data
-    message = "NumPy array, a dataframe, a Series, or None"
-    invalid = [
-        (X.tolist(), y),
-        (tuple(X), y),
-        ({"a": X}, y),
-        (sp.csr_matrix(X), y),
-        (X, y.tolist()),
-        (X, tuple(y)),
-        (X, sp.csr_matrix(y.reshape(-1, 1))),
-    ]
-    for features, target in invalid:
-        with pytest.raises(TypeError, match=message):
-            evaluate(LinearRegression(), features, target)
+    features, target = make_inputs(*regression_data)
+    with pytest.raises(TypeError, match="NumPy array, a dataframe, a Series, or None"):
+        evaluate(LinearRegression(), features, target)
 
 
 def test_dataframe_and_series_target_are_accepted(regression_data):
