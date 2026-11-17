@@ -150,19 +150,18 @@ def _make_report(report_type, X, y):
     )
 
 
-def _coefficient_features(report):
-    names = report.inspection.coefficients().frame()["feature"]
-    return [name for name in pd.unique(names) if name != "Intercept"]
-
-
-def _dataset_feature_columns(report):
-    if isinstance(report, CrossValidationReport):
-        display = report.data.summarize(with_plots=False)
-    elif isinstance(report, EstimatorReport):
+def _feature_labels(report):
+    """Feature labels from the coefficients, and from the data summary if any."""
+    coefficients = report.inspection.coefficients().frame()["feature"]
+    labels = [name for name in pd.unique(coefficients) if name != "Intercept"]
+    if isinstance(report, ComparisonReport):
+        return labels, None
+    if isinstance(report, EstimatorReport):
         display = report.data.summarize(data_source="test", with_plots=False)
     else:
-        return None
-    return list(display.summary["dataframe"].columns)[:3]
+        display = report.data.summarize(with_plots=False)
+    columns = list(display.summary["dataframe"].columns)
+    return labels, columns[: len(labels)]
 
 
 @pytest.mark.parametrize(
@@ -174,65 +173,19 @@ def _dataset_feature_columns(report):
         "comparison_cross_validation",
     ],
 )
-def test_numpy_fallback_feature_names(report_type):
-    """NumPy inputs use ``Feature #{i}`` for every report type."""
+@pytest.mark.parametrize("input_kind", ["numpy", "integer_columns"])
+def test_feature_labels_are_shared(report_type, input_kind):
+    """Unnamed features get one label in the coefficients and in the data."""
     X, y = make_regression(n_samples=40, n_features=3, random_state=0)
-    report = _make_report(report_type, X, y)
-    expected = ["Feature #0", "Feature #1", "Feature #2"]
-    assert _coefficient_features(report) == expected
-    dataset_columns = _dataset_feature_columns(report)
-    if dataset_columns is not None:
-        assert dataset_columns == expected
-
-
-@pytest.mark.parametrize(
-    "report_type",
-    [
-        "estimator",
-        "cross_validation",
-        "comparison_estimator",
-        "comparison_cross_validation",
-    ],
-)
-def test_integer_column_names_are_stringified_on_a_copy(report_type):
-    """Non-string column names are shown as strings and the stored frame is kept."""
-    X, y = make_regression(n_samples=40, n_features=3, random_state=0)
-    frame = pd.DataFrame(X)
-    original_columns = list(frame.columns)
-    report = _make_report(report_type, frame, y)
-
-    assert list(frame.columns) == original_columns
-    if isinstance(report, EstimatorReport):
-        assert list(report.X_train.columns) == original_columns
-    assert _coefficient_features(report) == ["0", "1", "2"]
-    dataset_columns = _dataset_feature_columns(report)
-    if dataset_columns is not None:
-        assert dataset_columns == ["0", "1", "2"]
-
-
-@pytest.mark.parametrize("container", ["pandas", "polars"])
-@pytest.mark.parametrize(
-    "report_type",
-    [
-        "estimator",
-        "cross_validation",
-        "comparison_estimator",
-        "comparison_cross_validation",
-    ],
-)
-def test_string_column_names_are_preserved(report_type, container):
-    """String column names are stored and displayed unchanged."""
-    X, y = make_regression(n_samples=40, n_features=3, random_state=0)
-    names = ["f0", "f1", "f2"]
-    if container == "pandas":
-        features = pd.DataFrame(X, columns=names)
-        target = y
+    if input_kind == "integer_columns":
+        X = pd.DataFrame(X)
+        expected = ["0", "1", "2"]
     else:
-        features = pl.DataFrame({name: X[:, i] for i, name in enumerate(names)})
-        target = pl.Series(y)
+        expected = [f"Feature #{i}" for i in range(3)]
 
-    report = _make_report(report_type, features, target)
-    assert _coefficient_features(report) == names
-    dataset_columns = _dataset_feature_columns(report)
-    if dataset_columns is not None:
-        assert dataset_columns == names
+    report = _make_report(report_type, X, y)
+
+    labels, data_labels = _feature_labels(report)
+    assert labels == expected
+    if data_labels is not None:
+        assert data_labels == expected

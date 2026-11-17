@@ -53,10 +53,7 @@ def _get_feature_names(
         return transformer.get_feature_names_out().tolist()
     elif X is not None:
         if nw.dependencies.is_into_dataframe(X):
-            return [
-                column if isinstance(column, str) else str(column)
-                for column in nw.from_native(X).columns
-            ]
+            return [str(column) for column in nw.from_native(X).columns]
         else:
             return _fallback_feature_names(_num_features(X))
 
