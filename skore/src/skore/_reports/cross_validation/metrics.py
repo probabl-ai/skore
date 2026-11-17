@@ -484,6 +484,10 @@ class _MetricsAccessor(BaseMetricsAccessor[CrossValidationReport], DirNamesMixin
         500 points per class and per split. Sampling is performed by picking
         evenly-spaced indices on the sorted thresholds.
 
+        The threshold average of the splits is stored on the display, one curve per
+        label. Pass `aggregate="threshold"` to :meth:`RocCurveDisplay.plot` or
+        :meth:`RocCurveDisplay.frame` to use it.
+
         Examples
         --------
         >>> from sklearn.datasets import load_breast_cancer
@@ -494,20 +498,18 @@ class _MetricsAccessor(BaseMetricsAccessor[CrossValidationReport], DirNamesMixin
         >>> report = evaluate(classifier, X, y, splitter=2)
         >>> display = report.metrics.roc()
         >>> display.set_style(relplot_kwargs={"color": "tab:red"})
-        >>> display.plot()
+        >>> display.plot(aggregate="threshold")
         """
         child_displays = [
             report.metrics.roc(data_source=data_source)
             for report in self._parent.reports_
         ]
-        split_indices = range(len(self._parent.reports_))
-
         display = RocCurveDisplay._concatenate(
             child_displays,
             report_type=self._parent._report_type,
-            column_data={"split": list(split_indices)},
+            column_data={"split": list(range(len(self._parent.reports_)))},
         )
-        return display
+        return display._aggregate_over_splits()
 
     @available_if(_check_estimator_report_has_method("metrics", "precision_recall"))
     def precision_recall(

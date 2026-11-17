@@ -12,6 +12,7 @@ Report = TypeVar("Report", bound=(EstimatorReport | CrossValidationReport))
 Parameters = (
     dict[Literal["with_average_precision"], Literal[True]]
     | dict[Literal["with_roc_auc"], Literal[True]]
+    | dict[Literal["with_roc_auc", "aggregate"], Literal[True, "threshold"]]
     | dict[Literal["threshold_value"], Literal["all"]]
     | dict[Literal["threshold_value"], None]
     | dict[Literal["fast_mode"], Literal[True]]

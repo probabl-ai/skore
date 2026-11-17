@@ -74,3 +74,34 @@ single value column, :meth:`~skore.MetricsSummaryDisplay.frame` returns a named
 
     df = display.frame()
     df.head()
+
+Aggregating cross-validation curves
+-----------------------------------
+
+For a :class:`CrossValidationReport`, the threshold average of the splits is stored
+on the display, one curve per label. :meth:`RocCurveDisplay.plot` shows it when
+passed ``aggregate="threshold"``. Each split contributes the operating point at the
+threshold nearest to each finite threshold shared by every split, or the union of
+those thresholds when they share none:
+
+.. plot::
+    :context: close-figs
+    :align: center
+
+    X_binary, y_binary = make_classification(
+        n_samples=1_000, class_sep=0.5, random_state=42
+    )
+    report_binary = evaluate(
+        LogisticRegression(), X_binary, y_binary, splitter=5, pos_label=1
+    )
+    display_binary = report_binary.metrics.roc()
+    display_binary.plot(aggregate="threshold")
+
+The splits remain visible as faded lines behind the aggregated curve, and can be hidden
+with ``display_binary.set_style(relplot_kwargs={"alpha": 0.0})``. The AUC reported in the
+legend is the mean of the AUCs of the splits. Both curves are available from
+``frame(aggregate="threshold")``, told apart by the ``aggregate`` column:
+
+.. code-block:: python
+
+    display_binary.frame(with_roc_auc=True, aggregate="threshold")
