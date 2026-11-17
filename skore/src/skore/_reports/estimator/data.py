@@ -9,6 +9,7 @@ from skore._reports.base import _BaseAccessor
 from skore._reports.estimator.report import EstimatorReport
 from skore._utils.dataframe import (
     _align_frame_backend,
+    _disambiguate_target_columns,
     _normalize_X_as_dataframe,
     _normalize_y_as_dataframe,
 )
@@ -194,6 +195,7 @@ class _DataAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
                 )
 
         if with_y_task_aware:
+            y = _disambiguate_target_columns(X, y)
             if data_source == "both":
                 row_index = "__row_index__"
                 df = (

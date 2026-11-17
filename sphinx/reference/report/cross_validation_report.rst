@@ -1,5 +1,5 @@
-Report for a cross-validation of an estimator
-=============================================
+Cross-validation report
+=======================
 
 .. currentmodule:: skore
 

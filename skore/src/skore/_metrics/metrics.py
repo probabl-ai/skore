@@ -19,6 +19,7 @@ from sklearn.metrics._scorer import _BaseScorer
 from skore._sklearn.types import DataSource, PositiveLabel
 from skore._utils.cache_key import make_cache_key
 from skore._utils.callable import _callable_name
+from skore._utils.skrub import SKRUB_X_KEY
 
 if TYPE_CHECKING:
     from skore import EstimatorReport
@@ -402,7 +403,7 @@ class Metric:
         assert self.function_kind == FunctionKind.SCORER
 
         data, y_true = report._get_data_and_y_true(data_source=data_source)
-        X = data["_skrub_X"]
+        X = data[SKRUB_X_KEY]
         return cast(ScorerCallable, self.function)(
             report.estimator_,
             X,
@@ -843,7 +844,7 @@ class Score(Metric):
         **kwargs: Any,
     ) -> Any:
         # Both estimator paths accept the dict ``data`` directly:
-        # ``_LearnerAdapter`` unpacks ``_skrub_X``/``_skrub_y`` for sklearn
+        # ``_LearnerAdapter`` unpacks the X/y keys for sklearn
         # estimators; ``SkrubLearner`` takes the full env, preserving vars
         # beyond X/y (e.g. additional tables referenced by the DataOp).
         data, _ = report._get_data_and_y_true(data_source=data_source)

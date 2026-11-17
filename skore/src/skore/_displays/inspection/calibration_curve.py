@@ -16,6 +16,8 @@ from skore._displays.utils import (
 from skore._sklearn.types import _DEFAULT
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
+
     from matplotlib.figure import Figure
     from numpy.typing import ArrayLike
 
@@ -137,6 +139,7 @@ class CalibrationDisplay(DisplayMixin):
         name: str,
         y_pred: ArrayLike,
         y: ArrayLike,
+        classes: Sequence | np.ndarray,
         report_type: ReportType,
         n_bins: int | Literal["auto"] = "auto",
         strategy: Literal["uniform", "quantile"] = "quantile",
@@ -145,8 +148,8 @@ class CalibrationDisplay(DisplayMixin):
         """Compute the data for the calibration curve display."""
         y_arr = np.asarray(y)
         y_pred_arr = np.asarray(y_pred)
+        classes = np.asarray(classes)
 
-        classes = np.unique(y_arr)
         y_true_onehot = _one_hot_encode(y_arr, classes)
 
         curve_dfs = []
@@ -179,7 +182,11 @@ class CalibrationDisplay(DisplayMixin):
         )
 
     @DisplayMixin.style_plot
-    def plot(self, *, label: PositiveLabel = _DEFAULT) -> Figure:
+    def plot(
+        self,
+        *,
+        label: PositiveLabel = _DEFAULT,
+    ) -> Figure:
         """Plot the calibration curve.
 
         Parameters
@@ -206,7 +213,11 @@ class CalibrationDisplay(DisplayMixin):
         label = _check_label(self.labels, label, self.report_pos_label)
         return self._plot(label=label)
 
-    def _plot_matplotlib(self, *, label: PositiveLabel) -> Figure:
+    def _plot_matplotlib(
+        self,
+        *,
+        label: PositiveLabel,
+    ) -> Figure:
         """Dispatch the plotting function for matplotlib backend."""
         lineplot_kwargs = self._default_line_kwargs.copy()
         ax_set_kwargs = self._default_ax_set_kwargs.copy()
@@ -228,25 +239,50 @@ class CalibrationDisplay(DisplayMixin):
         ax_set_kwargs: dict[str, Any],
         label: PositiveLabel = None,
     ):
-        if "label" in frame.columns:
-            lineplot_kwargs["hue"] = "label"
+        x_col = "predicted_probability"
+        y_col = "fraction_of_positives"
+
+        if "cross-validation" in self.report_type:
+            relplot_kwargs = {
+                "data": frame,
+                "kind": "line",
+                "x": x_col,
+                "y": y_col,
+                **lineplot_kwargs,
+                "hue": "label" if "label" in frame.columns else None,
+                "estimator": None,
+            }
+            relplot_kwargs["units"] = "split"
+            relplot_kwargs["alpha"] = 0.4
+            if "label" not in frame.columns:
+                relplot_kwargs.pop("palette", None)
+            facet = sns.relplot(**relplot_kwargs)
+        elif "label" in frame.columns:
+            facet = sns.relplot(
+                data=frame,
+                kind="line",
+                x=x_col,
+                y=y_col,
+                hue="label",
+                **lineplot_kwargs,
+            )
         else:
             lineplot_kwargs = {
                 k: v for k, v in lineplot_kwargs.items() if k != "palette"
             }
-            lineplot_kwargs["label"] = estimator_name
-            lineplot_kwargs["hue"] = None
-
-        facet = sns.relplot(
-            data=frame,
-            kind="line",
-            x="predicted_probability",
-            y="fraction_of_positives",
-            **lineplot_kwargs,
-        )
+            facet = sns.relplot(
+                data=frame,
+                kind="line",
+                x=x_col,
+                y=y_col,
+                label=estimator_name,
+                hue=None,
+                **lineplot_kwargs,
+            )
 
         figure = facet.figure
         ax = facet.ax
+
         ref_line_label = "Perfectly calibrated"
         ax.plot([0, 1], [0, 1], "k:", label=ref_line_label)
 
@@ -285,7 +321,8 @@ class CalibrationDisplay(DisplayMixin):
         ----------
         policy : {"override", "update"}, default="update"
             Policy to use when setting the style parameters.
-            If "override", existing settings are set to the provided values.
+            If "override", each provided group replaces the previous value.
+            Omitted groups are left unchanged.
             If "update", merge provided values into the existing settings.
             Passed keys replace the previous value. Nested dictionaries are
             merged the same way, so omitted keys are kept.
@@ -303,6 +340,6 @@ class CalibrationDisplay(DisplayMixin):
         """
         return super().set_style(
             policy=policy,
-            line_kwargs=line_kwargs or {},
-            ax_set_kwargs=ax_set_kwargs or {},
+            line_kwargs=line_kwargs,
+            ax_set_kwargs=ax_set_kwargs,
         )
