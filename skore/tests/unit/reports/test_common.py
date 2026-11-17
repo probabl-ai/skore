@@ -7,7 +7,7 @@ from sklearn.datasets import make_regression
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import make_scorer, mean_squared_error
 
-from skore import ComparisonReport, CrossValidationReport, EstimatorReport
+from skore import CrossValidationReport, EstimatorReport
 
 
 @pytest.fixture(
@@ -129,21 +129,31 @@ def test_colliding_target_column_uses_stable_suffix(report_cls, container):
         assert "target_right" not in columns
 
 
+@pytest.fixture(
+    params=[
+        "estimator_reports_regression",
+        "cross_validation_reports_regression",
+    ]
+)
+def report_with_data(request):
+    report = request.getfixturevalue(request.param)
+    if isinstance(report, tuple):
+        report = report[0]
+    return report
+
+
 @pytest.mark.parametrize("estimator_type", ["linear"], indirect=True)
-def test_feature_labels_are_shared(report, estimator_type):
+def test_feature_labels_are_shared(report_with_data, estimator_type):
     """Unnamed features get one label in the coefficients and in the data."""
     labels = [
         name
-        for name in pd.unique(report.inspection.coefficients().frame()["feature"])
+        for name in pd.unique(
+            report_with_data.inspection.coefficients().frame()["feature"]
+        )
         if name != "Intercept"
     ]
     assert labels == [f"Feature #{i}" for i in range(len(labels))]
 
-    if isinstance(report, ComparisonReport):
-        return
-    if isinstance(report, EstimatorReport):
-        display = report.data.summarize(data_source="test", with_plots=False)
-    else:
-        display = report.data.summarize(with_plots=False)
+    display = report_with_data.data.summarize(with_plots=False)
     columns = list(display.summary["dataframe"].columns)
     assert columns[: len(labels)] == labels
