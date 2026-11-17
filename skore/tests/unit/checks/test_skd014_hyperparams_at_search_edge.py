@@ -25,6 +25,8 @@ from skore._utils.testing import MockEstimator
         (BayesianRidge(), "tol", "left", None),
         # estimator without _parameter_constraints
         (MockEstimator(error=ValueError("unused")), "alpha", "left", None),
+        # estimator parameter not in _parameter_constraints
+        (Ridge(), "unknown_param", "left", None),
         # Pipeline: navigate 'ridge__alpha' to Ridge.alpha left bound
         (
             Pipeline([("scaler", StandardScaler()), ("ridge", Ridge())]),
@@ -203,3 +205,25 @@ def test_not_applicable_for_plain_estimator(report_type, regression_data):
     )
     with pytest.raises(CheckNotApplicable, match="not a BaseSearchCV"):
         CheckHyperparamsAtSearchEdge().check_function(report)
+
+
+def test_parameter_not_in_parameter_constraints(regression_data):
+    """SKD014 handles parameters missing from _parameter_constraints."""
+    X, y = regression_data
+
+    class CustomRidge(Ridge):
+        def __init__(self, custom_param=1.0, **kwargs):
+            super().__init__(**kwargs)
+            self.custom_param = custom_param
+
+    search = GridSearchCV(
+        CustomRidge(),
+        param_grid={"custom_param": [1.0, 2.0]},
+        cv=2,
+    )
+    report = evaluate(search, X, y)
+    report.estimator_.best_params_ = {"custom_param": 1.0}
+    explanation = CheckHyperparamsAtSearchEdge().check_function(report)
+    assert explanation is not None
+    assert "custom_param" in explanation
+    assert "minimum" in explanation

@@ -50,7 +50,7 @@ def ensure_host_is_valid(method: Callable[P, R]) -> Callable[P, R]:
 
         if host is None:
             raise ValueError(
-                "You must provide an host via the parameter `host` or the environment "
+                "You must provide a host via the `host` parameter or the environment "
                 f"variable `{HOST_ENV_VAR_NAME}`"
             )
 

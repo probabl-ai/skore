@@ -2,7 +2,7 @@
 
 from functools import update_wrapper, wraps
 
-from skore._config import LocalConfiguration, configuration
+from skore._config import LocalConfiguration, _normalize_ignore_checks, configuration
 
 
 def delayed(function):
@@ -25,6 +25,7 @@ def delayed(function):
         keyword arguments.
     """
     local = configuration.local.__dict__.copy()
+    local["ignore_checks"] = _normalize_ignore_checks(local.get("ignore_checks"))
 
     @wraps(function)
     def delayed_function(*args, **kwargs):

@@ -162,12 +162,13 @@ class TestHUBClient:
     def test_request_without_credentials(self, host):
         message = (
             "No API key found for this workspace; generate one with "
-            "`skore hub api-key generate --host <host> --workspace <workspace>`, "
+            "`skore hub api-key generate --host http://localhost --workspace "
+            "test-workspace`, "
             "or set the SKORE_HUB_API_KEY environment variable."
         )
 
         with raises(RuntimeError, match=f"^{escape(message)}$"), HUBClient() as client:
-            client.request("GET", host, "workspace")
+            client.request("GET", host, "test-workspace")
 
     @mark.respx()
     def test_request_raises(self, monkeypatch, respx_mock, host):
