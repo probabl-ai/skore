@@ -129,14 +129,13 @@ def test_multiple_estimators_cv(regression_data):
 
 
 def test_unsupported_X_and_y_raise(regression_data):
-    """Lists, tuples, a dict, a Series feature matrix, and sparse data raise."""
+    """Lists, tuples, a dict, and sparse data raise."""
     X, y = regression_data
-    message = "NumPy array, a dataframe, or None"
+    message = "NumPy array, a dataframe, a Series, or None"
     invalid = [
         (X.tolist(), y),
         (tuple(X), y),
         ({"a": X}, y),
-        (pd.Series(y), y),
         (sp.csr_matrix(X), y),
         (X, y.tolist()),
         (X, tuple(y)),
