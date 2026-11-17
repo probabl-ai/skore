@@ -473,18 +473,33 @@ def comparison_cross_validation_reports_multiclass_classification(
 
 
 @pytest.fixture
-def estimator_reports_regression(regression_train_test_split):
+def estimator_type(request):
+    """Model family used by the shared regression report fixtures."""
+    return getattr(request, "param", "dummy")
+
+
+def _regression_estimators(estimator_type):
+    if estimator_type == "dummy":
+        return DummyRegressor(), DummyRegressor()
+    if estimator_type == "linear":
+        return LinearRegression(), LinearRegression()
+    raise ValueError(estimator_type)
+
+
+@pytest.fixture
+def estimator_reports_regression(regression_train_test_split, estimator_type):
     X_train, X_test, y_train, y_test = regression_train_test_split
+    estimator_1, estimator_2 = _regression_estimators(estimator_type)
 
     estimator_report_1 = EstimatorReport(
-        DummyRegressor(),
+        estimator_1,
         X_train=X_train,
         y_train=y_train,
         X_test=X_test,
         y_test=y_test,
     )
     estimator_report_2 = EstimatorReport(
-        DummyRegressor(),
+        estimator_2,
         X_train=X_train,
         y_train=y_train,
         X_test=X_test,
@@ -503,10 +518,11 @@ def comparison_estimator_reports_regression(
 
 
 @pytest.fixture
-def cross_validation_reports_regression(regression_data):
+def cross_validation_reports_regression(regression_data, estimator_type):
     X, y = regression_data
-    cv_report_1 = CrossValidationReport(DummyRegressor(), X, y, splitter=2)
-    cv_report_2 = CrossValidationReport(DummyRegressor(), X, y, splitter=2)
+    estimator_1, estimator_2 = _regression_estimators(estimator_type)
+    cv_report_1 = CrossValidationReport(estimator_1, X, y, splitter=2)
+    cv_report_2 = CrossValidationReport(estimator_2, X, y, splitter=2)
     return cv_report_1, cv_report_2
 
 

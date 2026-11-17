@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 import polars as pl
 import pytest
 from sklearn.linear_model import LogisticRegression
@@ -41,6 +42,12 @@ def test_get_feature_names_polars():
     """Non-regression for https://github.com/probabl-ai/skore/issues/3088"""
     df = pl.DataFrame({"a": [1, 2], "b": [3, 4]})
     assert _get_feature_names(None, X=df) == ["a", "b"]
+
+
+def test_get_feature_names_non_string_columns():
+    """Non-string column names are converted to strings, like in the data summary."""
+    df = pd.DataFrame({0: [1, 2], 1: [3, 4]})
+    assert _get_feature_names(None, X=df) == ["0", "1"]
 
 
 @pytest.mark.parametrize("container_type", ["array", "pandas"])

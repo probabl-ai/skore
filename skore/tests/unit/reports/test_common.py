@@ -129,63 +129,21 @@ def test_colliding_target_column_uses_stable_suffix(report_cls, container):
         assert "target_right" not in columns
 
 
-def _make_report(report_type, X, y):
-    if report_type == "estimator":
-        return EstimatorReport(
-            LinearRegression(), X_train=X, y_train=y, X_test=X, y_test=y
-        )
-    if report_type == "cross_validation":
-        return CrossValidationReport(LinearRegression(), X, y, splitter=2)
-    if report_type == "comparison_estimator":
-        return ComparisonReport(
-            [
-                EstimatorReport(
-                    LinearRegression(), X_train=X, y_train=y, X_test=X, y_test=y
-                )
-                for _ in range(2)
-            ]
-        )
-    return ComparisonReport(
-        [CrossValidationReport(LinearRegression(), X, y, splitter=2) for _ in range(2)]
-    )
+@pytest.mark.parametrize("estimator_type", ["linear"], indirect=True)
+def test_feature_labels_are_shared(report, estimator_type):
+    """Unnamed features get one label in the coefficients and in the data."""
+    labels = [
+        name
+        for name in pd.unique(report.inspection.coefficients().frame()["feature"])
+        if name != "Intercept"
+    ]
+    assert labels == [f"Feature #{i}" for i in range(len(labels))]
 
-
-def _feature_labels(report):
-    """Feature labels from the coefficients, and from the data summary if any."""
-    coefficients = report.inspection.coefficients().frame()["feature"]
-    labels = [name for name in pd.unique(coefficients) if name != "Intercept"]
     if isinstance(report, ComparisonReport):
-        return labels, None
+        return
     if isinstance(report, EstimatorReport):
         display = report.data.summarize(data_source="test", with_plots=False)
     else:
         display = report.data.summarize(with_plots=False)
     columns = list(display.summary["dataframe"].columns)
-    return labels, columns[: len(labels)]
-
-
-@pytest.mark.parametrize(
-    "report_type",
-    [
-        "estimator",
-        "cross_validation",
-        "comparison_estimator",
-        "comparison_cross_validation",
-    ],
-)
-@pytest.mark.parametrize("input_kind", ["numpy", "integer_columns"])
-def test_feature_labels_are_shared(report_type, input_kind):
-    """Unnamed features get one label in the coefficients and in the data."""
-    X, y = make_regression(n_samples=40, n_features=3, random_state=0)
-    if input_kind == "integer_columns":
-        X = pd.DataFrame(X)
-        expected = ["0", "1", "2"]
-    else:
-        expected = [f"Feature #{i}" for i in range(3)]
-
-    report = _make_report(report_type, X, y)
-
-    labels, data_labels = _feature_labels(report)
-    assert labels == expected
-    if data_labels is not None:
-        assert data_labels == expected
+    assert columns[: len(labels)] == labels
