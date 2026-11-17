@@ -147,24 +147,38 @@ def test_unsupported_X_and_y_raise(regression_data, make_inputs):
         evaluate(LinearRegression(), features, target)
 
 
-def test_dataframe_and_series_target_are_accepted(regression_data):
+def _pandas_features(X):
+    columns = [f"f{i}" for i in range(X.shape[1])]
+    return pd.DataFrame(X, columns=columns)
+
+
+def _polars_features(X):
+    columns = [f"f{i}" for i in range(X.shape[1])]
+    return pl.DataFrame({name: X[:, i] for i, name in enumerate(columns)})
+
+
+@pytest.mark.parametrize(
+    "make_inputs",
+    [
+        pytest.param(lambda X, y: (_pandas_features(X), y), id="pandas-X"),
+        pytest.param(lambda X, y: (_polars_features(X), y), id="polars-X"),
+        pytest.param(lambda X, y: (X, pd.Series(y)), id="pandas-y"),
+        pytest.param(lambda X, y: (X, pl.Series(y)), id="polars-y"),
+        pytest.param(
+            lambda X, y: (_pandas_features(X), pd.Series(y)), id="pandas-X-and-y"
+        ),
+        pytest.param(
+            lambda X, y: (_polars_features(X), pl.Series(y)), id="polars-X-and-y"
+        ),
+    ],
+)
+def test_dataframe_and_series_target_are_accepted(regression_data, make_inputs):
     """A dataframe feature matrix and a Series target are evaluated."""
     X, y = regression_data
-    columns = [f"f{i}" for i in range(X.shape[1])]
-    pandas_X = pd.DataFrame(X, columns=columns)
-    polars_X = pl.DataFrame({name: X[:, i] for i, name in enumerate(columns)})
+    features, target = make_inputs(X, y)
     expected = evaluate(LinearRegression(), X, y, splitter=0.25).estimator_.predict(X)
-    cases = [
-        (pandas_X, y),
-        (polars_X, y),
-        (X, pd.Series(y)),
-        (X, pl.Series(y)),
-        (pandas_X, pd.Series(y)),
-        (polars_X, pl.Series(y)),
-    ]
-    for features, target in cases:
-        report = evaluate(LinearRegression(), features, target, splitter=0.25)
-        np.testing.assert_allclose(report.estimator_.predict(features), expected)
+    report = evaluate(LinearRegression(), features, target, splitter=0.25)
+    np.testing.assert_allclose(report.estimator_.predict(features), expected)
 
 
 def test_multiple_estimators_dict(regression_data):
