@@ -1,6 +1,4 @@
 import numpy as np
-import pandas as pd
-import polars as pl
 import pytest
 import scipy.sparse as sp
 import skrub
@@ -14,6 +12,7 @@ from sklearn.model_selection import (
 )
 
 from skore import ComparisonReport, CrossValidationReport, EstimatorReport, evaluate
+from skore._externals.sklearn_compat import convert_container
 
 
 def test_prefit_estimator(regression_data):
@@ -147,35 +146,25 @@ def test_unsupported_X_and_y_raise(regression_data, make_inputs):
         evaluate(LinearRegression(), features, target)
 
 
-def _pandas_features(X):
-    columns = [f"f{i}" for i in range(X.shape[1])]
-    return pd.DataFrame(X, columns=columns)
-
-
-def _polars_features(X):
-    columns = [f"f{i}" for i in range(X.shape[1])]
-    return pl.DataFrame({name: X[:, i] for i, name in enumerate(columns)})
-
-
 @pytest.mark.parametrize(
-    "make_inputs",
+    ("x_container", "y_container"),
     [
-        pytest.param(lambda X, y: (_pandas_features(X), y), id="pandas-X"),
-        pytest.param(lambda X, y: (_polars_features(X), y), id="polars-X"),
-        pytest.param(lambda X, y: (X, pd.Series(y)), id="pandas-y"),
-        pytest.param(lambda X, y: (X, pl.Series(y)), id="polars-y"),
-        pytest.param(
-            lambda X, y: (_pandas_features(X), pd.Series(y)), id="pandas-X-and-y"
-        ),
-        pytest.param(
-            lambda X, y: (_polars_features(X), pl.Series(y)), id="polars-X-and-y"
-        ),
+        pytest.param("pandas", "array", id="pandas-X"),
+        pytest.param("polars", "array", id="polars-X"),
+        pytest.param("array", "series", id="pandas-y"),
+        pytest.param("array", "polars_series", id="polars-y"),
+        pytest.param("pandas", "series", id="pandas-X-and-y"),
+        pytest.param("polars", "polars_series", id="polars-X-and-y"),
     ],
 )
-def test_dataframe_and_series_target_are_accepted(regression_data, make_inputs):
+def test_dataframe_and_series_target_are_accepted(
+    regression_data, x_container, y_container
+):
     """A dataframe feature matrix and a Series target are evaluated."""
     X, y = regression_data
-    features, target = make_inputs(X, y)
+    columns = [f"f{i}" for i in range(X.shape[1])]
+    features = convert_container(X, x_container, column_names=columns)
+    target = convert_container(y, y_container)
     expected = evaluate(LinearRegression(), X, y, splitter=0.25).estimator_.predict(X)
     report = evaluate(LinearRegression(), features, target, splitter=0.25)
     np.testing.assert_allclose(report.estimator_.predict(features), expected)
