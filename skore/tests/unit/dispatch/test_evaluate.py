@@ -1,7 +1,9 @@
 import numpy as np
+import pandas as pd
+import polars as pl
 import pytest
+import scipy.sparse as sp
 import skrub
-from sklearn.datasets import make_classification
 from sklearn.dummy import DummyClassifier
 from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.model_selection import (
@@ -126,27 +128,43 @@ def test_multiple_estimators_cv(regression_data):
     assert isinstance(report, ComparisonReport)
 
 
-def test_list_or_dict_X_raises(regression_data):
-    """A dict or a list of datasets is rejected; a list of rows is accepted."""
+def test_unsupported_X_and_y_raise(regression_data):
+    """Lists, tuples, a dict, a Series feature matrix, and sparse data raise."""
     X, y = regression_data
+    message = "NumPy array, a dataframe, or None"
+    invalid = [
+        (X.tolist(), y),
+        (tuple(X), y),
+        ({"a": X}, y),
+        (pd.Series(y), y),
+        (sp.csr_matrix(X), y),
+        (X, y.tolist()),
+        (X, tuple(y)),
+        (X, sp.csr_matrix(y.reshape(-1, 1))),
+    ]
+    for features, target in invalid:
+        with pytest.raises(TypeError, match=message):
+            evaluate(LinearRegression(), features, target)
 
-    class _UnconvertibleRow:
-        def __array__(self, dtype=None, copy=None):
-            raise TypeError("cannot convert")
 
-    for invalid_x in ([X], {"a": X}, [], [{"a": 1}], [_UnconvertibleRow()]):
-        with pytest.raises(TypeError, match="single array-like or None"):
-            evaluate(LinearRegression(), invalid_x, y)
-
-
-def test_list_of_rows_matches_array():
-    """A list of rows is one feature matrix, same as the original array."""
-    X, y = make_classification(n_samples=40, n_features=4, random_state=0)
-    array_report = evaluate(LogisticRegression(), X, y, splitter=0.25)
-    list_report = evaluate(LogisticRegression(), X.tolist(), y.tolist(), splitter=0.25)
-    np.testing.assert_allclose(
-        list_report.estimator_.predict(X), array_report.estimator_.predict(X)
-    )
+def test_dataframe_and_series_target_are_accepted(regression_data):
+    """A dataframe feature matrix and a Series target are evaluated."""
+    X, y = regression_data
+    columns = [f"f{i}" for i in range(X.shape[1])]
+    pandas_X = pd.DataFrame(X, columns=columns)
+    polars_X = pl.DataFrame({name: X[:, i] for i, name in enumerate(columns)})
+    expected = evaluate(LinearRegression(), X, y, splitter=0.25).estimator_.predict(X)
+    cases = [
+        (pandas_X, y),
+        (polars_X, y),
+        (X, pd.Series(y)),
+        (X, pl.Series(y)),
+        (pandas_X, pd.Series(y)),
+        (polars_X, pl.Series(y)),
+    ]
+    for features, target in cases:
+        report = evaluate(LinearRegression(), features, target, splitter=0.25)
+        np.testing.assert_allclose(report.estimator_.predict(features), expected)
 
 
 def test_multiple_estimators_dict(regression_data):

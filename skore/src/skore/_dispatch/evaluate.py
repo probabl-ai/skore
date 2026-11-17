@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections.abc import Generator
 from typing import TYPE_CHECKING, Literal, cast
 
+import narwhals as nw
 import numpy as np
 from numpy.typing import ArrayLike
 
@@ -24,24 +25,18 @@ if TYPE_CHECKING:
     from skore._sklearn.types import EstimatorLike
 
 
-def _is_dataset_collection(X: object) -> bool:
-    """Return whether ``X`` is a dict or a list of datasets, not a list of rows."""
-    if isinstance(X, dict):
+def _is_supported_data(data: object, *, allow_series: bool) -> bool:
+    """Return whether ``data`` is a NumPy array, a dataframe, or None.
+
+    A Series is accepted only when ``allow_series`` is true, which is the target.
+    The array check is ``isinstance(data, np.ndarray)``. An array-API array would
+    be recognized by ``__array_namespace__``; that method is not consulted here.
+    """
+    if data is None or isinstance(data, np.ndarray):
         return True
-    if not isinstance(X, list):
-        return False
-    if not X:
+    if nw.dependencies.is_into_dataframe(data):
         return True
-    first = X[0]
-    if isinstance(first, dict):
-        return True
-    ndim = getattr(first, "ndim", None)
-    if isinstance(ndim, int):
-        return ndim > 1
-    try:
-        return np.asarray(first).ndim > 1
-    except (ValueError, TypeError):
-        return True
+    return allow_series and nw.dependencies.is_into_series(data)
 
 
 def evaluate(
@@ -76,14 +71,14 @@ def evaluate(
         - a skrub :class:`~skrub.SkrubLearner` extracted from a :class:`~skrub.DataOp`
           by calling :meth:`~skrub.DataOp.skb.make_learner`.
 
-    X : array-like or None
+    X : ndarray, dataframe, or None
         Feature matrix shared by all estimators when comparing several models.
         When comparing prefit estimators and no test features are needed,
         pass ``X=None``. To compare estimators evaluated on different feature
         matrices, call :func:`~skore.evaluate` once per estimator, then
         :func:`~skore.compare`.
 
-    y : array-like of shape (n_samples,), or None
+    y : ndarray, dataframe, Series, or None
         Target vector.
 
     data : dict or None
@@ -171,9 +166,12 @@ def evaluate(
     >>> list(report.reports_)
     ['m1', 'm2']
     """
-    if _is_dataset_collection(X):
+    if not _is_supported_data(X, allow_series=False) or not _is_supported_data(
+        y, allow_series=True
+    ):
         raise TypeError(
-            "X must be a single array-like or None. To compare estimators "
+            "X must be a NumPy array, a dataframe, or None, and y must be a "
+            "NumPy array, a dataframe, a Series, or None. To compare estimators "
             "evaluated on different feature matrices, call evaluate() once per "
             "model, then use skore.compare()."
         )
