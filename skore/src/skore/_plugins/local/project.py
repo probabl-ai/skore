@@ -15,6 +15,7 @@ import pandas as pd
 from skore import CrossValidationReport, EstimatorReport
 from skore._project.git import git_repo_root
 from skore._utils.cache_key import deep_key_sanitize
+from skore._utils.skrub import SKRUB_Y_KEY
 
 
 def _check_name(name: Any) -> str:
@@ -330,7 +331,7 @@ def read_report_metadata(report_dir: Path | str) -> dict[str, Any]:
         subset_name = "test_data"
     metadata["dataset"] = json.loads(
         (report_dir / "data" / f"{subset_name}.json").read_text("UTF-8")
-    )["_skrub_y"]["hash"]
+    )[SKRUB_Y_KEY]["hash"]
     metrics = pd.read_csv(report_dir / "metrics" / "summarize.csv")
     metadata |= metrics.groupby("name")["score"].mean().to_dict()
     return metadata

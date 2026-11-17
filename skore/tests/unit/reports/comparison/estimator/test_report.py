@@ -3,6 +3,7 @@ import pytest
 from sklearn.cluster import KMeans
 
 from skore import ComparisonReport, EstimatorReport
+from skore._utils.skrub import SKRUB_Y_KEY
 
 
 def test_init_wrong_parameters(estimator_reports_binary_classification):
@@ -48,7 +49,7 @@ def test_init_different_ml_usecases(
 
     # Simulate that the regression and classification reports share the same testing
     # targets which is not unlikely.
-    regression_report._test_data["_skrub_y"] = classification_report.y_test
+    regression_report._test_data[SKRUB_Y_KEY] = classification_report.y_test
     with pytest.raises(
         ValueError, match="Expected all estimators to have the same ML usecase"
     ):
