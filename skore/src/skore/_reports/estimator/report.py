@@ -9,10 +9,9 @@ from typing import TYPE_CHECKING, Any, Literal, NotRequired, TypedDict
 import numpy as np
 import skrub
 from sklearn.base import clone
-from sklearn.exceptions import NotFittedError
 from sklearn.pipeline import Pipeline
 from sklearn.utils._response import _check_response_method
-from sklearn.utils.validation import _num_samples, check_is_fitted
+from sklearn.utils.validation import _num_samples
 from skrub._reporting._summarize import summarize_dataframe
 
 from skore._checks import _BUILTIN_CHECKS
@@ -21,6 +20,7 @@ from skore._externals.sklearn_compat import _safe_indexing, is_clusterer
 from skore._metrics import MetricRegistry
 from skore._reports.base import _BaseReport
 from skore._sklearn.find_ml_task import _find_ml_task
+from skore._utils import is_fitted
 from skore._utils.cache import Cache
 from skore._utils.cache_key import make_cache_key
 from skore._utils.measure_time import MeasureTime
@@ -276,13 +276,8 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         )
 
         self._fit_time: float | None = None
-        try:
-            check_is_fitted(estimator)
-        except NotFittedError:
-            self.learner_, self._fit_time = self._fit_estimator(
-                estimator, self._train_data
-            )
-        else:
+
+        if is_fitted(estimator):
             if self._train_data is not None:
                 raise ValueError(
                     "Training data must not be provided when the estimator is already "
@@ -290,6 +285,10 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
                     "unfitted estimator."
                 )
             self.learner_ = estimator
+        else:
+            self.learner_, self._fit_time = self._fit_estimator(
+                estimator, self._train_data
+            )
 
         self._pos_label = pos_label
         self._ml_task = _find_ml_task(self.y_test, estimator=self.estimator_)
