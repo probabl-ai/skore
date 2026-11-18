@@ -5,6 +5,8 @@ from __future__ import annotations
 from collections.abc import Generator
 from typing import TYPE_CHECKING, Literal, cast
 
+import narwhals as nw
+import numpy as np
 from numpy.typing import ArrayLike
 
 from skore._config import configuration
@@ -21,6 +23,20 @@ from skore._utils.skrub import data_op_has_explicit_cv, get_data_op
 
 if TYPE_CHECKING:
     from skore._sklearn.types import EstimatorLike
+
+
+def _is_supported_data(data: object) -> bool:
+    """Return whether ``data`` is a NumPy array, a dataframe, a Series, or None.
+
+    The array check is ``isinstance(data, np.ndarray)``. An array-API array would
+    be recognized by ``__array_namespace__``; that method is not consulted here.
+    """
+    return (
+        data is None
+        or isinstance(data, np.ndarray)
+        or nw.dependencies.is_into_dataframe(data)
+        or nw.dependencies.is_into_series(data)
+    )
 
 
 def evaluate(
@@ -55,14 +71,14 @@ def evaluate(
         - a skrub :class:`~skrub.SkrubLearner` extracted from a :class:`~skrub.DataOp`
           by calling :meth:`~skrub.DataOp.skb.make_learner`.
 
-    X : array-like or None
+    X : ndarray, dataframe, Series, or None
         Feature matrix shared by all estimators when comparing several models.
         When comparing prefit estimators and no test features are needed,
         pass ``X=None``. To compare estimators evaluated on different feature
         matrices, call :func:`~skore.evaluate` once per estimator, then
         :func:`~skore.compare`.
 
-    y : array-like of shape (n_samples,), or None
+    y : ndarray, dataframe, Series, or None
         Target vector.
 
     data : dict or None
@@ -150,11 +166,11 @@ def evaluate(
     >>> list(report.reports_)
     ['m1', 'm2']
     """
-    if isinstance(X, (list, dict)):
+    if not all(_is_supported_data(data) for data in (X, y)):
         raise TypeError(
-            "X must be a single array-like or None. To compare estimators "
-            "evaluated on different feature matrices, call evaluate() once per "
-            "model, then use skore.compare()."
+            "X and y must be a NumPy array, a dataframe, a Series, or None. "
+            "To compare estimators evaluated on different feature matrices, "
+            "call evaluate() once per model, then use skore.compare()."
         )
 
     if X is None and y is None and data is None:
