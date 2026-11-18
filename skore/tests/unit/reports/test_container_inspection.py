@@ -75,3 +75,44 @@ def test_data_summarize_plot_with_containers(report_cls, x_container, y_containe
     assert isinstance(display, TableReportDisplay)
     fig = display.plot(x=feature_columns[0], y=feature_columns[1])
     assert fig.axes
+
+
+@pytest.mark.parametrize(
+    "x_container,y_container",
+    [
+        ("polars", "array"),
+        ("polars", "series"),
+        ("pandas", "polars_series"),
+        ("array", "polars_series"),
+    ],
+)
+@pytest.mark.parametrize(
+    "report_cls",
+    [EstimatorReport, CrossValidationReport],
+)
+def test_data_summarize_mixed_containers(report_cls, x_container, y_container):
+    """Features and target may use different dataframe libraries."""
+    X, y = make_regression(n_samples=40, n_features=3, random_state=0)
+    feature_columns = [f"f{i}" for i in range(X.shape[1])]
+    X = convert_container(
+        X, x_container, column_names=feature_columns, minversion="0.20.23"
+    )
+    y = convert_container(y, y_container, minversion="0.20.23")
+    estimator = LinearRegression()
+
+    if report_cls is EstimatorReport:
+        report = EstimatorReport(estimator, X_train=X, y_train=y, X_test=X, y_test=y)
+        frame = report.data.summarize(with_plots=False).frame(kind="dataset")
+        test_frame = report.data.summarize(data_source="test", with_plots=False).frame(
+            kind="dataset"
+        )
+        assert test_frame.shape[1] == X.shape[1] + 1
+    else:
+        report = CrossValidationReport(estimator, X, y, splitter=2)
+        frame = report.data.summarize(with_plots=False).frame(kind="dataset")
+
+    assert frame.shape[1] == X.shape[1] + 1
+    if x_container != "array":
+        assert list(frame.columns)[: X.shape[1]] == feature_columns
+    n_rows = X.shape[0] if report_cls is CrossValidationReport else 2 * X.shape[0]
+    assert frame.shape[0] == n_rows

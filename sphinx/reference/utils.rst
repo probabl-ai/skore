@@ -13,3 +13,4 @@ These functions and classes are useful for various purposes when using ``skore``
 
     configuration
     show_versions
+    TrainTestSplit
