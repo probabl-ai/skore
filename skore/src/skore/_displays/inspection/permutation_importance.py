@@ -12,7 +12,7 @@ from sklearn.base import is_classifier
 from sklearn.inspection import permutation_importance
 from sklearn.metrics._scorer import _BaseScorer
 from sklearn.pipeline import Pipeline
-from sklearn.utils.validation import _num_features
+from sklearn.utils.validation import _num_features, _num_samples
 
 from skore._displays.base import BOXPLOT_STYLE, DisplayMixin
 from skore._displays.inspection.utils import (
@@ -23,6 +23,7 @@ from skore._displays.inspection.utils import (
 from skore._sklearn.feature_names import _get_feature_names
 from skore._utils.callable import _callable_name
 from skore._utils.index import flatten_multi_index
+from skore._utils.skrub import SKRUB_X_KEY, SKRUB_Y_KEY, is_skrub_learner
 
 if TYPE_CHECKING:
     from matplotlib.figure import Figure
@@ -94,9 +95,9 @@ class PermutationImportanceDisplay(DisplayMixin):
         data_source: DataSource,
         estimator: BaseEstimator,
         name: str,
-        X: ArrayLike,
+        data: dict,
         y: ArrayLike,
-        at_step: int | str,
+        at_step: int | str | None,
         metric: MetricLike | list[MetricLike] | dict[str, MetricLike] | None,
         n_repeats: int,
         max_samples: float,
@@ -123,7 +124,7 @@ class PermutationImportanceDisplay(DisplayMixin):
         y : array-like
             Target vector.
 
-        at_step : int or str
+        at_step : int or str or None
             Pipeline step at which to evaluate importances (see
             :meth:`EstimatorReport.inspection.permutation_importance`).
 
@@ -151,29 +152,56 @@ class PermutationImportanceDisplay(DisplayMixin):
         PermutationImportanceDisplay
             The display populated with computed importances.
         """
-        if not isinstance(at_step, str | int):
-            raise ValueError(f"at_step must be an integer or a string; got {at_step!r}")
-
-        if isinstance(at_step, str):
-            if not isinstance(estimator, Pipeline):
+        if is_skrub_learner(estimator):
+            if at_step is None:
+                # default value: permute the inputs of the learner
+                at_step = SKRUB_X_KEY
+                X_transformed = data[SKRUB_X_KEY]
+            else:
+                X_transformed = estimator.truncated_after(at_step).transform(data)
+            # The permuted intermediate result need not be row-aligned with y
+            # (e.g. a table of items to be aggregated by order), which works as long
+            # as scikit-learn does not subsample its rows.
+            n_rows = _num_samples(X_transformed)
+            if n_rows != _num_samples(y) and max_samples not in (1.0, n_rows):
                 raise ValueError(
-                    "at_step can only be a string when the estimator is a Pipeline"
+                    f"The data at step {at_step!r} has {n_rows} rows but y has "
+                    f"{_num_samples(y)}: max_samples cannot be used to subsample "
+                    f"rows when they differ; got max_samples={max_samples!r}."
                 )
-            at_step = list(estimator.named_steps.keys()).index(at_step)
-
-        if isinstance(estimator, Pipeline) and at_step != 0:
-            if abs(at_step) >= len(estimator.steps):
-                raise ValueError(
-                    "at_step must be strictly smaller in magnitude than the "
-                    "number of steps in the Pipeline, which is "
-                    f"{len(estimator.steps)}; got {at_step}"
-                )
-            feature_engineering = estimator[:at_step]
-            estimator = estimator[at_step:]
-            X_transformed = feature_engineering.transform(X)
-        else:
+            estimator = estimator.with_sklearn_interface(
+                X=at_step, y=SKRUB_Y_KEY, environment=data
+            )
             feature_engineering = None
-            X_transformed = X
+        else:
+            X = data[SKRUB_X_KEY]
+            if at_step is None:
+                at_step = 0
+            if not isinstance(at_step, str | int):
+                raise ValueError(
+                    f"at_step must be an integer or a string; got {at_step!r}"
+                )
+
+            if isinstance(at_step, str):
+                if not isinstance(estimator, Pipeline):
+                    raise ValueError(
+                        "at_step can only be a string when the estimator is a Pipeline"
+                    )
+                at_step = list(estimator.named_steps.keys()).index(at_step)
+
+            if isinstance(estimator, Pipeline) and at_step != 0:
+                if abs(at_step) >= len(estimator.steps):
+                    raise ValueError(
+                        "at_step must be strictly smaller in magnitude than the "
+                        "number of steps in the Pipeline, which is "
+                        f"{len(estimator.steps)}; got {at_step}"
+                    )
+                feature_engineering = estimator[:at_step]
+                estimator = estimator[at_step:]
+                X_transformed = feature_engineering.transform(X)
+            else:
+                feature_engineering = None
+                X_transformed = X
 
         feature_names = _get_feature_names(
             estimator,

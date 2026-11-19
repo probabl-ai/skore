@@ -78,7 +78,7 @@ class PermutationImportance(Inspection[Report], ABC):  # noqa: D101
                 key_scope == "inspection"
                 and key_data_source == data_source
                 and key_name == "permutation_importance"
-                and "('at_step', 0)" in key_kwargs
+                and "('at_step', None)" in key_kwargs
                 and "('metric', None)" in key_kwargs
             ):
                 return cast(Display, display)

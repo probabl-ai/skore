@@ -23,7 +23,6 @@ from skore._utils.accessor import (
     _check_supported_ml_task,
 )
 from skore._utils.cache_key import make_cache_key
-from skore._utils.skrub import SKRUB_X_KEY
 
 
 class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
@@ -127,7 +126,7 @@ class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         self,
         *,
         data_source: DataSource = "test",
-        at_step: int | str = 0,
+        at_step: int | str | None = None,
         metric: MetricLike | list[MetricLike] | dict[str, MetricLike] | None = None,
         n_repeats: int = 5,
         max_samples: float = 1.0,
@@ -155,7 +154,7 @@ class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
 
-        at_step : int or str, default=0
+        at_step : int or str or None, default=None
             If the estimator is a :class:`~sklearn.pipeline.Pipeline`, at which step of
             the pipeline the importance is computed. If `n`, then the features that
             are evaluated are the ones *right before* the `n`-th step of the pipeline.
@@ -169,7 +168,15 @@ class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
 
             If a string, will be searched among the pipeline's `named_steps`.
 
-            Has no effect if the estimator is not a :class:`~sklearn.pipeline.Pipeline`.
+            If None (the default), the importance is computed on the raw input
+            features (like 0).
+
+            Has no effect if the estimator is not a :class:`~sklearn.pipeline.Pipeline`
+            or a skrub learner.
+
+            For a skrub learner, this is the name or ID of the node of the
+            :class:`~skrub.DataOp` whose output is shuffled (see
+            :meth:`~skrub.SkrubLearner.truncated_after`).
 
         metric : str, callable, scorer, or list of such instances or dict of such \
                 instances, default=None
@@ -295,10 +302,6 @@ class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         -----
         Even if pipeline components output sparse arrays, these will be made dense.
         """
-        if self._parent._initialized_with_data_op:
-            raise TypeError(
-                "Permutation importance is not yet supported for skrub dataops."
-            )
         data_, y_true = self._parent._get_data_and_y_true(data_source=data_source)
 
         # NOTE: to temporary improve the `project.put` UX, we always store the
@@ -334,7 +337,7 @@ class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
                 data_source=data_source,
                 estimator=self._parent.estimator_,
                 name=self._parent.estimator_name_,
-                X=data_[SKRUB_X_KEY],
+                data=data_,
                 y=y_true,
                 at_step=at_step,
                 metric=metric,
