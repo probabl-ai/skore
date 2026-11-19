@@ -21,6 +21,7 @@ from skore._plugins.mlflow.project import (
     format_date,
     report_type,
 )
+from skore._utils.skrub import SKRUB_X_KEY, SKRUB_Y_KEY
 
 
 def test_format_date() -> None:
@@ -351,7 +352,7 @@ class TestProject:
         )
         report = CrossValidationReport(
             learner,
-            data={"_skrub_X": X, "_skrub_y": y},
+            data={SKRUB_X_KEY: X, SKRUB_Y_KEY: y},
             splitter=KFold(n_splits=2),
         )
         project = Project("<project>")

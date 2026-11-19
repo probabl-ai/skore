@@ -8,6 +8,7 @@ from skore import CalibrationDisplay
     "fixture_prefix",
     [
         "estimator_reports",
+        "cross_validation_reports",
     ],
 )
 @pytest.mark.parametrize("task", ["binary_classification", "multiclass_classification"])
@@ -32,9 +33,13 @@ class TestCalibrationDisplay:
             report = report[0]
         display = report.inspection.calibration_curve()
         frame = display.frame(label=display.labels[0])
-        n_samples = len(report.y_test)
-        expected_n_bins = int(np.ceil(n_samples ** (1 / 3)))
-        assert len(frame) == expected_n_bins
+        if "cross_validation" in fixture_prefix:
+            for split, split_report in enumerate(report.reports_):
+                expected_n_bins = int(np.ceil(len(split_report.y_test) ** (1 / 3)))
+                assert len(frame[frame["split"] == split]) == expected_n_bins
+        else:
+            expected_n_bins = int(np.ceil(len(report.y_test) ** (1 / 3)))
+            assert len(frame) == expected_n_bins
 
     def test_frame_structure(self, fixture_prefix, task, request):
         report = request.getfixturevalue(f"{fixture_prefix}_{task}")
@@ -48,6 +53,8 @@ class TestCalibrationDisplay:
             "data_source",
             "label",
         }
+        if "cross_validation" in fixture_prefix:
+            expected.add("split")
         assert set(frame.columns) == expected
 
     def test_internal_data_structure(self, fixture_prefix, task, request):
@@ -56,12 +63,14 @@ class TestCalibrationDisplay:
             report = report[0]
         display = report.inspection.calibration_curve()
         expected = {
+            "estimator",
+            "data_source",
+            "split",
+            "label",
             "predicted_probability",
             "fraction_of_positives",
-            "data_source",
-            "label",
         }
-        assert set(display.frame().columns) == expected
+        assert set(display.calibration_report.columns) == expected
 
     def test_plot_structure(self, fixture_prefix, task, request):
         report = request.getfixturevalue(f"{fixture_prefix}_{task}")
@@ -111,3 +120,24 @@ class TestCalibrationDisplay:
         assert ax.get_ylabel() == "Custom Y"
         assert tuple(ax.get_xlim()) == (0.2, 0.8)
         assert tuple(ax.get_ylim()) == (0.1, 0.9)
+
+
+def test_calibration_curve_missing_class_in_test_set():
+    """Test that calibration_curve aligns classes when a class is absent from y_test."""
+    from sklearn.linear_model import LogisticRegression
+
+    from skore import EstimatorReport
+
+    X_train = np.array([[1.0], [2.0], [3.0], [4.0], [5.0], [6.0]])
+    y_train = np.array([0, 0, 1, 1, 2, 2])
+    clf = LogisticRegression().fit(X_train, y_train)
+
+    X_test = np.array([[3.5], [4.5], [5.5], [6.5]])
+    y_test = np.array([1, 1, 2, 2])
+
+    rep = EstimatorReport(clf, X_test=X_test, y_test=y_test)
+    disp = rep.inspection.calibration_curve(strategy="uniform", n_bins=2)
+
+    assert disp.labels == [0, 1, 2]
+    frame = disp.frame(label=None)
+    assert frame["label"].unique().tolist() == [0, 1, 2]

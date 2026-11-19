@@ -212,6 +212,38 @@ def test_add_checks_invalid_protocol(regression_report):
         regression_report.checks.add([InvalidCheck()])
 
 
+def test_add_rejects_code_already_registered(regression_report):
+    """Adding a check must not replace the check already registered under that code."""
+    check = MockCheck()
+    check.code = "SKD001"
+
+    with pytest.raises(ValueError, match="SKD001"):
+        regression_report.checks.add([check])
+
+
+def test_add_rejects_code_case_insensitively(regression_report):
+    """Check codes collide after stripping and case-folding."""
+    check = MockCheck()
+    check.code = " skd001 "
+
+    with pytest.raises(ValueError, match="skd001"):
+        regression_report.checks.add([check])
+
+
+def test_add_rejects_duplicate_custom_code(regression_report):
+    """A second custom check with a code already registered is rejected."""
+    regression_report.checks.add([MockCheck()])
+
+    with pytest.raises(ValueError, match="TST001"):
+        regression_report.checks.add([MockCheck()])
+
+
+def test_add_rejects_duplicate_codes_in_one_call(regression_report):
+    """Two checks in one call that share a code are rejected."""
+    with pytest.raises(ValueError, match="TST001"):
+        regression_report.checks.add([MockCheck(), MockCheck()])
+
+
 # available
 
 
@@ -313,6 +345,14 @@ def test_ignore_codes_are_normalized(regression_report):
     result = regression_report.checks.summarize(ignore=[" skd001 ", "  "])
     assert "SKD001" in set(result.frame(section="ignored")["code"])
     assert "SKD001" not in set(result.frame(section="issue")["code"])
+
+
+def test_ignore_rejects_a_string_or_non_string_item(regression_report):
+    """A bare string is not a sequence of check codes."""
+    with pytest.raises(TypeError, match="list or tuple of strings"):
+        regression_report.checks.summarize(ignore="SK0093")
+    with pytest.raises(TypeError, match="items must be strings"):
+        regression_report.checks.summarize(ignore=[1])
 
 
 def test_global_ignore(regression_report):

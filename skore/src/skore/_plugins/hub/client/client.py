@@ -257,10 +257,12 @@ class HUBClient(Client):
                     or key_module.get(host=host, workspace=workspace)
                 )
             ):
+                cmd = (
+                    f"skore hub api-key generate --host {host} --workspace {workspace}"
+                )
                 raise RuntimeError(
-                    "No API key found for this workspace; generate one with "
-                    "`skore hub api-key generate --host <host> --workspace <workspace>`"
-                    ", or set the SKORE_HUB_API_KEY environment variable."
+                    f"No API key found for this workspace; generate one with `{cmd}`,"
+                    " or set the SKORE_HUB_API_KEY environment variable."
                 )
 
             headers.update({"X-API-Key": key})
