@@ -21,7 +21,10 @@ if TYPE_CHECKING:
     from skore._sklearn.types import EstimatorLike
 
 
-if parse_version(skrub.__version__).release >= (0, 12):
+# Compare the release tuple so that development versions (0.12.dev0) are accepted.
+SKRUB_AT_LEAST_0_12 = parse_version(skrub.__version__).release >= (0, 12)
+
+if SKRUB_AT_LEAST_0_12:
     SKRUB_X_KEY = "skrub.X"
     SKRUB_Y_KEY = "skrub.y"
 else:

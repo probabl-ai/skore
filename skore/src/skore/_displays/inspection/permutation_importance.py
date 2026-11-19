@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Any, Literal, cast
 import numpy as np
 import pandas as pd
 import seaborn as sns
+import skrub
 from scipy.sparse import issparse, spmatrix
 from sklearn.base import is_classifier
 from sklearn.inspection import permutation_importance
@@ -23,7 +24,12 @@ from skore._displays.inspection.utils import (
 from skore._sklearn.feature_names import _get_feature_names
 from skore._utils.callable import _callable_name
 from skore._utils.index import flatten_multi_index
-from skore._utils.skrub import SKRUB_X_KEY, SKRUB_Y_KEY, is_skrub_learner
+from skore._utils.skrub import (
+    SKRUB_AT_LEAST_0_12,
+    SKRUB_X_KEY,
+    SKRUB_Y_KEY,
+    is_skrub_learner,
+)
 
 if TYPE_CHECKING:
     from matplotlib.figure import Figure
@@ -153,12 +159,20 @@ class PermutationImportanceDisplay(DisplayMixin):
             The display populated with computed importances.
         """
         if is_skrub_learner(estimator):
+            if not SKRUB_AT_LEAST_0_12:
+                raise ImportError(
+                    "Permutation importance for skrub learners requires "
+                    f"skrub >= 0.12.0; got {skrub.__version__}."
+                )
             if at_step is None:
                 # default value: permute the inputs of the learner
                 at_step = SKRUB_X_KEY
                 X_transformed = data[SKRUB_X_KEY]
             else:
-                X_transformed = estimator.truncated_after(at_step).transform(data)
+                # the truncated learner may not use all the variables in data
+                X_transformed = estimator.truncated_after(at_step).transform(
+                    {**data, "skrub.ignore_extra_keys": True}
+                )
             # The permuted intermediate result need not be row-aligned with y
             # (e.g. a table of items to be aggregated by order), which works as long
             # as scikit-learn does not subsample its rows.
