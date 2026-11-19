@@ -771,7 +771,7 @@ class CoefficientsDisplay(DisplayMixin):
         feature_names = ["Intercept"] + _get_feature_names(
             predictor,
             transformer=preprocessor,
-            X=X if preprocessor is None else None,
+            X=X,
             n_features=coef.shape[0],
         )
         n_features = len(feature_names)

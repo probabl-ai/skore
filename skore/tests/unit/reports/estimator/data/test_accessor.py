@@ -159,14 +159,17 @@ def test_summarize_numpy_array(
         classifier, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
 
+    expected_features = (
+        [f"Feature #{i}" for i in range(X_train.shape[1])]
+        if x_container == "array"
+        else feature_columns
+    )
     display = report.data.summarize(data_source=data_source, with_y=False)
-    assert list(display.summary["dataframe"].columns) == [
-        f"Feature {i}" for i in range(X_train.shape[1])
-    ]
+    assert list(display.summary["dataframe"].columns) == expected_features
 
     display = report.data.summarize(data_source=data_source, with_y=True)
     assert list(display.summary["dataframe"].columns) == (
-        [f"Feature {i}" for i in range(X_train.shape[1])] + target_column_names
+        expected_features + target_column_names
     )
 
 

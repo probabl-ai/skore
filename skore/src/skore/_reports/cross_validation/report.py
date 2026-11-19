@@ -29,7 +29,13 @@ from skore._utils.repr.markdown import (
 )
 from skore._utils.repr.paginated_metrics import metrics_summary_html
 from skore._utils.repr.utils import repair_estimator_html_for_slotted_host
-from skore._utils.skrub import is_skrub_learner, to_estimator, to_learner
+from skore._utils.skrub import (
+    SKRUB_X_KEY,
+    SKRUB_Y_KEY,
+    is_skrub_learner,
+    to_estimator,
+    to_learner,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Generator
@@ -244,7 +250,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
             self.learner_ = estimator
             X_y_cv = skrub.as_data_op(estimator.data_op.skb.find_X_y()).skb.eval(data)
             X, y = X_y_cv["X"], X_y_cv["y"]
-            self._data = data | {"_skrub_X": X, "_skrub_y": y}
+            self._data = data | {SKRUB_X_KEY: X, SKRUB_Y_KEY: y}
             if splitter is None and (cv := X_y_cv.get("cv")) is not None:
                 self._splitter = cv
                 split_kwargs = X_y_cv["split_kwargs"]
@@ -264,7 +270,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
                     "SkrubLearner and data is provided instead)."
                 )
             self.learner_ = to_learner(estimator)
-            self._data = {"_skrub_X": X, "_skrub_y": y}
+            self._data = {SKRUB_X_KEY: X, SKRUB_Y_KEY: y}
         if getattr(self, "_splitter", None) is None:
             self._splitter = check_cv(splitter, y, classifier=is_classifier(estimator))
             self._split_indices = tuple(self._splitter.split(X, y))
@@ -382,16 +388,16 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
             split_data_iterator = (
                 {
                     "train": {
-                        "_skrub_X": _safe_indexing(report.X, train_indices),
-                        "_skrub_y": (
+                        SKRUB_X_KEY: _safe_indexing(report.X, train_indices),
+                        SKRUB_Y_KEY: (
                             None
                             if report.y is None
                             else _safe_indexing(report.y, train_indices)
                         ),
                     },
                     "test": {
-                        "_skrub_X": _safe_indexing(report.X, test_indices),
-                        "_skrub_y": (
+                        SKRUB_X_KEY: _safe_indexing(report.X, test_indices),
+                        SKRUB_Y_KEY: (
                             None
                             if report.y is None
                             else _safe_indexing(report.y, test_indices)
@@ -567,11 +573,11 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
 
     @property
     def X(self) -> ArrayLike:
-        return self._data["_skrub_X"]
+        return self._data[SKRUB_X_KEY]
 
     @property
     def y(self) -> ArrayLike:
-        return self._data["_skrub_y"]
+        return self._data[SKRUB_Y_KEY]
 
     @property
     def input_data(self) -> dict:

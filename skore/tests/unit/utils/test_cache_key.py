@@ -54,7 +54,7 @@ def test_deep_key_sanitize_dtype_callable_and_iterator():
 
 def test_deep_key_sanitize_rejects_unsupported_values():
     """Mappings need string keys, and arbitrary objects cannot be keys."""
-    with pytest.raises(TypeError, match="Only string keys"):
+    with pytest.raises(TypeError, match=r"Only string keys are supported.*\[1\]"):
         deep_key_sanitize({1: "a"})
     with pytest.raises(TypeError, match="Unsupported type"):
         deep_key_sanitize(object())

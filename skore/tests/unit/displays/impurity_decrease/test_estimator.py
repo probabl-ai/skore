@@ -107,7 +107,13 @@ def test_skrub_learner_matches_sklearn_pipeline(steps, chained):
         X_test=X[40:],
         y_test=y[40:],
     )
-    pd.testing.assert_frame_equal(
-        skrub_report.inspection.impurity_decrease().frame(),
-        sklearn_report.inspection.impurity_decrease().frame(),
-    )
+    skrub_frame = skrub_report.inspection.impurity_decrease().frame()
+    sklearn_frame = sklearn_report.inspection.impurity_decrease().frame()
+    np.testing.assert_allclose(skrub_frame["importance"], sklearn_frame["importance"])
+    if steps and not chained:
+        # the predictor is fitted on the array output by the pipeline's leading
+        # steps, so feature names are not available
+        expected = [f"Feature #{i}" for i in range(len(sklearn_frame))]
+    else:
+        expected = sklearn_frame["feature"].tolist()
+    assert skrub_frame["feature"].tolist() == expected

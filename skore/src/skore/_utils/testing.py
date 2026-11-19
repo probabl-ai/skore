@@ -16,7 +16,7 @@ from skore._displays.metrics.precision_recall_curve import (
 )
 from skore._displays.metrics.roc_curve import RocCurveDisplay
 from skore._reports.base import _BaseAccessor, _BaseReport
-from skore._utils.skrub import is_skrub_learner, to_learner
+from skore._utils.skrub import SKRUB_X_KEY, SKRUB_Y_KEY, is_skrub_learner, to_learner
 
 
 def check_precision_recall_curve_display_data(display: PrecisionRecallCurveDisplay):
@@ -107,9 +107,9 @@ class MockReport(_BaseReport):
         if X_train is not None:
             self._train_data = {
                 "X": X_train,
-                "_skrub_X": X_train,
+                SKRUB_X_KEY: X_train,
                 "y": y_train,
-                "_skrub_y": y_train,
+                SKRUB_Y_KEY: y_train,
             }
         else:
             self._train_data = None
@@ -117,9 +117,9 @@ class MockReport(_BaseReport):
         if X_test is not None:
             self._test_data = {
                 "X": X_test,
-                "_skrub_X": X_test,
+                SKRUB_X_KEY: X_test,
                 "y": y_test,
-                "_skrub_y": y_test,
+                SKRUB_Y_KEY: y_test,
             }
         else:
             self._test_data = None

@@ -8,6 +8,7 @@ from skore._externals.pandas_accessors import DirNamesMixin
 from skore._reports.base import _BaseAccessor
 from skore._reports.cross_validation.report import CrossValidationReport
 from skore._utils.dataframe import (
+    _align_frame_backend,
     _disambiguate_target_columns,
     _normalize_X_as_dataframe,
     _normalize_y_as_dataframe,
@@ -81,7 +82,8 @@ class _DataAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         X, y = self._retrieve_data_as_frame(with_y)
         if with_y:
             features = nw.from_native(X)
-            target = _disambiguate_target_columns(features, nw.from_native(y))
+            target = _align_frame_backend(nw.from_native(y), features)
+            target = _disambiguate_target_columns(features, target)
             df = nw.concat([features, target], how="horizontal")
         else:
             df = nw.from_native(X)

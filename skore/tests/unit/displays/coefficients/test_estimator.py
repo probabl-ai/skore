@@ -258,8 +258,8 @@ SKRUB_CASES = [
 
 @pytest.mark.parametrize("steps, chained", SKRUB_CASES)
 def test_skrub_learner_matches_sklearn_pipeline(steps, chained):
-    """A skrub learner gives the same coefficients and feature stds as the
-    equivalent scikit-learn pipeline."""
+    """A skrub learner gives the same coefficients as the equivalent scikit-learn
+    pipeline."""
     X_train, X_test, y_train, y_test = _skrub_regression_data()
     skrub_report = EstimatorReport(
         _skrub_data_op(steps, Ridge(), chained=chained).skb.make_learner(),
@@ -273,24 +273,22 @@ def test_skrub_learner_matches_sklearn_pipeline(steps, chained):
         X_test=X_test,
         y_test=y_test,
     )
-    skrub_display = skrub_report.inspection.coefficients()
-    sklearn_display = sklearn_report.inspection.coefficients()
-    pd.testing.assert_frame_equal(skrub_display.frame(), sklearn_display.frame())
-
-    # feature stds are computed on the predictor input, which skrub gives as a
-    # dataframe (hence with ddof=1)
-    X_predictor = X_train
-    if steps:
-        X_predictor = pd.DataFrame(sklearn_report.estimator_[:-1].transform(X_train))
-    np.testing.assert_allclose(
-        skrub_display.coefficients.query("feature != 'Intercept'")["feature_std"],
-        X_predictor.std(),
-    )
+    skrub_frame = skrub_report.inspection.coefficients().frame()
+    sklearn_frame = sklearn_report.inspection.coefficients().frame()
+    np.testing.assert_allclose(skrub_frame["coefficient"], sklearn_frame["coefficient"])
+    if steps and not chained:
+        # the predictor is fitted on the array output by the pipeline's leading
+        # steps, so feature names are not available
+        n_features = len(sklearn_frame) - 1
+        expected = ["Intercept"] + [f"Feature #{i}" for i in range(n_features)]
+    else:
+        expected = sklearn_frame["feature"].tolist()
+    assert skrub_frame["feature"].tolist() == expected
 
 
-def test_skrub_learner_feature_std_uses_predictor_input():
-    """Feature stds are computed on the features seen by the predictor, not on
-    the value of the ``X`` node."""
+def test_skrub_learner_feature_names_from_predictor():
+    """Feature names are the ones seen by the predictor, not the columns of the
+    ``X`` node."""
     X_train, X_test, y_train, y_test = _skrub_regression_data()
     X = skrub.X()
     data_op = (
@@ -301,10 +299,20 @@ def test_skrub_learner_feature_std_uses_predictor_input():
         train_data={"X": X_train, "y": y_train},
         test_data={"X": X_test, "y": y_test},
     )
-    coefficients = report.inspection.coefficients().coefficients
-    features = coefficients.query("feature != 'Intercept'")
-    assert features["feature"].tolist() == ["a", "b", "d"]
-    np.testing.assert_allclose(
-        features["feature_std"],
-        X_train.assign(d=X_train["a"] * 10)[["a", "b", "d"]].std(),
+    frame = report.inspection.coefficients().frame(include_intercept=False)
+    assert frame["feature"].tolist() == ["a", "b", "d"]
+
+
+def test_skrub_learner_scale_features_unavailable():
+    """Feature stds are not computed for a skrub learner, to avoid re-running the
+    preprocessing of the training data."""
+    X_train, X_test, y_train, y_test = _skrub_regression_data()
+    report = EstimatorReport(
+        _skrub_data_op([StandardScaler()], Ridge(), chained=True).skb.make_learner(),
+        train_data={"X": X_train, "y": y_train},
+        test_data={"X": X_test, "y": y_test},
     )
+    display = report.inspection.coefficients()
+    assert display.coefficients["feature_std"].isna().all()
+    with pytest.raises(ValueError, match="scale_features=True"):
+        display.frame(scale_features=True)

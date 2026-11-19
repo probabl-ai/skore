@@ -56,9 +56,12 @@ def deep_key_sanitize(value: Any) -> Any:
     if callable(value):
         return ("callable", joblib.hash(value))
     if isinstance(value, Mapping):
-        all_keys_str = all(isinstance(key, str) for key in value)
-        if not all_keys_str:
-            raise TypeError("Only string keys are support for mappings")
+        non_str_keys = [key for key in value if not isinstance(key, str)]
+        if non_str_keys:
+            raise TypeError(
+                "Only string keys are supported for mappings; "
+                f"got non-string key(s): {non_str_keys!r}"
+            )
         kv_pairs = ((key, deep_key_sanitize(item)) for key, item in value.items())
         return ("mapping", tuple(sorted(kv_pairs, key=lambda kv: kv[0])))
     if isinstance(value, Set):
