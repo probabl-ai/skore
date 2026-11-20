@@ -714,3 +714,39 @@ How to reduce the risk
 - or set sensible non-default values manually.
 
 Check out the :ref:`example for this check <example_skd016_estimator_not_tuned>`.
+
+.. _skd017-train-test-duplicates:
+
+SKD017 - Duplicate rows across train and test
+---------------------------------------------
+
+How it is detected
+^^^^^^^^^^^^^^^^^^
+
+`skore` inspects the full, unsplit dataset (features and target) and reports
+how many rows are duplicates of another row.
+
+Why it matters
+^^^^^^^^^^^^^^
+
+Duplicate rows leak across a train/test split: identical rows end up on both
+Duplicate rows can leak across a train/test split: if identical rows end up on both
+sides, the model is evaluated on rows it was trained on and the reported
+score is overly optimistic.
+
+How to reduce the risk
+^^^^^^^^^^^^^^^^^^^^^^
+
+- if the duplicates are **not legitimate**, de-duplicate the dataset before
+  splitting;
+- if the duplicates **are legitimate** (the data-generating process can really
+  produce identical observations), either:
+
+  - do nothing, if samples seen during training can also appear in production.
+  The evaluation should then reflect that;
+  - group the duplicated observations so they stay on the same side of the
+    split;
+  - or remove duplicates and use sample weights to account for the repeated rows.
+
+Check out the
+Check out the :ref:`example for this check <example_skd017_train_test_duplicates>`.
