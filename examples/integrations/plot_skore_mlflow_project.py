@@ -125,17 +125,27 @@ pandas_summary = summary.frame().reset_index()
 pandas_summary[["id", "key", "report_type", "learner", "dataset"]]
 
 # %%
-# Then, you can retrieve a Skore report using the `"id"` column:
-(run_id,) = pandas_summary["id"]
-loaded_report = project.get(run_id)
+# Then, you can retrieve a Skore report using the `"id"` column. That id is the
+# report UUID. MLflow keeps its own run id and stores the UUID in the
+# ``skore_report_id`` tag.
+(report_id,) = pandas_summary["id"]
+loaded_report = project.get(report_id)
 loaded_report.metrics.summarize().frame()
 
 # %%
 # You can directly use MLflow to access information stored in the MLflow tracking
-# server.
+# server. Search the run by the report UUID, then read it with the MLflow run id.
 import mlflow
 
-mlflow_run = mlflow.get_run(run_id)
+runs = mlflow.search_runs(
+    experiment_names=[PROJECT],
+    filter_string=(
+        f"tags.skore_report_id = '{report_id}' and tags.skore_status = 'completed'"
+    ),
+    output_format="list",
+    max_results=1,
+)
+mlflow_run = mlflow.get_run(runs[0].info.run_id)
 mlflow_run.data.metrics
 
 # %%

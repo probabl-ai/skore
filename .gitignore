@@ -207,3 +207,4 @@ mlflow.db
 mlruns
 
 .claude
+.mplconfig/
