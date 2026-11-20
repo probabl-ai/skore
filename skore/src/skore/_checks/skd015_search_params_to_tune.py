@@ -1,13 +1,16 @@
 from __future__ import annotations
 
 from collections import defaultdict
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from sklearn.model_selection._search import BaseSearchCV
 from sklearn.pipeline import Pipeline
 
 from skore._checks.base import Check
-from skore._checks.tunable_hyperparameters import HYPERPARAMETERS_TO_TUNE
+from skore._checks.tunable_hyperparameters import (
+    HYPERPARAMETERS_TO_TUNE,
+    get_tunable_hyperparameters,
+)
 from skore._checks.utils import (
     CheckNotApplicable,
     ClassName,
@@ -57,12 +60,24 @@ class CheckSearchParamsToTune(Check):
             searched_params_by_step: dict[StepName, set[ParameterName]] = defaultdict(
                 set
             )
-            for key in searched_keys:
-                if "__" in key:
-                    step_name, suffix = key.split("__", 1)
-                    searched_params_by_step[step_name].add(suffix)
-            searched_by_estimator: list[tuple[ClassName, set[ParameterName]]] = [
-                (type(step).__name__, searched_params_by_step.get(name, set()))
+            searched_values_by_step: dict[StepName, dict[ParameterName, set[Any]]] = (
+                defaultdict(lambda: defaultdict(set))
+            )
+            for params in estimator.cv_results_["params"]:
+                for key, val in params.items():
+                    if "__" in key:
+                        step_name, suffix = key.split("__", 1)
+                        searched_params_by_step[step_name].add(suffix)
+                        searched_values_by_step[step_name][suffix].add(val)
+            searched_by_estimator: list[
+                tuple[ClassName, Any, set[ParameterName], dict[ParameterName, set[Any]]]
+            ] = [
+                (
+                    type(step).__name__,
+                    step,
+                    searched_params_by_step.get(name, set()),
+                    searched_values_by_step.get(name, {}),
+                )
                 for name, step in inner_estimator.steps
                 if type(step).__name__ in HYPERPARAMETERS_TO_TUNE
             ]
@@ -74,13 +89,18 @@ class CheckSearchParamsToTune(Check):
             class_name = type(inner_estimator).__name__
             if class_name not in HYPERPARAMETERS_TO_TUNE:
                 raise CheckNotApplicable("No parameter to recommend for the estimator.")
-            searched_by_estimator = [(class_name, searched_keys)]
+            searched_values: dict[ParameterName, set[Any]] = defaultdict(set)
+            for params in estimator.cv_results_["params"]:
+                for key, val in params.items():
+                    searched_values[key].add(val)
+            searched_by_estimator = [
+                (class_name, inner_estimator, searched_keys, searched_values)
+            ]
 
         messages: list[str] = []
-        for class_name, searched in searched_by_estimator:
-            missing = collapse_equivalents(
-                HYPERPARAMETERS_TO_TUNE[class_name], searched
-            )
+        for class_name, step, searched, searched_values in searched_by_estimator:
+            recommended = get_tunable_hyperparameters(step, searched_values)
+            missing = collapse_equivalents(recommended, searched)
             if missing:
                 messages.append(f"{sorted(missing)} for {class_name}")
         if not messages:

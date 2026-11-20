@@ -10,6 +10,7 @@ from skore._checks.base import Check
 from skore._checks.tunable_hyperparameters import (
     HYPERPARAMETERS_TO_TUNE,
     INFRASTRUCTURE_PARAMS,
+    get_tunable_hyperparameters,
 )
 from skore._checks.utils import (
     CheckNotApplicable,
@@ -42,7 +43,7 @@ def skrub_classes_with_tunable_recommended_params(estimator) -> set[ClassName]:
             class_name = type(est).__name__
             if class_name not in HYPERPARAMETERS_TO_TUNE:
                 continue
-            for param_name in HYPERPARAMETERS_TO_TUNE[class_name]:
+            for param_name in get_tunable_hyperparameters(est):
                 if param_name in INFRASTRUCTURE_PARAMS:
                     continue
                 if is_tunable(getattr(est, param_name, None)):
@@ -95,9 +96,7 @@ class CheckEstimatorNotTuned(Check):
                 continue
             if set(_changed_params(step)) - INFRASTRUCTURE_PARAMS:
                 continue
-            recommended = collapse_equivalents(
-                HYPERPARAMETERS_TO_TUNE[class_name], set()
-            )
+            recommended = collapse_equivalents(get_tunable_hyperparameters(step), set())
             messages.append(f"{sorted(recommended)} for {class_name}")
 
         if not messages:

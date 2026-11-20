@@ -147,3 +147,32 @@ def test_not_applicable_search(report_type, regression_data):
     report = evaluate(search, X, y, splitter=0.2 if report_type == "estimator" else 3)
     with pytest.raises(CheckNotApplicable, match="is a BaseSearchCV"):
         CheckEstimatorNotTuned().check_function(report)
+
+
+def test_conditional_params_svc_gamma(binary_classification_data):
+    """SKD016 recommends gamma for SVC when kernel is rbf."""
+    from sklearn.svm import SVC
+
+    X, y = binary_classification_data
+    report = evaluate(SVC(kernel="rbf"), X, y, splitter=0.2)
+    explanation = CheckEstimatorNotTuned().check_function(report)
+    assert explanation is not None
+    assert "['C', 'gamma'] for SVC" in explanation
+
+
+def test_conditional_params_logistic_regression(binary_classification_data):
+    """SKD016 recommends l1_ratio for LogisticRegression when solver is saga."""
+    from sklearn.linear_model import LogisticRegression
+
+    X, y = binary_classification_data
+    # default solver is lbfgs, so only C is recommended
+    report_default = evaluate(LogisticRegression(), X, y, splitter=0.2)
+    explanation_default = CheckEstimatorNotTuned().check_function(report_default)
+    assert explanation_default is not None
+    assert "['C'] for LogisticRegression" in explanation_default
+
+    # when solver is saga, l1_ratio is also recommended
+    report_saga = evaluate(LogisticRegression(solver="saga"), X, y, splitter=0.2)
+    explanation_saga = CheckEstimatorNotTuned().check_function(report_saga)
+    assert explanation_saga is not None
+    assert "['C', 'l1_ratio'] for LogisticRegression" in explanation_saga
