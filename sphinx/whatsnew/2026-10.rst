@@ -1,0 +1,235 @@
+What's new in skore — October 2026
+==================================
+
+``skore`` CLI
+-------------
+
+The command line tool used to be a separate package (``skore-cli``) that had to be
+installed on top of skore. It now lives inside the main package: installing ``skore``
+alone provides the ``skore`` command with ``agent``, ``hub``, ``sync``, and ``skills``
+subcommands. See :pr:`3309` by :user:`glemaitre`.
+
+Hub authentication uses API keys
+--------------------------------
+
+Authentication to Skore Hub is now done with an API key generated with:
+
+.. code-block:: console
+
+    skore hub api-key generate --host <host> --workspace <workspace>
+
+This stores the key in the OS keyring when available, or in ``~/.skore.hub/`` otherwise.
+
+``skore.login()`` is removed. See :pr:`3255` by :user:`thomass-dev`.
+
+Hub projects require a ``host``
+-------------------------------
+
+Every hub operation used to fall back silently to the public hub at
+``https://api.skore.probabl.ai`` when no host was given. That default is gone: pass
+``host=`` to :class:`~skore.Project`, or set ``SKORE_HUB_URI``. In the CLI ``skore hub``
+now require a ``--host`` value. See :pr:`3325` by :user:`thomass-dev`.
+
+.. code-block:: python
+
+    from skore import Project
+
+    Project("my-project", mode="hub", workspace="my-workspace")
+
+    # # before
+    # (connected to the public hub by default)
+    #
+    # # after
+    # ValueError: You must provide an host via the parameter `host` or the
+    # environment variable `SKORE_HUB_URI`
+
+Custom metric name is no longer inferred
+----------------------------------------
+
+Adding a metric to a report used to title-case its name, which caused various issues
+related to duplication of rows. This is no longer the case; the name can still be
+overridden by passing ``verbose_name=`` explicitly. See :pr:`3290` by :user:`glemaitre`.
+
+.. code-block:: python
+
+    from sklearn.datasets import make_classification
+    from sklearn.linear_model import LogisticRegression
+    from sklearn.metrics import accuracy_score
+
+    import skore
+
+    X, y = make_classification(n_samples=100, n_features=4, random_state=0)
+    report = skore.evaluate(LogisticRegression(), X, y, splitter=3)
+
+
+    def MY_METRIC(estimator, X, y):
+        return accuracy_score(estimator.predict(X), y)
+
+
+    report.metrics.add(MY_METRIC)
+    report.metrics.summarize().frame().head(3)
+
+    # # before
+    #                logisticregression_mean  logisticregression_std
+    # My Metric                    ...                     ...
+    #
+    # # after
+    #                logisticregression_mean  logisticregression_std
+    # MY_METRIC                     0.980392                0.033962
+
+The default ``.score`` is now ``default_score``
+-----------------------------------------------
+
+The accessor is renamed from ``report.metrics.score()`` to
+``report.metrics.default_score()``. This makes it clearer that this default score may be
+equal to another metric shown in the summary, e.g. the R^2 score for regression models.
+This in turn allows us to simplify logic that tried (and failed) to remove duplicate
+metric rows. See :pr:`3304` by :user:`glemaitre`.
+
+.. code-block:: python
+
+    ridge_with_fe = make_pipeline(FunctionTransformer(), tabular_pipeline(Ridge()))
+    random_forest = tabular_pipeline(RandomForestRegressor(n_estimators=5))
+
+    report_ridge = EstimatorReport(
+        ridge_with_fe, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    report_forest = EstimatorReport(
+        random_forest, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+
+    (
+        compare({"ridge_with_fe": report_ridge, "random_forest": report_forest})
+        .metrics.summarize(data_source="test")
+        .frame(verbose_name=True, flat_index=False)
+    )
+
+    # # before
+    # Estimator                ridge_with_fe  random_forest
+    # Metric
+    # Score                         0.998438            NaN
+    # R²                            0.998438       0.876713
+    # RMSE                          1.591384      14.138139
+    # ...
+    #
+    # # after
+    # Estimator                ridge_with_fe  random_forest
+    # Metric
+    # Default estimator score       0.998438       0.876713
+    # R²                            0.998438       0.876713
+    # RMSE                          1.591384      14.138139
+    # ...
+
+:func:`~skore.evaluate` returns an :class:`~skore.EstimatorReport` for single-split splitters
+---------------------------------------------------------------------------------------------
+
+It is no longer possible to create a :class:`~skore.CrossValidationReport` with only 1
+split by passing a custom splitter. See :pr:`3311` by :user:`GaetandeCast`.
+
+.. code-block:: python
+
+    from sklearn.datasets import make_regression
+    from sklearn.linear_model import LinearRegression
+    from sklearn.model_selection import ShuffleSplit
+
+    import skore
+
+    X, y = make_regression(n_samples=50, n_features=4, random_state=0)
+    report = skore.evaluate(
+        LinearRegression(), X, y, splitter=ShuffleSplit(n_splits=1, random_state=0)
+    )
+    report
+
+    # # before
+    # CrossValidationReport(...)   # a single degenerate split
+    #
+    # # after
+    # EstimatorReport(...)
+
+CV report checks use split indices
+----------------------------------
+
+Some checks used to rely on a report's splitter attribute, which caused an issue for
+splitters that need extra arguments at split time, e.g. ``LeaveOneGroupOut`` with
+``groups``. These checks now avoid this problem by using the split indices themselves.
+See :pr:`3312` by :user:`GaetandeCast`.
+
+.. code-block:: python
+
+    import numpy as np
+    import pandas as pd
+    import skrub
+    from sklearn.linear_model import LogisticRegression
+    from sklearn.model_selection import LeaveOneGroupOut
+
+    from skore import CrossValidationReport
+
+    frame = pd.DataFrame(
+        {
+            "x": np.arange(12, dtype=float),
+            "group": np.repeat([0, 1, 2], 4),
+            "y": np.tile([0, 1], 6),
+        }
+    )
+    data = skrub.var("frame", frame)
+    X = data[["x"]].skb.mark_as_X(
+        cv=LeaveOneGroupOut(), split_kwargs={"groups": data["group"]}
+    )
+    y = data["y"].skb.mark_as_y()
+    report = CrossValidationReport(
+        X.skb.apply(LogisticRegression(), y=y).skb.make_learner(),
+        data={"frame": frame},
+    )
+    report.checks.summarize().frame()["code"]
+
+    # # before
+    # ValueError: The 'groups' parameter should not be None.
+    #
+    # # after
+    # 0     SKD001
+    # 1     SKD002
+    # 2     SKD003
+    # ...
+    # 15    SKD016
+
+``put``-ting skrub learners in MLflow projects
+----------------------------------------------
+
+Storing a :class:`~skore.CrossValidationReport` built from a skrub learner in an MLflow
+:class:`~skore.Project` no longer fails. See :pr:`3305` by :user:`glemaitre`.
+
+.. code-block:: python
+
+    import numpy as np
+    import skrub
+    from sklearn.dummy import DummyRegressor
+    from sklearn.model_selection import KFold
+
+    from skore import CrossValidationReport, Project
+
+    X = np.random.RandomState(0).randn(40, 3)
+    y = np.random.RandomState(0).randn(40)
+    learner = skrub.X(X).skb.apply(DummyRegressor(), y=skrub.y(y)).skb.make_learner()
+    report = CrossValidationReport(
+        learner,
+        data={"_skrub_X": X, "_skrub_y": y},
+        splitter=KFold(n_splits=2),
+    )
+
+    project = Project("my-project", mode="mlflow")
+    project.put("skrub-cv", report)
+
+    # # before
+    # TypeError: SkrubLearner._eval_in_mode() takes 3 positional arguments but 4 were given
+    #
+    # # after
+    # works
+
+----
+
+Thanks to the following contributors for their work this month (in no particular order):
+
+- :user:`glemaitre`
+- :user:`thomass-dev`
+- :user:`GaetandeCast`
+- :user:`auguste-probabl`

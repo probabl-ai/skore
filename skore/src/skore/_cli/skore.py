@@ -57,7 +57,7 @@ def resolve_hub_uri(hub_url: str | None) -> str:
     host = os.environ.get(HOST_ENV_VAR_NAME)
     if not host:
         raise ValueError(
-            "You must provide an host via the parameter `host` or the environment "
+            "You must provide a host via the `host` parameter or the environment "
             f"variable `{HOST_ENV_VAR_NAME}`"
         )
 
