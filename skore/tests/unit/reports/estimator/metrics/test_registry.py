@@ -3,6 +3,7 @@
 import functools
 import pickle
 import re
+from unittest.mock import patch
 
 import numpy as np
 import pandas as pd
@@ -823,6 +824,8 @@ class TestStringScorerNames:
             return 42.0
 
         assert report.metrics.get(custom_scorer) == 42.0
+        metric_instance = Metric.new(custom_scorer)
+        assert report.metrics.get(metric_instance) == 42.0
         display = report.metrics.summarize(metric=custom_scorer)
         assert display.summary["name"].tolist() == ["custom_scorer"]
         assert display.summary["score"].iloc[0] == 42.0
@@ -905,6 +908,12 @@ class TestStringScorerNames:
 
         assert report.metrics.get(needs_alpha, alpha=0.3) == 0.3
 
+        with (
+            patch("skore._metrics.Metric.new", side_effect=ValueError("non-string")),
+            pytest.raises(ValueError, match="non-string"),
+        ):
+            report.metrics.get(lambda estimator, X, y: 1.0)
+
     def test_on_the_fly_is_not_a_method(self, regression_report):
         """An unregistered name is not exposed as ``report.metrics.<name>()``."""
         report = regression_report
@@ -930,6 +939,9 @@ class TestStringScorerNames:
         frame = report.metrics.get(needs_alpha, alpha=0.3, aggregate=None)
         assert np.allclose(frame.to_numpy(dtype=float), 0.3)
 
+        frame_str = report.metrics.get("explained_variance", aggregate=None)
+        assert set(frame_str.index) == {"explained_variance"}
+
     def test_on_the_fly_comparison(self, comparison_estimator_reports_regression):
         """Comparison reports delegate and leave every sub-registry unchanged."""
         report = comparison_estimator_reports_regression
@@ -938,6 +950,17 @@ class TestStringScorerNames:
         display = report.metrics.summarize(metric="explained_variance")
         assert set(display.summary["name"]) == {"explained_variance"}
         assert [set(sub._metric_registry) for sub in report.reports_.values()] == before
+
+        def custom_score(estimator, X, y):
+            return 42.0
+
+        score_str = report.metrics.get("explained_variance")
+        assert "explained_variance" in score_str.index
+        assert set(score_str.columns) == set(report.reports_)
+
+        score_callable = report.metrics.get(custom_score)
+        assert "custom_score" in score_callable.index
+        assert np.allclose(score_callable.to_numpy(dtype=float), 42.0)
 
     def test_on_the_fly_comparison_cross_validation(
         self, comparison_cross_validation_reports_regression
@@ -956,6 +979,15 @@ class TestStringScorerNames:
         display = report.metrics.summarize(metric="explained_variance")
         assert set(display.summary["name"]) == {"explained_variance"}
         assert keys() == before
+
+        def custom_score(estimator, X, y):
+            return 42.0
+
+        score_str = report.metrics.get("explained_variance", aggregate=None)
+        assert "explained_variance" in score_str.index
+
+        score_callable = report.metrics.get(custom_score, aggregate=None)
+        assert "custom_score" in score_callable.index
 
 
 class TestMetric:
