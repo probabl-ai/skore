@@ -151,6 +151,7 @@ class Metric:
     """
 
     kwargs: dict[str, Any] = {}
+    _skip_cache: bool = False
 
     def __init__(
         self,
