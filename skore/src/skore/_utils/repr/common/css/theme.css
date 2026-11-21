@@ -8,6 +8,10 @@
     --color-orange-hover: rgba(249, 115, 22, 0.1);
     --color-blue-hover: rgba(48, 67, 240, 0.1);
     --color-row-stripe: rgba(0, 0, 0, 0.06);
+    --color-check-issue: #dc2626;
+    --color-check-tip: #d97706;
+    --color-check-passed: #16a34a;
+    --color-check-muted: #6b7280;
 }
 
 /* Dark theme */
@@ -22,6 +26,10 @@
     --color-orange-hover: rgba(248, 171, 83, 0.2);
     --color-blue-hover: rgba(121, 192, 255, 0.2);
     --color-row-stripe: rgba(255, 255, 255, 0.08);
+    --color-check-issue: #f87171;
+    --color-check-tip: #fbbf24;
+    --color-check-passed: #4ade80;
+    --color-check-muted: #9ca3af;
 }
 
 .container {

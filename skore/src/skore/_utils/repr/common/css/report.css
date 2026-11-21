@@ -150,7 +150,9 @@
 .report-tabset:has(> .report-tab-input:nth-child(4):checked) > .report-tablist-row > .report-tablist-help > .report-tab-help-global:hover .report-tab-help-tip-3,
 .report-tabset:has(> .report-tab-input:nth-child(4):checked) > .report-tablist-row > .report-tablist-help > .report-tab-help-global:focus-within .report-tab-help-tip-3,
 .report-tabset:has(> .report-tab-input:nth-child(5):checked) > .report-tablist-row > .report-tablist-help > .report-tab-help-global:hover .report-tab-help-tip-4,
-.report-tabset:has(> .report-tab-input:nth-child(5):checked) > .report-tablist-row > .report-tablist-help > .report-tab-help-global:focus-within .report-tab-help-tip-4 {
+.report-tabset:has(> .report-tab-input:nth-child(5):checked) > .report-tablist-row > .report-tablist-help > .report-tab-help-global:focus-within .report-tab-help-tip-4,
+.report-tabset:has(> .report-tab-input:nth-child(6):checked) > .report-tablist-row > .report-tablist-help > .report-tab-help-global:hover .report-tab-help-tip-5,
+.report-tabset:has(> .report-tab-input:nth-child(6):checked) > .report-tablist-row > .report-tablist-help > .report-tab-help-global:focus-within .report-tab-help-tip-5 {
     visibility: visible;
     opacity: 1;
 }
@@ -198,7 +200,8 @@
 .report-tabset:has(> .report-tab-input:nth-child(2):checked) > .report-tablist-row > .report-tablist > .report-tab-item:nth-child(2) > .report-tab-label,
 .report-tabset:has(> .report-tab-input:nth-child(3):checked) > .report-tablist-row > .report-tablist > .report-tab-item:nth-child(3) > .report-tab-label,
 .report-tabset:has(> .report-tab-input:nth-child(4):checked) > .report-tablist-row > .report-tablist > .report-tab-item:nth-child(4) > .report-tab-label,
-.report-tabset:has(> .report-tab-input:nth-child(5):checked) > .report-tablist-row > .report-tablist > .report-tab-item:nth-child(5) > .report-tab-label {
+.report-tabset:has(> .report-tab-input:nth-child(5):checked) > .report-tablist-row > .report-tablist > .report-tab-item:nth-child(5) > .report-tab-label,
+.report-tabset:has(> .report-tab-input:nth-child(6):checked) > .report-tablist-row > .report-tablist > .report-tab-item:nth-child(6) > .report-tab-label {
     border-bottom-color: var(--color-blue);
 }
 
@@ -214,7 +217,8 @@
 .report-tabset:has(> .report-tab-input:nth-child(2):checked) > .report-tab-panels > .report-tab-panel:nth-child(2),
 .report-tabset:has(> .report-tab-input:nth-child(3):checked) > .report-tab-panels > .report-tab-panel:nth-child(3),
 .report-tabset:has(> .report-tab-input:nth-child(4):checked) > .report-tab-panels > .report-tab-panel:nth-child(4),
-.report-tabset:has(> .report-tab-input:nth-child(5):checked) > .report-tab-panels > .report-tab-panel:nth-child(5) {
+.report-tabset:has(> .report-tab-input:nth-child(5):checked) > .report-tab-panels > .report-tab-panel:nth-child(5),
+.report-tabset:has(> .report-tab-input:nth-child(6):checked) > .report-tab-panels > .report-tab-panel:nth-child(6) {
     display: block;
 }
 
@@ -356,6 +360,78 @@
     font-size: 12px;
     font-style: italic;
     opacity: 0.85;
+}
+
+/* Tab icons */
+.report-tab-icon {
+    display: inline-block;
+    vertical-align: -0.15em;
+    margin-right: 0.35em;
+    flex-shrink: 0;
+}
+
+/* Distinct Checks tab section styling (Issue #3301) */
+.report-tab-label-issue {
+    color: var(--color-check-issue);
+}
+
+.report-tab-label-issue:hover {
+    background-color: color-mix(in srgb, var(--color-check-issue) 12%, transparent);
+}
+
+.report-tab-label-tip {
+    color: var(--color-check-tip);
+}
+
+.report-tab-label-tip:hover {
+    background-color: color-mix(in srgb, var(--color-check-tip) 12%, transparent);
+}
+
+.report-tab-label-passed {
+    color: var(--color-check-passed);
+}
+
+.report-tab-label-passed:hover {
+    background-color: color-mix(in srgb, var(--color-check-passed) 12%, transparent);
+}
+
+.report-tab-label-not_applicable,
+.report-tab-label-skipped,
+.report-tab-label-ignored {
+    color: var(--color-check-muted);
+}
+
+.report-tab-label-not_applicable:hover,
+.report-tab-label-skipped:hover,
+.report-tab-label-ignored:hover {
+    background-color: color-mix(in srgb, var(--color-check-muted) 12%, transparent);
+}
+
+.report-tab-label.report-tab-empty {
+    opacity: 0.7;
+}
+
+/* Active tab bottom borders for checks tabset */
+.report-tabset-checks:has(> .report-tab-input:nth-child(1):checked) > .report-tablist-row > .report-tablist > .report-tab-item:nth-child(1) > .report-tab-label {
+    border-bottom-color: var(--color-check-issue);
+    opacity: 1;
+}
+
+.report-tabset-checks:has(> .report-tab-input:nth-child(2):checked) > .report-tablist-row > .report-tablist > .report-tab-item:nth-child(2) > .report-tab-label {
+    border-bottom-color: var(--color-check-tip);
+    opacity: 1;
+}
+
+.report-tabset-checks:has(> .report-tab-input:nth-child(3):checked) > .report-tablist-row > .report-tablist > .report-tab-item:nth-child(3) > .report-tab-label {
+    border-bottom-color: var(--color-check-passed);
+    opacity: 1;
+}
+
+.report-tabset-checks:has(> .report-tab-input:nth-child(4):checked) > .report-tablist-row > .report-tablist > .report-tab-item:nth-child(4) > .report-tab-label,
+.report-tabset-checks:has(> .report-tab-input:nth-child(5):checked) > .report-tablist-row > .report-tablist > .report-tab-item:nth-child(5) > .report-tab-label,
+.report-tabset-checks:has(> .report-tab-input:nth-child(6):checked) > .report-tablist-row > .report-tablist > .report-tab-item:nth-child(6) > .report-tab-label {
+    border-bottom-color: var(--color-check-muted);
+    opacity: 1;
 }
 
 .comparison-report-select-row {

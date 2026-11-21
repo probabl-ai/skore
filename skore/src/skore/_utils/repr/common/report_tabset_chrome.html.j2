@@ -7,7 +7,10 @@
             <div class="report-tablist" role="tablist">
 {% for tab in report_tabs %}
                 <div class="report-tab-item">
-                    <label class="report-tab-label" for="{{ container_id }}-report-tab-{{ loop.index0 }}" role="presentation">{{ tab.label }}</label>
+                    <label class="report-tab-label{% if tab.section %} report-tab-label-{{ tab.section }}{% if tab.count is defined and tab.count == 0 %} report-tab-empty{% endif %}{% endif %}" for="{{ container_id }}-report-tab-{{ loop.index0 }}" role="presentation">
+                        {%- if tab.icon_svg %}{{ tab.icon_svg | safe }} {% endif -%}
+                        {{ tab.label }}
+                    </label>
                 </div>
 {% endfor %}
             </div>
