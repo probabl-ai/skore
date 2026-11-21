@@ -154,3 +154,58 @@ def test_not_applicable_pipeline_with_no_recommendable_step(
     report = evaluate(search, X, y, splitter=0.2 if report_type == "estimator" else 3)
     with pytest.raises(CheckNotApplicable, match="No parameter to recommend"):
         CheckSearchParamsToTune().check_function(report)
+
+
+def test_conditional_params_svc(binary_classification_data):
+    """SKD015 conditionally recommends gamma for SVC based on kernel."""
+    from sklearn.svm import SVC
+
+    X, y = binary_classification_data
+
+    # kernel='rbf' (default) -> missing gamma
+    search_rbf = GridSearchCV(SVC(kernel="rbf"), param_grid={"C": [0.1, 1.0]}, cv=2)
+    report_rbf = evaluate(search_rbf, X, y, splitter=0.2)
+    explanation = CheckSearchParamsToTune().check_function(report_rbf)
+    assert explanation is not None
+    assert "['gamma'] for SVC" in explanation
+
+    # kernel='linear' -> only C is recommended; since C is searched, passes
+    search_linear = GridSearchCV(
+        SVC(kernel="linear"), param_grid={"C": [0.1, 1.0]}, cv=2
+    )
+    report_linear = evaluate(search_linear, X, y, splitter=0.2)
+    assert CheckSearchParamsToTune().check_function(report_linear) is None
+
+    # kernel is searched with 'rbf' -> recommends gamma
+    search_grid_kernel = GridSearchCV(
+        SVC(kernel="linear"),
+        param_grid={"kernel": ["linear", "rbf"], "C": [0.1, 1.0]},
+        cv=2,
+    )
+    report_grid_kernel = evaluate(search_grid_kernel, X, y, splitter=0.2)
+    explanation = CheckSearchParamsToTune().check_function(report_grid_kernel)
+    assert explanation is not None
+    assert "['gamma'] for SVC" in explanation
+
+
+def test_conditional_params_logistic_regression(binary_classification_data):
+    """SKD015 conditionally recommends l1_ratio for LogisticRegression."""
+    from sklearn.linear_model import LogisticRegression
+
+    X, y = binary_classification_data
+
+    # solver='lbfgs' (default) -> only C is recommended; searching C passes
+    search_lbfgs = GridSearchCV(
+        LogisticRegression(), param_grid={"C": [0.1, 1.0]}, cv=2
+    )
+    report_lbfgs = evaluate(search_lbfgs, X, y, splitter=0.2)
+    assert CheckSearchParamsToTune().check_function(report_lbfgs) is None
+
+    # solver='saga' -> recommends l1_ratio if not in grid
+    search_saga = GridSearchCV(
+        LogisticRegression(solver="saga"), param_grid={"C": [0.1, 1.0]}, cv=2
+    )
+    report_saga = evaluate(search_saga, X, y, splitter=0.2)
+    explanation = CheckSearchParamsToTune().check_function(report_saga)
+    assert explanation is not None
+    assert "['l1_ratio'] for LogisticRegression" in explanation
