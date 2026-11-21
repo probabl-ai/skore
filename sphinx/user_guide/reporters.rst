@@ -51,6 +51,30 @@ evaluating a model that was fitted on different data. Omitting part of the data 
 the number of available methods when inspecting the model. For instance, you cannot
 inspect the metrics of the model on the test data if you do not provide the test data.
 
+Passing extra arguments to estimator fit
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+When an estimator's ``fit`` method requires additional keyword arguments (for example,
+custom training hyperparameters such as ``epochs`` or training options), use
+:mod:`skrub` to bind the arguments via :meth:`~skrub.DataOp.skb.apply` and create a
+learner with :meth:`~skrub.DataOp.skb.make_learner`:
+
+.. code-block:: python
+
+    import skrub
+    from skore import evaluate
+
+    learner = (
+        skrub.X()
+        .skb.apply(estimator, y=skrub.y(), fit_kwargs={"epochs": 10})
+        .skb.make_learner()
+    )
+    report = evaluate(learner, data={"X": X, "y": y})
+
+Refer to the
+:ref:`sphx_glr_auto_examples_technical_details_plot_skrub_fit_kwargs.py`
+example for a complete walkthrough with single-split and cross-validation reports.
+
 Data insights
 ^^^^^^^^^^^^^
 
