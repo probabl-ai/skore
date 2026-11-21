@@ -361,7 +361,7 @@ class Metric:
         Override this when the score cannot be expressed as ``self.function(...)``
         (see :class:`Score`, :class:`FitTime`, :class:`PredictTime`). Subclasses that
         only need to adjust kwargs before delegating should call ``super()._raw(...)``
-        (see :class:`Precision`, :class:`Brier`, :class:`RocAuc`).
+        (see :class:`Brier`).
 
         Parameters
         ----------
@@ -539,7 +539,7 @@ class Metric:
                 and merged_kwargs.get("pos_label") is not None
             ):
                 merged_kwargs["average"] = "binary"
-            elif merged_kwargs.get("average") != "binary":
+            elif "average" in params and merged_kwargs.get("average") != "binary":
                 merged_kwargs.pop("pos_label", None)
 
         score = self._raw_cached(

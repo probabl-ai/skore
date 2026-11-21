@@ -374,6 +374,24 @@ def test_pos_label(forest_binary_classification_with_test):
     assert summary["output"].isna().all()
 
 
+def test_pos_label_custom_scorer(forest_binary_classification_with_test):
+    """A custom scorer accepting pos_label receives the report's pos_label."""
+    estimator, X_test, y_test = forest_binary_classification_with_test
+    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test, pos_label=1)
+
+    received = {}
+
+    def scorer(estimator, X, y_true, pos_label=None):
+        received["pos_label"] = pos_label
+        return 0.0
+
+    report.metrics.add(scorer, name="pos_label_probe")
+    display = report.metrics.summarize(metric="pos_label_probe")
+
+    assert received["pos_label"] == 1
+    assert display.summary["label"].isna().all()
+
+
 def test_pos_label_strings(forest_binary_classification_with_test):
     """Binary classification with string labels."""
     estimator, X_test, y_test = forest_binary_classification_with_test
