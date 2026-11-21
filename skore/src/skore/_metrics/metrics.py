@@ -418,6 +418,9 @@ class Metric:
         **kwargs: Any,
     ) -> Any:
         """Compute the raw metric and cache it in the report."""
+        if getattr(self, "_skip_cache", False):
+            return self._raw(report=report, data_source=data_source, **kwargs)
+
         cache_key = make_cache_key("metrics", data_source, self.name, kwargs)
         score = report._cache.get(cache_key)
         if score is None:

@@ -45,7 +45,7 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
         self,
         *,
         data_source: DataSource = "test",
-        metric: str | list[str] | None = None,
+        metric: MetricLike | list[MetricLike] | None = None,
     ) -> MetricsSummaryDisplay:
         """Report a set of metrics for the estimators.
 
@@ -59,7 +59,7 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
             - "both" : use both the train and test sets to compute the metrics and
               present them side-by-side.
 
-        metric : str or list of str or None, default=None
+        metric : str, scorer, list of such, or None, default=None
             The metrics to report, from the list of registered metrics. None means show
             all registered metrics. To add a custom metric, see :meth:`add`.
 
@@ -119,7 +119,7 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
         self,
         *,
         data_source: DataSource = "test",
-        metric: str | list[str] | None = None,
+        metric: MetricLike | list[MetricLike] | None = None,
     ) -> pd.DataFrame | pd.Series:
         """Wide metric summary frame used for accessor display.
 
@@ -150,7 +150,7 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
         )
 
     def _metric(
-        self, metric_name: str, *, data_source: DataSource, **kwargs: Any
+        self, metric_name: MetricLike, *, data_source: DataSource, **kwargs: Any
     ) -> MetricsSummaryDisplay:
         """Compute a single metric across compared reports, forwarding *kwargs*."""
         summaries = [
@@ -305,7 +305,7 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
 
     def get(
         self,
-        name: str,
+        name: MetricLike,
         data_source: DataSource = "test",
         aggregate: Aggregate | None = ("mean", "std"),
         **kwargs,
@@ -314,7 +314,7 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
 
         Parameters
         ----------
-        name : str
+        name : str or scorer
             Name of the metric to compute. Get all available metrics with
             :meth:`~ComparisonReport.metrics.available()`.
 

@@ -42,7 +42,7 @@ class _MetricsAccessor(BaseMetricsAccessor[CrossValidationReport], DirNamesMixin
         self,
         *,
         data_source: DataSource | Literal["both"] = "test",
-        metric: str | list[str] | None = None,
+        metric: MetricLike | list[MetricLike] | None = None,
     ) -> MetricsSummaryDisplay:
         """Report a set of metrics for our estimator.
 
@@ -55,7 +55,7 @@ class _MetricsAccessor(BaseMetricsAccessor[CrossValidationReport], DirNamesMixin
             - "train" : use the train set provided when creating the report.
             - "both" : use both the train and test sets, showing them together.
 
-        metric : str or list of str or None, default=None
+        metric : str, scorer, list of such, or None, default=None
             The metrics to report, from the list of registered metrics. None means show
             all registered metrics. To add a custom metric, see :meth:`add`.
 
@@ -101,7 +101,7 @@ class _MetricsAccessor(BaseMetricsAccessor[CrossValidationReport], DirNamesMixin
         self,
         *,
         data_source: DataSource | Literal["both"],
-        metric: str | list[str] | None = None,
+        metric: MetricLike | list[MetricLike] | None = None,
     ) -> MetricsSummaryDisplay:
         if data_source == "both":
             train_summary = self._summarize_display(data_source="train", metric=metric)
@@ -260,7 +260,7 @@ class _MetricsAccessor(BaseMetricsAccessor[CrossValidationReport], DirNamesMixin
 
     def get(
         self,
-        name: str,
+        name: MetricLike,
         data_source: DataSource = "test",
         aggregate: Aggregate | None = ("mean", "std"),
         **kwargs,
@@ -269,7 +269,7 @@ class _MetricsAccessor(BaseMetricsAccessor[CrossValidationReport], DirNamesMixin
 
         Parameters
         ----------
-        name : str
+        name : str or scorer
             Name of the metric to compute. Get all available metrics with
             :meth:`~CrossValidationReport.metrics.available()`.
 
@@ -362,7 +362,7 @@ class _MetricsAccessor(BaseMetricsAccessor[CrossValidationReport], DirNamesMixin
 
     def _metric(
         self,
-        metric_name: str,
+        metric_name: MetricLike,
         *,
         data_source: DataSource,
         **kwargs: Any,
@@ -373,7 +373,8 @@ class _MetricsAccessor(BaseMetricsAccessor[CrossValidationReport], DirNamesMixin
         """
         rows: list[MetricsSummaryRow] = []
         for split_idx, report in enumerate(self._parent.reports_):
-            metric = report.metrics._get_metric(metric_name)
+            construction_kwargs = {} if isinstance(metric_name, str) else kwargs
+            metric = report.metrics._get_metric(metric_name, **construction_kwargs)
             metric_rows = metric.rows(report=report, data_source=data_source, **kwargs)
             rows.extend(
                 cast(

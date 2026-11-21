@@ -13,7 +13,7 @@ import pandas as pd
 from skore._checks import _BUILTIN_CHECKS
 from skore._checks.utils import CheckNotApplicable
 from skore._externals.docscrape import Parameter
-from skore._metrics import Metric
+from skore._metrics import Metric, MetricLike
 from skore._project.git import git_commit
 from skore._sklearn.types import ReportMetadata
 from skore._utils.docscrape import (
@@ -226,7 +226,7 @@ def _summarize_report_metrics(
     report: EstimatorReport | CrossValidationReport,
     *,
     data_source: DataSource | Literal["both"],
-    metric: str | list[str] | None = None,
+    metric: MetricLike | list[MetricLike] | None = None,
 ) -> MetricsSummaryDisplay:
     """Compute a metrics summary for ``report``.
 
@@ -406,7 +406,7 @@ class BaseMetricsAccessor(_BaseAccessor, Generic[ParentT]):
         self,
         *,
         data_source: DataSource = "test",
-        metric: str | list[str] | None = None,
+        metric: MetricLike | list[MetricLike] | None = None,
     ) -> pd.DataFrame | pd.Series:
         """Metric summary frame used for accessor display."""
         display = self.summarize(data_source=data_source, metric=metric)
