@@ -82,15 +82,14 @@ class _MetricsAccessor(BaseMetricsAccessor[EstimatorReport], DirNamesMixin):
         >>> report = evaluate(classifier, X, y, splitter=0.2, pos_label=1)
         >>> summary = report.metrics.summarize().frame(favorability=True)
         >>> summary[~summary.index.isin(["fit_time", "predict_time"])]
-                     LogisticRegression favorability
-        metric
-        default_score          0.94...         (↗︎)
-        accuracy               0.94...         (↗︎)
-        precision              0.98...         (↗︎)
-        recall                 0.92...         (↗︎)
-        roc_auc                0.99...         (↗︎)
-        log_loss               0.11...         (↘︎)
-        brier_score            0.03...         (↘︎)
+                       LogisticRegression favorability
+        default_score            0.94...         (↗︎)
+        accuracy                 0.94...         (↗︎)
+        precision_1              0.98...         (↗︎)
+        recall_1                 0.92...         (↗︎)
+        roc_auc                  0.99...         (↗︎)
+        log_loss                 0.11...         (↘︎)
+        brier_score              0.03...         (↘︎)
         >>> # Using scikit-learn metrics
         >>> report.metrics.summarize(metric="log_loss").frame(favorability=True)
                   LogisticRegression favorability
@@ -101,11 +100,10 @@ class _MetricsAccessor(BaseMetricsAccessor[EstimatorReport], DirNamesMixin):
         ... ).frame()
         >>> summary[~summary.index.isin(["fit_time", "predict_time"])]
                        LogisticRegression (train)  LogisticRegression (test)
-        metric
         default_score                    0.96...                   0.94...
         accuracy                         0.96...                   0.94...
-        precision                        0.96...                   0.98...
-        recall                           0.97...                   0.92...
+        precision_1                      0.96...                   0.98...
+        recall_1                         0.97...                   0.92...
         roc_auc                          0.99...                   0.99...
         log_loss                         0.08...                   0.11...
         brier_score                      0.02...                   0.03...
