@@ -748,7 +748,11 @@ class TestStringScorerNames:
         assert "mean_squared_error" in report._metric_registry
 
     def test_summarize_with_neg(self, regression_report):
-        """``.summarize()` accepts prefixed name with 'neg_' and does no conversion."""
+        """Keep a ``neg_`` metric distinct from the name without the prefix.
+
+        The name without the prefix is computed for this call and stays out of
+        the registry.
+        """
         report = regression_report
 
         report.metrics.add("neg_mean_absolute_percentage_error")
@@ -757,18 +761,26 @@ class TestStringScorerNames:
 
         report.metrics.summarize(metric="neg_mean_absolute_percentage_error")
 
-        with pytest.raises(KeyError, match="mean_absolute_percentage_error"):
-            report.metrics.summarize(metric="mean_absolute_percentage_error")
+        # Unregistered metrics can be summarized on the fly without mutating registry
+        display = report.metrics.summarize(metric="mean_absolute_percentage_error")
+        assert "mean_absolute_percentage_error" in display.summary["name"].values
+        assert "mean_absolute_percentage_error" not in report._metric_registry
 
     def test_get_with_neg_prefix(self, regression_report):
-        """``.get()` accepts prefixed name with 'neg_' and does no conversion."""
+        """Keep a ``neg_`` metric distinct from the name without the prefix.
+
+        ``get`` computes the name without the prefix for this call and leaves
+        the registry unchanged.
+        """
         report = regression_report
 
         report.metrics.add("neg_mean_absolute_percentage_error")
         report.metrics.get("neg_mean_absolute_percentage_error")
 
-        with pytest.raises(KeyError, match="mean_absolute_percentage_error"):
-            report.metrics.get("mean_absolute_percentage_error")
+        # Unregistered metrics can be retrieved on the fly without mutating registry
+        score = report.metrics.get("mean_absolute_percentage_error")
+        assert isinstance(score, float)
+        assert "mean_absolute_percentage_error" not in report._metric_registry
 
     def test_unknown_metric_still_raises_key_error(self, regression_report):
         """Test that really a unknown metric name still raises KeyError after the
@@ -787,6 +799,163 @@ class TestStringScorerNames:
 
         with pytest.raises(ValueError, match="Invalid metric: 'xyz'"):
             report.metrics.add("xyz")
+
+    def test_on_the_fly_matches_registered_metric(self, regression_report):
+        """An unregistered scikit-learn name matches the value from ``add``."""
+        report = regression_report
+
+        report.metrics.add("explained_variance")
+        registered = report.metrics.get("explained_variance")
+        report.metrics.remove("explained_variance")
+
+        assert report.metrics.get("explained_variance") == pytest.approx(registered)
+        assert "explained_variance" not in report._metric_registry
+
+        display = report.metrics.summarize(metric="explained_variance")
+        assert display.summary["name"].tolist() == ["explained_variance"]
+        assert display.summary["score"].iloc[0] == pytest.approx(registered)
+
+    def test_on_the_fly_callable(self, regression_report):
+        """A callable is computed for this call and stays out of the registry."""
+        report = regression_report
+
+        def custom_scorer(estimator, X, y):
+            return 42.0
+
+        assert report.metrics.get(custom_scorer) == 42.0
+        display = report.metrics.summarize(metric=custom_scorer)
+        assert display.summary["name"].tolist() == ["custom_scorer"]
+        assert display.summary["score"].iloc[0] == 42.0
+        assert "custom_scorer" not in report._metric_registry
+
+        scorer = make_scorer(mean_squared_error, response_method="predict")
+        assert isinstance(report.metrics.get(scorer), float)
+        assert "mean_squared_error" not in report._metric_registry
+
+    def test_on_the_fly_same_name_is_not_cached(self, regression_report):
+        """Two callables that share a name must not reuse each other's score.
+
+        Non-regression for the name-keyed metric cache. Lambdas are all named
+        ``<lambda>``.
+        """
+        report = regression_report
+
+        def repeated_name(estimator, X, y):
+            return 1.0
+
+        assert report.metrics.get(repeated_name) == 1.0
+
+        def repeated_name(estimator, X, y):  # noqa: F811
+            return 2.0
+
+        assert report.metrics.get(repeated_name) == 2.0
+        assert report.metrics.get(lambda estimator, X, y: 3.0) == 3.0
+        assert report.metrics.get(lambda estimator, X, y: 4.0) == 4.0
+
+    def test_on_the_fly_does_not_write_the_metric_cache(self, regression_report):
+        """Computing an unregistered metric leaves the metric cache untouched.
+
+        Predictions may still be cached. Those entries use another scope.
+        """
+        report = regression_report
+        before = {key for key in report._cache if key[0] == "metrics"}
+
+        report.metrics.summarize(metric="explained_variance")
+        report.metrics.get(lambda estimator, X, y: 5.0)
+
+        after = {key for key in report._cache if key[0] == "metrics"}
+        assert after == before
+
+    def test_on_the_fly_mixed_list(self, regression_report):
+        """A list may mix a registered name with a scikit-learn name."""
+        report = regression_report
+        display = report.metrics.summarize(
+            metric=["r2", "explained_variance"],
+            data_source="both",
+        )
+        summary = display.summary
+
+        assert summary["name"].tolist() == [
+            "r2",
+            "explained_variance",
+            "r2",
+            "explained_variance",
+        ]
+        assert summary["data_source"].tolist() == ["train", "train", "test", "test"]
+        assert "explained_variance" not in report._metric_registry
+
+    def test_on_the_fly_errors(self, regression_report):
+        """Unknown names keep a useful KeyError, and bad callables keep their type."""
+        report = regression_report
+
+        with pytest.raises(KeyError, match="Invalid metric: 'xyz'"):
+            report.metrics.summarize(metric="xyz")
+
+        def not_a_scorer(y_true, y_pred):
+            return 0.0
+
+        with pytest.raises(TypeError, match="estimator"):
+            report.metrics.get(not_a_scorer)
+
+        def needs_alpha(estimator, X, y, alpha):
+            return alpha
+
+        with pytest.raises(ValueError, match="alpha"):
+            report.metrics.summarize(metric=needs_alpha)
+
+        assert report.metrics.get(needs_alpha, alpha=0.3) == 0.3
+
+    def test_on_the_fly_is_not_a_method(self, regression_report):
+        """An unregistered name is not exposed as ``report.metrics.<name>()``."""
+        report = regression_report
+        report.metrics.get("explained_variance")
+
+        with pytest.raises(AttributeError):
+            report.metrics.explained_variance()
+
+    def test_on_the_fly_cross_validation(self, cross_validation_reports_regression):
+        """Cross-validation reports compute the metric without touching
+        sub-registries.
+        """
+        report = cross_validation_reports_regression[0]
+        before = [set(split._metric_registry) for split in report.reports_]
+
+        display = report.metrics.summarize(metric="explained_variance")
+        assert set(display.summary["name"]) == {"explained_variance"}
+        assert [set(split._metric_registry) for split in report.reports_] == before
+
+        def needs_alpha(estimator, X, y, alpha):
+            return alpha
+
+        frame = report.metrics.get(needs_alpha, alpha=0.3, aggregate=None)
+        assert np.allclose(frame.to_numpy(dtype=float), 0.3)
+
+    def test_on_the_fly_comparison(self, comparison_estimator_reports_regression):
+        """Comparison reports delegate and leave every sub-registry unchanged."""
+        report = comparison_estimator_reports_regression
+        before = [set(sub._metric_registry) for sub in report.reports_.values()]
+
+        display = report.metrics.summarize(metric="explained_variance")
+        assert set(display.summary["name"]) == {"explained_variance"}
+        assert [set(sub._metric_registry) for sub in report.reports_.values()] == before
+
+    def test_on_the_fly_comparison_cross_validation(
+        self, comparison_cross_validation_reports_regression
+    ):
+        """Nested split registries stay unchanged for a comparison of CV reports."""
+        report = comparison_cross_validation_reports_regression
+
+        def keys():
+            return [
+                set(split._metric_registry)
+                for cv_report in report.reports_.values()
+                for split in cv_report.reports_
+            ]
+
+        before = keys()
+        display = report.metrics.summarize(metric="explained_variance")
+        assert set(display.summary["name"]) == {"explained_variance"}
+        assert keys() == before
 
 
 class TestMetric:

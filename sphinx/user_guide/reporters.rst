@@ -123,6 +123,18 @@ types of metric:
 2. A scorer callable, that takes `estimator`, `X` and `y` and returns a score; this
    includes scorers constructed with :func:`sklearn.metrics.make_scorer`.
 
+The same inputs can be passed straight to
+:meth:`~skore.EstimatorReport.metrics.summarize` and
+:meth:`~skore.EstimatorReport.metrics.get`. The metric is computed for that
+call and left out of the registry: it does not appear in the default summary,
+and it is not available as ``report.metrics.<name>()``. Use :meth:`add` when
+the metric should become part of the report.
+
+.. code-block:: python
+
+   report.metrics.summarize(metric="balanced_accuracy").frame()
+   report.metrics.get("balanced_accuracy")
+
 Refer to the :ref:`displays` section for more details regarding the `skore` display
 API. Refer to the :ref:`estimator_metrics` section for the metrics accessor API; use
 :meth:`~skore.EstimatorReport.metrics.available` at runtime to list metrics on a

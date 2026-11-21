@@ -41,7 +41,7 @@ class _MetricsAccessor(BaseMetricsAccessor[EstimatorReport], DirNamesMixin):
         self,
         *,
         data_source: DataSource | Literal["both"] = "test",
-        metric: str | list[str] | None = None,
+        metric: MetricLike | list[MetricLike] | None = None,
     ) -> MetricsSummaryDisplay:
         """Report a set of metrics for our estimator.
 
@@ -55,12 +55,18 @@ class _MetricsAccessor(BaseMetricsAccessor[EstimatorReport], DirNamesMixin):
             - "both" : use both the train and test sets to compute the metrics and
               present them side-by-side.
 
-        metric : str or list of str or None, default=None
-            The metrics to report, from the list of registered metrics. None means show
-            all registered metrics. To add a custom metric, see :meth:`add`.
-            Metrics added with a ``neg_`` prefix can also be retrieved without it
-            (e.g. ``"neg_mean_absolute_percentage_error"`` instead of
-            ``"mean_absolute_percentage_error"``).
+        metric : str, scorer, list of such, or None, default=None
+            Metrics to report. Each entry may be the name of a registered metric,
+            a scikit-learn scorer name, or a scorer callable with signature
+            ``(estimator, X, y) -> score``. That includes a scorer built with
+            :func:`sklearn.metrics.make_scorer`.
+
+            A scikit-learn metric that requires a ``neg_`` prefix can be passed
+            without it (for example ``"mean_absolute_percentage_error"``). An entry
+            that is not in the registry is computed for this call only and is not
+            registered. ``None`` reports every registered metric. Use :meth:`add`
+            to register a metric so that it appears in the default summary and can
+            be called as ``report.metrics.<name>()``.
 
         Returns
         -------
@@ -129,7 +135,7 @@ class _MetricsAccessor(BaseMetricsAccessor[EstimatorReport], DirNamesMixin):
         self,
         *,
         data_source: DataSource | Literal["both"],
-        metric: str | list[str] | None = None,
+        metric: MetricLike | list[MetricLike] | None = None,
     ) -> MetricsSummaryDisplay:
         if data_source == "both":
             train_summary = self._summarize_display(data_source="train", metric=metric)
@@ -145,10 +151,10 @@ class _MetricsAccessor(BaseMetricsAccessor[EstimatorReport], DirNamesMixin):
             )
 
         registry = self._parent._metric_registry
-        if isinstance(metric, str):
-            parsed_metrics = [registry[metric]]
+        if isinstance(metric, str) or callable(metric):
+            parsed_metrics = [self._get_metric(metric)]
         elif isinstance(metric, Iterable) and metric:
-            parsed_metrics = [registry[m] for m in metric]
+            parsed_metrics = [self._get_metric(m) for m in metric]
         else:
             parsed_metrics = list(registry.values())
 
@@ -196,13 +202,14 @@ class _MetricsAccessor(BaseMetricsAccessor[EstimatorReport], DirNamesMixin):
 
     def _metric(
         self,
-        metric_name: str,
+        metric_name: MetricLike,
         *,
         data_source: DataSource,
         **kwargs: Any,
     ) -> MetricsSummaryDisplay:
         """Compute a single metric, forwarding ``kwargs`` to the score function."""
-        metric = self._parent._metric_registry[metric_name]
+        construction_kwargs = {} if isinstance(metric_name, str) else kwargs
+        metric = self._get_metric(metric_name, **construction_kwargs)
         rows = [
             cast(
                 MetricsSummaryRow,
@@ -235,6 +242,38 @@ class _MetricsAccessor(BaseMetricsAccessor[EstimatorReport], DirNamesMixin):
             The list of available metric names.
         """
         return list(self._parent._metric_registry)
+
+    def _get_metric(self, metric: MetricLike | str, **kwargs: Any) -> Metric:
+        """Return the registered metric, or build one for this call only.
+
+        Metrics built here are not inserted into the registry and do not use
+        the name-based score cache.
+        """
+        if isinstance(metric, Metric):
+            # ``Metric.new`` returns this same instance. Flagging it would
+            # disable the cache of a metric stored in the registry.
+            return metric
+        if isinstance(metric, str) and metric in self._parent._metric_registry:
+            return self._parent._metric_registry[metric]
+
+        try:
+            resolved = Metric.new(metric, kwargs=kwargs or None)
+        except MissingKwargsError as error:
+            args_msg = ", ".join(f"{kwarg}=..." for kwarg in error.missing_kwargs)
+            raise ValueError(
+                f"{error.msg} Pass those kwargs to get, for example "
+                f"get({error.metric}, {args_msg}), or register the metric with "
+                f"add({error.metric}, {args_msg})."
+            ) from error
+        except ValueError as error:
+            if not isinstance(metric, str):
+                raise
+            # Unknown scikit-learn metric name. Keep KeyError, and keep the
+            # list of valid scorer names raised by ``Metric.new``.
+            raise KeyError(str(error)) from None
+
+        resolved._skip_cache = True
+        return resolved
 
     def _resolve_metric(self, name: str) -> Metric | None:
         """Return the :class:`~skore._metrics.Metric` for ``name``, or None."""
@@ -341,21 +380,21 @@ class _MetricsAccessor(BaseMetricsAccessor[EstimatorReport], DirNamesMixin):
 
     def get(
         self,
-        name: str,
+        name: MetricLike,
         data_source: DataSource = "test",
-        **kwargs,
+        **kwargs: Any,
     ) -> Any:
         """Get a metric value.
 
         Parameters
         ----------
-        name : str
-            Name of the metric to compute. Get all available metrics with
-            :meth:`~EstimatorReport.metrics.available()`.
-            Metrics added with a ``neg_`` prefix can also be retrieved
-            without it; the alias is resolved automatically.
-            When ``name`` is a valid Python identifier, the same value is also
-            available as ``report.metrics.<name>(...)``.
+        name : str or scorer
+            Metric to compute. A string is a registered name or any scikit-learn
+            scorer name (a ``neg_`` prefix may be omitted). A callable must have
+            the signature ``(estimator, X, y, **kwargs) -> score``. A metric that
+            is not registered is computed for this call only. Registered names that
+            are valid identifiers are also available as ``report.metrics.<name>()``;
+            unregistered names are not. List registered names with :meth:`available`.
 
         data_source : {"test", "train"}, default="test"
             The data source to use.
@@ -363,10 +402,13 @@ class _MetricsAccessor(BaseMetricsAccessor[EstimatorReport], DirNamesMixin):
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
 
+        **kwargs : Any
+            Additional parameters passed to the metric function.
+
         Returns
         -------
-        Any
-            The metric value in a human-readable shape: a scalar for
+        score : float, dict, or array
+            The metric value. Depending on the metric, this may be a float for
             single-output metrics, a mapping from class labels for per-class
             classification metrics, or an array for multioutput regression.
 
@@ -382,8 +424,19 @@ class _MetricsAccessor(BaseMetricsAccessor[EstimatorReport], DirNamesMixin):
         {0: 0.90..., 1: 0.98...}
         >>> report.metrics.precision()
         {0: 0.90..., 1: 0.98...}
+        >>> def constant_score(estimator, X, y):
+        ...     return 1.0
+        >>> report.metrics.get(constant_score)
+        1.0
+        >>> report.metrics.summarize(metric="balanced_accuracy").frame().index.tolist()
+        ['balanced_accuracy']
+        >>> "balanced_accuracy" in report.metrics.available()
+        False
+        >>> "constant_score" in report.metrics.available()
+        False
         """
-        metric = self._parent._metric_registry[name]
+        construction_kwargs = {} if isinstance(name, str) else kwargs
+        metric = self._get_metric(name, **construction_kwargs)
         return metric.pretty(report=self._parent, data_source=data_source, **kwargs)
 
     def fit_time(self, *, cast: bool = True) -> float | None:

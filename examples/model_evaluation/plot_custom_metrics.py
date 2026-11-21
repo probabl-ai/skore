@@ -132,3 +132,30 @@ def mean_confidence(y_true, y_proba):
 report.metrics.add(make_scorer(mean_confidence, response_method="predict_proba"))
 
 report.metrics.summarize(metric="mean_confidence").frame()
+
+# %%
+# Computing a metric without registering it
+# =========================================
+#
+# :meth:`~skore.EstimatorReport.metrics.summarize` and
+# :meth:`~skore.EstimatorReport.metrics.get` also accept a scikit-learn metric
+# name, or a scorer callable, that was never registered. The registry is left
+# unchanged, so the default summary stays the same.
+
+# %%
+report.metrics.get("balanced_accuracy")
+
+# %%
+report.metrics.summarize(metric="balanced_accuracy").frame()
+
+
+# %%
+def constant_score(estimator, X, y):
+    return 1.0
+
+
+report.metrics.get(constant_score)
+
+# %%
+# Neither metric was registered:
+"balanced_accuracy" in report.metrics.available()
