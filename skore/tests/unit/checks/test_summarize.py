@@ -77,6 +77,32 @@ def test_repr_html_merges_estimators_with_same_explanation():
     assert html.count("Same reason.") == 1
 
 
+def test_repr_html_distinguishable_section_icons_and_classes():
+    """HTML repr includes distinct section classes and icons for checks."""
+    html = display_html(
+        {
+            "SKD001": {**_MOCK_ISSUE, "section": "issue", "explanation": "Some issue."},
+            "SKD002": {
+                "title": "Mock tip",
+                "docs_url": None,
+                "section": "tip",
+                "explanation": "Some tip.",
+            },
+            "SKD003": {
+                "title": "Mock pass",
+                "docs_url": None,
+                "section": "passed",
+                "explanation": None,
+            },
+        }
+    )
+    assert "report-tabset-checks" in html
+    assert "report-tab-label-issue" in html
+    assert "report-tab-label-tip" in html
+    assert "report-tab-label-passed" in html
+    assert "report-tab-icon" in html
+
+
 def test_frame_raises_for_invalid_section():
     """`frame(section=...)` rejects values outside the known set."""
     result = display({"SKD001": {**_MOCK_ISSUE, "explanation": "Single reason."}})

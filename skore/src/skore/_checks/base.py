@@ -189,6 +189,7 @@ class ChecksSummaryDisplay(DisplayMixin):
             tabs.append(
                 {
                     "label": label,
+                    "section": section,
                     "empty_message": empty_message,
                     "help_text": help_text,
                     "rows": [

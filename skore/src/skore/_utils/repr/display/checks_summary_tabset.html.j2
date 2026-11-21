@@ -1,9 +1,27 @@
 {# Issues / Tips / Passed / Not Applicable / Skipped / Ignored tabset. Expects: container_id, tabs. #}
 {% set report_tabs = [] %}
+{% set issue_icon = '<svg class="report-tab-icon" viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 1.75l6.5 11.5H1.5L8 1.75z"/><path d="M8 6v3.5"/><circle cx="8" cy="12" r="0.75" fill="currentColor"/></svg>' %}
+{% set tip_icon = '<svg class="report-tab-icon" viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="8" r="6.25"/><path d="M8 7v4"/><circle cx="8" cy="4.5" r="0.75" fill="currentColor"/></svg>' %}
+{% set passed_icon = '<svg class="report-tab-icon" viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="8" r="6.25"/><path d="M5.25 8.25l2 2 3.5-4"/></svg>' %}
 {% for tab in tabs %}
-    {% set _ = report_tabs.append({"label": tab.label ~ " (" ~ tab.rows|length ~ ")", "help_variant": "text", "help_text": tab.help_text}) %}
+    {% set icon = none %}
+    {% if tab.section == "issue" %}
+        {% set icon = issue_icon %}
+    {% elif tab.section == "tip" %}
+        {% set icon = tip_icon %}
+    {% elif tab.section == "passed" %}
+        {% set icon = passed_icon %}
+    {% endif %}
+    {% set _ = report_tabs.append({
+        "label": tab.label ~ " (" ~ tab.rows|length ~ ")",
+        "section": tab.section,
+        "count": tab.rows|length,
+        "icon_svg": icon,
+        "help_variant": "text",
+        "help_text": tab.help_text
+    }) %}
 {% endfor %}
-<div class="report-tabset">
+<div class="report-tabset report-tabset-checks">
     {% include "common/report_tabset_chrome.html.j2" %}
     <div class="report-tab-panels">
         {% for tab in tabs %}
