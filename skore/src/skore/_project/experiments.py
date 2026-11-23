@@ -46,11 +46,15 @@ _TRANSITIONS = frozenset(
 )
 
 
-def _blank(value: object) -> str | None:
+def _none_if_blank(value: str | None) -> str | None:
+    """Return stripped text, or ``None`` when ``value`` is missing or blank.
+
+    ``None``, an empty string, and whitespace-only text are the same missing
+    value.
+    """
     if value is None:
         return None
-    text = str(value).strip()
-    return text or None
+    return value.strip() or None
 
 
 def _normalize_row(row: ExperimentRow | dict[str, Any]) -> ExperimentRow:
@@ -65,7 +69,7 @@ def _normalize_row(row: ExperimentRow | dict[str, Any]) -> ExperimentRow:
         raise ValueError("An experiment stem is required.")
     if not question:
         raise ValueError("An experiment question is required.")
-    reason = _blank(row.get("abandon_reason"))
+    reason = _none_if_blank(row.get("abandon_reason"))
     if status == "abandoned" and reason is None:
         raise ValueError("abandon() requires a reason.")
     return {
@@ -73,9 +77,9 @@ def _normalize_row(row: ExperimentRow | dict[str, Any]) -> ExperimentRow:
         "stem": stem,
         "status": status,
         "question": question,
-        "plan": _blank(row.get("plan")),
-        "source_id": _blank(row.get("source_id")),
-        "check_code": _blank(row.get("check_code")),
+        "plan": _none_if_blank(row.get("plan")),
+        "source_id": _none_if_blank(row.get("source_id")),
+        "check_code": _none_if_blank(row.get("check_code")),
         "abandon_reason": reason,
         "version": int(row["version"]),
         "created_at": str(row["created_at"]),
@@ -229,7 +233,7 @@ class Experiment:
             )
         row = {**self._row, "status": "backlog"}
         if plan is not None:
-            text = _blank(plan)
+            text = _none_if_blank(plan)
             if text is None:
                 raise ValueError("promote() does not accept a blank plan.")
             row["plan"] = text
@@ -251,7 +255,7 @@ class Experiment:
         experiment : Experiment
             The handle after the plan is stored.
         """
-        text = _blank(plan)
+        text = _none_if_blank(plan)
         if text is None:
             raise ValueError("A plan cannot be blank.")
         if self.status not in PLAN_STATUSES:
@@ -308,7 +312,7 @@ class Experiment:
         experiment : Experiment
             The handle after the row is abandoned.
         """
-        text = _blank(reason)
+        text = _none_if_blank(reason)
         if text is None:
             raise ValueError("abandon() requires a reason.")
         if self.status != "running":
