@@ -28,6 +28,7 @@ classifiers = [
 ]
 dependencies = [
   "click",
+  "filelock",
   "jinja2",
   "joblib>=1.4",
   "matplotlib",

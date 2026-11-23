@@ -31,6 +31,7 @@ from sklearn.base import BaseEstimator
 
 from skore import CrossValidationReport, EstimatorReport
 from skore._plugins.serde import externalize, internalize
+from skore._project.types import ExperimentRow, OnSameStatus
 
 from .reports import (
     Artifact,
@@ -382,6 +383,24 @@ class Project:
             "predict_time_std": None,
         }
         return cast(Metadata, {**metadata, **metrics})
+
+    def experiments(self) -> list[ExperimentRow]:
+        """List the experiments stored in this project."""
+        raise NotImplementedError("The MLflow backend does not store experiments.")
+
+    def create_experiment(self, row: ExperimentRow) -> ExperimentRow:
+        """Store a new experiment row."""
+        raise NotImplementedError("The MLflow backend does not store experiments.")
+
+    def update_experiment(
+        self,
+        row: ExperimentRow,
+        version: int,
+        *,
+        on_same_status: OnSameStatus = "write",
+    ) -> ExperimentRow:
+        """Replace an experiment row when ``version`` is current."""
+        raise NotImplementedError("The MLflow backend does not store experiments.")
 
     @staticmethod
     def delete(*, name: str, tracking_uri: str | None = None) -> None:
