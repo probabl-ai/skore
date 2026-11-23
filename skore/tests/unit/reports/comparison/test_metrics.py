@@ -200,3 +200,38 @@ def test_metric_names_keep_their_case(report_cls):
     assert "MY_METRIC" in compared.index
     assert "My_metric" in compared.index
     assert "my_metric" not in compared.index
+
+
+def test_summarize_pos_label_sets_label_estimator():
+    """The comparison summary carries pos_label in the label column."""
+    X, y = make_classification(random_state=0)
+    reports = {
+        f"lr_{i}": EstimatorReport(
+            LogisticRegression(),
+            X_train=X,
+            X_test=X,
+            y_train=y,
+            y_test=y,
+            pos_label=1,
+        )
+        for i in range(2)
+    }
+    comparison_report = ComparisonReport(reports)
+    summary = comparison_report.metrics.summarize(
+        metric=["precision", "recall"]
+    ).summary
+    assert set(summary["label"]) == {1}
+
+
+def test_summarize_pos_label_sets_label_cross_validation():
+    """The comparison summary carries pos_label in the label column."""
+    X, y = make_classification(random_state=0)
+    reports = {
+        f"lr_{i}": CrossValidationReport(LogisticRegression(), X=X, y=y, pos_label=1)
+        for i in range(2)
+    }
+    comparison_report = ComparisonReport(reports)
+    summary = comparison_report.metrics.summarize(
+        metric=["precision", "recall"]
+    ).summary
+    assert set(summary["label"]) == {1}

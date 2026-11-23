@@ -77,10 +77,9 @@ class _MetricsAccessor(BaseMetricsAccessor[CrossValidationReport], DirNamesMixin
         >>> report.metrics.summarize(
         ...     metric=["precision", "recall"],
         ... ).frame(favorability=True)
-                   logisticregression_mean  logisticregression_std favorability
-        metric
-        precision                 0.94...                0.02...         (↗︎)
-        recall                    0.96...                0.02...         (↗︎)
+                     logisticregression_mean  logisticregression_std favorability
+        precision_1                 0.94...                0.02...         (↗︎)
+        recall_1                    0.96...                0.02...         (↗︎)
         """
         if data_source == "both":
             train_summary = self._summarize_display(data_source="train", metric=metric)
