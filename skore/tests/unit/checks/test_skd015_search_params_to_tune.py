@@ -11,6 +11,7 @@ from sklearn.preprocessing import StandardScaler
 
 from skore import evaluate
 from skore._checks.skd015_search_params_to_tune import CheckSearchParamsToTune
+from skore._checks.tunable_hyperparameters import get_tunable_hyperparameters
 from skore._checks.utils import CheckNotApplicable
 
 
@@ -95,7 +96,9 @@ def test_pipeline_flags_untuned_step(report_type, regression_data):
     """SKD015 flags pipeline steps whose params are not in the grid at all."""
     X, y = regression_data
     pipe = Pipeline([("pca", PCA()), ("ridge", Ridge())])
-    search = GridSearchCV(pipe, param_grid={"ridge__alpha": [0.1, 1.0]}, cv=2)
+    search = GridSearchCV(
+        pipe, param_grid={"memory": [None], "ridge__alpha": [0.1, 1.0]}, cv=2
+    )
     report = evaluate(search, X, y, splitter=0.2 if report_type == "estimator" else 3)
     explanation = CheckSearchParamsToTune().check_function(report)
     assert explanation is not None
@@ -209,3 +212,19 @@ def test_conditional_params_logistic_regression(binary_classification_data):
     explanation = CheckSearchParamsToTune().check_function(report_saga)
     assert explanation is not None
     assert "['l1_ratio'] for LogisticRegression" in explanation
+
+    # solver is searched with 'saga' -> recommends l1_ratio
+    search_grid_solver = GridSearchCV(
+        LogisticRegression(solver="lbfgs"),
+        param_grid={"solver": ["lbfgs", "saga"], "C": [0.1, 1.0]},
+        cv=2,
+    )
+    report_grid_solver = evaluate(search_grid_solver, X, y, splitter=0.2)
+    explanation = CheckSearchParamsToTune().check_function(report_grid_solver)
+    assert explanation is not None
+    assert "['l1_ratio'] for LogisticRegression" in explanation
+
+
+def test_get_tunable_hyperparameters_unknown_estimator():
+    """get_tunable_hyperparameters returns empty set for unlisted estimators."""
+    assert get_tunable_hyperparameters(DummyRegressor()) == set()
