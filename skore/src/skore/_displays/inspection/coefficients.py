@@ -769,7 +769,10 @@ class CoefficientsDisplay(DisplayMixin):
         coef_data = np.concatenate([intercept, coef])
 
         feature_names = ["Intercept"] + _get_feature_names(
-            predictor, transformer=preprocessor, n_features=coef.shape[0]
+            predictor,
+            transformer=preprocessor,
+            X=X,
+            n_features=coef.shape[0],
         )
         n_features = len(feature_names)
 
@@ -787,7 +790,7 @@ class CoefficientsDisplay(DisplayMixin):
             else:
                 std = (
                     nw.from_native(X_transformed)
-                    .select(nw.all().std())
+                    .select(nw.all().std(ddof=0))
                     .to_numpy()
                     .ravel()
                 )

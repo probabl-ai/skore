@@ -182,7 +182,11 @@ class CalibrationDisplay(DisplayMixin):
         )
 
     @DisplayMixin.style_plot
-    def plot(self, *, label: PositiveLabel = _DEFAULT) -> Figure:
+    def plot(
+        self,
+        *,
+        label: PositiveLabel = _DEFAULT,
+    ) -> Figure:
         """Plot the calibration curve.
 
         Parameters
@@ -209,7 +213,11 @@ class CalibrationDisplay(DisplayMixin):
         label = _check_label(self.labels, label, self.report_pos_label)
         return self._plot(label=label)
 
-    def _plot_matplotlib(self, *, label: PositiveLabel) -> Figure:
+    def _plot_matplotlib(
+        self,
+        *,
+        label: PositiveLabel,
+    ) -> Figure:
         """Dispatch the plotting function for matplotlib backend."""
         lineplot_kwargs = self._default_line_kwargs.copy()
         ax_set_kwargs = self._default_ax_set_kwargs.copy()
@@ -231,25 +239,50 @@ class CalibrationDisplay(DisplayMixin):
         ax_set_kwargs: dict[str, Any],
         label: PositiveLabel = None,
     ):
-        if "label" in frame.columns:
-            lineplot_kwargs["hue"] = "label"
+        x_col = "predicted_probability"
+        y_col = "fraction_of_positives"
+
+        if "cross-validation" in self.report_type:
+            relplot_kwargs = {
+                "data": frame,
+                "kind": "line",
+                "x": x_col,
+                "y": y_col,
+                **lineplot_kwargs,
+                "hue": "label" if "label" in frame.columns else None,
+                "estimator": None,
+            }
+            relplot_kwargs["units"] = "split"
+            relplot_kwargs["alpha"] = 0.4
+            if "label" not in frame.columns:
+                relplot_kwargs.pop("palette", None)
+            facet = sns.relplot(**relplot_kwargs)
+        elif "label" in frame.columns:
+            facet = sns.relplot(
+                data=frame,
+                kind="line",
+                x=x_col,
+                y=y_col,
+                hue="label",
+                **lineplot_kwargs,
+            )
         else:
             lineplot_kwargs = {
                 k: v for k, v in lineplot_kwargs.items() if k != "palette"
             }
-            lineplot_kwargs["label"] = estimator_name
-            lineplot_kwargs["hue"] = None
-
-        facet = sns.relplot(
-            data=frame,
-            kind="line",
-            x="predicted_probability",
-            y="fraction_of_positives",
-            **lineplot_kwargs,
-        )
+            facet = sns.relplot(
+                data=frame,
+                kind="line",
+                x=x_col,
+                y=y_col,
+                label=estimator_name,
+                hue=None,
+                **lineplot_kwargs,
+            )
 
         figure = facet.figure
         ax = facet.ax
+
         ref_line_label = "Perfectly calibrated"
         ax.plot([0, 1], [0, 1], "k:", label=ref_line_label)
 

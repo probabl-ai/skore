@@ -1,5 +1,6 @@
 import numpy as np
 import pytest
+import scipy.sparse as sp
 import skrub
 from sklearn.dummy import DummyClassifier
 from sklearn.linear_model import LinearRegression, LogisticRegression
@@ -11,6 +12,7 @@ from sklearn.model_selection import (
 )
 
 from skore import ComparisonReport, CrossValidationReport, EstimatorReport, evaluate
+from skore._externals.sklearn_compat import convert_container
 
 
 def test_prefit_estimator(regression_data):
@@ -125,12 +127,47 @@ def test_multiple_estimators_cv(regression_data):
     assert isinstance(report, ComparisonReport)
 
 
-def test_list_or_dict_X_raises(regression_data):
-    """Passing list or dict X raises TypeError."""
+@pytest.mark.parametrize(
+    "make_inputs",
+    [
+        pytest.param(lambda X, y: (X.tolist(), y), id="list-X"),
+        pytest.param(lambda X, y: (tuple(X), y), id="tuple-X"),
+        pytest.param(lambda X, y: ({"a": X}, y), id="dict-X"),
+        pytest.param(lambda X, y: (sp.csr_matrix(X), y), id="sparse-X"),
+        pytest.param(lambda X, y: (X, y.tolist()), id="list-y"),
+        pytest.param(lambda X, y: (X, tuple(y)), id="tuple-y"),
+        pytest.param(lambda X, y: (X, sp.csr_matrix(y.reshape(-1, 1))), id="sparse-y"),
+    ],
+)
+def test_unsupported_X_and_y_raise(regression_data, make_inputs):
+    """Lists, tuples, a dict, and sparse data raise."""
+    features, target = make_inputs(*regression_data)
+    with pytest.raises(TypeError, match="NumPy array, a dataframe, a Series, or None"):
+        evaluate(LinearRegression(), features, target)
+
+
+@pytest.mark.parametrize(
+    ("x_container", "y_container"),
+    [
+        pytest.param("pandas", "array", id="pandas-X"),
+        pytest.param("polars", "array", id="polars-X"),
+        pytest.param("array", "series", id="pandas-y"),
+        pytest.param("array", "polars_series", id="polars-y"),
+        pytest.param("pandas", "series", id="pandas-X-and-y"),
+        pytest.param("polars", "polars_series", id="polars-X-and-y"),
+    ],
+)
+def test_dataframe_and_series_target_are_accepted(
+    regression_data, x_container, y_container
+):
+    """A dataframe feature matrix and a Series target are evaluated."""
     X, y = regression_data
-    for invalid_x in ([X], {"a": X}):
-        with pytest.raises(TypeError, match="single array-like or None"):
-            evaluate(LinearRegression(), invalid_x, y)
+    columns = [f"f{i}" for i in range(X.shape[1])]
+    features = convert_container(X, x_container, column_names=columns)
+    target = convert_container(y, y_container)
+    expected = evaluate(LinearRegression(), X, y, splitter=0.25).estimator_.predict(X)
+    report = evaluate(LinearRegression(), features, target, splitter=0.25)
+    np.testing.assert_allclose(report.estimator_.predict(features), expected)
 
 
 def test_multiple_estimators_dict(regression_data):

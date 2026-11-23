@@ -7,6 +7,7 @@ from sklearn.pipeline import Pipeline, make_pipeline
 from sklearn.preprocessing import SplineTransformer, StandardScaler
 
 from skore import EstimatorReport
+from skore._externals.sklearn_compat import convert_container
 
 
 @pytest.mark.parametrize(
@@ -183,6 +184,30 @@ def test_scale_features_sparse_preprocessor(regression_train_test_split):
     np.testing.assert_allclose(
         display.coefficients.query("feature != 'Intercept'")["feature_std"],
         np.std(X_transformed.toarray(), axis=0),
+    )
+
+
+@pytest.mark.parametrize("container", ["pandas", "polars"])
+def test_scale_features_std_of_a_dataframe_matches_an_array(
+    regression_train_test_split, container
+):
+    """A dataframe gives the same feature std as the same data in an array."""
+    X_train, X_test, y_train, y_test = regression_train_test_split
+    column_names = [f"x{i}" for i in range(X_train.shape[1])]
+
+    def feature_std(X_train, X_test):
+        report = EstimatorReport(
+            Ridge(), X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+        )
+        display = report.inspection.coefficients()
+        return display.coefficients.query("feature != 'Intercept'")["feature_std"]
+
+    np.testing.assert_allclose(
+        feature_std(
+            convert_container(X_train, container, column_names=column_names),
+            convert_container(X_test, container, column_names=column_names),
+        ),
+        feature_std(X_train, X_test),
     )
 
 
