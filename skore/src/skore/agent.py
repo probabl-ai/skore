@@ -53,22 +53,6 @@ def create_experiment(
     -------
     experiment : Experiment
         The new row. Its ``id`` is the UUID7 the report will carry.
-
-    Raises
-    ------
-    ValueError
-        If ``status`` is not ``"aside"`` or ``"backlog"``, or ``stem`` or
-        ``question`` is blank.
-    JournalConflictError
-        If ``stem`` is already used, or the same ``source_id`` and
-        ``check_code`` were already stored.
-
-    See Also
-    --------
-    Experiment :
-        One experiment and the methods that move it.
-    Experiments :
-        The experiments stored in a project.
     """
     if status not in {"aside", "backlog"}:
         raise ValueError(f"status must be 'aside' or 'backlog' (found {status!r}).")

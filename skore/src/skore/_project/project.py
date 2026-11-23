@@ -287,13 +287,6 @@ class Project:
         experiments : Experiments
             The collection of experiment rows. Do not construct this object
             directly.
-
-        See Also
-        --------
-        Experiments :
-            List and retrieve experiments.
-        Experiment :
-            One experiment and the methods that move it.
         """
         return Experiments(self)
 

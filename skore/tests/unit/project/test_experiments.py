@@ -1,9 +1,11 @@
 """Lifecycle, conflicts, and local storage of project experiments."""
 
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
+from tempfile import mkstemp
 
 import pytest
 from sklearn.datasets import make_regression
@@ -349,3 +351,50 @@ def test_concurrent_start(tmp_path):
     stored = project.experiments.get(experiment.id)
     assert stored.status == "running"
     assert stored.version == 2
+
+
+def test_storage_rejects_a_bad_row(tmp_path):
+    project = _project(tmp_path)
+    experiment = create_experiment(project, "stem", "question")
+    assert experiment.updated_at
+
+    with pytest.raises(JournalConflictError, match="already exists"):
+        project._create_experiment(experiment._row)
+    with pytest.raises(KeyError):
+        project._update_experiment({**experiment._row, "id": "missing"})
+    with pytest.raises(ValueError, match="Cannot move"):
+        project._update_experiment({**experiment._row, "status": "running"})
+    with pytest.raises(ValueError, match="Unknown experiment status"):
+        project._update_experiment({**experiment._row, "status": "nope"})
+
+    running = create_experiment(
+        project, "running", "question", status="backlog"
+    ).start()
+    with pytest.raises(ValueError, match="reason"):
+        project._update_experiment({**running._row, "status": "abandoned"})
+
+
+def test_failed_write_removes_the_temporary_file(tmp_path, monkeypatch):
+    project = _project(tmp_path)
+    experiment = create_experiment(project, "stem", "question")
+    directory = project._Project__project.path / "experiments"
+
+    def fail_replace(source, destination):
+        raise OSError("replace failed")
+
+    monkeypatch.setattr("skore._plugins.local.project.os.replace", fail_replace)
+    with pytest.raises(OSError, match="replace failed"):
+        experiment.update_plan("next")
+    assert list(directory.glob(".*.tmp")) == []
+    assert project.experiments.get(experiment.id).plan is None
+
+    def remove_temp(*args, **kwargs):
+        descriptor, temporary = mkstemp(*args, **kwargs)
+        os.close(descriptor)
+        os.unlink(temporary)
+        return descriptor, temporary
+
+    monkeypatch.setattr("skore._plugins.local.project.mkstemp", remove_temp)
+    with pytest.raises(OSError):
+        experiment.update_plan("next")
+    assert project.experiments.get(experiment.id).plan is None

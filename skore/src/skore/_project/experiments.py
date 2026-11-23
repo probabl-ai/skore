@@ -92,7 +92,7 @@ def _transition_allowed(current: ExperimentStatus, new: ExperimentStatus) -> boo
 class _WriteConflict(Exception):
     """A backend rejected an experiment write. ``current`` is the stored row."""
 
-    def __init__(self, message: str, current: ExperimentRow | None = None) -> None:
+    def __init__(self, message: str, current: ExperimentRow) -> None:
         super().__init__(message)
         self.current = current
 
@@ -120,13 +120,6 @@ class Experiment:
 
     ``status`` is one of ``"aside"``, ``"discarded"``, ``"backlog"``,
     ``"running"``, ``"history"``, and ``"abandoned"``.
-
-    See Also
-    --------
-    Experiments :
-        The experiments stored in a project.
-    skore.agent.create_experiment :
-        Append one experiment.
     """
 
     def __init__(self, project: Project, row: ExperimentRow) -> None:
@@ -205,14 +198,6 @@ class Experiment:
         -------
         experiment : Experiment
             The handle after the call.
-
-        Raises
-        ------
-        ValueError
-            If this experiment is not in triage, or ``status`` is not a triage
-            status.
-        JournalConflictError
-            If the stored row changed and is not already ``status``.
         """
         if status not in TRIAGE_STATUSES or self.status not in TRIAGE_STATUSES:
             raise ValueError(
@@ -236,14 +221,6 @@ class Experiment:
         -------
         experiment : Experiment
             The handle after the call.
-
-        Raises
-        ------
-        ValueError
-            If ``plan`` is blank, or this experiment is not ``aside`` or
-            ``backlog``.
-        JournalConflictError
-            If the stored row changed and is not already in the backlog.
         """
         if self.status not in {"aside", "backlog"}:
             raise ValueError(
@@ -273,13 +250,6 @@ class Experiment:
         -------
         experiment : Experiment
             The handle after the plan is stored.
-
-        Raises
-        ------
-        ValueError
-            If ``plan`` is blank, or this experiment is finished.
-        JournalConflictError
-            If the stored row changed since this handle was read.
         """
         text = _blank(plan)
         if text is None:
@@ -300,14 +270,6 @@ class Experiment:
         -------
         experiment : Experiment
             The handle after the row is running.
-
-        Raises
-        ------
-        ValueError
-            If this experiment is not in the backlog or running.
-        JournalConflictError
-            If the stored row is already running, or it changed since this
-            handle was read.
         """
         if self.status not in {"backlog", "running"}:
             raise ValueError(
@@ -325,13 +287,6 @@ class Experiment:
         -------
         experiment : Experiment
             The handle after the row is in the backlog.
-
-        Raises
-        ------
-        ValueError
-            If this experiment is not running.
-        JournalConflictError
-            If the stored row changed since this handle was read.
         """
         if self.status != "running":
             raise ValueError(
@@ -352,13 +307,6 @@ class Experiment:
         -------
         experiment : Experiment
             The handle after the row is abandoned.
-
-        Raises
-        ------
-        ValueError
-            If ``reason`` is blank, or this experiment is not running.
-        JournalConflictError
-            If the stored row changed since this handle was read.
         """
         text = _blank(reason)
         if text is None:
@@ -399,16 +347,6 @@ class Experiment:
         -------
         report : EstimatorReport or CrossValidationReport
             The report stored in the project. Its id is this experiment's id.
-
-        Raises
-        ------
-        ValueError
-            If this experiment is not in the backlog or running.
-        TypeError
-            If evaluation does not return an estimator or cross-validation
-            report.
-        JournalConflictError
-            If the row cannot be started or moved to history because it changed.
         """
         if self.status not in RUN_STATUSES:
             raise ValueError(
@@ -439,8 +377,6 @@ class Experiment:
 
 
 def _as_conflict(error: _WriteConflict, project: Project) -> JournalConflictError:
-    if error.current is None:
-        return JournalConflictError(str(error))
     return JournalConflictError(
         str(error), current=Experiment(project, _normalize_row(error.current))
     )
@@ -451,11 +387,6 @@ class Experiments:
 
     Obtain this collection from :attr:`Project.experiments`. Every read asks
     the backend again.
-
-    See Also
-    --------
-    Experiment :
-        One experiment and the methods that move it.
     """
 
     def __init__(self, project: Project) -> None:
@@ -495,11 +426,6 @@ class Experiments:
         -------
         experiment : Experiment
             The handle for that row.
-
-        Raises
-        ------
-        KeyError
-            If no experiment has this id.
         """
         for row in self._project._experiment_rows():
             if row["id"] == str(experiment_id):

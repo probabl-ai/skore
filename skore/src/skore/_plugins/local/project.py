@@ -520,11 +520,6 @@ class Project:
         -------
         row : ExperimentRow
             The stored row.
-
-        Raises
-        ------
-        _WriteConflict
-            If the id, the stem, or the source and check pair already exists.
         """
         with FileLock(self.path / ".experiments.lock"):
             for existing in self._read_experiment_rows():
@@ -575,15 +570,6 @@ class Project:
         -------
         row : ExperimentRow
             The stored row.
-
-        Raises
-        ------
-        KeyError
-            If no experiment has this id.
-        _WriteConflict
-            If the version is stale, or the same status is a conflict.
-        ValueError
-            If the stored status cannot move to ``row["status"]``.
         """
         with FileLock(self.path / ".experiments.lock"):
             stored = self._read_experiment(row["id"])
