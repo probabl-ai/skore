@@ -225,8 +225,8 @@ def test_seed_wrong_type(regression_train_test_split):
     "invalid_metric, err_msg",
     [
         ({1: "r2"}, "Non-string types were found in the keys of the given dict"),
-        (123, "The 'scoring' parameter of check_scoring must be"),
-        ("invalid_scorer", "The 'scoring' parameter of check_scoring must be"),
+        (123, "metric=123 is not a valid metric"),
+        ("invalid_scorer", "metric='invalid_scorer' is not a valid metric"),
     ],
 )
 def test_metric_invalid(regression_train_test_split, invalid_metric, err_msg):
