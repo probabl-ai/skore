@@ -58,6 +58,7 @@ def _none_if_blank(value: str | None) -> str | None:
 
 
 def _normalize_row(row: ExperimentRow | dict[str, Any]) -> ExperimentRow:
+    """Return the row in stored form, with text stripped and blanks as None."""
     status = row["status"]
     if status not in STATUSES:
         raise ValueError(
@@ -88,6 +89,7 @@ def _normalize_row(row: ExperimentRow | dict[str, Any]) -> ExperimentRow:
 
 
 def _transition_allowed(current: ExperimentStatus, new: ExperimentStatus) -> bool:
+    """Return whether a row in ``current`` may move to ``new``."""
     if current == new:
         return current in PLAN_STATUSES
     return (current, new) in _TRANSITIONS
@@ -377,10 +379,12 @@ class Experiment:
     def _write(
         self, row: dict[str, Any], *, on_same_status: OnSameStatus = "write"
     ) -> Experiment:
+        """Store ``row`` and return the handle read back from the project."""
         return self._project._update_experiment(row, on_same_status=on_same_status)
 
 
 def _as_conflict(error: _WriteConflict, project: Project) -> JournalConflictError:
+    """Return the public conflict error for a rejected backend write."""
     return JournalConflictError(
         str(error), current=Experiment(project, _normalize_row(error.current))
     )

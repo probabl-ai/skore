@@ -291,9 +291,11 @@ class Project:
         return Experiments(self)
 
     def _experiment_rows(self) -> list[ExperimentRow]:
+        """Return every stored experiment row in normalized form."""
         return [_normalize_row(row) for row in self.__project.experiments()]
 
     def _create_experiment(self, row: ExperimentRow) -> Experiment:
+        """Store a new experiment row and return a handle on it."""
         try:
             stored = self.__project.create_experiment(_normalize_row(row))
         except _WriteConflict as error:
@@ -306,6 +308,7 @@ class Project:
         *,
         on_same_status: OnSameStatus = "write",
     ) -> Experiment:
+        """Replace one experiment row and return a handle on the stored row."""
         normalized = _normalize_row(row)
         try:
             stored = self.__project.update_experiment(

@@ -612,12 +612,14 @@ class Project:
             return written
 
     def _read_experiment(self, experiment_id: str) -> ExperimentRow | None:
+        """Return the row stored for this id, or None when the file is absent."""
         path = self.path / "experiments" / f"{experiment_id}.json"
         if not path.is_file():
             return None
         return cast(ExperimentRow, json.loads(path.read_text(encoding="UTF-8")))
 
     def _write_experiment_file(self, row: ExperimentRow) -> None:
+        """Write this row to its JSON file without exposing a partial write."""
         directory = self.path / "experiments"
         directory.mkdir(parents=True, exist_ok=True)
         descriptor, temporary = mkstemp(dir=directory, prefix=".", suffix=".tmp")
