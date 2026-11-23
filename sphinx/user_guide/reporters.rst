@@ -72,8 +72,9 @@ learner with :meth:`~skrub.DataOp.skb.make_learner`:
     report = evaluate(learner, data={"X": X, "y": y})
 
 Refer to the
-:ref:`sphx_glr_auto_examples_technical_details_plot_skrub_fit_kwargs.py`
-example for a complete walkthrough with single-split and cross-validation reports.
+:ref:`sphx_glr_auto_examples_technical_details_plot_skrub_data_op_cv.py`
+example for a walkthrough of configuring cross-validation, custom metrics, and
+arguments with skrub.
 
 Data insights
 ^^^^^^^^^^^^^

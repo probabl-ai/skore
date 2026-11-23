@@ -1,17 +1,21 @@
 """
 .. _example_skrub_data_op_cv:
 
-===================================
-Using skrub DataOp cross-validation
-===================================
+=======================================================
+Using skrub DataOp for cross-validation and evaluation
+=======================================================
 
 When a skrub :class:`~skrub.DataOp` defines a cross-validation splitter on
 :meth:`~skrub.DataOp.skb.mark_as_X`, :func:`~skore.evaluate` can reuse that
 configuration — including ``split_kwargs`` such as ``groups`` — instead of
 skore's default 80/20 holdout.
 
-This example builds a small grouped cross-validation setup with skrub and
-evaluates it with skore.
+In addition, a :class:`~skrub.DataOp` allows configuring custom metrics,
+sample weights, and extra fit arguments that are automatically carried over
+into :func:`~skore.evaluate`.
+
+This example builds a grouped cross-validation setup with custom scoring and
+fit arguments using skrub and evaluates it with skore.
 """
 
 # %%
@@ -54,6 +58,36 @@ len(report.reports_)
 # %%
 # Inspect aggregated metrics with the same API as other skore reports:
 report.metrics.summarize().frame()
+
+# %%
+# Configure custom metrics and sample weights
+# ===========================================
+#
+# A :class:`~skrub.DataOp` can attach custom scorers and dynamic parameters
+# (such as sample weights) via :meth:`~skrub.DataOp.skb.with_scoring`.
+# For instance, we can evaluate a weighted accuracy where each prediction is
+# weighted by product price:
+sample_weight = X["price"]
+pred_weighted = pred.skb.with_scoring(
+    "accuracy", kwargs={"sample_weight": sample_weight}, name="weighted_accuracy"
+)
+weighted_learner = pred_weighted.skb.make_learner()
+
+weighted_report = evaluate(weighted_learner, data={"df": df})
+weighted_report.metrics.summarize().frame()
+
+# %%
+# Pass additional arguments to estimator fit
+# ==========================================
+#
+# If an estimator requires additional keyword arguments during fitting (for
+# example, custom parameters like ``epochs`` or training options), they can be
+# passed to ``fit_kwargs`` in :meth:`~skrub.DataOp.skb.apply`:
+learner_with_fit_kwargs = X.skb.apply(
+    DummyClassifier(), y=y, fit_kwargs={}
+).skb.make_learner()
+fit_report = evaluate(learner_with_fit_kwargs, data={"df": df})
+fit_report
 
 # %%
 # Default behavior without an explicit DataOp cv
