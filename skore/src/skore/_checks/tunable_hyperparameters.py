@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from skore._checks.utils import ClassName, ParameterName
@@ -35,6 +35,7 @@ INFRASTRUCTURE_PARAMS: set[ParameterName] = {
     "oob_score",
     "precompute",
     "random_state",
+    "solver",
     "sparse_output",
     "tol",
     "validation_fraction",
@@ -142,3 +143,36 @@ HYPERPARAMETERS_TO_TUNE: dict[ClassName, set[ParameterName]] = {
     # ===== IMPUTATION =====
     "KNNImputer": {"n_neighbors"},
 }
+
+
+def get_tunable_hyperparameters(
+    estimator: Any,
+    searched_values: dict[ParameterName, set[Any]] | None = None,
+) -> set[ParameterName]:
+    """Return the set of tunable hyperparameters for an estimator.
+
+    Takes into account conditional dependencies between parameters.
+    """
+    class_name = type(estimator).__name__
+    if class_name not in HYPERPARAMETERS_TO_TUNE:
+        return set()
+
+    params = set(HYPERPARAMETERS_TO_TUNE[class_name])
+
+    if class_name in ("SVC", "SVR", "KernelPCA", "Nystroem"):
+        kernel = getattr(estimator, "kernel", None)
+        kernels: set[Any] = {kernel} if kernel is not None else set()
+        if searched_values and "kernel" in searched_values:
+            kernels.update(searched_values["kernel"])
+        if kernels & {"rbf", "poly", "sigmoid", "cosine"}:
+            params.add("gamma")
+
+    elif class_name == "LogisticRegression":
+        solver = getattr(estimator, "solver", None)
+        solvers: set[Any] = {solver} if solver is not None else set()
+        if searched_values and "solver" in searched_values:
+            solvers.update(searched_values["solver"])
+        if "saga" in solvers:
+            params.add("l1_ratio")
+
+    return params
