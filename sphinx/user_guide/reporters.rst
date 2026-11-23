@@ -57,19 +57,8 @@ Passing extra arguments to estimator fit
 When an estimator's ``fit`` method requires additional keyword arguments (for example,
 custom training hyperparameters such as ``epochs`` or training options), use
 :mod:`skrub` to bind the arguments via :meth:`~skrub.DataOp.skb.apply` and create a
-learner with :meth:`~skrub.DataOp.skb.make_learner`:
-
-.. code-block:: python
-
-    import skrub
-    from skore import evaluate
-
-    learner = (
-        skrub.X()
-        .skb.apply(estimator, y=skrub.y(), fit_kwargs={"epochs": 10})
-        .skb.make_learner()
-    )
-    report = evaluate(learner, data={"X": X, "y": y})
+learner with :meth:`~skrub.DataOp.skb.make_learner` that can be evaluated directly
+with :func:`~skore.evaluate`.
 
 Refer to the
 :ref:`sphx_glr_auto_examples_technical_details_plot_skrub_data_op_cv.py`

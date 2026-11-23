@@ -1,9 +1,9 @@
 """
 .. _example_skrub_data_op_cv:
 
-=======================================================
-Using skrub DataOp for cross-validation and evaluation
-=======================================================
+=====================================================
+Using skrub DataOp for complex ML pipeline evaluation
+=====================================================
 
 When a skrub :class:`~skrub.DataOp` defines a cross-validation splitter on
 :meth:`~skrub.DataOp.skb.mark_as_X`, :func:`~skore.evaluate` can reuse that
