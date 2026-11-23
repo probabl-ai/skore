@@ -1,4 +1,4 @@
-"""Public entry point for creating experiments."""
+"""Public entry point for creating experiments. Intended for agent use."""
 
 from __future__ import annotations
 
