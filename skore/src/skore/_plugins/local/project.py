@@ -506,7 +506,13 @@ class Project:
 
     def experiments(self) -> list[ExperimentRow]:
         """Return every experiment row stored in this project."""
-        return self._read_experiment_rows()
+        directory = self.path / "experiments"
+        if not directory.is_dir():
+            return []
+        return [
+            cast(ExperimentRow, json.loads(path.read_text(encoding="UTF-8")))
+            for path in directory.glob("*.json")
+        ]
 
     def create_experiment(self, row: ExperimentRow) -> ExperimentRow:
         """Store one new experiment row.
@@ -522,7 +528,7 @@ class Project:
             The stored row.
         """
         with FileLock(self.path / ".experiments.lock"):
-            for existing in self._read_experiment_rows():
+            for existing in self.experiments():
                 if existing["id"] == row["id"]:
                     raise _WriteConflict(
                         f"Experiment {row['id']!r} already exists.", existing
@@ -604,15 +610,6 @@ class Project:
             )
             self._write_experiment_file(written)
             return written
-
-    def _read_experiment_rows(self) -> list[ExperimentRow]:
-        directory = self.path / "experiments"
-        if not directory.is_dir():
-            return []
-        return [
-            cast(ExperimentRow, json.loads(path.read_text(encoding="UTF-8")))
-            for path in directory.glob("*.json")
-        ]
 
     def _read_experiment(self, experiment_id: str) -> ExperimentRow | None:
         path = self.path / "experiments" / f"{experiment_id}.json"
