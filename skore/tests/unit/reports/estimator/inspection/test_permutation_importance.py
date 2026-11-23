@@ -219,3 +219,24 @@ def test_seed_wrong_type(regression_train_test_split):
         ValueError, match="seed must be an integer or None; got <class 'str'>"
     ):
         report.inspection.permutation_importance(seed="42")
+
+
+@pytest.mark.parametrize(
+    "invalid_metric, err_msg",
+    [
+        ({1: "r2"}, "Non-string types were found in the keys of the given dict"),
+        (123, "metric=123 is not a valid metric"),
+        ("invalid_scorer", "metric='invalid_scorer' is not a valid metric"),
+    ],
+)
+def test_metric_invalid(regression_train_test_split, invalid_metric, err_msg):
+    X_train, X_test, y_train, y_test = regression_train_test_split
+    report = EstimatorReport(
+        LinearRegression(),
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
+    )
+    with pytest.raises(ValueError, match=err_msg):
+        report.inspection.permutation_importance(metric=invalid_metric, seed=0)

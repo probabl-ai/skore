@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import Literal
 
+from sklearn.metrics import check_scoring
 from sklearn.utils.metaestimators import available_if
 
 from skore._displays.inspection.calibration_curve import CalibrationDisplay
@@ -311,7 +312,10 @@ class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
 
         if seed is not None and not isinstance(seed, int):
             raise ValueError(f"seed must be an integer or None; got {type(seed)}")
-
+        try:
+            check_scoring(self._parent.estimator_, scoring=metric)
+        except (TypeError, ValueError) as exc:
+            raise ValueError(f"metric={metric!r} is not a valid metric: {exc}") from exc
         # n_jobs should not be in cache
         kwargs = {
             "at_step": at_step,
