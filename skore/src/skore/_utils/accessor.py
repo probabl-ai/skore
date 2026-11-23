@@ -3,9 +3,8 @@ from __future__ import annotations
 from collections.abc import Callable
 from typing import Any, Literal
 
-from sklearn.pipeline import Pipeline
-
 from skore._sklearn.types import DataSource
+from skore._utils.skrub import resolve_fitted_predictor
 
 
 def _check_all_checks(checks: list[Callable]) -> Callable:
@@ -21,11 +20,7 @@ def _check_has_coef(parent_estimator) -> bool:
     This is a generic helper function. Please use the appropriate check for your report
     type.
     """
-    estimator = (
-        parent_estimator.steps[-1][1]
-        if isinstance(parent_estimator, Pipeline)
-        else parent_estimator
-    )
+    estimator = resolve_fitted_predictor(parent_estimator)
     if hasattr(estimator, "coef_"):
         return True
     try:  # e.g. TransformedTargetRegressor()
@@ -45,11 +40,7 @@ def _check_has_feature_importances(parent_estimator) -> bool:
     This is a generic helper function. Please use the appropriate check for your report
     type.
     """
-    estimator = (
-        parent_estimator.steps[-1][1]
-        if isinstance(parent_estimator, Pipeline)
-        else parent_estimator
-    )
+    estimator = resolve_fitted_predictor(parent_estimator)
     if hasattr(estimator, "feature_importances_"):
         return True
     raise AttributeError(

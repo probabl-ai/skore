@@ -23,7 +23,7 @@ from skore._utils.accessor import (
     _check_supported_ml_task,
 )
 from skore._utils.cache_key import make_cache_key
-from skore._utils.skrub import SKRUB_X_KEY
+from skore._utils.skrub import SKRUB_X_KEY, resolve_fitted_predictor
 
 
 class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
@@ -73,11 +73,15 @@ class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         10  Feature #9      102.2...
         >>> display.plot() # shows plot
         """
+        estimator, X = self._parent.estimator_, self._parent.X_train
+        if self._parent._initialized_with_data_op:
+            # avoid recomputing the predictor input, which can be costly
+            estimator, X = resolve_fitted_predictor(estimator), None
         return CoefficientsDisplay._compute_data_for_display(
-            estimator=self._parent.estimator_,
+            estimator=estimator,
             name=self._parent.estimator_name_,
             report_type=self._parent._report_type,
-            X=self._parent.X_train,
+            X=X,
         )
 
     @available_if(_check_estimator_has_feature_importances())
@@ -117,8 +121,11 @@ class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         3  Feature #3     0.48...
         4  Feature #4     0.00...
         """
+        estimator = self._parent.estimator_
+        if self._parent._initialized_with_data_op:
+            estimator = resolve_fitted_predictor(estimator)
         return ImpurityDecreaseDisplay._compute_data_for_display(
-            estimator=self._parent.estimator_,
+            estimator=estimator,
             name=self._parent.estimator_name_,
             report_type=self._parent._report_type,
         )

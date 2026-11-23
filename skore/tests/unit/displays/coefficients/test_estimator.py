@@ -1,10 +1,17 @@
 import matplotlib as mpl
 import numpy as np
+import pandas as pd
 import pytest
+import skrub
+from sklearn.base import clone
 from sklearn.datasets import make_regression
 from sklearn.linear_model import LinearRegression, Ridge
 from sklearn.pipeline import Pipeline, make_pipeline
-from sklearn.preprocessing import SplineTransformer, StandardScaler
+from sklearn.preprocessing import (
+    PolynomialFeatures,
+    SplineTransformer,
+    StandardScaler,
+)
 
 from skore import EstimatorReport
 from skore._externals.sklearn_compat import convert_container
@@ -237,3 +244,100 @@ def test_scale_features_plot_labels(regression_train_test_split):
     fig = report.inspection.coefficients().plot(scale_features=True)
     assert fig.axes[0].get_xlabel() == "Magnitude of scaled coefficient"
     assert fig.get_suptitle() == "Scaled coefficients of Ridge"
+
+
+def _skrub_regression_data():
+    X, y = make_regression(n_samples=60, n_features=3, random_state=0)
+    X = pd.DataFrame(X, columns=["a", "b", "c"])
+    return X.iloc[:40], X.iloc[40:], y[:40], y[40:]
+
+
+def _skrub_data_op(steps, predictor, *, chained):
+    """Build a DataOp equivalent to ``make_pipeline(*steps, predictor)``."""
+    X = skrub.X()
+    if chained:
+        for step in steps:
+            X = X.skb.apply(clone(step))
+        return X.skb.apply(clone(predictor), y=skrub.y())
+    return X.skb.apply(
+        make_pipeline(*[clone(s) for s in steps], clone(predictor)), y=skrub.y()
+    )
+
+
+def _sklearn_estimator(steps, predictor):
+    if not steps:
+        return clone(predictor)
+    return make_pipeline(*[clone(s) for s in steps], clone(predictor))
+
+
+SKRUB_CASES = [
+    pytest.param(steps, chained, id=f"{name}-{'chained' if chained else 'pipeline'}")
+    for name, steps in [
+        ("no_step", []),
+        ("scaler", [StandardScaler()]),
+        ("poly", [PolynomialFeatures(degree=2, include_bias=False)]),
+    ]
+    for chained in [True, False]
+]
+
+
+@pytest.mark.parametrize("steps, chained", SKRUB_CASES)
+def test_skrub_learner_matches_sklearn_pipeline(steps, chained):
+    """A skrub learner gives the same coefficients as the equivalent scikit-learn
+    pipeline."""
+    X_train, X_test, y_train, y_test = _skrub_regression_data()
+    skrub_report = EstimatorReport(
+        _skrub_data_op(steps, Ridge(), chained=chained).skb.make_learner(),
+        train_data={"X": X_train, "y": y_train},
+        test_data={"X": X_test, "y": y_test},
+    )
+    sklearn_report = EstimatorReport(
+        _sklearn_estimator(steps, Ridge()),
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
+    )
+    skrub_frame = skrub_report.inspection.coefficients().frame()
+    sklearn_frame = sklearn_report.inspection.coefficients().frame()
+    np.testing.assert_allclose(skrub_frame["coefficient"], sklearn_frame["coefficient"])
+    if steps and not chained:
+        # the predictor is fitted on the array output by the pipeline's leading
+        # steps, so feature names are not available
+        n_features = len(sklearn_frame) - 1
+        expected = ["Intercept"] + [f"Feature #{i}" for i in range(n_features)]
+    else:
+        expected = sklearn_frame["feature"].tolist()
+    assert skrub_frame["feature"].tolist() == expected
+
+
+def test_skrub_learner_feature_names_from_predictor():
+    """Feature names are the ones seen by the predictor, not the columns of the
+    ``X`` node."""
+    X_train, X_test, y_train, y_test = _skrub_regression_data()
+    X = skrub.X()
+    data_op = (
+        X.assign(d=X["a"] * 10).drop(columns=["c"]).skb.apply(Ridge(), y=skrub.y())
+    )
+    report = EstimatorReport(
+        data_op.skb.make_learner(),
+        train_data={"X": X_train, "y": y_train},
+        test_data={"X": X_test, "y": y_test},
+    )
+    frame = report.inspection.coefficients().frame(include_intercept=False)
+    assert frame["feature"].tolist() == ["a", "b", "d"]
+
+
+def test_skrub_learner_scale_features_unavailable():
+    """Feature stds are not computed for a skrub learner, to avoid re-running the
+    preprocessing of the training data."""
+    X_train, X_test, y_train, y_test = _skrub_regression_data()
+    report = EstimatorReport(
+        _skrub_data_op([StandardScaler()], Ridge(), chained=True).skb.make_learner(),
+        train_data={"X": X_train, "y": y_train},
+        test_data={"X": X_test, "y": y_test},
+    )
+    display = report.inspection.coefficients()
+    assert display.coefficients["feature_std"].isna().all()
+    with pytest.raises(ValueError, match="scale_features=True"):
+        display.frame(scale_features=True)
