@@ -1,4 +1,5 @@
 import pickle
+import warnings
 
 import joblib
 import numpy as np
@@ -362,6 +363,23 @@ def test_report_with_data_op():
     accuracy = report.metrics.accuracy(aggregate="mean")
     assert isinstance(accuracy, pd.Series)
     assert accuracy.name.endswith("_mean")
+
+
+def test_report_with_extra_keys_in_data():
+    """Extra keys in the data are allowed when building a report from a learner."""
+    X, y = make_classification(n_samples=10, random_state=42)
+    data_op = (skrub.X() + skrub.var("a")).skb.apply(DummyClassifier(), y=skrub.y())
+
+    # Should not raise a warning
+    env = {"X": X, "y": y, "a": 1}
+    with warnings.catch_warnings():
+        warnings.simplefilter("error", UserWarning)
+        CrossValidationReport(data_op.skb.make_learner(), data=env)
+
+    # Should raise a warning about unused keys
+    env = {"X": X, "y": y, "a": 1, "something really extra": 0}
+    with pytest.raises(UserWarning, match=".*something really extra.*"):
+        CrossValidationReport(data_op.skb.make_learner(), data=env)
 
 
 def test_cross_validation_report_split_indices_from_data_op_cv():
