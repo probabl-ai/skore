@@ -44,6 +44,7 @@ def _data():
 
 
 def test_lifecycle(tmp_path):
+    """A row moves from aside through backlog and running to history."""
     project = _project(tmp_path)
     experiment = create_experiment(project, " encoding ", " Does encoding help? ")
     assert experiment.stem == "encoding"
@@ -84,6 +85,7 @@ def test_lifecycle(tmp_path):
 
 
 def test_run_from_backlog_and_abandon(tmp_path):
+    """run() starts a backlog row, and abandon freezes the plan."""
     project = _project(tmp_path)
     experiment = create_experiment(
         project,
@@ -115,6 +117,7 @@ def test_run_from_backlog_and_abandon(tmp_path):
 
 
 def test_forbidden_transitions(tmp_path):
+    """A fresh handle cannot make a transition its status forbids."""
     project = _project(tmp_path)
     aside = create_experiment(project, "stem", "question")
     with pytest.raises(ValueError):
@@ -140,6 +143,7 @@ def test_forbidden_transitions(tmp_path):
 
 
 def test_same_target_decide_and_promote_do_not_write(tmp_path):
+    """Deciding or promoting to the current status does not write."""
     project = _project(tmp_path)
     experiment = create_experiment(project, "stem", "question", plan="first")
     other = project.experiments.get(experiment.id)
@@ -159,6 +163,7 @@ def test_same_target_decide_and_promote_do_not_write(tmp_path):
 
 
 def test_start_on_a_running_row_conflicts(tmp_path):
+    """A second start conflicts and reports the running row."""
     project = _project(tmp_path)
     experiment = create_experiment(project, "stem", "question", status="backlog")
     other = project.experiments.get(experiment.id)
@@ -174,6 +179,7 @@ def test_start_on_a_running_row_conflicts(tmp_path):
 
 
 def test_stale_plan_and_promote_conflict(tmp_path):
+    """A write from a stale handle conflicts with the stored row."""
     project = _project(tmp_path)
     experiment = create_experiment(project, "stem", "question")
     other = project.experiments.get(experiment.id)
@@ -194,6 +200,7 @@ def test_stale_plan_and_promote_conflict(tmp_path):
 
 
 def test_duplicate_stem_and_check_raise(tmp_path):
+    """A repeated stem or source and check conflicts with the stored row."""
     project = _project(tmp_path)
     experiment = create_experiment(
         project,
@@ -229,6 +236,7 @@ def test_duplicate_stem_and_check_raise(tmp_path):
 
 
 def test_blank_fields_and_unknown_status(tmp_path):
+    """Blank required text and a non-triage create status are rejected."""
     project = _project(tmp_path)
     with pytest.raises(ValueError):
         create_experiment(project, "  ", "question")
@@ -248,6 +256,7 @@ def test_blank_fields_and_unknown_status(tmp_path):
 
 
 def test_failed_run_releases_only_a_row_it_started(tmp_path, monkeypatch):
+    """A failed run releases the row only when that run started it."""
     import importlib
 
     evaluate_module = importlib.import_module("skore._dispatch.evaluate")
@@ -293,6 +302,7 @@ def test_failed_run_releases_only_a_row_it_started(tmp_path, monkeypatch):
 
 
 def test_put_creates_no_experiments(tmp_path):
+    """Storing a report does not create an experiment."""
     from skore import evaluate
 
     project = _project(tmp_path)
@@ -303,6 +313,7 @@ def test_put_creates_no_experiments(tmp_path):
 
 
 def test_frame_is_ordered_by_creation_and_reread(tmp_path):
+    """The frame lists experiments by creation time, and get rereads a row."""
     project = _project(tmp_path)
     assert list(project.experiments.frame.columns) == [
         "id",
@@ -326,6 +337,7 @@ def test_frame_is_ordered_by_creation_and_reread(tmp_path):
 
 
 def test_concurrent_start(tmp_path):
+    """Two processes starting one row produce one success and one conflict."""
     project = _project(tmp_path)
     experiment = create_experiment(project, "stem", "question", status="backlog")
     payload = json.dumps(experiment._row)
@@ -350,6 +362,7 @@ def test_concurrent_start(tmp_path):
 
 
 def test_storage_rejects_a_bad_row(tmp_path):
+    """The store rejects a duplicate id, a missing id, and an illegal move."""
     project = _project(tmp_path)
     experiment = create_experiment(project, "stem", "question")
     assert experiment.updated_at
@@ -371,6 +384,7 @@ def test_storage_rejects_a_bad_row(tmp_path):
 
 
 def test_failed_write_removes_the_temporary_file(tmp_path, monkeypatch):
+    """A failed write removes its temporary file and leaves the stored row."""
     project = _project(tmp_path)
     experiment = create_experiment(project, "stem", "question")
     directory = project._Project__project.path / "experiments"
