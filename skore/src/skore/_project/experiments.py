@@ -11,7 +11,6 @@ from skore._project.types import ExperimentRow, ExperimentStatus
 if TYPE_CHECKING:
     from skore import CrossValidationReport, EstimatorReport
     from skore._project.project import Project
-    from skore._project.types import OnSameStatus
 
 EXPERIMENT_COLUMNS = (
     "id",
@@ -210,7 +209,9 @@ class Experiment:
                 f"Cannot decide an experiment from {self.status!r} to {status!r}. "
                 "decide() only moves between 'aside' and 'discarded'."
             )
-        return self._write({**self._row, "status": status}, on_same_status="noop")
+        return self._project._update_experiment(
+            {**self._row, "status": status}, on_same_status="noop"
+        )
 
     def promote(self, plan: str | None = None) -> Experiment:
         """Move an ``aside`` experiment to the backlog.
@@ -239,7 +240,7 @@ class Experiment:
             if text is None:
                 raise ValueError("promote() does not accept a blank plan.")
             row["plan"] = text
-        return self._write(row, on_same_status="noop")
+        return self._project._update_experiment(row, on_same_status="noop")
 
     def update_plan(self, plan: str) -> Experiment:
         """Replace the plan while the experiment is not finished.
@@ -264,7 +265,7 @@ class Experiment:
             raise ValueError(
                 f"Cannot update the plan of an experiment in status {self.status!r}."
             )
-        return self._write({**self._row, "plan": text})
+        return self._project._update_experiment({**self._row, "plan": text})
 
     def start(self) -> Experiment:
         """Move a backlog experiment to ``running``.
@@ -282,7 +283,7 @@ class Experiment:
                 f"Cannot start an experiment from {self.status!r}. "
                 "start() requires the backlog."
             )
-        return self._write(
+        return self._project._update_experiment(
             {**self._row, "status": "running"}, on_same_status="conflict"
         )
 
@@ -299,7 +300,7 @@ class Experiment:
                 f"Cannot release an experiment from {self.status!r}. "
                 "release() requires a running experiment."
             )
-        return self._write({**self._row, "status": "backlog"})
+        return self._project._update_experiment({**self._row, "status": "backlog"})
 
     def abandon(self, reason: str) -> Experiment:
         """Move a running experiment to ``abandoned`` and store ``reason``.
@@ -322,7 +323,9 @@ class Experiment:
                 f"Cannot abandon an experiment from {self.status!r}. "
                 "abandon() requires a running experiment."
             )
-        return self._write({**self._row, "status": "abandoned", "abandon_reason": text})
+        return self._project._update_experiment(
+            {**self._row, "status": "abandoned", "abandon_reason": text}
+        )
 
     def run(
         self,
@@ -375,12 +378,6 @@ class Experiment:
             raise
         current._project._update_experiment({**current._row, "status": "history"})
         return report
-
-    def _write(
-        self, row: dict[str, Any], *, on_same_status: OnSameStatus = "write"
-    ) -> Experiment:
-        """Store ``row`` and return the handle read back from the project."""
-        return self._project._update_experiment(row, on_same_status=on_same_status)
 
 
 def _as_conflict(error: _WriteConflict, project: Project) -> JournalConflictError:
