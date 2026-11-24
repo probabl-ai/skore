@@ -94,24 +94,16 @@ def _transition_allowed(current: ExperimentStatus, new: ExperimentStatus) -> boo
     return (current, new) in _TRANSITIONS
 
 
-class _WriteConflict(Exception):
-    """A backend rejected an experiment write. ``current`` is the stored row."""
-
-    def __init__(self, message: str, current: ExperimentRow) -> None:
-        super().__init__(message)
-        self.current = current
-
-
 class JournalConflictError(Exception):
     """A journal write was based on an outdated record.
 
     Attributes
     ----------
-    current : Experiment or None
-        The record stored now, when one exists.
+    current : dict
+        The stored row, including ``id``, ``status``, ``plan``, and ``version``.
     """
 
-    def __init__(self, message: str, *, current: Experiment | None = None) -> None:
+    def __init__(self, message: str, *, current: ExperimentRow) -> None:
         super().__init__(message)
         self.current = current
 
@@ -378,13 +370,6 @@ class Experiment:
             raise
         current._project._update_experiment({**current._row, "status": "history"})
         return report
-
-
-def _as_conflict(error: _WriteConflict, project: Project) -> JournalConflictError:
-    """Return the public conflict error for a rejected backend write."""
-    return JournalConflictError(
-        str(error), current=Experiment(project, _normalize_row(error.current))
-    )
 
 
 class Experiments:

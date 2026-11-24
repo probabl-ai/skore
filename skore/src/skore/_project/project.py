@@ -9,13 +9,7 @@ from pandas import DataFrame, Index, MultiIndex, RangeIndex
 
 from skore._project import plugin
 from skore._project.dependencies import assert_optional_dependencies_installed
-from skore._project.experiments import (
-    Experiment,
-    Experiments,
-    _as_conflict,
-    _normalize_row,
-    _WriteConflict,
-)
+from skore._project.experiments import Experiment, Experiments, _normalize_row
 from skore._project.summary import Summary
 from skore._project.sync import synchronize
 from skore._project.types import ExperimentRow, OnSameStatus, ProjectMode
@@ -296,10 +290,7 @@ class Project:
 
     def _create_experiment(self, row: ExperimentRow) -> Experiment:
         """Store a new experiment row and return a handle on it."""
-        try:
-            stored = self.__project.create_experiment(_normalize_row(row))
-        except _WriteConflict as error:
-            raise _as_conflict(error, self) from error
+        stored = self.__project.create_experiment(_normalize_row(row))
         return Experiment(self, _normalize_row(stored))
 
     def _update_experiment(
@@ -310,14 +301,11 @@ class Project:
     ) -> Experiment:
         """Replace one experiment row and return a handle on the stored row."""
         normalized = _normalize_row(row)
-        try:
-            stored = self.__project.update_experiment(
-                normalized,
-                normalized["version"],
-                on_same_status=on_same_status,
-            )
-        except _WriteConflict as error:
-            raise _as_conflict(error, self) from error
+        stored = self.__project.update_experiment(
+            normalized,
+            normalized["version"],
+            on_same_status=on_same_status,
+        )
         return Experiment(self, _normalize_row(stored))
 
     def put(self, key: str, report: EstimatorReport | CrossValidationReport):

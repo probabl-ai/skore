@@ -167,9 +167,8 @@ def test_start_on_a_running_row_conflicts(tmp_path):
     with pytest.raises(JournalConflictError) as caught:
         other.start()
 
-    assert caught.value.current is not None
-    assert caught.value.current.status == "running"
-    assert caught.value.current.version == running.version
+    assert caught.value.current["status"] == "running"
+    assert caught.value.current["version"] == running.version
     with pytest.raises(JournalConflictError):
         running.start()
 
@@ -183,8 +182,7 @@ def test_stale_plan_and_promote_conflict(tmp_path):
     with pytest.raises(JournalConflictError) as caught:
         other.update_plan("two")
 
-    assert caught.value.current is not None
-    assert caught.value.current.plan == "one"
+    assert caught.value.current["plan"] == "one"
     assert project.experiments.get(experiment.id).plan == "one"
     assert project.experiments.get(experiment.id).version == planned.version
 
@@ -192,8 +190,7 @@ def test_stale_plan_and_promote_conflict(tmp_path):
     planned.decide("discarded")
     with pytest.raises(JournalConflictError) as caught:
         readable.promote()
-    assert caught.value.current is not None
-    assert caught.value.current.status == "discarded"
+    assert caught.value.current["status"] == "discarded"
 
 
 def test_duplicate_stem_and_check_raise(tmp_path):
@@ -208,8 +205,7 @@ def test_duplicate_stem_and_check_raise(tmp_path):
 
     with pytest.raises(JournalConflictError) as caught:
         create_experiment(project, "stem", "another question")
-    assert caught.value.current is not None
-    assert caught.value.current.id == experiment.id
+    assert caught.value.current["id"] == experiment.id
 
     with pytest.raises(JournalConflictError) as caught:
         create_experiment(
@@ -219,7 +215,7 @@ def test_duplicate_stem_and_check_raise(tmp_path):
             source_id="report-1",
             check_code="LowScore",
         )
-    assert caught.value.current.id == experiment.id
+    assert caught.value.current["id"] == experiment.id
 
     create_experiment(
         project,

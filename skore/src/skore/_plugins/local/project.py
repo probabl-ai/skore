@@ -16,7 +16,7 @@ import pandas as pd
 from filelock import FileLock
 
 from skore import CrossValidationReport, EstimatorReport
-from skore._project.experiments import _transition_allowed, _WriteConflict
+from skore._project.experiments import JournalConflictError, _transition_allowed
 from skore._project.git import git_repo_root
 from skore._project.types import ExperimentRow, OnSameStatus
 from skore._utils.cache_key import deep_key_sanitize
@@ -530,22 +530,23 @@ class Project:
         with FileLock(self.path / ".experiments.lock"):
             for existing in self.experiments():
                 if existing["id"] == row["id"]:
-                    raise _WriteConflict(
-                        f"Experiment {row['id']!r} already exists.", existing
+                    raise JournalConflictError(
+                        f"Experiment {row['id']!r} already exists.",
+                        current=existing,
                     )
                 if existing["stem"] == row["stem"]:
-                    raise _WriteConflict(
+                    raise JournalConflictError(
                         f"An experiment with stem {row['stem']!r} already exists.",
-                        existing,
+                        current=existing,
                     )
                 if row["check_code"] is not None and (
                     existing["check_code"] == row["check_code"]
                     and existing["source_id"] == row["source_id"]
                 ):
-                    raise _WriteConflict(
+                    raise JournalConflictError(
                         "An experiment already exists for "
                         f"source {row['source_id']!r} and check {row['check_code']!r}.",
-                        existing,
+                        current=existing,
                     )
             written = cast(ExperimentRow, {**row, "version": 1})
             self._write_experiment_file(written)
@@ -585,14 +586,14 @@ class Project:
                 if on_same_status == "noop":
                     return stored
                 if on_same_status == "conflict":
-                    raise _WriteConflict(
+                    raise JournalConflictError(
                         f"Experiment {row['stem']!r} is already {stored['status']}.",
-                        stored,
+                        current=stored,
                     )
             if stored["version"] != version:
-                raise _WriteConflict(
+                raise JournalConflictError(
                     f"Experiment {row['stem']!r} changed since it was read.",
-                    stored,
+                    current=stored,
                 )
             if not _transition_allowed(stored["status"], row["status"]):
                 raise ValueError(
