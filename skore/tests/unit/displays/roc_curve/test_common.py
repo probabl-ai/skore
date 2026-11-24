@@ -69,6 +69,8 @@ class TestRocCurveDisplay:
         if isinstance(report, tuple):
             report = report[0]
         display = report.metrics.roc()
+        # Cross-validation stores the threshold average alongside the splits.
+        extra = ["aggregate"] if "cross_validation" in fixture_prefix else []
 
         assert list(display.roc_curve.columns) == [
             "estimator",
@@ -78,6 +80,7 @@ class TestRocCurveDisplay:
             "threshold",
             "fpr",
             "tpr",
+            *extra,
         ]
         assert list(display.roc_auc.columns) == [
             "estimator",
@@ -85,6 +88,7 @@ class TestRocCurveDisplay:
             "split",
             "label",
             "roc_auc",
+            *extra,
         ]
 
     @pytest.mark.parametrize("task", ["binary", "multiclass"])
