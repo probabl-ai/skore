@@ -1,3 +1,4 @@
+import pandas as pd
 import pytest
 from sklearn.decomposition import PCA
 from sklearn.linear_model import LinearRegression
@@ -6,6 +7,7 @@ from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import SplineTransformer, StandardScaler
 
 from skore import EstimatorReport, PermutationImportanceDisplay
+from skore._utils.skrub import SKRUB_AT_LEAST_0_12
 from skore._utils.testing import check_cache_changed
 
 
@@ -219,3 +221,41 @@ def test_seed_wrong_type(regression_train_test_split):
         ValueError, match="seed must be an integer or None; got <class 'str'>"
     ):
         report.inspection.permutation_importance(seed="42")
+
+
+def _skrub_learner_report():
+    import skrub
+    from sklearn.datasets import make_regression
+
+    X, y = make_regression(n_samples=50, n_features=3, random_state=0)
+    X = pd.DataFrame(X, columns=["a", "b", "c"])
+    pred = (
+        skrub.X(X)
+        .skb.apply(StandardScaler())
+        .skb.set_name("scaled")
+        .skb.apply(LinearRegression(), y=skrub.y(y))
+    )
+    split = pred.skb.train_test_split(random_state=0)
+    learner = pred.skb.make_learner().fit(split["train"])
+    return EstimatorReport(learner, test_data=split["test"])
+
+
+@pytest.mark.skipif(not SKRUB_AT_LEAST_0_12, reason="requires skrub >= 0.12")
+@pytest.mark.parametrize("at_step", [None, "scaled"])
+def test_skrub_learner(at_step):
+    report = _skrub_learner_report()
+    display = report.inspection.permutation_importance(
+        at_step=at_step, n_repeats=2, seed=0
+    )
+    assert display.frame()["feature"].tolist() == ["a", "b", "c"]
+
+
+def test_skrub_learner_old_skrub(monkeypatch):
+    if not SKRUB_AT_LEAST_0_12:
+        pytest.skip("report creation for skrub learners needs skrub >= 0.12")
+    report = _skrub_learner_report()
+    monkeypatch.setattr(
+        "skore._displays.inspection.permutation_importance.SKRUB_AT_LEAST_0_12", False
+    )
+    with pytest.raises(ImportError, match="requires skrub >= 0.12.0"):
+        report.inspection.permutation_importance(seed=0)
