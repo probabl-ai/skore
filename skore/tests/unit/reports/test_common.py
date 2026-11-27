@@ -127,3 +127,33 @@ def test_colliding_target_column_uses_stable_suffix(report_cls, container):
         )
         assert columns == expected
         assert "target_right" not in columns
+
+
+@pytest.fixture(
+    params=[
+        "estimator_reports_regression",
+        "cross_validation_reports_regression",
+    ]
+)
+def report_with_data(request):
+    report = request.getfixturevalue(request.param)
+    if isinstance(report, tuple):
+        report = report[0]
+    return report
+
+
+@pytest.mark.parametrize("estimator_type", ["linear"], indirect=True)
+def test_feature_labels_are_shared(report_with_data, estimator_type):
+    """Unnamed features get one label in the coefficients and in the data."""
+    labels = [
+        name
+        for name in pd.unique(
+            report_with_data.inspection.coefficients().frame()["feature"]
+        )
+        if name != "Intercept"
+    ]
+    assert labels == [f"Feature #{i}" for i in range(len(labels))]
+
+    display = report_with_data.data.summarize(with_plots=False)
+    columns = list(display.summary["dataframe"].columns)
+    assert columns[: len(labels)] == labels

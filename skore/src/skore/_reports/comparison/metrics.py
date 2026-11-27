@@ -80,10 +80,9 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
         ...     [estimator_1, estimator_2], X, y, splitter=0.2, pos_label=1
         ... )
         >>> comparison_report.metrics.summarize(metric=["precision", "recall"]).frame()
-        estimator  LogisticRegression_1  LogisticRegression_2
-        metric
-        precision              0.98...              0.98...
-        recall                 0.92...              0.92...
+        estimator    LogisticRegression_1  LogisticRegression_2
+        precision_1              0.98...              0.98...
+        recall_1                 0.92...              0.92...
         """
         parallel = Parallel(
             **_validate_joblib_parallel_params(

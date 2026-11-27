@@ -2,6 +2,17 @@
 
 from base64 import b64decode, b64encode
 
+from sklearn.exceptions import NotFittedError
+from sklearn.utils.validation import check_is_fitted
+
+
+def is_fitted(estimator):
+    try:
+        check_is_fitted(estimator)
+        return True
+    except NotFittedError:
+        return False
+
 
 def bytes_to_b64_str(literal: bytes) -> str:
     """Encode the bytes-like object `literal` in a Base64 str."""

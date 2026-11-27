@@ -8,6 +8,7 @@ from skore import CalibrationDisplay
     "fixture_prefix",
     [
         "estimator_reports",
+        "cross_validation_reports",
     ],
 )
 @pytest.mark.parametrize("task", ["binary_classification", "multiclass_classification"])
@@ -32,9 +33,13 @@ class TestCalibrationDisplay:
             report = report[0]
         display = report.inspection.calibration_curve()
         frame = display.frame(label=display.labels[0])
-        n_samples = len(report.y_test)
-        expected_n_bins = int(np.ceil(n_samples ** (1 / 3)))
-        assert len(frame) == expected_n_bins
+        if "cross_validation" in fixture_prefix:
+            for split, split_report in enumerate(report.reports_):
+                expected_n_bins = int(np.ceil(len(split_report.y_test) ** (1 / 3)))
+                assert len(frame[frame["split"] == split]) == expected_n_bins
+        else:
+            expected_n_bins = int(np.ceil(len(report.y_test) ** (1 / 3)))
+            assert len(frame) == expected_n_bins
 
     def test_frame_structure(self, fixture_prefix, task, request):
         report = request.getfixturevalue(f"{fixture_prefix}_{task}")
@@ -48,6 +53,8 @@ class TestCalibrationDisplay:
             "data_source",
             "label",
         }
+        if "cross_validation" in fixture_prefix:
+            expected.add("split")
         assert set(frame.columns) == expected
 
     def test_internal_data_structure(self, fixture_prefix, task, request):
@@ -56,12 +63,14 @@ class TestCalibrationDisplay:
             report = report[0]
         display = report.inspection.calibration_curve()
         expected = {
+            "estimator",
+            "data_source",
+            "split",
+            "label",
             "predicted_probability",
             "fraction_of_positives",
-            "data_source",
-            "label",
         }
-        assert set(display.frame().columns) == expected
+        assert set(display.calibration_report.columns) == expected
 
     def test_plot_structure(self, fixture_prefix, task, request):
         report = request.getfixturevalue(f"{fixture_prefix}_{task}")

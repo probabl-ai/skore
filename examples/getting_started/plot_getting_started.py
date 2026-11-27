@@ -294,7 +294,7 @@ _ = final_report.metrics.confusion_matrix().plot()
 # %%
 final_frame = final_metrics.frame().to_frame()
 cv_frame = logreg_cv_report.metrics.summarize().frame()
-final_frame.merge(cv_frame, on="metric", how="outer")
+final_frame.merge(cv_frame, left_index=True, right_index=True, how="outer")
 
 # %%
 # As expected, our final model gets better performance, likely thanks to the
