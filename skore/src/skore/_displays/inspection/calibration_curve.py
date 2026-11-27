@@ -284,10 +284,20 @@ class CalibrationDisplay(DisplayMixin):
         ax = facet.ax
 
         ref_line_label = "Perfectly calibrated"
-        ax.plot([0, 1], [0, 1], "k:", label=ref_line_label)
+        (reference_line,) = ax.plot([0, 1], [0, 1], "k:", label=ref_line_label)
 
-        # We always have to show the legend for at least the reference line
-        ax.legend(loc="lower right")
+        if facet._legend is not None:
+            legend_labels = [text.get_text() for text in facet._legend.get_texts()]
+            legend_labels.append(ref_line_label)
+            legend_handles = [*facet._legend.legend_handles, reference_line]
+            facet._legend.remove()
+            height = lineplot_kwargs.get("height", 5)
+            aspect = lineplot_kwargs.get("aspect", 1)
+            figure.set_size_inches(height * aspect, height)
+            ax.legend(legend_handles, legend_labels, loc="lower right")
+        else:
+            # We always have to show the legend for at least the reference line
+            ax.legend(loc="lower right")
 
         ax.set(**ax_set_kwargs)
 

@@ -122,6 +122,36 @@ class TestCalibrationDisplay:
         assert tuple(ax.get_ylim()) == (0.1, 0.9)
 
 
+def test_plot_legend_lists_each_class_once(estimator_reports_binary_classification):
+    """One legend lists the plotted curves and the reference line."""
+    report = estimator_reports_binary_classification[0]
+    display = report.inspection.calibration_curve()
+
+    figure = display.plot(label=None)
+    assert figure.legends == []
+    legends = [ax.get_legend() for ax in figure.axes if ax.get_legend() is not None]
+    assert len(legends) == 1
+    assert [text.get_text() for text in legends[0].get_texts()] == [
+        *(str(label) for label in display.labels),
+        "Perfectly calibrated",
+    ]
+
+
+def test_plot_legend_for_one_class(estimator_reports_binary_classification):
+    """A single class is labeled with the estimator, plus the reference line."""
+    report = estimator_reports_binary_classification[0]
+    display = report.inspection.calibration_curve()
+
+    figure = display.plot(label=display.labels[0])
+    assert figure.legends == []
+    legends = [ax.get_legend() for ax in figure.axes if ax.get_legend() is not None]
+    assert len(legends) == 1
+    assert [text.get_text() for text in legends[0].get_texts()] == [
+        display.calibration_report["estimator"].iloc[0],
+        "Perfectly calibrated",
+    ]
+
+
 def test_calibration_curve_missing_class_in_test_set():
     """Test that calibration_curve aligns classes when a class is absent from y_test."""
     from sklearn.linear_model import LogisticRegression
