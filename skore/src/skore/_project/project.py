@@ -9,9 +9,10 @@ from pandas import DataFrame, Index, MultiIndex, RangeIndex
 
 from skore._project import plugin
 from skore._project.dependencies import assert_optional_dependencies_installed
+from skore._project.experiments import Experiment, Experiments, _normalize_row
 from skore._project.summary import Summary
 from skore._project.sync import synchronize
-from skore._project.types import ProjectMode
+from skore._project.types import ExperimentRow, OnSameStatus, ProjectMode
 
 if TYPE_CHECKING:
     from skore import CrossValidationReport, EstimatorReport
@@ -32,6 +33,7 @@ class Project:
     :func:`~skore.Project.sync`, respectively to insert a key-report pair into the
     project, obtain the metadata/metrics of the inserted reports, get a specific report
     by its id, and synchronize reports between projects.
+    :attr:`~skore.Project.experiments` lists the experiments stored in the project.
     :func:`~skore.Project.delete` removes the project.
 
     Three mutually exclusive modes are available and can be configured using the
@@ -269,6 +271,42 @@ class Project:
         if self.__mode == "mlflow":
             return self.__project.tracking_uri
         return None
+
+    @property
+    def experiments(self) -> Experiments:
+        """The experiments stored in this project.
+
+        Returns
+        -------
+        experiments : Experiments
+            The collection of experiment rows. Do not construct this object
+            directly.
+        """
+        return Experiments(self)
+
+    def _experiment_rows(self) -> list[ExperimentRow]:
+        """Return every stored experiment row in normalized form."""
+        return [_normalize_row(row) for row in self.__project.experiments()]
+
+    def _create_experiment(self, row: ExperimentRow) -> Experiment:
+        """Store a new experiment row and return a handle on it."""
+        stored = self.__project.create_experiment(_normalize_row(row))
+        return Experiment(self, _normalize_row(stored))
+
+    def _update_experiment(
+        self,
+        row: dict[str, Any],
+        *,
+        on_same_status: OnSameStatus = "write",
+    ) -> Experiment:
+        """Replace one experiment row and return a handle on the stored row."""
+        normalized = _normalize_row(row)
+        stored = self.__project.update_experiment(
+            normalized,
+            normalized["version"],
+            on_same_status=on_same_status,
+        )
+        return Experiment(self, _normalize_row(stored))
 
     def put(self, key: str, report: EstimatorReport | CrossValidationReport):
         """

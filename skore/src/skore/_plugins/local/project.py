@@ -5,15 +5,20 @@ import pickle
 import re
 import shutil
 import warnings
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
+from tempfile import mkstemp
+from typing import Any, cast
 
 import joblib
 import numpy as np
 import pandas as pd
+from filelock import FileLock
 
 from skore import CrossValidationReport, EstimatorReport
+from skore._project.experiments import JournalConflictError, _transition_allowed
 from skore._project.git import git_repo_root
+from skore._project.types import ExperimentRow, OnSameStatus
 from skore._utils.cache_key import deep_key_sanitize
 from skore._utils.skrub import SKRUB_Y_KEY
 
@@ -499,6 +504,135 @@ class Project:
             except Exception as e:
                 warnings.warn(f"Failed to load report at {p}: {e!r}", stacklevel=2)
         return result
+
+    def experiments(self) -> list[ExperimentRow]:
+        """Return every experiment row stored in this project."""
+        directory = self.path / "experiments"
+        if not directory.is_dir():
+            return []
+        return [
+            cast(ExperimentRow, json.loads(path.read_text(encoding="UTF-8")))
+            for path in directory.glob("*.json")
+        ]
+
+    def create_experiment(self, row: ExperimentRow) -> ExperimentRow:
+        """Store one new experiment row.
+
+        Parameters
+        ----------
+        row : ExperimentRow
+            The row to store. Its version is stored as 1.
+
+        Returns
+        -------
+        row : ExperimentRow
+            The stored row.
+        """
+        with FileLock(self.path / ".experiments.lock"):
+            for existing in self.experiments():
+                if existing["id"] == row["id"]:
+                    raise JournalConflictError(
+                        f"Experiment {row['id']!r} already exists.",
+                        current=existing,
+                    )
+                if existing["stem"] == row["stem"]:
+                    raise JournalConflictError(
+                        f"An experiment with stem {row['stem']!r} already exists.",
+                        current=existing,
+                    )
+                if row["check_code"] is not None and (
+                    existing["check_code"] == row["check_code"]
+                    and existing["source_id"] == row["source_id"]
+                ):
+                    raise JournalConflictError(
+                        "An experiment already exists for "
+                        f"source {row['source_id']!r} and check {row['check_code']!r}.",
+                        current=existing,
+                    )
+            written = cast(ExperimentRow, {**row, "version": 1})
+            self._write_experiment_file(written)
+            return written
+
+    def update_experiment(
+        self,
+        row: ExperimentRow,
+        version: int,
+        *,
+        on_same_status: OnSameStatus = "write",
+    ) -> ExperimentRow:
+        """Replace one experiment row when ``version`` is still current.
+
+        Parameters
+        ----------
+        row : ExperimentRow
+            The row to store. ``created_at`` is kept from the stored row, and
+            ``version`` is incremented.
+        version : int
+            The version this write is based on.
+        on_same_status : {"noop", "conflict", "write"}, default="write"
+            What to do when the stored status is already ``row["status"]``.
+            ``"noop"`` returns the stored row, ``"conflict"`` rejects the write,
+            and ``"write"`` stores ``row`` after the version check.
+
+        Returns
+        -------
+        row : ExperimentRow
+            The stored row.
+        """
+        with FileLock(self.path / ".experiments.lock"):
+            stored = self._read_experiment(row["id"])
+            if stored is None:
+                raise KeyError(row["id"])
+            if stored["status"] == row["status"]:
+                if on_same_status == "noop":
+                    return stored
+                if on_same_status == "conflict":
+                    raise JournalConflictError(
+                        f"Experiment {row['stem']!r} is already {stored['status']}.",
+                        current=stored,
+                    )
+            if stored["version"] != version:
+                raise JournalConflictError(
+                    f"Experiment {row['stem']!r} changed since it was read.",
+                    current=stored,
+                )
+            if not _transition_allowed(stored["status"], row["status"]):
+                raise ValueError(
+                    f"Cannot move experiment {row['stem']!r} from "
+                    f"{stored['status']!r} to {row['status']!r}."
+                )
+            written = cast(
+                ExperimentRow,
+                {
+                    **row,
+                    "version": stored["version"] + 1,
+                    "created_at": stored["created_at"],
+                    "updated_at": datetime.now(UTC).isoformat(),
+                },
+            )
+            self._write_experiment_file(written)
+            return written
+
+    def _read_experiment(self, experiment_id: str) -> ExperimentRow | None:
+        """Return the row stored for this id, or None when the file is absent."""
+        path = self.path / "experiments" / f"{experiment_id}.json"
+        if not path.is_file():
+            return None
+        return cast(ExperimentRow, json.loads(path.read_text(encoding="UTF-8")))
+
+    def _write_experiment_file(self, row: ExperimentRow) -> None:
+        """Write this row to its JSON file without exposing a partial write."""
+        directory = self.path / "experiments"
+        directory.mkdir(parents=True, exist_ok=True)
+        descriptor, temporary = mkstemp(dir=directory, prefix=".", suffix=".tmp")
+        try:
+            with os.fdopen(descriptor, "w", encoding="UTF-8") as file:
+                file.write(json.dumps(row, indent=2))
+            os.replace(temporary, directory / f"{row['id']}.json")
+        except Exception:
+            if os.path.exists(temporary):
+                os.unlink(temporary)
+            raise
 
     @staticmethod
     def delete(*, name: str, workspace: str | Path) -> None:

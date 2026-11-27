@@ -24,6 +24,14 @@ Project Management
      - Main class for managing a skore project and its reports
    * - :class:`Summary`
      - Summary of the reports stored in a project
+   * - :class:`Experiment`
+     - One experiment and the methods that move it
+   * - :class:`Experiments`
+     - The experiments stored in a project
+   * - :func:`agent.create_experiment`
+     - Append one experiment to a project
+   * - :class:`JournalConflictError`
+     - Raised when a journal write is based on an outdated record
 
 
 ML Assistance

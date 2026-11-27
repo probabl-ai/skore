@@ -81,6 +81,44 @@ To retrieve a specific report for which you have its ``id`` (as returned by
 :meth:`Project.summarize`), use the :meth:`Project.get` method.
 :meth:`Project.delete` removes the project itself.
 
+Tracking experiments
+--------------------
+
+A local project stores one experiment row per idea, backlog item, or finished
+run. :func:`agent.create_experiment` appends a row. The handle it returns moves
+the row through its lifecycle. A report stored by :meth:`Experiment.run` carries
+the experiment's id.
+
+.. code-block:: python
+
+   import skore
+
+   experiment = skore.agent.create_experiment(
+       project_local,
+       stem="target-encoding",
+       question="Does target encoding beat one-hot encoding?",
+   )
+   experiment = experiment.promote()
+   experiment = experiment.update_plan("Compare the two encodings on the same split.")
+   report = experiment.run(estimator, X, y)
+
+Statuses are ``aside``, ``discarded``, ``backlog``, ``running``, ``history``, and
+``abandoned``. ``decide`` moves between ``aside`` and ``discarded``. ``promote``
+moves an idea to the backlog. ``start`` marks a backlog row as running, and
+``release`` puts it back. ``abandon`` records why a running experiment was
+dropped. Calling ``decide`` or ``promote`` when the row already has the requested
+status leaves it unchanged. A second ``start`` on a running row raises
+:class:`JournalConflictError`.
+
+Every write sends the version the handle was read from. When the stored row has
+moved on, the write raises :class:`JournalConflictError` and ``current`` is the
+row as stored now. Stems are unique within a project. So is the pair
+``(source_id, check_code)`` once a check code is set.
+
+The local backend stores each row as a JSON file and serializes writes with a
+lock. Calling the experiment API on a hub or MLflow project raises
+``NotImplementedError``.
+
 .. _synchronizing-projects:
 
 Synchronizing projects

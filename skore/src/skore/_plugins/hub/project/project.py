@@ -23,6 +23,8 @@ from skore._plugins.hub.exception import ForbiddenException, NotFoundException
 from skore._plugins.hub.json import dumps
 
 if TYPE_CHECKING:
+    from skore._project.types import ExperimentRow, OnSameStatus
+
     P = ParamSpec("P")
     R = TypeVar("R")
 
@@ -474,6 +476,24 @@ class Project:
 
     def __repr__(self) -> str:  # noqa: D105
         return f"Project(name='{self.name}', mode='hub', workspace='{self.workspace}')"
+
+    def experiments(self) -> list[ExperimentRow]:
+        """List the experiments stored in this project."""
+        raise NotImplementedError("The hub backend does not store experiments.")
+
+    def create_experiment(self, row: ExperimentRow) -> ExperimentRow:
+        """Store a new experiment row."""
+        raise NotImplementedError("The hub backend does not store experiments.")
+
+    def update_experiment(
+        self,
+        row: ExperimentRow,
+        version: int,
+        *,
+        on_same_status: OnSameStatus = "write",
+    ) -> ExperimentRow:
+        """Replace an experiment row when ``version`` is current."""
+        raise NotImplementedError("The hub backend does not store experiments.")
 
     @staticmethod
     @ensure_host_is_valid

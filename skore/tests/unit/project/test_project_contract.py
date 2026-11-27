@@ -13,6 +13,7 @@ from sklearn.linear_model import LinearRegression, Ridge
 from skore import EstimatorReport, Project, evaluate
 from skore._plugins.hub.client.client import HUBClient
 from skore._project.summary import Summary
+from skore.agent import create_experiment
 
 
 @pytest.fixture
@@ -42,6 +43,12 @@ class TestLocalProjectContract:
 
         project.put("first", regression_report)
         project.put("second", second_regression_report)
+
+        experiment = create_experiment(
+            project, "baseline", "What does the mean predict?"
+        )
+        assert project.experiments.get(experiment.id).status == "aside"
+        assert project.experiments.frame["stem"].tolist() == ["baseline"]
 
         summary = project.summarize()
         assert isinstance(summary, Summary)
@@ -95,6 +102,9 @@ class TestMlflowProjectContract:
         assert project.name == "contract-mlflow"
         assert project.workspace is None
         assert project.tracking_uri == isolated_mlflow_tracking
+
+        with pytest.raises(NotImplementedError):
+            assert project.experiments.frame is not None
 
         project.put("first", regression_report)
         project.put("second", second_regression_report)
@@ -175,6 +185,9 @@ class TestHubProjectContract:
         assert project.name == "contract-hub"
         assert project.workspace == "workspace"
         assert project.tracking_uri is None
+
+        with pytest.raises(NotImplementedError):
+            assert project.experiments.frame is not None
 
         project.put("first", regression_report)
 

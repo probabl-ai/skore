@@ -24,6 +24,7 @@ These functions and classes are meant for managing a `Project` and its reports.
    Project.get
    Project.summarize
    Project.sync
+   Project.experiments
    Project.delete
 
 Skore project's summary
@@ -53,3 +54,42 @@ The returned object is not intended to be instantiated directly. Always use
    Summary.frame
    Summary.query
    Summary.compare
+
+Experiments
+^^^^^^^^^^^
+
+An experiment is one unit of work on a project: an idea, a backlog item, or a
+finished run. :func:`agent.create_experiment` appends a unit and returns a
+handle. Writes on that handle send the version it was read from. A write based
+on a stale version raises :class:`JournalConflictError`, whose ``current``
+attribute is the unit as stored now.
+
+.. autosummary::
+   :toctree: api/
+   :template: class_with_accessors.rst
+
+   Experiment
+   Experiments
+
+.. rubric:: Methods
+
+.. autosummary::
+   :toctree: api/
+   :template: class_methods_no_index.rst
+
+   Experiment.decide
+   Experiment.promote
+   Experiment.update_plan
+   Experiment.start
+   Experiment.release
+   Experiment.abandon
+   Experiment.run
+   Experiments.frame
+   Experiments.get
+
+.. autosummary::
+   :toctree: api/
+   :template: base.rst
+
+   agent.create_experiment
+   JournalConflictError
