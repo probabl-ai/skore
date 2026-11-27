@@ -246,10 +246,16 @@ class CalibrationDisplay(DisplayMixin):
             x="predicted_probability",
             y="fraction_of_positives",
             **lineplot_kwargs,
+            legend=False,
         )
 
         figure = facet.figure
         ax = facet.ax
+        if "label" in frame.columns:
+            for line, class_label in zip(
+                ax.get_lines(), frame["label"].unique(), strict=True
+            ):
+                line.set_label(str(class_label))
         ref_line_label = "Perfectly calibrated"
         ax.plot([0, 1], [0, 1], "k:", label=ref_line_label)
 
