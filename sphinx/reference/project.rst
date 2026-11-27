@@ -58,11 +58,11 @@ The returned object is not intended to be instantiated directly. Always use
 Experiments
 ^^^^^^^^^^^
 
-An experiment is one row of work on a project: an idea, a backlog item, or a
-finished run. :func:`agent.create_experiment` appends a row and returns a
+An experiment is one unit of work on a project: an idea, a backlog item, or a
+finished run. :func:`agent.create_experiment` appends a unit and returns a
 handle. Writes on that handle send the version it was read from. A write based
 on a stale version raises :class:`JournalConflictError`, whose ``current``
-attribute is the row as stored now.
+attribute is the unit as stored now.
 
 .. autosummary::
    :toctree: api/
