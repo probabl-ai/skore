@@ -121,6 +121,7 @@ first_report.checks.summarize()
 _ = first_report.inspection.permutation_importance().plot()
 
 
+# %%
 # SKD011 - Inspect after dropping golden feature
 # ==============================================
 #
