@@ -46,7 +46,7 @@ class CheckMDIHighCardinalityBias(Check):
 
         X = get_preprocessed_X(report, data_source="train")
 
-        X = nw.from_native(X)
+        X = nw.from_native(X, eager_only=True)
         n_samples = X.shape[0]
         high_cardinality_features = [
             column
