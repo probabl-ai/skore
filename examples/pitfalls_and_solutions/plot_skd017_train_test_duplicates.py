@@ -25,35 +25,29 @@ Mitigations from the :ref:`automated_checks` user guide, shown below:
 # Build a dataset with duplicate rows
 # ===================================
 #
-# We use the German credit dataset: 1000 loan applicants described by financial
-# and personal attributes, where the target marks whether the applicant is a
-# good credit risk (``1``) or a bad one (``0``). It has no duplicate rows on its
-# own, so to demonstrate the pitfall we duplicate a random half of the rows,
-# mimicking a dataset where the same records were recorded twice.
+# We use the breast cancer dataset shipped with scikit-learn: 569 tumors
+# described by numerical measurements, where the target marks whether the tumor
+# is malignant or benign. It has no duplicate rows on its own, so to demonstrate
+# the pitfall we duplicate a random subset of the rows (sampled without
+# replacement), mimicking a dataset where some records were recorded twice.
 
 import numpy as np
 import pandas as pd
-from sklearn.datasets import fetch_openml
+from sklearn.datasets import load_breast_cancer
 
-dataset = fetch_openml("credit-g", version=1, as_frame=True)
-df = dataset.frame.copy()
-df["target"] = (df["class"] == "good").astype(int)
-df = df.drop(columns=["class"])
-
-# Remember each original row so we can group duplicates together later on.
-df["row_id"] = df.index
+dataset = load_breast_cancer(as_frame=True)
+df = dataset.data.assign(target=dataset.target)
 
 rng = np.random.default_rng(0)
-duplicated_rows = rng.choice(df.index, size=len(df), replace=True)
+duplicated_rows = rng.choice(df.index, size=len(df) // 2, replace=False)
 df = (
     pd.concat([df, df.loc[duplicated_rows]], ignore_index=True)
     .sample(frac=1.0, random_state=0)
     .reset_index(drop=True)
 )
 
-groups = df["row_id"]
 y = df["target"]
-X = df.drop(columns=["target", "row_id"])
+X = df.drop(columns="target")
 
 duplicate_share = X.duplicated(keep=False).mean()
 print(f"{duplicate_share:.1%} of the rows are duplicates of another row.")
@@ -95,8 +89,8 @@ report
 report.checks.summarize()
 
 # %%
-# The test scores look suspiciously high: the model is being graded on rows it
-# already memorized during training.
+# Because of the duplication, these test scores must be too optimistic. Below,
+# we will see what a more honest evaluation looks like.
 
 report.metrics.summarize(data_source="test").frame()
 
@@ -138,26 +132,41 @@ report_unique.metrics.summarize(data_source="test").frame()
 # Fix 2 - keep duplicates but group them
 # ======================================
 #
-# If the duplicates are legitimate and you want to keep every observation, use a
-# grouped splitter such as :class:`~sklearn.model_selection.GroupShuffleSplit`.
-# Passing the original row identity as the group keeps all copies of a row on the
-# same side of the split, so none can leak. We pass the resulting single split to
-# :func:`~skore.evaluate` directly.
+# If the duplicates are legitimate and you want to keep every observation, the
+# splitter must keep all copies of a row on the same side of the split. Real
+# datasets do not come with a group identifier, so we write a custom splitter
+# that builds the groups itself by hashing each row: identical rows get the same
+# hash, hence the same group. It then delegates to
+# :class:`~sklearn.model_selection.GroupShuffleSplit`.
 
 from sklearn.model_selection import GroupShuffleSplit
 
-grouped_split = GroupShuffleSplit(n_splits=1, test_size=0.25, random_state=0)
+
+class DuplicateGroupShuffleSplit(GroupShuffleSplit):
+    """Shuffle split that keeps identical rows on the same side of the split."""
+
+    def split(self, X, y=None, groups=None):
+        groups = pd.util.hash_pandas_object(X, index=False)
+        return super().split(X, y, groups)
+
+
+grouped_split = DuplicateGroupShuffleSplit(n_splits=1, test_size=0.25, random_state=0)
 report_grouped = evaluate(
     tabular_pipeline("classifier"),
     X=X,
     y=y,
-    splitter=grouped_split.split(X, y, groups),
+    splitter=grouped_split.split(X, y),
 )
 report_grouped
 
 # %%
-# SKD017 still flags the duplicates (they really are in the dataset), but the
-# test scores are back to the honest level because no copy crosses the split.
+# SKD017 still flags the duplicates, since they really are in the dataset.
+
+report_grouped.checks.summarize()
+
+# %%
+# However, the test scores are back to an honest level because no copy crosses
+# the split.
 
 report_grouped.metrics.summarize(data_source="test").frame()
 
@@ -170,24 +179,18 @@ report_grouped.metrics.summarize(data_source="test").frame()
 # distinct row once, with a weight that preserves its importance, and no row can
 # leak across the split.
 
-feature_columns = list(X.columns)
-counts = (
-    X.assign(target=y.to_numpy())
-    .groupby(feature_columns + ["target"], dropna=False)
-    .size()
-    .reset_index(name="weight")
+weighted = (
+    X.assign(target=y.to_numpy()).value_counts(dropna=False).reset_index(name="weight")
 )
-X_weighted = counts[feature_columns]
-y_weighted = counts["target"]
-sample_weight = counts["weight"].to_numpy()
+X_weighted = weighted[X.columns]
+y_weighted = weighted["target"]
+sample_weight = weighted["weight"].to_numpy()
 
 print(f"Distinct rows: {len(X_weighted)}  (total weight: {sample_weight.sum()})")
 
 # %%
-# We split the distinct rows, fit with the per-row weights, and build an
-# :class:`~skore.EstimatorReport` from the fitted model.
-
-from skore import EstimatorReport
+# We split the distinct rows, fit with the per-row weights, and evaluate the
+# already fitted model on the held-out rows.
 
 X_train, X_test, y_train, y_test, w_train, w_test = train_test_split(
     X_weighted,
@@ -201,7 +204,7 @@ X_train, X_test, y_train, y_test, w_train, w_test = train_test_split(
 model = tabular_pipeline("classifier")
 model.fit(X_train, y_train, histgradientboostingclassifier__sample_weight=w_train)
 
-report_weighted = EstimatorReport(model, X_test=X_test, y_test=y_test)
+report_weighted = evaluate(model, X_test, y_test, splitter="prefit")
 report_weighted.metrics.summarize(data_source="test").frame()
 
 # %%

@@ -11,6 +11,7 @@ from skore._checks.utils import (
     get_report_X,
     get_report_y,
 )
+from skore._utils.dataframe import _disambiguate_target_columns
 
 if TYPE_CHECKING:
     from skore._reports.base import _BaseReport
@@ -19,7 +20,6 @@ if TYPE_CHECKING:
 class CheckTrainTestDuplicates(Check):
     """Check for duplicate rows in the dataset before splitting (SKD017).
 
-    Duplicate rows in the dataset leak across a train/test split: identical rows
     Duplicate rows in the dataset can leak across a train/test split: if identical rows
     end up on both sides, the model is evaluated on rows it was trained on and
     the reported score is overly optimistic. The check inspects the full, unsplit
@@ -41,9 +41,7 @@ class CheckTrainTestDuplicates(Check):
         y = nw.from_native(get_report_y(report, data_source="both"), allow_series=True)
         if isinstance(y, nw.Series):
             y = y.to_frame()
-        y = y.rename(
-            {name: f"__skd017_target_{i}__" for i, name in enumerate(y.columns)}
-        )
+        y = _disambiguate_target_columns(X, y)
         data = nw.concat([X, y], how="horizontal")
 
         try:
@@ -53,7 +51,8 @@ class CheckTrainTestDuplicates(Check):
 
         if n_duplicated > 0:
             return (
-                f"{n_duplicated} row(s) ({100 * n_duplicated / len(data):.1f}% of the dataset) are "
+                f"{n_duplicated} row(s) "
+                f"({100 * n_duplicated / len(data):.1f}% of the dataset) are "
                 "duplicated. Duplicate rows leak across a train/test split and "
                 "inflate the reported score. If they are not legitimate, "
                 "de-duplicate the dataset before splitting."
