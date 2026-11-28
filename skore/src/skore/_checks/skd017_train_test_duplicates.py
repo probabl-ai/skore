@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 
 
 class CheckTrainTestDuplicates(Check):
-    """Check for duplicate rows in the dataset before splitting (SKD017). 
+    """Check for duplicate rows in the dataset before splitting (SKD017).
 
     Duplicate rows in the dataset can leak across a train/test split: if identical rows
     end up on both sides, the model is evaluated on rows it was trained on and
